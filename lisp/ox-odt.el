@@ -86,7 +86,7 @@
   :export-block "ODT"
   :filters-alist '((:filter-parse-tree
 		    . (org-odt--translate-latex-fragments
-		       org-odt--translate-description-lists
+		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables)))
   :menu-entry
   '(?o "Export to ODT"
@@ -789,6 +789,22 @@ Images in ODT export' for more information."
   :group 'org-export-odt
   :version "24.4"
   :package-version '(Org . "8.1"))
+
+
+;;;; Lists
+
+(defcustom org-odt-description-list-style #'org-odt--translate-description-lists/html
+  "Specify how description lists are rendered.
+Choose one of HTML or LaTeX style."
+  :type '(choice
+          (const :tag "Use HTML style" org-odt--translate-description-lists/html )
+          (const :tag "Use LaTeX style" org-odt--translate-description-lists/latex ))
+  :group 'org-export-odt
+  :set (lambda (symbol value)
+	 "Alias `org-odt--translate-description-lists'."
+	 (set-default symbol value)
+  	 (fset 'org-odt--translate-description-lists value))
+  :version "24.1")
 
 
 ;;;; Src Block
@@ -1584,7 +1600,11 @@ original parsed data.  INFO is a plist holding export options."
 CONTENTS is the text with bold markup.  INFO is a plist holding
 contextual information."
   (format "<text:span text:style-name=\"%s\">%s</text:span>"
-	  "Bold" contents))
+	  ;; Internally, `org-odt--translate-description-lists/html'
+	  ;; or `org-odt--translate-description-lists/latex' requests
+	  ;; a custom style for bold.
+	  (or (org-element-property :style bold) "Bold")
+	  contents))
 
 
 ;;;; Center Block
@@ -3660,7 +3680,7 @@ pertaining to indentation here."
     ;;   item, but also within description lists and low-level
     ;;   headlines.
 
-    ;; See `org-odt-translate-description-lists' and
+    ;; See `org-odt--translate-description-lists' and
     ;; `org-odt-translate-low-level-headlines' for how this is
     ;; tackled.
 
@@ -3880,27 +3900,44 @@ contextual information."
 ;; This translator is necessary to handle indented tables in a uniform
 ;; manner.  See comment in `org-odt--table'.
 
-(defun org-odt--translate-description-lists (tree backend info)
+;; Depending on user option `org-odt-description-list-style',
+;; description lists can be typeset either as in HTML documents or as
+;; in LaTeX documents.
+
+(defun org-odt--translate-description-lists/html (tree backend info)
   ;; OpenDocument has no notion of a description list.  So simulate it
   ;; using plain lists.  Description lists in the exported document
   ;; are typeset in the same manner as they are in a typical HTML
-  ;; document.
+  ;; document.  See `org-odt--translate-description-lists/latex' for
+  ;; yet another way of translation.
   ;;
   ;; Specifically, a description list like this:
   ;;
-  ;;     ,----
-  ;;     | - term-1 :: definition-1
-  ;;     | - term-2 :: definition-2
-  ;;     `----
+  ;; 	 ,----
+  ;; 	 | - term-1 :: definition-1
+  ;; 	 |
+  ;; 	 | 	    paragraph-1
+  ;; 	 |
+  ;; 	 | - term-2 :: definition-2
+  ;; 	 |
+  ;; 	 | 	    paragraph-2
+  ;; 	 `----
   ;;
   ;; gets translated in to the following form:
   ;;
-  ;;     ,----
-  ;;     | - term-1
-  ;;     |   - definition-1
-  ;;     | - term-2
-  ;;     |   - definition-2
-  ;;     `----
+  ;; 	 ,----
+  ;; 	 | - term-1
+  ;;     |
+  ;; 	 |   - definition-1
+  ;; 	 |
+  ;; 	 |     paragraph-1
+  ;; 	 |
+  ;; 	 | - term-2
+  ;;     |
+  ;; 	 |   - definition-2
+  ;; 	 |
+  ;; 	 |     paragraph-2
+  ;; 	 `----
   ;;
   ;; Further effect is achieved by fixing the OD styles as below:
   ;;
@@ -3923,13 +3960,83 @@ contextual information."
 		   (org-element-adopt-elements
 		    (list 'item (list :checkbox (org-element-property
 						 :checkbox item)))
-		    (list 'paragraph (list :style "Text_20_body_20_bold")
-			  (or (org-element-property :tag item) "(no term)"))
+		    (list 'paragraph nil
+			  (list 'bold (list :style "OrgDescriptionTerm")
+				(or (org-element-property :tag item) "(no term)")))
 		    (org-element-adopt-elements
 		     (list 'plain-list (list :type 'descriptive-2))
 		     (apply 'org-element-adopt-elements
 			    (list 'item nil)
 			    (org-element-contents item)))))
+		 (org-element-contents el)))))
+      nil)
+    info)
+  tree)
+
+(defun org-odt--translate-description-lists/latex (tree backend info)
+  ;; OpenDocument has no notion of a description list.  So simulate it
+  ;; using plain lists.  Description lists in the exported document
+  ;; are typeset in the same manner as they are in a typical LaTeX
+  ;; style document.  See `org-odt--translate-description-lists/html'
+  ;; for yet another way of translation.
+  ;;
+  ;; Specifically, a description list like this:
+  ;;
+  ;; 	,----
+  ;; 	| - term-1 :: definition-1
+  ;; 	|
+  ;; 	| 	    paragraph-1
+  ;; 	|
+  ;; 	| - term-2 :: definition-2
+  ;; 	|
+  ;; 	| 	    paragraph-2
+  ;; 	`----
+  ;;
+  ;; gets translated in to the following form:
+  ;;
+  ;; 	 ,----
+  ;; 	 | - *term-1* definition-1
+  ;; 	 |
+  ;; 	 |   - paragraph-1
+  ;; 	 |
+  ;; 	 | - *term-2* definition-2
+  ;; 	 |
+  ;; 	 |   - paragraph-2
+  ;; 	 `----
+  ;;
+  ;; Further effect is achieved by fixing the OD styles as below:
+  ;;
+  ;; 1. Set the :type property of the simulated lists to
+  ;;    `descriptive-1' and `descriptive-2'.  Map these to list-styles
+  ;;    that has *no* bullets whatsoever.
+  ;;
+  ;; 2. The paragraph containing the definition term is styled to be
+  ;;    use hanging indent.
+  ;;
+  (org-element-map tree 'plain-list
+    (lambda (el)
+      (when (equal (org-element-property :type el) 'descriptive)
+	(org-element-set-element
+	 el
+	 (apply 'org-element-adopt-elements
+		(list 'plain-list (list :type 'descriptive-1))
+		(mapcar
+		 (lambda (item)
+		   (let* ((item-contents (org-element-contents item))
+			  (leading-paragraph (car item-contents))
+			  (item-contents (cdr item-contents)))
+		     (org-element-adopt-elements
+		      (list 'item (list :checkbox (org-element-property :checkbox item)))
+		      (apply 'org-element-adopt-elements
+			     (list 'paragraph (list :style "OrgDescriptionDefinition"))
+			     (list 'bold (list :style "OrgDescriptionTerm" :post-blank 1)
+				   (or (org-element-property :tag item) "(no term)"))
+			     (org-element-contents leading-paragraph))
+		      (org-element-adopt-elements
+		       (list 'plain-list (list :type 'descriptive-2))
+		       (apply 'org-element-adopt-elements
+			      (list 'item nil)
+			      item-contents)))))
 		 (org-element-contents el)))))
       nil)
     info)

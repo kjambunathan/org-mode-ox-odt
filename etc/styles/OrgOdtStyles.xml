@@ -749,6 +749,16 @@
    </text:list-level-style-number>
   </text:list-style>
 
+  <style:style style:name="OrgDescriptionTerm" style:family="text">
+   <style:text-properties fo:font-weight="bold"/>
+  </style:style>
+
+  <style:style style:name="OrgDescriptionDefinition" style:family="paragraph" style:parent-style-name="Text_20_body" style:class="text">
+   <style:paragraph-properties fo:margin-left="0.64cm" fo:margin-right="0cm" fo:text-indent="-0.64cm" style:auto-text-indent="false">
+    <style:tab-stops/>
+   </style:paragraph-properties>
+  </style:style>
+
   <text:list-style style:name="OrgSrcBlockNumberedLine">
    <text:list-level-style-number text:level="1" style:num-format="1">
     <style:list-level-properties text:space-before="0.635cm" text:min-label-width="0.635cm" text:min-label-distance="0.101cm" fo:text-align="end"/>
