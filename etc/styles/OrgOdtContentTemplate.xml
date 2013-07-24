@@ -51,7 +51,7 @@
 
     <!-- Section styles for Table Of Contents and Other Indices -->
     <style:style style:name="OrgIndexSection" style:family="section">
-      <style:section-properties fo:background-color="#c0c0c0" style:editable="false">
+      <style:section-properties style:editable="true">
 	<style:columns fo:column-count="1" fo:column-gap="0cm"/>
 	<style:background-image/>
       </style:section-properties>

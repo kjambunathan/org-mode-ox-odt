@@ -27,6 +27,7 @@
 
 (eval-when-compile
   (require 'cl)
+  (require 'rx)
   (require 'table nil 'noerror))
 (require 'format-spec)
 (require 'ox)
@@ -82,10 +83,12 @@
     (timestamp . org-odt-timestamp)
     (underline . org-odt-underline)
     (verbatim . org-odt-verbatim)
-    (verse-block . org-odt-verse-block))
+    (verse-block . org-odt-verse-block)
+    (citation . org-odt-citation))
   :export-block "ODT"
   :filters-alist '((:filter-parse-tree
-		    . (org-odt--translate-latex-fragments
+		    . (org-odt--collect-cite-keys
+		       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables)))
   :menu-entry
@@ -1869,23 +1872,21 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
 ;;;; Footnote Reference
 
+(defun org-odt--format-footnote-definition (n def)
+  (let ((note-class "footnote")
+	(par-style "Footnote")
+	(id (if n (format "text:id=\"fn%d\"" n) "")))
+    (format
+     "<text:note %s text:note-class=\"%s\">%s</text:note>"
+     id note-class
+     (concat
+      (format "<text:note-citation>%d</text:note-citation>" (or n 0))
+      (format "<text:note-body>%s</text:note-body>" def)))))
+
 (defun org-odt-footnote-reference (footnote-reference contents info)
   "Transcode a FOOTNOTE-REFERENCE element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
-  (let ((--format-footnote-definition
-	 (function
-	  (lambda (n def)
-	    (setq n (format "%d" n))
-	    (let ((id (concat  "fn" n))
-		  (note-class "footnote")
-		  (par-style "Footnote"))
-	      (format
-	       "<text:note text:id=\"%s\" text:note-class=\"%s\">%s</text:note>"
-	       id note-class
-	       (concat
-		(format "<text:note-citation>%s</text:note-citation>" n)
-		(format "<text:note-body>%s</text:note-body>" def)))))))
-	(--format-footnote-reference
+  (let ((--format-footnote-reference
 	 (function
 	  (lambda (n)
 	    (setq n (format "%d" n))
@@ -1919,8 +1920,18 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		   (if (eq (org-element-type raw) 'org-data) def
 		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			     "Footnote" def)))))
-	   (funcall --format-footnote-definition n def))))))))
+	   (org-odt--format-footnote-definition n def))))))))
 
+
+;;;; Citation Reference
+
+(defun org-odt-citation (citation contents info)
+  "Transcode a CITATION element from Org to ODT.
+CONTENTS is nil.  INFO is a plist holding contextual information."
+  ;; Just interpret the citation object.
+  ;; Citation processors (like ox-jabref.el) may handle citation
+  ;; by registering their own transcoders.
+  (org-element-interpret-data citation))
 
 ;;;; Headline
 
@@ -2189,6 +2200,11 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	 ((member value '("tables" "figures" "listings"))
 	  ;; FIXME
 	  (ignore)))))
+     ;; Handle BIBLIOGRAPHY.  Ignore it.
+     ((string= key "BIBLIOGRAPHY")
+      ;; Citation Processors (see ox-jabref.el) may handle this by
+      ;; registering their own transcoders.
+      (ignore))
      ((string= key "PAGEBREAK")
 
       ;; Pagebreaks created this way are a mere expedience.  These
@@ -2254,8 +2270,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 (defun org-odt-latex-fragment (latex-fragment contents info)
   "Transcode a LATEX-FRAGMENT object from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
-  (let* ((latex-frag (org-element-property :value latex-fragment))
-	 (processing-type (plist-get info :with-latex)))
+  (let* ((latex-frag (org-element-property :value latex-fragment)))
     (format "<text:span text:style-name=\"%s\">%s</text:span>"
 	    "OrgCode" (org-odt--encode-plain-text latex-frag t))))
 
@@ -4132,6 +4147,30 @@ contextual information."
 
 ;;; Filters
 
+(defun org-odt--collect-cite-keys (tree backend info)
+  "Collect cite keys (in reverse order) in to INFO.
+
+Modify INFO plist by appending a `:citations-alist' property.
+The value of this property is a list where each element is of the
+form (CITE-KEY . CITATION), with CITATION
+being the first element that references CITE-KEY.  The list is
+sorted in reverse order of appearance of CITE-KEYs in the
+exported file."
+  (let ((citations-alist nil))
+    (org-element-map tree 'citation
+      (lambda (citation)
+	(let* ((value (org-element-property :key citation)))
+	  (let ((cite-keys (split-string value ",")))
+	    (mapc (lambda (cite-key)
+		    (setq cite-key (org-trim cite-key))
+		    (unless (assoc cite-key citations-alist)
+		      (push (cons cite-key citation) citations-alist)))
+		  cite-keys))))
+      info)
+    ;; Modify INFO by side-effects.
+    (nconc info (list :citations-alist citations-alist)))
+  tree)
+
 ;;;; LaTeX fragments
 
 (defun org-odt--translate-latex-fragments (tree backend info)
@@ -4494,6 +4533,7 @@ contextual information."
     info)
   tree)
 
+
 
 ;;; Interactive functions
 
@@ -4631,7 +4671,7 @@ contextual information."
 	      ;; Case 2: No further conversion.  Return exported
 	      ;; OpenDocument file.
 	      (t target))))
-       (error
+       ((debug error)
 	;; Cleanup work directory and work files.
 	(funcall --cleanup-xml-buffers)
 	(message "OpenDocument export failed: %s"
