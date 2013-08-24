@@ -1049,7 +1049,7 @@ See `org-odt--build-date-styles' for implementation details."
 				 (org-odt--encode-plain-text desc t)))))))))
 
 
-;;;; Library wrappers
+;;;; Library wrappers :: Arc Mode
 
 (defun org-odt--zip-extract (archive members target)
   (when (atom members) (setq members (list members)))
@@ -1076,6 +1076,15 @@ See `org-odt--build-date-styles' for implementation details."
 	      (message command-output)
 	      (error "Extraction failed"))))
 	members))
+
+
+;;;; Library wrappers :: Ox
+
+(defun org-odt--read-attribute (element property)
+  (let* ((attrs (org-export-read-attribute :attr_odt element))
+	 (value (plist-get attrs property)))
+    (and value (ignore-errors (read value)))))
+
 
 ;;;; Target
 
@@ -1495,7 +1504,8 @@ original parsed data.  INFO is a plist holding export options."
       ;; - Dump automatic table styles.
       (loop for (style-name props) in
 	    (plist-get org-odt-automatic-styles 'Table) do
-	    (when (setq props (or (plist-get props :rel-width) 96))
+	    (when (setq props (or (let ((value (plist-get props :rel-width)))
+				    (and value (ignore-errors (read value)))) 96))
 	      (insert (format org-odt-table-style-format style-name props))))
       ;; - Dump date-styles.
       (when org-odt-use-date-fields
@@ -2368,16 +2378,14 @@ used as a communication channel."
 	 (attr-from (case (org-element-type element)
 		      (link (org-export-get-parent-element element))
 		      (t element)))
-	 ;; Convert attributes to a plist.
-	 (attr-plist (org-export-read-attribute :attr_odt attr-from))
 	 ;; Handle `:anchor', `:style' and `:attributes' properties.
 	 (user-frame-anchor
-	  (car (assoc-string (plist-get attr-plist :anchor)
+	  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
 			     '(("as-char") ("paragraph") ("page")) t)))
 	 (user-frame-style
-	  (and user-frame-anchor (plist-get attr-plist :style)))
+	  (and user-frame-anchor (org-odt--read-attribute attr-from :style)))
 	 (user-frame-attrs
-	  (and user-frame-anchor (plist-get attr-plist :attributes)))
+	  (and user-frame-anchor (org-odt--read-attribute attr-from :attributes)))
 	 (user-frame-params
 	  (list user-frame-style user-frame-attrs user-frame-anchor))
 	 ;; (embed-as (or embed-as user-frame-anchor "paragraph"))
@@ -2386,12 +2394,9 @@ used as a communication channel."
 	 ;; them as numbers since we need them for computations.
 	 (size (org-odt--image-size
 		src-expanded
-		(let ((width (plist-get attr-plist :width)))
-		  (and width (read width)))
-		(let ((length (plist-get attr-plist :length)))
-		  (and length (read length)))
-		(let ((scale (plist-get attr-plist :scale)))
-		  (and scale (read scale)))
+		(org-odt--read-attribute attr-from :width)
+		(org-odt--read-attribute attr-from :height)
+		(org-odt--read-attribute attr-from :scale)
 		nil			; embed-as
 		"paragraph"		; FIXME
 		))
@@ -3258,7 +3263,6 @@ and prefix with \"OrgSrc\".  For example,
 CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
   (let* ((lang (org-element-property :language src-block))
-	 (attributes (org-export-read-attribute :attr_odt src-block))
 	 (captions (org-odt-format-label src-block info 'definition))
 	 (caption (car captions)) (short-caption (cdr captions)))
     (concat
@@ -3266,7 +3270,9 @@ contextual information."
 	  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		  "Listing" caption))
      (let ((--src-block (org-odt-format-code src-block info)))
-       (if (not (plist-get attributes :textbox)) --src-block
+       ;; Is `:textbox' property non-nil?
+       (if (not (org-odt--read-attribute src-block :textbox)) --src-block
+	 ;; Yes.  Enclose it in a Text Box.
 	 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		 "Text_20_body"
 		 (org-odt--textbox --src-block nil nil nil)))))))
@@ -3316,8 +3322,7 @@ contextual information."
 
 (defun org-odt-table-style-spec (element info)
   (let* ((table (org-export-get-parent-table element))
-	 (table-attributes (org-export-read-attribute :attr_odt table))
-	 (table-style (plist-get table-attributes :style)))
+	 (table-style (org-odt--read-attribute table :style)))
     (assoc table-style org-odt-table-styles)))
 
 (defun org-odt-get-table-cell-styles (table-cell info)
@@ -3402,9 +3407,8 @@ channel."
 		    (org-export-get-parent-table table-row) info))
 	      "OrgTableHeading")
 	     ((let* ((table (org-export-get-parent-table table-cell))
-		     (table-attrs (org-export-read-attribute :attr_odt table))
 		     (table-header-columns
-		      (let ((cols (plist-get table-attrs :header-columns)))
+		      (let ((cols (org-odt--read-attribute table :header-columns)))
 			(and cols (read cols)))))
 		(<= c (cond ((wholenump table-header-columns)
 			     (- table-header-columns 1))
@@ -4050,7 +4054,7 @@ contextual information."
 
 ;; Consider an example.  The following list table
 ;;
-;; #+attr_odt :list-table t
+;; #+ATTR_ODT: :list-table t
 ;; - Row 1
 ;;   - 1.1
 ;;   - 1.2
@@ -4086,7 +4090,7 @@ contextual information."
 (defun org-odt--translate-list-tables (tree backend info)
   (org-element-map tree 'plain-list
     (lambda (l1-list)
-      (when (org-export-read-attribute :attr_odt l1-list :list-table)
+      (when (org-odt--read-attribute l1-list :list-table)
 	;; Replace list with table.
 	(org-element-set-element
 	 l1-list
