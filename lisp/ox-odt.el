@@ -2063,7 +2063,39 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	    (when (wholenump depth) (org-odt-toc depth info))))
 	 ((member value '("tables" "figures" "listings"))
 	  ;; FIXME
-	  (ignore))))))))
+	  (ignore)))))
+     ((string= key "PAGEBREAK")
+
+      ;; Pagebreaks created this way are a mere expedience.  These
+      ;; create extraneous "empty" paragraphs which take up "extra
+      ;; space".  A typographer will chide you for resorting to such
+      ;; underhanded means to create pagebreaks.
+      ;;
+      ;; As an expedience it has it's uses.  See
+      ;; `org-odt-special-block' for a realistic example of how
+      ;; pagebreak can be to service.
+      ;;
+      ;; The right way to create pagebreaks is to create new styles -
+      ;; custom or automatic - that set the "before/after" pagebreak
+      ;; of an element (a paragraph, table etc).
+      ;;
+      ;; For example, consider pagebreaks created as below.
+      ;;
+      ;; Text in first page.
+      ;;
+      ;; #+ATTR_ODT: :style "OrgPageBreakDefault"
+      ;; #+PAGEBREAK:
+      ;;
+      ;; This text goes in next page.
+
+      ;; Now look at the page that is introduced with forced page
+      ;; break.  You will realize that the first line of text in that
+      ;; page is a bit displaced from other pages created by
+      ;; LibreOffice.  A keen eye will definitely catch this
+      ;; aberration.
+      (let ((style (org-odt--read-attribute keyword :style)))
+	(when (and style (stringp style))
+	  (format "\n<text:p text:style-name=\"%s\"/>" style)))))))
 
 
 ;;;; Latex Environment
@@ -2923,6 +2955,35 @@ information."
 
 ;;;; Paragraph
 
+;; You can customize paragraphs - standalone one and those occurring
+;; within lists - using `:style' and `:p-style' attributes.  Try out
+;; the following example and see for yourself what you can achieve.
+;;
+;; #+ATTR_ODT: :style "OrgBulletedList" :p-style "Text_20_body_20_bold"
+;; 1. N1
+;;    1. N11
+;;    2. N12
+;; 2. N2
+;;    #+ATTR_ODT: :style "OrgNumberedList" :p-style "Preformatted_20_Text"
+;;    * B21
+;;
+;;    * B22
+;;      - B221
+;;
+;;        First paragraph.
+;;
+;;        #+ATTR_ODT: :style "OrgBibliographyList" :p-style "Text_20_body"
+;;        1. one
+;;        2. two
+;;        3. three
+;;
+;;        #+ATTR_ODT: :style "Text_20_body_20_indent"
+;;        Second paragraph.
+;;
+;;      - B222
+;;    * B23
+;; 3. N3
+
 (defun org-odt--format-paragraph (paragraph contents default center quote)
   "Format paragraph according to given styles.
 PARAGRAPH is a paragraph type element.  CONTENTS is the
@@ -2932,10 +2993,48 @@ belongs to no special environment, a center block, or a quote
 block."
   (let* ((parent (org-export-get-parent paragraph))
 	 (parent-type (org-element-type parent))
-	 (style (case parent-type
-		  (quote-block quote)
-		  (center-block center)
-		  (t default))))
+	 (style (or
+		 ;; Use the style that is explicitly specified via
+		 ;; #+ATTR_ODT: :style "Text_20_body_20_bold".
+		 default
+		 ;; Paragraph doesn't specify a style of it's own.
+		 ;; Infer it from the surrounding context.
+		 (case parent-type
+		   ;; Paragraph is within a QUOTE-BLOCK.  Use a style
+		   ;; specific to that block.
+		   (quote-block quote)
+		   ;; Paragraph is within a CENTER-BLOCK.  Use a style
+		   ;; specific to that block.
+		   (center-block center)
+		   ;; Paragraph is with an item.  Use the style
+		   ;; specified with `:p-style' attribute of the
+		   ;; nearest ancestor plain-list or item.
+
+		   ;; In other words, the `:p-style' specified in a
+		   ;; plain-list or an item gets inherited all the way
+		   ;; down.  A deeper plain-list or an item can
+		   ;; override the value it inherits from it's parents
+		   ;; with it's own `:p-style' attribute which then
+		   ;; gets handed down below.
+
+		   ;; NOTE: ITEMs cannot have #+ATTR_ODT attached to
+		   ;; them.  So, contrary to the implications in the
+		   ;; previous paragraphs, there is no such things as
+		   ;; paragraph styles to ITEMs. See
+		   ;;
+		   ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
+		   ;;
+		   (item
+		    (let* ((genealogy (org-export-get-genealogy paragraph))
+			   (data (reverse genealogy))
+			   (p-styles (loop for x on data
+					   when (memq (org-element-type (car x))
+						      '(item plain-list)) ; ITEM is an eye-candy
+					   collect (org-odt--read-attribute (car x) :p-style))))
+		      (car (last (delq nil p-styles))))))
+		 ;; Paragraph is not so interesting.  Use the default
+		 ;; style.
+		 "Text_20_body")))
     ;; If this paragraph is a leading paragraph in an item and the
     ;; item has a checkbox, splice the checkbox and paragraph contents
     ;; together.
@@ -2950,7 +3049,8 @@ CONTENTS is the contents of the paragraph, as a string.  INFO is
 the plist used as a communication channel."
   (org-odt--format-paragraph
    paragraph contents
-   (or (org-element-property :style paragraph) "Text_20_body")
+   (or (org-element-property :style paragraph)
+       (org-odt--read-attribute paragraph :style))
    "OrgCenter"
    "Quotations"))
 
@@ -2964,8 +3064,12 @@ contextual information."
   (format "\n<text:list text:style-name=\"%s\" %s>\n%s</text:list>"
 	  ;; Choose style based on list type.
 	  (case (org-element-property :type plain-list)
-	    (ordered "OrgNumberedList")
-	    (unordered "OrgBulletedList")
+	    (ordered (or (org-odt--read-attribute  plain-list :style)
+			 "OrgNumberedList"))
+	    (unordered (or (org-odt--read-attribute  plain-list :style)
+			   "OrgBulletedList"))
+	    ;; FIXME: Define and handle `:style' attributes for
+	    ;; description lists.
 	    (descriptive-1 "OrgDescriptionList")
 	    (descriptive-2 "OrgDescriptionList"))
 	  ;; If top-level list, re-start numbering.  Otherwise,
@@ -3129,14 +3233,36 @@ holding contextual information."
 			 contents)))))
      ;; Textbox.
      ((string= type "textbox")
-      (let ((width (plist-get attributes :width))
-	    (height (plist-get attributes :height))
-	    (style (plist-get attributes :style))
-	    (extra (plist-get attributes :extra))
-	    (anchor (plist-get attributes :anchor)))
+      ;; Textboxes an be used for centering tables etc horizontally
+      ;; and vertically within a page.
+
+      ;; In the example below, a landscape and centered table is
+      ;; created in the middle of what is essentially a portrait
+      ;; document.
+
+      ;; Leading text.
+      ;;
+      ;; #+ATTR_ODT: :style "OrgPageBreakLandscape"
+      ;; #+PAGEBREAK:
+      ;;
+      ;; #+ATTR_ODT: :width 5 :style "OrgPageImage" :anchor "page"
+      ;; #+BEGIN_TEXTBOX
+      ;; | a          | b          |
+      ;; | e          | f          |
+      ;; #+END_TEXTBOX
+      ;;
+      ;; #+ATTR_ODT: :style "OrgPageBreakDefault"
+      ;; #+PAGEBREAK:
+      ;;
+      ;; Trailing text.
+      (let ((width (org-odt--read-attribute special-block :width))
+	    (height (org-odt--read-attribute special-block :height))
+	    (style (org-odt--read-attribute special-block :style))
+	    (extra (org-odt--read-attribute special-block :extra))
+	    (anchor (org-odt--read-attribute special-block :anchor)))
 	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		"Text_20_body" (org-odt--textbox contents width height
-						   style extra anchor))))
+						 style extra anchor))))
      (t contents))))
 
 

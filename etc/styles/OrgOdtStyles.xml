@@ -795,6 +795,18 @@
   <text:notes-configuration text:note-class="footnote" text:citation-style-name="Footnote_20_Symbol" text:citation-body-style-name="Footnote_20_anchor" style:num-format="1" text:start-value="0" text:footnotes-position="page" text:start-numbering-at="document"/>
   <text:notes-configuration text:note-class="endnote" style:num-format="i" text:start-value="0"/>
   <text:linenumbering-configuration text:number-lines="false" text:offset="0.499cm" style:num-format="1" text:number-position="left" text:increment="5"/>
+
+  <!-- Page breaks -->
+  <style:style style:name="OrgPageBreakDefault" style:family="paragraph" style:parent-style-name="Text_20_body" style:master-page-name="Standard">
+   <style:paragraph-properties style:page-number="auto" fo:break-before="auto"/>
+  </style:style>
+
+  <style:style style:name="OrgPageBreakLandscape" style:family="paragraph" style:parent-style-name="Text_20_body" style:master-page-name="Landscape">
+   <style:paragraph-properties style:page-number="auto"  fo:break-before="auto">
+    <style:tab-stops/>
+    <style:background-image/>
+   </style:paragraph-properties>
+  </style:style>
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
