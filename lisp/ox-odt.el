@@ -3511,6 +3511,21 @@ styles congruent with the ODF-1.2 specification."
 	       (t ""))))
 	(concat template-name cell-type)))))
 
+(defun org-odt--table-cell-widths (table info)
+  (let* ((user-widths (org-export-read-attribute :attr_odt table :widths))
+	 (user-width-p (and user-widths t))
+	 (user-widths (and user-width-p (split-string user-widths ","))))
+    (org-element-map
+	(org-element-map table 'table-row
+	  (lambda (row)
+	    (unless (eq (org-element-property :type row) 'rule) row))
+	  info 'first-match)
+	'table-cell
+      (lambda (table-cell)
+	(or (and user-width-p (string-to-number (or (pop user-widths) "0")))
+	    (org-export-table-cell-width table-cell info) 0))
+      info)))
+
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
@@ -3518,7 +3533,8 @@ channel."
   (let* ((table-cell-address (org-export-table-cell-address table-cell info))
 	 (r (car table-cell-address))
 	 (c (cdr table-cell-address))
-	 (horiz-span (or (org-export-table-cell-width table-cell info) 0))
+	 (horiz-span (nth c (org-odt--table-cell-widths
+			     (org-export-get-parent-table table-cell) info)))
 	 (table-row (org-export-get-parent table-cell))
 	 (custom-style-prefix (org-odt-get-table-cell-styles
 			       table-cell info))
@@ -3610,16 +3626,6 @@ communication channel."
 
 ;;;; Table
 
-(defun org-odt-table-first-row-data-cells (table info)
-  (let ((table-row
-	 (org-element-map table 'table-row
-	   (lambda (row)
-	     (unless (eq (org-element-property :type row) 'rule) row))
-	   info 'first-match))
-	(special-column-p (org-export-table-has-special-column-p table)))
-    (if (not special-column-p) (org-element-contents table-row)
-      (cdr (org-element-contents table-row)))))
-
 (defun org-odt--table (table contents info)
   "Transcode a TABLE element from Org to ODT.
 CONTENTS is the contents of the table.  INFO is a plist holding
@@ -3646,15 +3652,14 @@ contextual information."
 		(let* ((table-style (or custom-table-style "OrgTable"))
 		       (column-style (format "%sColumn" table-style)))
 		  (mapconcat
-		   (lambda (table-cell)
-		     (let ((width (1+ (or (org-export-table-cell-width
-					   table-cell info) 0)))
-			   (s (format
+		   (lambda (width)
+		     (setq width (1+ width))
+		     (let ((s (format
 			       "\n<table:table-column table:style-name=\"%s\"/>"
 			       column-style))
 			   out)
 		       (dotimes (i width out) (setq out (concat s out)))))
-		   (org-odt-table-first-row-data-cells table info) "\n"))))))
+		   (org-odt--table-cell-widths table info) "\n"))))))
        (concat
 	;; caption.
 	(when caption
