@@ -4189,11 +4189,13 @@ contextual information."
 
 ;; Consider an example.  The following list table
 ;;
+;; #+ATTR_ODT: :rel-width 80
 ;; #+ATTR_ODT: :list-table t
 ;; - Row 1
 ;;   - 1.1
 ;;   - 1.2
 ;;   - 1.3
+;; - -----
 ;; - Row 2
 ;;   - 2.1
 ;;   - 2.2
@@ -4203,7 +4205,11 @@ contextual information."
 ;; below.
 ;;
 ;; | Row 1 | 1.1 | 1.2 | 1.3 |
+;; |-------+-----+-----+-----|
 ;; | Row 2 | 2.1 | 2.2 | 2.3 |
+;;
+;; List tables can contain hrule (see example above).  They can also
+;; contain table specific attributes.
 ;;
 ;; Note that org-tables are NOT multi-line and each line is mapped to
 ;; a unique row in the exported document.  So if an exported table
@@ -4231,7 +4237,8 @@ contextual information."
 	 l1-list
 	 ;; Build replacement table.
 	 (apply 'org-element-adopt-elements
-		(list 'table '(:type org :attr_odt (":style \"GriddedTable\"")))
+		(list 'table (list :type 'org :attr_odt
+				   (org-element-property :attr_odt l1-list)))
 		(org-element-map l1-list 'item
 		  (lambda (l1-item)
 		    (let* ((l1-item-contents (org-element-contents l1-item))
@@ -4247,22 +4254,37 @@ contextual information."
 			  (setcdr prev nil)
 			  (setq l2-list (car cur)))
 			(setq l1-item-leading-text l1-item-contents))
-		      ;; Level-1 items start a table row.
-		      (apply 'org-element-adopt-elements
-			     (list 'table-row (list :type 'standard))
-			     ;;  Leading text of level-1 item define
-			     ;;  the first table-cell.
-			     (apply 'org-element-adopt-elements
-				    (list 'table-cell nil)
-				    l1-item-leading-text)
-			     ;; Level-2 items define subsequent
-			     ;; table-cells of the row.
-			     (org-element-map l2-list 'item
-			       (lambda (l2-item)
-				 (apply 'org-element-adopt-elements
-					(list 'table-cell nil)
-					(org-element-contents l2-item)))
-			       info nil 'item))))
+		      (cond
+		       ;; Check for hrule.
+		       ((and
+			 (null l2-list)
+			 (not (cdr l1-item-leading-text))
+			 (eq (org-element-type (car l1-item-leading-text))
+			     'paragraph)
+			 (string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
+				       (org-element-interpret-data
+					(car l1-item-leading-text))))
+			;; Level-1 items start a table row.
+			(org-element-adopt-elements
+			 (list 'table-row (list :type 'rule))))
+		       ;; No hrule.
+		       (t
+			;; Level-1 items start a table row.
+			(apply 'org-element-adopt-elements
+			       (list 'table-row (list :type 'standard))
+			       ;;  Leading text of level-1 item define
+			       ;;  the first table-cell.
+			       (apply 'org-element-adopt-elements
+				      (list 'table-cell nil)
+				      l1-item-leading-text)
+			       ;; Level-2 items define subsequent
+			       ;; table-cells of the row.
+			       (org-element-map l2-list 'item
+				 (lambda (l2-item)
+				   (apply 'org-element-adopt-elements
+					  (list 'table-cell nil)
+					  (org-element-contents l2-item)))
+				 info nil 'item))))))
 		  info nil 'item))))
       nil)
     info)
