@@ -3618,7 +3618,11 @@ communication channel."
        (when (org-export-table-row-starts-rowgroup-p table-row info)
 	 (car rowgroup-tags))
        ;; Actual table row
-       (format "\n<table:table-row>\n%s\n</table:table-row>" contents)
+       (let* ((custom-table-style (nth 1 (org-odt-table-style-spec table-row info)))
+	      (table-style (or custom-table-style "OrgTable"))
+	      (row-style (format "%sRow" table-style)))
+	 (format "\n<table:table-row table:style-name=\"%s\">\n%s\n</table:table-row>"
+		 row-style contents))
        ;; Does this row end a rowgroup?
        (when (org-export-table-row-ends-rowgroup-p table-row info)
 	 (cdr rowgroup-tags))))))

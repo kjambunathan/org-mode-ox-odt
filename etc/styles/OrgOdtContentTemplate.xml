@@ -119,6 +119,10 @@
       <style:table-column-properties style:rel-column-width="1*"/>
     </style:style>
 
+    <style:style style:name="OrgTableRow" style:family="table-row">
+      <style:table-row-properties fo:keep-together="always"/>
+    </style:style>
+
     <style:style style:name="OrgTblCell" style:family="table-cell">
       <style:table-cell-properties style:vertical-align="top" fo:padding="0.159cm" fo:border-top="none" fo:border-bottom="none" fo:border-left="none" fo:border-right="none"/>
     </style:style>
@@ -196,6 +200,10 @@
 
     <style:style style:name="CustomColumn" style:family="table-column">
       <style:table-column-properties style:rel-column-width="1*"/>
+    </style:style>
+
+    <style:style style:name="CustomRow" style:family="table-row">
+      <style:table-row-properties fo:keep-together="always"/>
     </style:style>
 
     <!-- Table Paragraph Styles -->
