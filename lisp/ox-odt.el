@@ -4319,8 +4319,12 @@ contextual information."
 (defmacro org-odt--export-wrap (out-file &rest body)
   `(let* ((--out-file ,out-file)
 	  (out-file-type (file-name-extension --out-file))
+	  ;; XML files created by the exporter.
 	  (org-odt-xml-files '("META-INF/manifest.xml" "content.xml"
-				 "meta.xml" "styles.xml"))
+			       "meta.xml" "styles.xml"))
+	  ;; Encode all the above XML files using utf-8.
+	  (coding-system-for-write 'utf-8)
+	  (save-buffer-coding-system 'utf-8)
 	  ;; Initialize temporary workarea.  All files that end up in
 	  ;; the exported document get parked/created here.
 	  (org-odt-zip-dir (file-name-as-directory
@@ -4471,9 +4475,7 @@ MathML source to kill ring depending on the value of
 		      (require 'nxml-mode)
 		      (let ((nxml-auto-insert-xml-declaration-flag nil))
 			(find-file-noselect (concat org-odt-zip-dir
-						    "content.xml") t))))
-	    (coding-system-for-write 'utf-8)
-	    (save-buffer-coding-system 'utf-8))
+						    "content.xml") t)))))
        (set-buffer buffer)
        (set-buffer-file-coding-system coding-system-for-write)
        (let ((mathml (org-create-math-formula latex-frag)))
