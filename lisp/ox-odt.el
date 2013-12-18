@@ -1028,13 +1028,15 @@ See `org-odt--build-date-styles' for implementation details."
 ;;;; Frame
 
 (defun org-odt--frame (text width height style &optional extra
-			      anchor-type &rest title-and-desc)
-  (let ((frame-attrs
-	 (concat
-	  (if width (format " svg:width=\"%0.2fcm\"" width) "")
-	  (if height (format " svg:height=\"%0.2fcm\"" height) "")
-	  extra
-	  (format " text:anchor-type=\"%s\"" (or anchor-type "paragraph")))))
+			    anchor-type &rest title-and-desc)
+  (let* ((frame-name (car (org-odt-add-automatic-style "Frame")))
+	 (frame-attrs
+	  (concat
+	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
+	   (if height (format " svg:height=\"%0.2fcm\"" height) "")
+	   extra
+	   (format " text:anchor-type=\"%s\"" (or anchor-type "paragraph"))
+	   (format " draw:name=\"%s\"" frame-name))))
     (format
      "\n<draw:frame draw:style-name=\"%s\"%s>\n%s\n</draw:frame>"
      style frame-attrs
@@ -2232,15 +2234,20 @@ SHORT-CAPTION are strings."
 	 ;; elements in `org-element-all-objects', but for now this
 	 ;; will do.
 	 (short-caption
-	  (let ((short-caption (or short-caption caption))
-		(backend (org-export-create-backend
-			  :parent (org-export-backend-name
-				   (plist-get info :back-end))
-			  :transcoders
-			  (mapcar (lambda (type) (cons type (lambda (o c i) c)))
-				  org-element-all-objects))))
-	    (when short-caption
-	      (org-export-data-with-backend short-caption backend info)))))
+	  ;; Sneaking in short-caption as name attribute is
+	  ;; problematic with LibreOffice > 4.0.4.2.  So ignore
+	  ;; short-captions.  See following thread:
+	  ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00100.html
+	  (ignore
+	   (let ((short-caption (or short-caption caption))
+		 (backend (org-export-create-backend
+			   :parent (org-export-backend-name
+				    (plist-get info :back-end))
+			   :transcoders
+			   (mapcar (lambda (type) (cons type (lambda (o c i) c)))
+				   org-element-all-objects))))
+	     (when short-caption
+	       (org-export-data-with-backend short-caption backend info))))))
     (when (or label caption)
       (let* ((default-category
 	       (case (org-element-type element)
