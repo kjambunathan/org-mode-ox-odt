@@ -162,7 +162,10 @@ Use this to infer values of `org-odt-styles-dir' and
 	(expand-file-name "./schema/" org-odt-data-dir)) ; bail out
    (eval-when-compile
      (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
-	  (expand-file-name "./schema/" org-odt-data-dir))))
+	  (expand-file-name "./schema/" org-odt-data-dir)))
+   (expand-file-name "../etc/schema/" org-odt-lib-dir) ; git
+   (expand-file-name "./etc/schema/" org-odt-lib-dir)  ; elpa
+   )
   "List of directories to search for OpenDocument schema files.
 Use this list to set the default value of
 `org-odt-schema-dir'.  The entries in this list are
