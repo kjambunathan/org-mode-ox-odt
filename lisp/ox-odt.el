@@ -144,8 +144,7 @@
 Use this to infer values of `org-odt-styles-dir' and
 `org-odt-schema-dir'.")
 
-(defvar org-odt-data-dir
-  (expand-file-name "../../etc/" org-odt-lib-dir)
+(defvar org-odt-data-dir nil
   "Data directory for ODT exporter.
 Use this to infer values of `org-odt-styles-dir' and
 `org-odt-schema-dir'.")
@@ -177,7 +176,7 @@ and `org-odt-data-dir'.")
    (eval-when-compile
      (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
 	  (expand-file-name "./styles/" org-odt-data-dir)))
-   (expand-file-name "../../etc/styles/" org-odt-lib-dir) ; git
+   (expand-file-name "../etc/styles/" org-odt-lib-dir) ; git
    (expand-file-name "./etc/styles/" org-odt-lib-dir)  ; elpa
    (expand-file-name "./org/" data-directory)	       ; system
    )
