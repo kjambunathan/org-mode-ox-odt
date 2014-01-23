@@ -4699,8 +4699,4 @@ using `org-open-file'."
 
 (provide 'ox-odt)
 
-;; Local variables:
-;; generated-autoload-file: "org-loaddefs.el"
-;; End:
-
 ;;; ox-odt.el ends here
