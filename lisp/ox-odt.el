@@ -3540,6 +3540,7 @@ styles congruent with the ODF-1.2 specification."
 CONTENTS is nil.  INFO is a plist used as a communication
 channel."
   (let* ((table-cell-address (org-export-table-cell-address table-cell info))
+	 (table-cell-borders (org-export-table-cell-borders table-cell info))
 	 (r (car table-cell-address))
 	 (c (cdr table-cell-address))
 	 (horiz-span (nth c (org-odt--table-cell-widths
@@ -3575,11 +3576,10 @@ channel."
 					    custom-style-prefix))
 	   (concat
 	    "OrgTblCell"
-	    (when (or (org-export-table-row-starts-rowgroup-p table-row info)
-		      (zerop r)) "T")
-	    (when (org-export-table-row-ends-rowgroup-p table-row info) "B")
-	    (when (and (org-export-table-cell-starts-colgroup-p table-cell info)
-		       (not (zerop c)) ) "L"))))
+	    (when (memq 'above table-cell-borders) "T")
+	    (when (memq 'below table-cell-borders) "B")
+	    (when (memq 'left table-cell-borders) "L")
+	    (when (memq 'right table-cell-borders) "R"))))
 	 (cell-attributes
 	  (concat
 	   (format " table:style-name=\"%s\"" cell-style-name)
