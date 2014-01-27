@@ -1396,7 +1396,8 @@ original parsed data.  INFO is a plist holding export options."
 		  (plist-get info :creator))))
       (format "<meta:keyword>%s</meta:keyword>\n" keywords)
       (format "<dc:subject>%s</dc:subject>\n" description)
-      (format "<dc:title>%s</dc:title>\n" title)
+      (when (org-string-nw-p title)
+	(format "<dc:title>%s</dc:title>\n" title))
       "\n"
       "  </office:meta>\n" "</office:document-meta>")
      nil (concat org-odt-zip-dir "meta.xml"))
