@@ -2232,8 +2232,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       ;; LibreOffice.  A keen eye will definitely catch this
       ;; aberration.
       (let ((style (org-odt--read-attribute keyword :style)))
-	(when (and style (stringp style))
-	  (format "\n<text:p text:style-name=\"%s\"/>" style)))))))
+	(unless (and style (stringp style) (org-string-nw-p style))
+	  (setq style "OrgPageBreakDefault"))
+	(format "\n<text:p text:style-name=\"%s\"/>" style))))))
 
 
 ;;;; Latex Environment
