@@ -223,8 +223,6 @@ version of org in use and is initialized from
 from one of: org's own private git repository, GNU ELPA tar or
 standard Emacs.")
 
-(defconst org-odt-bookmark-prefix "OrgXref.")
-
 (defconst org-odt-manifest-file-entry-tag
   "\n<manifest:file-entry manifest:media-type=\"%s\" manifest:full-path=\"%s\"%s/>")
 
@@ -304,43 +302,17 @@ according to the default face identified by the `htmlfontify'.")
 (defvar org-odt-max-image-size '(17.0 . 20.0)
   "Limiting dimensions for an embedded image.")
 
-(defconst org-odt-label-styles
-  '(("math-formula" "%c" "text" "(%n)")
-    ("math-label" "(%n)" "text" "(%n)")
-    ("category-and-value" "%e %n: %c" "category-and-value" "%e %n")
-    ("value" "%e %n: %c" "value" "%n"))
-  "Specify how labels are applied and referenced.
-
-This is an alist where each element is of the form:
-
-  \(STYLE-NAME ATTACH-FMT REF-MODE REF-FMT)
-
-ATTACH-FMT controls how labels and captions are attached to an
-entity.  It may contain following specifiers - %e and %c.  %e is
-replaced with the CATEGORY-NAME.  %n is replaced with
-\"<text:sequence ...> SEQNO </text:sequence>\".  %c is replaced
-with CAPTION.
-
-REF-MODE and REF-FMT controls how label references are generated.
-The following XML is generated for a label reference -
-\"<text:sequence-ref text:reference-format=\"REF-MODE\" ...>
-REF-FMT </text:sequence-ref>\".  REF-FMT may contain following
-specifiers - %e and %n.  %e is replaced with the CATEGORY-NAME.
-%n is replaced with SEQNO.
-
-See also `org-odt-format-label'.")
-
 (defvar org-odt-category-map-alist
-  '(("__Table__" "Table" "value" "Table" org-odt--enumerable-p)
-    ("__Figure__" "Illustration" "value" "Figure" org-odt--enumerable-image-p)
-    ("__MathFormula__" "Text" "math-formula" "Equation" org-odt--enumerable-formula-p)
-    ("__DvipngImage__" "Equation" "value" "Equation" org-odt--enumerable-latex-image-p)
-    ("__Listing__" "Listing" "value" "Listing" org-odt--enumerable-p))
+  '((:TABLE:        "Table"        "Table"    org-odt--enumerable-p            )
+    (:FIGURE:       "Illustration" "Figure"   org-odt--enumerable-image-p      )
+    (:MATH-FORMULA: "Text"         "Equation" org-odt--enumerable-formula-p    )
+    (:DVIPNG-IMAGE: "Equation"     "Equation" org-odt--enumerable-latex-image-p)
+    (:LISTING:      "Listing"      "Listing"  org-odt--enumerable-p            ))
   "Map a CATEGORY-HANDLE to OD-VARIABLE and LABEL-STYLE.
 
 This is a list where each entry is of the form:
 
-  \(CATEGORY-HANDLE OD-VARIABLE LABEL-STYLE CATEGORY-NAME ENUMERATOR-PREDICATE)
+  \(CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME ENUMERATOR-PREDICATE)
 
 CATEGORY_HANDLE identifies the captionable entity in question.
 
@@ -348,9 +320,6 @@ OD-VARIABLE is the OpenDocument sequence counter associated with
 the entity.  These counters are declared within
 \"<text:sequence-decls>...</text:sequence-decls>\" block of
 `org-odt-content-template-file'.
-
-LABEL-STYLE is a key into `org-odt-label-styles' and specifies
-how a given entity should be captioned and referenced.
 
 CATEGORY-NAME is used for qualifying captions on export.
 
@@ -792,6 +761,148 @@ Images in ODT export' for more information."
   :version "24.4"
   :package-version '(Org . "8.1"))
 
+(defcustom org-odt-caption-and-xref-settings
+  '((:LISTING: :caption-position below :caption-format
+	       (category " " counter ": " caption)
+	       :xref-format
+	       (value))
+    (:DVIPNG-IMAGE: :caption-position below :caption-format
+		    (category " " counter ": " caption)
+		    :xref-format
+		    (value))
+    (:MATH-FORMULA: :caption-position below :caption-format
+		    (caption)
+		    :xref-format
+		    (text)
+		    :label-format
+		    ("(" counter ")"))
+    (:FIGURE: :caption-position below :caption-format
+	      (category " " counter ": " caption)
+	      :xref-format
+	      (value))
+    (:TABLE: :caption-position below :caption-format
+	     (category " " counter ": " caption)
+	     :xref-format
+	     (value)))
+  "Specify how to format caption and cross-references.
+
+Use this, for example, to control various aspects of caption (the
+numbering format, its position etc.) or to generate page numbers
+as part of cross-references.  For a quick overview of this
+variable, see examples towards the end of this docstring.
+
+If you are customizing this option, you will see that the
+exported document contains liberal amounts of \"???\" sprinkled
+all over.  The presence of these question marks signifies that
+the various \"field values\" (chapter number, page number etc)
+are out-of-sync with the document state.  So, you MUST use an
+external application to update your document.  If you are using
+LibreOffice, you can use Tools -> Update -> Fields (or Update
+All).
+
+This variable is an alist of pairs (RULE-TAG . RULE-PLIST).
+RULE-TAG is a symbol.  RULE-PLIST is a property list, the allowed
+properties of which depend on the value of RULE-TAG.  The details
+are as below.
+
+RULE-TAG takes following one of the values:
+
+  `:TABLE:' `:FIGURE:' `:MATH-FORMULA:' `:DVIPNG-IMAGE:'
+   `:LISTING:' `:TARGET:'.
+
+The `:TARGET:' rule specifies how a cross-reference to a
+HEADLINE, a TARGET or a non-captionable ELEMENT is typeset.  Its
+RULE-PLIST allow a single property `:xref-format'.
+
+All RULE-TAGs (except for `:TARGET:') specify how a caption and a
+cross-reference to the corresponding entity is typeset.  Its
+RULE-PLIST allow following properties.
+
+  `:caption-position' - a symbol - one of `above' or `below'
+  `:caption-format'   - a mixed list of symbols and strings
+  `:xref-format'      - a mixed list of symbols and strings
+
+`:caption-format' and `:xref-format' are but format
+specifiers (in disguise) and specify how a caption or a
+cross-reference is transcoded.  Their form and function are
+better illustrated than described.  So, consider the following
+examples:
+
+A `:caption-format' with the following value
+
+          (category \" \" counter \": \" caption)
+
+will result in following caption.
+
+          Table 1: An Example Table
+          ^^^^^ ^  ^^^^^^^^^^^^^^^^
+            ^   |           ^
+            |   |           |
+       category |       caption
+              counter
+
+A `:xref-format' with the following value
+
+      (\"Section \" chapter \" [\" text \"]\", \" page, \" t)
+
+will result in following cross-reference.
+
+          See Section 3.1 [Tropical Storms], page 24.
+                       ^   ^^^^^^^^^^^^^^^        ^^^
+                       |            |                |
+                 chapter no.   chapter title       page number
+
+See `org-odt-link--infer-description' (specifically
+`org-odt--xref-target') and `org-odt-format-label' for
+implementation details."
+  :type
+  `(alist :options
+	  ((:TARGET:
+	    (plist :options
+		   ((:xref-format
+		     (choice
+		      (const :tag "Simple page number" ("page " t))
+		      (const :tag "TexInfo style"
+			     ("Section " chapter " [" text "]," " page " t))
+		      (repeat :tag "Format string"
+			      (choice
+			       (const :tag "Chapter" chapter)
+			       (const :tag "Direction" direction)
+			       (const :tag "Number" number)
+			       (const :tag "Number (All superior)" number-all-superior)
+			       (const :tag "Number (No superior)" number-no-superior)
+			       (const :tag "Page" page)
+			       (const :tag "Page style" t)
+			       (const :tag "Text" text)
+			       (string :tag "String" ""))))))))
+	   ,@(mapcar
+	      (lambda (dc)
+		`(,dc
+		  (plist :options
+			 ((:caption-position
+			   (choice (const :tag "Below" below)
+				   (const :tag "Above" above)))
+			  (:caption-format
+			   (repeat (choice
+				    (const :tag "Category" category)
+				    (const :tag "Counter" counter)
+				    (const :tag "Caption" caption)
+				    (string :tag "String" ""))))
+			  (:xref-format
+			   (repeat :tag "Format string"
+				   (choice
+				    (const :tag "Caption" caption)
+				    (const :tag "Category & Value" category-and-value)
+				    (const :tag "Chapter" chapter)
+				    (const :tag "Direction" direction)
+				    (const :tag "Page" page)
+				    (const :tag "Text" text)
+				    (const :tag "Value" value)
+				    (string :tag "String" "")))))
+			 )))
+	      '(:TABLE: :FIGURE: :MATH-FORMULA: :DVIPNG-IMAGE: :LISTING:))))
+  :group 'org-export-odt
+  :version "24.4")
 
 ;;;; Lists
 
@@ -1092,12 +1203,34 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Target
 
-(defun org-odt--target (text id)
-  (if (not id) text
-    (concat
-     (format "\n<text:bookmark-start text:name=\"OrgXref.%s\"/>" id)
-     (format "\n<text:bookmark text:name=\"%s\"/>" id) text
-     (format "\n<text:bookmark-end text:name=\"OrgXref.%s\"/>" id))))
+(defun org-odt--target (text label)
+  (cond
+   ;; Empty label.
+   ((not (and label (org-string-nw-p label))) text)
+   ;; Bookmark pointing to a range of text.
+   ((and text (not (string= text "")))
+    (concat (format "\n<text:bookmark-start text:name=\"%s\"/>" label) text
+	    (format "\n<text:bookmark-end text:name=\"%s\"/>" label)))
+   ;; Bookmark at a location.
+   (t (format "\n<text:bookmark text:name=\"%s\"/>" label))))
+
+(defun org-odt--xref-target (category text label)
+  (let* ((xref-format (plist-get
+		       (assoc-default category
+				      org-odt-caption-and-xref-settings)
+		       :xref-format)))
+    (when xref-format
+      (mapconcat
+       (lambda (%)
+	 (cond
+	  ((stringp %) %)
+	  ((eq t %)
+	   (format "<text:bookmark-ref text:ref-name=\"%s\">%s</text:bookmark-ref>"
+		   label text))
+	  ((symbolp %)
+	   (format "<text:bookmark-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
+		   % label text))))
+       xref-format ""))))
 
 ;;;; Textbox
 
@@ -2188,7 +2321,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	   (number-to-string ordinal))))
     tag))
 
-(defun org-odt-format-label (element info op)
+(defun org-odt-format-label (element info op &optional format-prop)
   "Return a label for ELEMENT.
 
 ELEMENT is a `link', `table', `src-block' or `paragraph' type
@@ -2254,23 +2387,23 @@ SHORT-CAPTION are strings."
     (when (or label caption)
       (let* ((default-category
 	       (case (org-element-type element)
-		 (table "__Table__")
-		 (src-block "__Listing__")
+		 (table :TABLE:)
+		 (src-block :LISTING:)
 		 ((link paragraph)
 		  (cond
 		   ((org-odt--enumerable-latex-image-p element info)
-		    "__DvipngImage__")
+		    :DVIPNG-IMAGE:)
 		   ((org-odt--enumerable-image-p element info)
-		    "__Figure__")
+		    :FIGURE:)
 		   ((org-odt--enumerable-formula-p element info)
-		    "__MathFormula__")
+		    :MATH-FORMULA:)
 		   (t (error "Don't know how to format label for link: %S"
 			     element))))
 		 (t (error "Don't know how to format label for element type: %s"
 			   (org-element-type element)))))
 	     seqno)
 	(assert default-category)
-	(destructuring-bind (counter label-style category predicate)
+	(destructuring-bind (counter category predicate)
 	    (assoc-default default-category org-odt-category-map-alist)
 	  ;; Compute sequence number of the element.
 	  (setq seqno (org-odt--enumerate element info predicate))
@@ -2287,30 +2420,50 @@ SHORT-CAPTION are strings."
 		;; Sneak in a bookmark.  The bookmark is used when the
 		;; labeled element is referenced with a link that
 		;; provides its own description.
-		(format "\n<text:bookmark text:name=\"%s\"/>" label)
+		(org-odt--target "" label)
 		;; Label definition: Typically formatted as below:
 		;;     CATEGORY SEQ-NO: LONG CAPTION
 		;; with translation for correct punctuation.
-		(format-spec
-		 (org-export-translate
-		  (cadr (assoc-string label-style org-odt-label-styles t))
-		  :utf-8 info)
-		 `((?e . ,category)
-		   (?n . ,(format
-			   "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-			   label counter counter seqno))
-		   (?c . ,(or caption "")))))
+		(let* ((caption-format
+			(plist-get
+			 (assoc-default default-category
+					org-odt-caption-and-xref-settings)
+			 (or format-prop :caption-format))))
+		  (mapconcat (lambda (%)
+			       (case %
+				 (category
+				  (org-export-translate category :utf-8 info))
+				 (counter
+				  (format
+				   "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
+				   label counter counter seqno))
+				 (caption (or caption ""))
+				 (otherwise %)))
+			     caption-format "")))
 	       short-caption))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (assert label)
 	     (setq label (org-export-solidify-link-text label))
-	     (let* ((fmt (cddr (assoc-string label-style org-odt-label-styles t)))
-		    (fmt1 (car fmt))
-		    (fmt2 (cadr fmt)))
-	       (format "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
-		       fmt1 label (format-spec fmt2 `((?e . ,category)
-						      (?n . ,seqno))))))
+	     (let* ((xref-format
+		     (plist-get
+		      (assoc-default default-category
+				     org-odt-caption-and-xref-settings)
+		      (or format-prop :xref-format)))
+		    (customized-p
+		     (equal (assoc-default default-category
+					   org-odt-caption-and-xref-settings)
+			    (assoc-default default-category
+					   (custom-reevaluate-setting
+					    'org-odt-caption-and-xref-settings))))
+		    (value (if customized-p "???" seqno)))
+	       (mapconcat (lambda (%)
+			    (cond
+			     ((stringp %) %)
+			     ((symbolp %)
+			      (format "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
+				      % label value))))
+			  xref-format "")))
 	    (t (error "Unknown %S on label" op))))))))
 
 
@@ -2508,10 +2661,7 @@ used as a communication channel."
 			"CaptionedDisplayFormula" href width height
 			captions nil title desc))
 	     (label
-	      (let* ((org-odt-category-map-alist
-		      '(("__MathFormula__" "Text" "math-label" "Equation"
-			 org-odt--enumerable-formula-p))))
-		(car (org-odt-format-label element info 'definition)))))
+	      (car (org-odt-format-label element info 'definition :label-format))))
 	(concat equation "<text:tab/>" label))))))
 
 (defun org-odt--copy-formula-file (src-file)
@@ -2751,8 +2901,23 @@ Return nil, otherwise."
 						destination info) "-")))
 		  (target
 		   (org-element-property :value destination))
-		  (t (error "FIXME: Resolve %S" destination)))))
+		  (t (org-element-property :name destination)))))
     (or
+     ;; Case 1: Does the user want the cross-references to be typeset
+     ;; in a custom manner (say for example, generate page numbers
+     ;; etc.)?  If yes, emit the required XML tags but with "???" as
+     ;; the field value.  This (incorrect) field value can be
+     ;; corrected by using an external Office application.  For
+     ;; example, in case of LibreOffice, the field values can be
+     ;; synchronized by running Tools->Update->Fields/Update All on
+     ;; the exported document.
+     (org-odt--xref-target :TARGET: "???"
+			   (org-export-solidify-link-text label))
+     ;; Case 2: Is target an item of a numbered list?  If yes, use the
+     ;; item's number as description.  The target need not necessarily
+     ;; be part of a proper numbered list, it can also be part of a
+     ;; low-level headline that is deemed as a list for purposes of
+     ;; export.
      (let* ( ;; Locate top-level list.
 	    (top-level-list
 	     (loop for x on data
@@ -2783,8 +2948,8 @@ Return nil, otherwise."
        ;; Combine item numbers from both the listified headlines and
        ;; regular list items.
 
-       ;; Case 1: Check if all the parents of list item are numbered.
-       ;; If yes, link to the item proper.
+       ;; Case 2.1: Check if all the parents of list item are
+       ;; numbered.  If yes, link to the item proper.
        (let ((item-numbers (append listified-headline-nos item-numbers)))
 	 (when (and item-numbers (not (memq nil item-numbers)))
 	   (format "<text:bookmark-ref text:reference-format=\"number-all-superior\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
@@ -2792,8 +2957,9 @@ Return nil, otherwise."
 		   (mapconcat (lambda (n) (if (not n) " "
 					    (concat (number-to-string n) ".")))
 			      item-numbers "")))))
-     ;; Case 2: Locate a regular and numbered headline in the
-     ;; hierarchy.  Display its section number.
+     ;; Case 3: Is the target part of a regular and numbered headline
+     ;; in the hierarchy?  If yes, use the chapter/section number as
+     ;; description.
      (let ((headline (loop for el in (cons destination genealogy)
 			   when (and (eq (org-element-type el) 'headline)
 				     (not (org-export-low-level-p el info))
@@ -2801,23 +2967,30 @@ Return nil, otherwise."
 			   return el)))
        ;; We found one.
        (when headline
-	 (format "<text:bookmark-ref text:reference-format=\"chapter\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
+	 (format "<text:bookmark-ref text:reference-format=\"chapter\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
 		 (org-export-solidify-link-text label)
 		 (mapconcat 'number-to-string (org-export-get-headline-number
 					       headline info) "."))))
-     ;; Case 4: Locate a regular headline in the hierarchy.  Display
-     ;; its title.
+     ;; Case 4: Is the target part of any headline.  If yes, use the
+     ;; chapter/section's title description.
      (let ((headline (loop for el in (cons destination genealogy)
 			   when (and (eq (org-element-type el) 'headline)
 				     (not (org-export-low-level-p el info)))
 			   return el)))
        ;; We found one.
        (when headline
-	 (format "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
+	 (format "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
 		 (org-export-solidify-link-text label)
 		 (let ((title (org-element-property :title headline)))
 		   (org-export-data title info)))))
-     (error "FIXME?"))))
+     ;; Case 5: The target is part of a document that is outside of
+     ;; any headline.  Use "???" as description.  (We can use the
+     ;; label text itself as the description.  But, philosophically
+     ;; speaking, this is in-appropriate.  Targets are just labels and
+     ;; must not generate any content text.  So, it makes sense to
+     ;; insist that the user provide an explicit description.)
+     (format "<text:bookmark-ref text:reference-format=\"number-all-superior\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
+	     (org-export-solidify-link-text label) "???"))))
 
 (defun org-odt-link (link desc info)
   "Transcode a LINK object from Org to ODT.
@@ -2854,11 +3027,16 @@ INFO is a plist holding contextual information.  See
      ((string= type "radio")
       (let ((destination (org-export-resolve-radio-link link info)))
 	(when destination
-	  (format
-	   "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
-	   (org-export-solidify-link-text
-	    (org-element-property :value destination))
-	   desc))))
+	  (let ((desc (org-export-data (org-element-contents destination) info))
+		(href (org-export-solidify-link-text
+		       (org-element-property :value destination))))
+	    (or
+	     ;; Case 1: Honour user's customization.
+	     (org-odt--xref-target :TARGET: "???" href)
+	     ;; Case 2: Use the text of the radio target.
+	     (format
+	      "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
+	      href desc))))))
      ;; Links pointing to a headline: Find destination and build
      ;; appropriate referencing command.
      ((member type '("custom-id" "fuzzy" "id"))
@@ -2868,11 +3046,11 @@ INFO is a plist holding contextual information.  See
 	(case (org-element-type destination)
 	  ;; Case 1: Fuzzy link points nowhere.
 	  ('nil
-	   (format "<text:span text:style-name=\"%s\">%s</text:span>"
-		   "Emphasis"
-		   (or desc
-		       (org-export-data (org-element-property :raw-link link)
-					info))))
+	   (user-error
+	    "Link \"%s\" at char position %d-%d points nowhere."
+	    (org-element-property :raw-link link)
+	    (org-element-property :begin link)
+	    (org-element-property :end link)))
 	  ;; Case 2: Fuzzy link points to a headline.
 	  (headline
 	   ;; If there's a description, create a hyperlink.
@@ -2922,7 +3100,7 @@ INFO is a plist holding contextual information.  See
 	(format
 	 (org-export-get-coderef-format path desc)
 	 (format
-	  "<text:bookmark-ref text:reference-format=\"number\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
+	  "<text:bookmark-ref text:reference-format=\"number\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
 	  href line-no))))
      ;; Link type is handled by a special function.
      ((functionp (setq protocol (nth 2 (assoc type org-link-protocols))))
