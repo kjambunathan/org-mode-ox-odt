@@ -1919,18 +1919,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	 (let* ((raw (org-export-get-footnote-definition
 		      footnote-reference info))
 		(def
-		 (let ((def (org-trim
-			     (org-export-data-with-backend
-			      raw
-			      (org-export-create-backend
-			       :parent 'odt
-			       :transcoders
-			       '((paragraph . (lambda (p c i)
-						(org-odt--format-paragraph
-						 p c "Footnote"
-						 "OrgFootnoteCenter"
-						 "OrgFootnoteQuotations")))))
-			      info))))
+		 (let ((def (org-trim (org-export-data raw info))))
 		   (if (eq (org-element-type raw) 'org-data) def
 		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			     "Footnote" def)))))
@@ -3173,57 +3162,92 @@ information."
 ;;    * B23
 ;; 3. N3
 
-(defun org-odt--format-paragraph (paragraph contents default center quote)
-  "Format paragraph according to given styles.
-PARAGRAPH is a paragraph type element.  CONTENTS is the
-transcoded contents of that paragraph, as a string.  DEFAULT,
-CENTER and QUOTE are, respectively, style to use when paragraph
-belongs to no special environment, a center block, or a quote
-block."
+(defun org-odt-paragraph (paragraph contents info)
+  "Transcode a PARAGRAPH element from Org to ODT.
+CONTENTS is the contents of the paragraph, as a string.  INFO is
+the plist used as a communication channel."
   (let* ((parent (org-export-get-parent paragraph))
 	 (parent-type (org-element-type parent))
-	 (style (or
-		 ;; Use the style that is explicitly specified via
-		 ;; #+ATTR_ODT: :style "Text_20_body_20_bold".
-		 default
-		 ;; Paragraph doesn't specify a style of it's own.
-		 ;; Infer it from the surrounding context.
-		 (case parent-type
-		   ;; Paragraph is within a QUOTE-BLOCK.  Use a style
-		   ;; specific to that block.
-		   (quote-block quote)
-		   ;; Paragraph is within a CENTER-BLOCK.  Use a style
-		   ;; specific to that block.
-		   (center-block center)
-		   ;; Paragraph is with an item.  Use the style
-		   ;; specified with `:p-style' attribute of the
-		   ;; nearest ancestor plain-list or item.
+	 (genealogy (cons paragraph (org-export-get-genealogy paragraph)))
+	 (data (reverse genealogy))
+	 (style
+	  ;; Traverse the parse-tree from root element to this
+	  ;; paragraph.  Use the following rule at each element to
+	  ;; calculate the paragraph style applicable at that element.
 
-		   ;; In other words, the `:p-style' specified in a
-		   ;; plain-list or an item gets inherited all the way
-		   ;; down.  A deeper plain-list or an item can
-		   ;; override the value it inherits from it's parents
-		   ;; with it's own `:p-style' attribute which then
-		   ;; gets handed down below.
+	  ;; Case 1: If an element specifies an EXPLICIT STYLE of it's
+	  ;; own via the #+ATTR_ODT line, use it.  PARAGRAPH and
+	  ;; SPECIAL-BLOCK use the `:style' attribute for this
+	  ;; purpose, while PLAIN-LIST uses `:p-style' attribute.
 
-		   ;; NOTE: ITEMs cannot have #+ATTR_ODT attached to
-		   ;; them.  So, contrary to the implications in the
-		   ;; previous paragraphs, there is no such things as
-		   ;; paragraph styles to ITEMs. See
-		   ;;
-		   ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
-		   ;;
-		   (item
-		    (let* ((genealogy (org-export-get-genealogy paragraph))
-			   (data (reverse genealogy))
-			   (p-styles (loop for x on data
-					   when (memq (org-element-type (car x))
-						      '(item plain-list)) ; ITEM is an eye-candy
-					   collect (org-odt--read-attribute (car x) :p-style))))
-		      (car (last (delq nil p-styles))))))
-		 ;; Paragraph is not so interesting.  Use the default
-		 ;; style.
-		 "Text_20_body")))
+	  ;; Case 2: If an element does not have an explicit style but
+	  ;; has an IMPLICIT, PRE-CONFIGURE STYLE of it's own, use it.
+	  ;; For example, paragraphs within a FOOTNOTE-DEFINITON,
+	  ;; CENTER-BLOCK or QUOTE-BLOCK get pre-configured styles
+	  ;; like "Footnote", "OrgCenter" or "Quotations" resply.
+
+	  ;; Case 3: If an element specifies neither an IMPLICIT style
+	  ;; or an EXPLICIT style, use the style from it's parent.
+	  ;; For example, a paragraph within a PLAIN-LIST (that
+	  ;; doesn't specify a `:p-style' of it's own) inherit it's
+	  ;; style from the it's parent.
+
+	  ;; Case 4: If an element has no parent (i.e., root node),
+	  ;; use the fallback style "Text_20_body".
+	  (loop for el in data
+		;; Fallback style.
+		with style = "Text_20_body"
+		with footnote-definition-p = nil do
+		(setq style
+		      (or
+		       ;; Case 1: Does this node IMPLICITLY or
+		       ;; EXPLICITLY specify a style?  Use it.
+		       (case (org-element-type el)
+			 (center-block
+			  (or (org-odt--read-attribute el :style)
+			      (if footnote-definition-p "OrgFootnoteCenter"
+				"OrgCenter")))
+			 (footnote-definition
+			  (setq footnote-definition-p t)
+			  (or (org-odt--read-attribute el :style) "Footnote"))
+			 (paragraph
+			  (or
+			   ;; Case 1: Some paragraphs are "created"
+			   ;; not by the user but by the
+			   ;; pre-processing stage.  They use the
+			   ;; `:style' property of the element rather
+			   ;; than the style property from the
+			   ;; attribute line.  See
+			   ;; `org-odt--translate-description-lists/latex',
+			   ;; `org-odt--translate-description-lists/html'
+			   ;; `org-odt--translate-latex-fragments'.
+			   (org-element-property :style el)
+			   (org-odt--read-attribute el :style)))
+			 (plain-list
+			  ;; NOTE: ITEMs cannot have #+ATTR_ODT
+			  ;; attached to them.  See
+			  ;;
+			  ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
+			  (org-odt--read-attribute el :p-style))
+			 (quote-block
+			  (if footnote-definition-p "OrgFootnoteQuotations"
+			    "Quotations"))
+			 (special-block
+			  (let ((type (downcase (org-element-property :type el))))
+			    (cond
+			     ;; Case 1: Handle SPECIAL-BLOCKs that are
+			     ;; well-known (and treated specially) by
+			     ;; the ODT exporter.
+			     ((string= type "textbox")
+			      (org-odt--read-attribute el :p-style))
+			     ;; Case 2: Handle user-specified
+			     ;; SPECIAL-BLOCKs not known to the
+			     ;; exporter.
+			     (t (org-odt--read-attribute el :style))))))
+		       ;; Case 2: Element doesn't specify a style of
+		       ;; it's own.  Use the parent style.
+		       style))
+		finally return style)))
     ;; If this paragraph is a leading paragraph in an item and the
     ;; item has a checkbox, splice the checkbox and paragraph contents
     ;; together.
@@ -3231,17 +3255,6 @@ block."
 	       (eq paragraph (car (org-element-contents parent))))
       (setq contents (concat (org-odt--checkbox parent) contents)))
     (format "\n<text:p text:style-name=\"%s\">%s</text:p>" style contents)))
-
-(defun org-odt-paragraph (paragraph contents info)
-  "Transcode a PARAGRAPH element from Org to ODT.
-CONTENTS is the contents of the paragraph, as a string.  INFO is
-the plist used as a communication channel."
-  (org-odt--format-paragraph
-   paragraph contents
-   (or (org-element-property :style paragraph)
-       (org-odt--read-attribute paragraph :style))
-   "OrgCenter"
-   "Quotations"))
 
 
 ;;;; Plain List
