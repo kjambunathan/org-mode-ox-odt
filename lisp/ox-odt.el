@@ -546,7 +546,8 @@ from `org-odt-convert-processes'."
   '(("Text"
      ("odt" "ott" "doc" "rtf" "docx")
      (("pdf" "pdf") ("odt" "odt") ("rtf" "rtf") ("ott" "ott")
-      ("doc" "doc" ":\"MS Word 97\"") ("docx" "docx") ("html" "html")))
+      ("doc" "doc" ":\"MS Word 97\"") ("docx" "docx") ("html" "html")
+      ("txt" "txt" ":\"Text (encoded)\"")))
     ("Web"
      ("html")
      (("pdf" "pdf") ("odt" "odt") ("html" "html")))
@@ -791,14 +792,12 @@ numbering format, its position etc.) or to generate page numbers
 as part of cross-references.  For a quick overview of this
 variable, see examples towards the end of this docstring.
 
-If you are customizing this option, you will see that the
-exported document contains liberal amounts of \"???\" sprinkled
-all over.  The presence of these question marks signifies that
-the various \"field values\" (chapter number, page number etc)
-are out-of-sync with the document state.  So, you MUST use an
-external application to update your document.  If you are using
-LibreOffice, you can use Tools -> Update -> Fields (or Update
-All).
+If you customize this option, the following text—\"[PLS. UPDATE
+FIELDS]\"—is used as a placeholder for unresolvable
+cross-reference fields (like page number etc).  Use an external
+application to synchronize these fields to their right values.
+When using LibreOffice, use Tools -> Update-> Fields / Update
+All.
 
 This variable is an alist of pairs (RULE-TAG . RULE-PLIST).
 RULE-TAG is a symbol.  RULE-PLIST is a property list, the allowed
@@ -2440,13 +2439,14 @@ SHORT-CAPTION are strings."
 		      (assoc-default default-category
 				     org-odt-caption-and-xref-settings)
 		      (or format-prop :xref-format)))
-		    (customized-p
-		     (equal (assoc-default default-category
-					   org-odt-caption-and-xref-settings)
-			    (assoc-default default-category
-					   (custom-reevaluate-setting
-					    'org-odt-caption-and-xref-settings))))
-		    (value (if customized-p "???" seqno)))
+		    (standard-value-p
+		     (let ((standard-value
+			    (eval (car (get 'org-odt-caption-and-xref-settings
+					    'standard-value)))))
+		       (equal (assoc-default default-category
+					     org-odt-caption-and-xref-settings)
+			      (assoc-default default-category standard-value))))
+		    (value (if standard-value-p seqno "[PLS. UPDATE FIELDS]")))
 	       (mapconcat (lambda (%)
 			    (cond
 			     ((stringp %) %)
@@ -2901,7 +2901,7 @@ Return nil, otherwise."
      ;; example, in case of LibreOffice, the field values can be
      ;; synchronized by running Tools->Update->Fields/Update All on
      ;; the exported document.
-     (org-odt--xref-target :TARGET: "???"
+     (org-odt--xref-target :TARGET: "[PLS. UPDATE FIELDS]"
 			   (org-export-solidify-link-text label))
      ;; Case 2: Is target an item of a numbered list?  If yes, use the
      ;; item's number as description.  The target need not necessarily
@@ -2980,7 +2980,7 @@ Return nil, otherwise."
      ;; must not generate any content text.  So, it makes sense to
      ;; insist that the user provide an explicit description.)
      (format "<text:bookmark-ref text:reference-format=\"number-all-superior\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
-	     (org-export-solidify-link-text label) "???"))))
+	     (org-export-solidify-link-text label) "[PLS. UPDATE FIELDS]"))))
 
 (defun org-odt-link (link desc info)
   "Transcode a LINK object from Org to ODT.
@@ -3022,7 +3022,7 @@ INFO is a plist holding contextual information.  See
 		       (org-element-property :value destination))))
 	    (or
 	     ;; Case 1: Honour user's customization.
-	     (org-odt--xref-target :TARGET: "???" href)
+	     (org-odt--xref-target :TARGET: "[PLS. UPDATE FIELDS]" href)
 	     ;; Case 2: Use the text of the radio target.
 	     (format
 	      "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
