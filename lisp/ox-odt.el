@@ -2278,7 +2278,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   (let* ((--numbered-parent-headline-at-<=-n
 	  (function
 	   (lambda (element n info)
-	     (loop for x in (org-export-get-genealogy element)
+	     (loop for x in (org-element-lineage element)
 		   thereis (and (eq (org-element-type x) 'headline)
 				(<= (org-export-get-relative-level x info) n)
 				(org-export-numbered-headline-p x info)
@@ -2882,7 +2882,7 @@ Return nil, otherwise."
 
   ;; NOTE: Counterpart of `org-export-get-ordinal'.
   ;; FIXME: Handle footnote-definition footnote-reference?
-  (let* ((genealogy (org-export-get-genealogy destination))
+  (let* ((genealogy (org-element-lineage destination))
 	 (data (reverse genealogy))
 	 (label (case (org-element-type destination)
 		  (headline
@@ -3168,7 +3168,7 @@ CONTENTS is the contents of the paragraph, as a string.  INFO is
 the plist used as a communication channel."
   (let* ((parent (org-export-get-parent paragraph))
 	 (parent-type (org-element-type parent))
-	 (genealogy (cons paragraph (org-export-get-genealogy paragraph)))
+	 (genealogy (cons paragraph (org-element-lineage paragraph)))
 	 (data (reverse genealogy))
 	 (style
 	  ;; Traverse the parse-tree from root element to this
@@ -3901,7 +3901,7 @@ pertaining to indentation here."
 	 (--walk-list-genealogy-and-collect-tags
 	  (function
 	   (lambda (table info)
-	     (let* ((genealogy (org-export-get-genealogy table))
+	     (let* ((genealogy (org-element-lineage table))
 		    (list-genealogy
 		     (when (eq (org-element-type (car genealogy)) 'item)
 		       (loop for el in genealogy
