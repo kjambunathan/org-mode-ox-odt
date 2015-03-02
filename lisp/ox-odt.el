@@ -649,7 +649,8 @@ The default value simply returns the value of CONTENTS."
 
 ;;;; Headline
 
-(defcustom org-odt-format-headline-function 'ignore
+(defcustom org-odt-format-headline-function
+  'org-odt-format-headline-default-function
   "Function to format headline text.
 
 This function will be called with 5 arguments:
@@ -668,7 +669,8 @@ The function result will be used as headline text."
 
 ;;;; Inlinetasks
 
-(defcustom org-odt-format-inlinetask-function 'ignore
+(defcustom org-odt-format-inlinetask-function
+  'org-odt-format-inlinetask-default-function
   "Function called to format an inlinetask in ODT code.
 
 The function must accept six parameters:
@@ -1277,7 +1279,7 @@ See `org-odt--build-date-styles' for implementation details."
 
 (defun* org-odt-format-toc-headline
     (todo todo-type priority text tags
-	  &key level section-number headline-label &allow-other-keys)
+	  &key level section-number headline-label)
   (setq text
 	(concat
 	 ;; Section number.
@@ -1919,9 +1921,10 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
 ;;;; Headline
 
-(defun* org-odt-format-headline
-    (todo todo-type priority text tags
-	  &key level section-number headline-label &allow-other-keys)
+(defun org-odt-format-headline-default-function
+    (todo todo-type priority text tags)
+  "Default format function for a headline.
+See `org-odt-format-headline-function' for details."
   (concat
    ;; Todo.
    (when todo
@@ -1947,8 +1950,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			    "OrgTag" tag)) tags " : "))))))
 
 (defun org-odt-format-headline--wrap (headline backend info
-					       &optional format-function
-					       &rest extra-keys)
+					       &optional format-function)
   "Transcode a HEADLINE element using BACKEND.
 INFO is a plist holding contextual information."
   (setq backend (or backend (plist-get info :back-end)))
@@ -1970,19 +1972,17 @@ INFO is a plist holding contextual information."
 		    (org-export-get-tags headline info)))
 	 (headline-label (concat "sec-" (mapconcat 'number-to-string
 						   headline-number "-")))
-	 (format-function (cond
-			   ((functionp format-function) format-function)
-			   ((not (eq (plist-get info :odt-format-headline-function) 'ignore))
-			    (function*
-			     (lambda (todo todo-type priority text tags
-					   &allow-other-keys)
-			       (funcall (plist-get info :odt-format-headline-function)
-					todo todo-type priority text tags))))
-			   (t 'org-odt-format-headline))))
-    (apply format-function
-	   todo todo-type  priority text tags
-	   :headline-label headline-label :level level
-	   :section-number section-number extra-keys)))
+	 (format-function
+	  (if (functionp format-function) format-function
+	    (function*
+	     (lambda (todo todo-type priority text tags
+			   &key level section-number headline-label)
+	       (funcall (plist-get info :odt-format-headline-function)
+			todo todo-type priority text tags))))))
+    (funcall format-function
+	     todo todo-type  priority text tags
+	     :level level :section-number section-number
+	     :headline-label headline-label)))
 
 (defun org-odt-headline (headline contents info)
   "Transcode a HEADLINE element from Org to ODT.
@@ -2097,29 +2097,33 @@ contextual information."
   "Transcode an INLINETASK element from Org to ODT.
 CONTENTS holds the contents of the block.  INFO is a plist
 holding contextual information."
-  (cond
-   ;; If `org-odt-format-inlinetask-function' is not 'ignore, call it
-   ;; with appropriate arguments.
-   ((not (eq (plist-get info :odt-format-inlinetask-function) 'ignore))
-    (let ((format-function
-	   (function*
-	    (lambda (todo todo-type priority text tags
-		     &key contents &allow-other-keys)
-	      (funcall (plist-get info :odt-format-inlinetask-function)
-		       todo todo-type priority text tags contents)))))
-      (org-odt-format-headline--wrap
-       inlinetask nil info format-function :contents contents)))
-   ;; Otherwise, use a default template.
-   (t
-    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	    "Text_20_body"
-	    (org-odt--textbox
-	     (concat
-	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		      "OrgInlineTaskHeading"
-		      (org-odt-format-headline--wrap inlinetask nil info))
-	      contents)
-	     nil nil "OrgInlineTaskFrame" " style:rel-width=\"100%\"")))))
+  (let* ((todo (and (plist-get info :with-todo-keywords)
+		    (let ((todo (org-element-property :todo-keyword inlinetask)))
+		      (and todo (org-export-data todo info)))))
+	 (todo-type (and todo (org-element-property :todo-type inlinetask)))
+	 (priority (and (plist-get info :with-priority)
+			(org-element-property :priority inlinetask)))
+	 (name (org-export-data (org-element-property :title inlinetask) info))
+	 (tags (and (plist-get info :with-tags)
+		    (org-export-get-tags inlinetask info))))
+    (funcall (plist-get info :odt-format-inlinetask-function)
+	     todo todo-type priority name tags contents)))
+
+(defun org-odt-format-inlinetask-default-function
+    (todo todo-type  priority name tags contents)
+  "Transcode an INLINETASK element from Org to ODT.
+CONTENTS holds the contents of the block.  INFO is a plist
+holding contextual information."
+  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+	  "Text_20_body"
+	  (org-odt--textbox
+	   (concat
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgInlineTaskHeading"
+		    (org-odt-format-headline-default-function
+		     todo todo-type  priority name tags))
+	    contents)
+	   nil nil "OrgInlineTaskFrame" " style:rel-width=\"100%\"")))
 
 ;;;; Italic
 
