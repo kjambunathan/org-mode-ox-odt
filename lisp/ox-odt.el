@@ -3010,7 +3010,7 @@ INFO is a plist holding contextual information.  See
      ;; link's description.
      ((string= type "radio")
       (let ((destination (org-export-resolve-radio-link link info)))
-	(when destination
+	(if (not destination) desc
 	  (let ((desc (org-export-data (org-element-contents destination) info))
 		(href (org-export-solidify-link-text
 		       (org-element-property :value destination))))
