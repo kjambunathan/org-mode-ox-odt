@@ -1536,7 +1536,7 @@ original parsed data.  INFO is a plist holding export options."
 	 ;; Non-availability of styles.xml is not a critical
 	 ;; error. For now, throw an error.
 	 (styles-file (or styles-file
-			  org-odt-styles-file
+			  (plist-get info :odt-styles-file)
 			  (expand-file-name "OrgOdtStyles.xml"
 					    org-odt-styles-dir)
 			  (error "org-odt: Missing styles file?"))))
@@ -1561,7 +1561,7 @@ original parsed data.  INFO is a plist holding export options."
 	  (org-odt--zip-extract styles-file "styles.xml" org-odt-zip-dir)))))
      (t
       (error (format "Invalid specification of styles.xml file: %S"
-		     org-odt-styles-file))))
+		     (plist-get info :odt-styles-file)))))
 
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
@@ -1622,7 +1622,7 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (or org-odt-content-template-file
+       (or (plist-get info :odt-content-template-file)
 	   (expand-file-name "OrgOdtContentTemplate.xml"
 			     org-odt-styles-dir)))
       ;; Write automatic styles.
@@ -1637,7 +1637,7 @@ original parsed data.  INFO is a plist holding export options."
 				    (and value (ignore-errors (read value)))) 96))
 	      (insert (format org-odt-table-style-format style-name props))))
       ;; - Dump date-styles.
-      (when org-odt-use-date-fields
+      (when (plist-get info :odt-use-date-fields)
 	(insert (org-odt--build-date-styles (car custom-time-fmts)
 					      "OrgDate1")
 		(org-odt--build-date-styles (cdr custom-time-fmts)
@@ -1656,7 +1656,7 @@ original parsed data.  INFO is a plist holding export options."
 	 (lambda (x)
 	   (format
 	    "<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-	    org-odt-display-outline-level (nth 1 x)))
+	    (plist-get info :odt-display-outline-level) (nth 1 x)))
 	 org-odt-category-map-alist "\n")))
       ;; Position the cursor to document body.
       (goto-char (point-min))
@@ -1712,7 +1712,7 @@ original parsed data.  INFO is a plist holding export options."
 	      (concat
 	       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		       "OrgSubtitle"
-		       (if (and org-odt-use-date-fields timestamp)
+		       (if (and (plist-get info :odt-use-date-fields) timestamp)
 			   (org-odt--format-timestamp (car date))
 			 (org-export-data (plist-get info :date) info)))
 	       ;; Separator
@@ -1801,7 +1801,7 @@ channel."
 CONTENTS holds the contents of the block.  INFO is a plist
 holding contextual information."
   (let* ((name (org-element-property :drawer-name drawer))
-	 (output (funcall org-odt-format-drawer-function
+	 (output (funcall (plist-get info :odt-format-drawer-function)
 			  name contents)))
     output))
 
@@ -1855,7 +1855,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 (defun org-odt-fixed-width (fixed-width contents info)
   "Transcode a FIXED-WIDTH element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
-  (org-odt-do-format-code (org-element-property :value fixed-width)))
+  (org-odt-do-format-code (org-element-property :value fixed-width) info))
 
 
 ;;;; Footnote Definition
@@ -1972,11 +1972,11 @@ INFO is a plist holding contextual information."
 						   headline-number "-")))
 	 (format-function (cond
 			   ((functionp format-function) format-function)
-			   ((not (eq org-odt-format-headline-function 'ignore))
+			   ((not (eq (plist-get info :odt-format-headline-function) 'ignore))
 			    (function*
 			     (lambda (todo todo-type priority text tags
 					   &allow-other-keys)
-			       (funcall org-odt-format-headline-function
+			       (funcall (plist-get info :odt-format-headline-function)
 					todo todo-type priority text tags))))
 			   (t 'org-odt-format-headline))))
     (apply format-function
@@ -2100,12 +2100,12 @@ holding contextual information."
   (cond
    ;; If `org-odt-format-inlinetask-function' is not 'ignore, call it
    ;; with appropriate arguments.
-   ((not (eq org-odt-format-inlinetask-function 'ignore))
+   ((not (eq (plist-get info :odt-format-inlinetask-function) 'ignore))
     (let ((format-function
 	   (function*
 	    (lambda (todo todo-type priority text tags
 		     &key contents &allow-other-keys)
-	      (funcall org-odt-format-inlinetask-function
+	      (funcall (plist-get info :odt-format-inlinetask-function)
 		       todo todo-type priority text tags contents)))))
       (org-odt-format-headline--wrap
        inlinetask nil info format-function :contents contents)))
@@ -2233,7 +2233,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (let* ((latex-frag (org-remove-indentation
 		      (org-element-property :value latex-environment))))
-    (org-odt-do-format-code latex-frag)))
+    (org-odt-do-format-code latex-frag info)))
 
 
 ;;;; Latex Fragment
@@ -2288,7 +2288,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			counter))
 		 info 'first-match)))))
 	 (scope (funcall --numbered-parent-headline-at-<=-n
-			 element (or n org-odt-display-outline-level) info))
+			 element (or n (plist-get info :odt-display-outline-level)) info))
 	 (ordinal (funcall --enumerate element scope info predicate))
 	 (tag
 	  (concat
@@ -2470,8 +2470,8 @@ SHORT-CAPTION are strings."
     (org-odt-create-manifest-file-entry media-type target-file)
     target-file))
 
-(defun org-odt--image-size (file &optional user-width
-				   user-height scale dpi embed-as)
+(defun org-odt--image-size (file info &optional user-width
+				 user-height scale dpi embed-as)
   (let* ((--pixels-to-cms
 	  (function (lambda (pixels dpi)
 		      (let ((cms-per-inch 2.54)
@@ -2483,7 +2483,7 @@ SHORT-CAPTION are strings."
 	     (and size-in-pixels
 		  (cons (funcall --pixels-to-cms (car size-in-pixels) dpi)
 			(funcall --pixels-to-cms (cdr size-in-pixels) dpi))))))
-	 (dpi (or dpi org-odt-pixels-per-inch))
+	 (dpi (or dpi (plist-get info :odt-pixels-per-inch)))
 	 (anchor-type (or embed-as "paragraph"))
 	 (user-width (and (not scale) user-width))
 	 (user-height (and (not scale) user-height))
@@ -2570,7 +2570,7 @@ used as a communication channel."
 	 ;; Handle `:width', `:height' and `:scale' properties.  Read
 	 ;; them as numbers since we need them for computations.
 	 (size (org-odt--image-size
-		src-expanded
+		src-expanded info
 		(org-odt--read-attribute attr-from :width)
 		(org-odt--read-attribute attr-from :height)
 		(org-odt--read-attribute attr-from :scale)
@@ -2795,7 +2795,7 @@ used as a communication channel."
    ;; Link should point to an image file.
    (lambda (l)
      (assert (eq (org-element-type l) 'link))
-     (org-export-inline-image-p l org-odt-inline-image-rules))))
+     (org-export-inline-image-p l (plist-get info :odt-inline-image-rules)))))
 
 (defun org-odt--enumerable-latex-image-p (element info)
   (org-odt--standalone-link-p
@@ -2810,7 +2810,7 @@ used as a communication channel."
    ;; Link should point to an image file.
    (lambda (l)
      (assert (eq (org-element-type l) 'link))
-     (org-export-inline-image-p l org-odt-inline-image-rules))))
+     (org-export-inline-image-p l (plist-get info :odt-inline-image-rules)))))
 
 (defun org-odt--enumerable-formula-p (element info)
   (org-odt--standalone-link-p
@@ -2822,7 +2822,7 @@ used as a communication channel."
    ;; Link should point to a MathML or ODF file.
    (lambda (l)
      (assert (eq (org-element-type l) 'link))
-     (org-export-inline-image-p l org-odt-inline-formula-rules))))
+     (org-export-inline-image-p l (plist-get info :odt-inline-formula-rules)))))
 
 (defun org-odt--standalone-link-p (element info &optional
 					     paragraph-predicate
@@ -2985,7 +2985,7 @@ INFO is a plist holding contextual information.  See
 	 ;; Ensure DESC really exists, or set it to nil.
 	 (desc (and (not (string= desc "")) desc))
 	 (imagep (org-export-inline-image-p
-		  link org-odt-inline-image-rules))
+		  link (plist-get info :odt-inline-image-rules)))
 	 (path (cond
 		((member type '("http" "https" "ftp" "mailto"))
 		 (concat type ":" raw-path))
@@ -2998,11 +2998,11 @@ INFO is a plist holding contextual information.  See
     (cond
      ;; Image file.
      ((and (not desc) (org-export-inline-image-p
-		       link org-odt-inline-image-rules))
+		       link (plist-get info :odt-inline-image-rules)))
       (org-odt-link--inline-image link info))
      ;; Formula file.
      ((and (not desc) (org-export-inline-image-p
-		       link org-odt-inline-formula-rules))
+		       link (plist-get info :odt-inline-formula-rules)))
       (org-odt-link--inline-formula link info))
      ;; Radio target: Transcode target's contents and use them as
      ;; link's description.
@@ -3095,7 +3095,7 @@ INFO is a plist holding contextual information.  See
 		 (let ((desc-element (car link-contents)))
 		   (and (eq (org-element-type desc-element) 'link)
 			(org-export-inline-image-p
-			 desc-element org-odt-inline-image-rules))))
+			 desc-element (plist-get info :odt-inline-image-rules)))))
 	    ;; Format link as a clickable image.
 	    (format "\n<draw:a xlink:type=\"simple\" xlink:href=\"%s\">\n%s\n</draw:a>"
 		    path desc)
@@ -3515,13 +3515,13 @@ and prefix with \"OrgSrc\".  For example,
     (org-no-warnings (htmlfontify-string line))))
 
 (defun org-odt-do-format-code
-  (code &optional lang refs retain-labels num-start)
+    (code info &optional lang refs retain-labels num-start)
   (let* ((lang (or (assoc-default lang org-src-lang-modes) lang))
 	 (lang-mode (and lang (intern (format "%s-mode" lang))))
 	 (code-lines (org-split-string code "\n"))
 	 (code-length (length code-lines))
 	 (use-htmlfontify-p (and (functionp lang-mode)
-				 org-odt-fontify-srcblocks
+				 (plist-get info :odt-fontify-srcblocks)
 				 (require 'htmlfontify nil t)
 				 (fboundp 'htmlfontify-string)))
 	 (code (if (not use-htmlfontify-p) code
@@ -3576,7 +3576,7 @@ and prefix with \"OrgSrc\".  For example,
 	 (num-start (case (org-element-property :number-lines element)
 		      (continued (org-export-get-loc element info))
 		      (new 0))))
-    (org-odt-do-format-code code lang refs retain-labels num-start)))
+    (org-odt-do-format-code code info lang refs retain-labels num-start)))
 
 (defun org-odt-src-block (src-block contents info)
   "Transcode a SRC-BLOCK element from Org to ODT.
@@ -3643,7 +3643,7 @@ contextual information."
 (defun org-odt-table-style-spec (element info)
   (let* ((table (org-export-get-parent-table element))
 	 (table-style (org-odt--read-attribute table :style)))
-    (assoc table-style org-odt-table-styles)))
+    (assoc table-style (plist-get info :odt-table-styles))))
 
 (defun org-odt-get-table-cell-styles (table-cell info)
   "Retrieve styles applicable to a table cell.
@@ -4047,7 +4047,7 @@ CONTENTS is nil.  INFO is a plist used as a communication
 channel."
   (let* ((raw-value (org-element-property :raw-value timestamp))
   	 (type (org-element-property :type timestamp)))
-    (if (not org-odt-use-date-fields)
+    (if (not (plist-get info :odt-use-date-fields))
 	(let ((value (org-odt-plain-text
 		      (org-timestamp-translate timestamp) info)))
 	  (case (org-element-property :type timestamp)
