@@ -206,8 +206,7 @@ heuristically based on the values of `org-odt-lib-dir' and
 This directory contains the following XML files -
  \"OrgOdtStyles.xml\" and \"OrgOdtContentTemplate.xml\".  These
  XML files are used as the default values of
- `org-odt-styles-file' and
- `org-odt-content-template-file'.
+ `org-odt-styles-file' and `org-odt-content-template-file'.
 
 The default value of this variable varies depending on the
 version of org in use and is initialized from
@@ -662,8 +661,8 @@ TAGS      the tags string, separated with colons \(string or nil\).
 
 The function result will be used as headline text."
   :group 'org-export-odt
-  :version "24.4"
-  :package-version '(Org . "8.0")
+  :version "25.1"
+  :package-version '(Org . "8.3")
   :type 'function)
 
 
@@ -683,8 +682,8 @@ The function must accept six parameters:
 
 The function should return the string to be exported."
   :group 'org-export-odt
-  :version "24.4"
-  :package-version '(Org . "8.0")
+  :version "25.1"
+  :package-version '(Org . "8.3")
   :type 'function)
 
 
@@ -928,8 +927,8 @@ Use the latter option if you do not want the custom styles to be
 based on your current display settings.  It is necessary that the
 styles.xml already contains needed styles for colorizing to work.
 
-This variable is effective only if
-`org-odt-fontify-srcblocks' is turned on."
+This variable is effective only if `org-odt-fontify-srcblocks' is
+turned on."
   :group 'org-export-odt
   :version "24.1"
   :type 'boolean)
@@ -966,8 +965,7 @@ TABLE-STYLE-NAME is the style associated with the table through
 
 TABLE-TEMPLATE-NAME is a set of - upto 9 - automatic
 TABLE-CELL-STYLE-NAMEs and PARAGRAPH-STYLE-NAMEs (as defined
-below) that is included in
-`org-odt-content-template-file'.
+below) that is included in `org-odt-content-template-file'.
 
 TABLE-CELL-STYLE-NAME := TABLE-TEMPLATE-NAME + TABLE-CELL-TYPE +
                          \"TableCell\"
@@ -3653,7 +3651,7 @@ contextual information."
   "Retrieve styles applicable to a table cell.
 R and C are (zero-based) row and column numbers of the table
 cell.  STYLE-SPEC is an entry in `org-odt-table-styles'
-applicable to the current table.  It is `nil' if the table is not
+applicable to the current table.  It is nil if the table is not
 associated with any style attributes.
 
 Return a cons of (TABLE-CELL-STYLE-NAME . PARAGRAPH-STYLE-NAME).
