@@ -4178,8 +4178,10 @@ contextual information."
 				 (file-name-nondirectory input-file))))
 		 (display-msg
 		  (case processing-type
-		    ((dvipng imagemagick) (format "Creating LaTeX Image %d..." count))
-		    (mathml (format "Creating MathML snippet %d..." count))))
+		    ((dvipng imagemagick)
+		     (format "Creating LaTeX Image %d..." count))
+		    (mathml
+		     (format "Creating MathML snippet %d..." count))))
 		 ;; Get an Org-style link to PNG image or the MathML
 		 ;; file.
 		 (org-link
@@ -4190,9 +4192,8 @@ contextual information."
 						  nil processing-type)
 				(buffer-substring-no-properties
 				 (point-min) (point-max)))))
-		    (if (not (string-match "file:\\([^]]*\\)" link))
-			(prog1 nil (message "LaTeX Conversion failed."))
-		      link))))
+		    (if (org-string-match-p "file:\\([^]]*\\)" link) link
+		      (prog1 nil (message "LaTeX Conversion failed."))))))
 	    (when org-link
 	      ;; Conversion succeeded.  Parse above Org-style link to a
 	      ;; `link' object.
@@ -4223,6 +4224,10 @@ contextual information."
 			  ;; Case 2: LaTeX fragment.
 			  ;; No special action.
 			  (latex-fragment link))))
+		  ;; Restore the blanks after the initial element or object.
+		  (org-element-put-property
+		   replacement :post-blank
+		   (org-element-property :post-blank latex-*))
 		  ;; Note down the object that link replaces.
 		  (org-element-put-property replacement :replaces
 					    (list (org-element-type latex-*)
