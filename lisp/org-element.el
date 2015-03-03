@@ -2742,12 +2742,12 @@ Assume point is at the beginning of the citation."
     (cond ((string-prefix-p "@" match)
 	   (and (or (bolp) (memq (char-before) '(?\s ?\t)))
 		(list 'citation
-		      (list :key match
+		      (list :key (substring match 1)
 			    :begin (point)
 			    :end (match-end 0)))))
 	  ((string-prefix-p "[@" match)
 	   (list 'citation
-		 (list :key (substring match 1 -1)
+		 (list :key (substring match 2 -1)
 		       :parentheticalp t
 		       :begin (point)
 		       :end (match-end 0))))
@@ -2768,7 +2768,7 @@ Assume point is at the beginning of the citation."
 			(cite
 			 (list 'citation
 			       (list
-				:key (match-string 0)
+				:key (substring (match-string 0) 1)
 				:parentheticalp (string-prefix-p "[(" match)
 				:begin begin
 				:post-blank (progn (goto-char before-end)

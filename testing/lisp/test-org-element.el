@@ -590,7 +590,20 @@ Some other text
   (should
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite: pre @key]"
-	    (org-element-property :prefix (org-element-context))))))
+	    (org-element-property :prefix (org-element-context)))))
+  ;; Citation keys do not contain `@'
+  (should
+   (equal "key"
+	  (org-test-with-temp-text "[cite: @key]"
+	    (org-element-property :key (org-element-context)))))
+  (should
+   (equal "key"
+	  (org-test-with-temp-text "[@key]"
+	    (org-element-property :key (org-element-context)))))
+  (should
+   (equal "key"
+	  (org-test-with-temp-text "@key"
+	    (org-element-property :key (org-element-context))))))
 
 
 ;;;; Clock
