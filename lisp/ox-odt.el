@@ -908,7 +908,7 @@ Choose one of HTML or LaTeX style."
   :set (lambda (symbol value)
 	 "Alias `org-odt--translate-description-lists'."
 	 (set-default symbol value)
-  	 (fset 'org-odt--translate-description-lists value))
+	 (fset 'org-odt--translate-description-lists value))
   :version "24.1")
 
 
@@ -4051,7 +4051,7 @@ information."
 CONTENTS is nil.  INFO is a plist used as a communication
 channel."
   (let* ((raw-value (org-element-property :raw-value timestamp))
-  	 (type (org-element-property :type timestamp)))
+	 (type (org-element-property :type timestamp)))
     (if (not (plist-get info :odt-use-date-fields))
 	(let ((value (org-odt-plain-text
 		      (org-timestamp-translate timestamp) info)))
