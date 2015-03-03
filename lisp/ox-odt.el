@@ -1665,7 +1665,7 @@ original parsed data.  INFO is a plist holding export options."
 
       ;; Preamble - Title, Author, Date etc.
       (insert
-       (let* ((title (and plist-get info :with-title
+       (let* ((title (and (plist-get info :with-title)
 			  (org-export-data (plist-get info :title) info)))
 	      (author (and (plist-get info :with-author)
 			   (let ((auth (plist-get info :author)))
