@@ -1709,13 +1709,16 @@ original parsed data.  INFO is a plist holding export options."
 		   ;; Check if DATE is specified as a timestamp.
 		   (timestamp (and (not (cdr date))
 				   (eq (org-element-type (car date)) 'timestamp)
-				   (car date))))
+				   (car date)))
+		   ;; Use DATE as subtitle.
+		   (subtitle
+		    (if (and (plist-get info :odt-use-date-fields) timestamp)
+			(org-odt--format-timestamp (car date))
+		      (org-export-data (plist-get info :date) info))))
 	      (concat
-	       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		       "OrgSubtitle"
-		       (if (and (plist-get info :odt-use-date-fields) timestamp)
-			   (org-odt--format-timestamp (car date))
-			 (org-export-data (plist-get info :date) info)))
+	       (when (org-string-nw-p subtitle)
+		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			 "OrgSubtitle" subtitle))
 	       ;; Separator
 	       "<text:p text:style-name=\"OrgSubtitle\"/>"))))))
       ;; Table of Contents
