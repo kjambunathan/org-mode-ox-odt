@@ -74,7 +74,7 @@
 ;; to current setup.
 
 (defconst org-element--citation-key-re
-  "@[_A-Za-z]\\(?:[-_A-Za-z0-9:.#$%&+?<>~/]*[_A-Za-z0-9]\\)?"
+  "@[_[:alpha:]]\\(?:[-[:alnum:]_:.#$%&+?<>~/]*[_[:alnum:]]\\)?"
   "Regexp matching a citation key.")
 
 (defvar org-element-paragraph-separate nil
