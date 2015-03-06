@@ -518,15 +518,32 @@ Some other text
    (org-test-with-temp-text "@key"
      (org-element-property :parentheticalp (org-element-context))))
   ;; Bare keys must start with an alphabetic character or an
-  ;; underscore.
+  ;; underscore, can contain some punctuation characters, but must end
+  ;; on an alphanumeric character or an underscore.
+  (should
+   (equal "_key"
+	  (org-test-with-temp-text "@_key"
+	    (org-element-property :key (org-element-context)))))
   (should
    (eq 'citation
-       (org-test-with-temp-text "@_key"
+       (org-test-with-temp-text "@a"
 	 (org-element-type (org-element-context)))))
+  (should
+   (eq 'citation
+       (org-test-with-temp-text "@_"
+	 (org-element-type (org-element-context)))))
+  (should
+   (equal "a:.#$%&-+?<>~/1"
+	  (org-test-with-temp-text "@a:.#$%&-+?<>~/1"
+	    (org-element-property :key (org-element-context)))))
   (should-not
    (eq 'citation
        (org-test-with-temp-text "@1key"
 	 (org-element-type (org-element-context)))))
+  (should
+   (equal "key"
+	  (org-test-with-temp-text "@key:.#$%&-+?<>~/"
+	    (org-element-property :key (org-element-context)))))
   ;; Bare keys must be located at bol or preceded by a whitespace.
   (should
    (eq 'citation
@@ -591,7 +608,7 @@ Some other text
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite: pre @key]"
 	    (org-element-property :prefix (org-element-context)))))
-  ;; Citation keys do not contain `@'
+  ;; Citation keys do not contain `@'.
   (should
    (equal "key"
 	  (org-test-with-temp-text "[cite: @key]"

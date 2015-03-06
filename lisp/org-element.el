@@ -73,6 +73,10 @@
 ;; `org-element-update-syntax' builds proper syntax regexps according
 ;; to current setup.
 
+(defconst org-element--citation-key-re
+  "@[_A-Za-z]\\(?:[-_A-Za-z0-9:.#$%&+?<>~/]*[_A-Za-z0-9]\\)?"
+  "Regexp matching a citation key.")
+
 (defvar org-element-paragraph-separate nil
   "Regexp to separate paragraphs in an Org buffer.
 In the case of lines starting with \"#\" and \":\", this regexp
@@ -153,7 +157,8 @@ specially in `org-element--object-lex'.")
 			       "\\|"))
 		      ;; Objects starting with "@": citations and
 		      ;; export snippets.
-		      "@\\(?:@\\|[_A-Za-z][A-Za-z0-9:.#$%&-+?<>~/]*\\)"
+		      (format "@\\(?:@\\|%s\\)"
+			      (substring org-element--citation-key-re 1))
 		      ;; Objects starting with "{": macro.
 		      "{{{"
 		      ;; Objects starting with "<" : timestamp
@@ -2762,8 +2767,7 @@ Assume point is at the beginning of the citation."
 	       (when (and before-end
 			  (save-excursion
 			    (re-search-forward
-			     "@[_A-Za-z][A-Za-z0-9:.#$%&-+?<>~/]*"
-			     before-end t)))
+			     org-element--citation-key-re before-end t)))
 		 (let* ((post-tag (point))
 			(cite
 			 (list 'citation
@@ -2778,8 +2782,7 @@ Assume point is at the beginning of the citation."
 		     (org-element-put-property
 		      cite :prefix
 		      (mapcar
-		       (lambda (o)
-			 (org-element-put-property o :parent cite))
+		       (lambda (o) (org-element-put-property o :parent cite))
 		       (save-match-data
 			 (org-element--parse-objects
 			  post-tag (match-beginning 0) nil
