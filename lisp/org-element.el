@@ -2738,73 +2738,123 @@ CONTENTS is the contents of the object."
   "Parse citation object at point, if any.
 
 When at a citation object, return a list whose car is `citation'
-and cdr is a plist with `:begin', `:end', `:key' and
-`:parentheticalp', `:prefix', `:suffix' and `:post-blank'
-keywords.  Otherwise, return nil.
+and cdr is a plist with `:begin', `:end', `:references' and
+`:parenthetical', `:common-prefix', `:common-suffix' and
+`:post-blank' keywords.  Otherwise, return nil.
 
 Assume point is at the beginning of the citation."
   (let ((match (match-string 0)))
-    (cond ((string-prefix-p "@" match)
-	   (and (or (bolp) (memq (char-before) '(?\s ?\t)))
-		(list 'citation
-		      (list :key (substring match 1)
-			    :begin (point)
-			    :end (match-end 0)))))
-	  ((string-prefix-p "[@" match)
+    (cond
+     ((string-prefix-p "@" match)
+      (and (or (bolp) (memq (char-before) '(?\s ?\t)))
 	   (list 'citation
-		 (list :key (substring match 2 -1)
-		       :parentheticalp t
-		       :begin (point)
-		       :end (match-end 0))))
-	  (t
-	   (let ((begin (point))
-		 (before-end (with-syntax-table org-element--pair-square-table
-			       (ignore-errors (scan-lists (point) 1 0)))))
-	     (save-excursion
-	       (search-forward ":")
-	       ;; Ignore blanks between cite type and prefix or key.
-	       (skip-chars-forward " \r\t\n")
-	       (when (and before-end
-			  (save-excursion
-			    (re-search-forward
-			     org-element--citation-key-re before-end t)))
-		 (let* ((post-tag (point))
-			(cite
-			 (list 'citation
-			       (list
-				:key (substring (match-string 0) 1)
-				:parentheticalp (string-prefix-p "[(" match)
-				:begin begin
-				:post-blank (progn (goto-char before-end)
-						   (skip-chars-forward " \t"))
-				:end (point)))))
-		   (when (< post-tag (match-beginning 0))
-		     (org-element-put-property
-		      cite :prefix
-		      (mapcar
-		       (lambda (o) (org-element-put-property o :parent cite))
-		       (save-match-data
+		 (save-excursion
+		   (list :references
+			 (list (list :key (substring-no-properties match 1)))
+			 :begin (point)
+			 :post-blank (progn (goto-char (match-end 0))
+					    (skip-chars-forward " \t"))
+			 :end (point))))))
+     ((string-prefix-p "[@" match)
+      (list 'citation
+	    (save-excursion
+	      (list :references
+		    (list (list :key (substring-no-properties match 2 -1)))
+		    :parenthetical t
+		    :begin (point)
+		    :post-blank (progn (goto-char (match-end 0))
+				       (skip-chars-forward " \t"))
+		    :end (point)))))
+     (t
+      (let ((closing (with-syntax-table org-element--pair-square-table
+		       (ignore-errors (scan-lists (point) 1 0)))))
+	(when closing
+	  (let ((cite (list 'citation
+			    (save-excursion
+			      (list :parenthetical (string-prefix-p "[(" match)
+				    :begin (point)
+				    :post-blank (progn
+						  (goto-char closing)
+						  (skip-chars-forward " \t"))
+				    :end (point)))))
+		;; Ignore blanks between cite type and prefix or key.
+		(start (save-excursion (search-forward ":")
+				       (skip-chars-forward " \r\t\n")
+				       (point)))
+		(restriction (org-element-restriction 'citation))
+		references)
+	    (save-excursion
+	      (while (re-search-forward org-element--citation-key-re closing t)
+		(let ((key (substring-no-properties (match-string 0) 1))
+		      (key-start (match-beginning 0))
+		      (key-end (match-end 0)))
+		  (when (and (null references) (search-backward ";" start t))
+		    (when (> (point) start)
+		      (save-excursion
+			(skip-chars-backward " \r\t\n" start)
+			(org-element-put-property
+			 cite :common-prefix
+			 (mapcar
+			  (lambda (o) (org-element-put-property o :parent cite))
+			  (org-element--parse-objects
+			   start (point) nil restriction)))))
+		    (forward-char)
+		    (skip-chars-forward " \r\t\n")
+		    (setq start (point)))
+		  (search-forward ";" closing 'move)
+		  (push (list
+			 :key key
+			 :prefix
+			 (when (< start key-start)
+			   (mapcar
+			    (lambda (o)
+			      (org-element-put-property o :parent cite))
+			    (org-element--parse-objects
+			     start key-start nil restriction)))
+			 :suffix
+			 (save-excursion
+			   (forward-char -1)
+			   (skip-chars-backward " \r\t\n")
+			   (when (< key-end (point))
+			     (mapcar
+			      (lambda (o)
+				(org-element-put-property o :parent cite))
+			      (org-element--parse-objects
+			       key-end (point) nil restriction)))))
+			references)
+		  (skip-chars-forward " \r\t\n" closing)
+		  (setq start (point)))))
+	    (when references
+	      (org-element-put-property cite :references (nreverse references))
+	      (when (< start (1- closing))
+		(org-element-put-property
+		 cite :common-suffix
+		 (mapcar (lambda (o) (org-element-put-property o :parent cite))
 			 (org-element--parse-objects
-			  post-tag (match-beginning 0) nil
-			  (org-element-restriction 'citation))))))
-		   (when (< (match-end 0) (1- before-end))
-		     (org-element-put-property
-		      cite :suffix
-		      (mapcar
-		       (lambda (o) (org-element-put-property o :parent cite))
-		       (org-element--parse-objects
-			(match-end 0) (1- before-end) nil
-			(org-element-restriction 'citation)))))
-		   cite))))))))
+			  start
+			  (save-excursion
+			    (goto-char (1- closing))
+			    (skip-chars-backward " \r\t\n")
+			    (point))
+			  nil restriction))))
+	      cite))))))))
 
 (defun org-element-citation-interpreter (citation contents)
   "Interpret CITATION object as Org syntax.
 CONTENTS is nil."
   (concat "["
-	  (if (org-element-property :parentheticalp citation) "(cite):" "cite:")
-	  (org-element-interpret-data (org-element-property :prefix citation))
-	  "@" (org-element-property :key citation)
-	  (org-element-interpret-data (org-element-property :suffix citation))
+	  (if (org-element-property :parenthetical citation) "(cite):" "cite:")
+	  (let ((prefix (org-element-property :common-prefix citation)))
+	    (and prefix (concat (org-element-interpret-data prefix) " ; ")))
+	  (mapconcat
+	   (lambda (r)
+	     (concat (org-element-interpret-data (plist-get r :prefix))
+		     "@" (plist-get r :key)
+		     (org-element-interpret-data (plist-get r :suffix))))
+	   (org-element-property :references citation)
+	   " ; ")
+	  (let ((suffix (org-element-property :common-suffix citation)))
+	    (and suffix (concat " ; " (org-element-interpret-data suffix))))
 	  "]"))
 
 

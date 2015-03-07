@@ -509,21 +509,23 @@ Some other text
 
 (ert-deftest test-org-element/citation-parser ()
   "Test `citation' parser"
-  ;; Parse bare keys.  They imply nil `:parentheticalp' property.
+  ;; Parse bare keys.  They imply nil `:parenthetical' property.
   (should
    (eq 'citation
        (org-test-with-temp-text "@key"
 	 (org-element-type (org-element-context)))))
   (should-not
    (org-test-with-temp-text "@key"
-     (org-element-property :parentheticalp (org-element-context))))
+     (org-element-property :parenthetical (org-element-context))))
   ;; Bare keys must start with an alphabetic character or an
   ;; underscore, can contain some punctuation characters, but must end
   ;; on an alphanumeric character or an underscore.
   (should
    (equal "_key"
 	  (org-test-with-temp-text "@_key"
-	    (org-element-property :key (org-element-context)))))
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :key))))
   (should
    (eq 'citation
        (org-test-with-temp-text "@a"
@@ -539,7 +541,9 @@ Some other text
   (should
    (equal "a:.#$%&-+?<>~/1"
 	  (org-test-with-temp-text "@a:.#$%&-+?<>~/1"
-	    (org-element-property :key (org-element-context)))))
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :key))))
   (should-not
    (eq 'citation
        (org-test-with-temp-text "@1key"
@@ -547,7 +551,9 @@ Some other text
   (should
    (equal "key"
 	  (org-test-with-temp-text "@key:.#$%&-+?<>~/"
-	    (org-element-property :key (org-element-context)))))
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :key))))
   ;; Bare keys must be located at bol or preceded by a whitespace.
   (should
    (eq 'citation
@@ -558,14 +564,14 @@ Some other text
        (org-test-with-temp-text "Word<point>@key"
 	 (org-element-type (org-element-context)))))
   ;; Parse simple parenthetical citations.  They imply non-nil
-  ;; `:parentheticalp' property.
+  ;; `:parenthetical' property.
   (should
    (eq 'citation
        (org-test-with-temp-text "[@key]"
 	 (org-element-type (org-element-context)))))
   (should
    (org-test-with-temp-text "[@key]"
-     (org-element-property :parentheticalp (org-element-context))))
+     (org-element-property :parenthetical (org-element-context))))
   ;; Key in a simple parenthetical citation must start with an
   ;; alphabetic character or an underscore.
   (should
@@ -589,42 +595,51 @@ Some other text
    (eq 'citation
        (org-test-with-temp-text "[cite:text]"
 	 (org-element-type (org-element-context)))))
-  ;; "cite" tag implies nil `:parentheticalp' property.  "(cite)"
-  ;; implies a non-nil `:parentheticalp' property.
+  ;; "cite" tag implies nil `:parenthetical' property.  "(cite)"
+  ;; implies a non-nil `:parenthetical' property.
   (should-not
    (org-test-with-temp-text "[cite:@key]"
-     (org-element-property :parentheticalp (org-element-context))))
+     (org-element-property :parenthetical (org-element-context))))
   (should
    (org-test-with-temp-text "[(cite):@key]"
-     (org-element-property :parentheticalp (org-element-context))))
-  ;; Citation lists accept optional `:prefix' and `:suffix'
-  ;; properties, as secondary strings.
+     (org-element-property :parenthetical (org-element-context))))
+  ;; References in citation lists accept optional `:prefix' and
+  ;; `:suffix' properties, as secondary strings.
   (should
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite:pre @key]"
-	    (org-element-property :prefix (org-element-context)))))
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :prefix))))
   (should
    (equal '(" post")
 	  (org-test-with-temp-text "[cite:@key post]"
-	    (org-element-property :suffix (org-element-context)))))
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :suffix))))
   ;; White spaces between "cite" tag and prefix are ignored.
   (should
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite: pre @key]"
-	    (org-element-property :prefix (org-element-context)))))
-  ;; Citation keys do not contain `@'.
+	    (plist-get
+	     (car (org-element-property :references (org-element-context)))
+	     :prefix))))
+  ;; Handle multi citations.  They accept `:common-prefix' and
+  ;; `:common-suffix' properties.
   (should
-   (equal "key"
-	  (org-test-with-temp-text "[cite: @key]"
-	    (org-element-property :key (org-element-context)))))
+   (equal '("a" "b" "c")
+	  (org-test-with-temp-text "[cite:@a;@b;@c]"
+	    (mapcar
+	     (lambda (r) (plist-get r :key))
+	     (org-element-property :references (org-element-context))))))
   (should
-   (equal "key"
-	  (org-test-with-temp-text "[@key]"
-	    (org-element-property :key (org-element-context)))))
+   (equal '("common-prefix")
+	  (org-test-with-temp-text "[cite:common-prefix;@a]"
+	    (org-element-property :common-prefix (org-element-context)))))
   (should
-   (equal "key"
-	  (org-test-with-temp-text "@key"
-	    (org-element-property :key (org-element-context))))))
+   (equal '("common-suffix")
+	  (org-test-with-temp-text "[cite:@a;common-suffix]"
+	    (org-element-property :common-suffix (org-element-context))))))
 
 
 ;;;; Clock
@@ -3213,7 +3228,13 @@ DEADLINE: <2012-03-29 thu.> SCHEDULED: <2012-03-29 thu.> CLOSED: [2012-03-29 thu
   (should (equal (org-test-parse-and-interpret "[cite:pre @key]")
 		 "[cite:pre @key]\n"))
   (should (equal (org-test-parse-and-interpret "[cite:@key post]")
-		 "[cite:@key post]\n")))
+		 "[cite:@key post]\n"))
+  (should (equal (org-test-parse-and-interpret "[cite:@a;@b;@c]")
+		 "[cite:@a ; @b ; @c]\n"))
+  (should (equal (org-test-parse-and-interpret "[cite:common-pre ; @a]")
+		 "[cite:common-pre ; @a]\n"))
+  (should (equal (org-test-parse-and-interpret "[cite:@a ; common-post]")
+		 "[cite:@a ; common-post]\n")))
 
 (ert-deftest test-org-element/code-interpreter ()
   "Test code interpreter."
