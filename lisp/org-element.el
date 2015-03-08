@@ -200,15 +200,15 @@ specially in `org-element--object-lex'.")
   "List of recursive element types aka Greater Elements.")
 
 (defconst org-element-all-objects
-  '(bold citation code entity export-snippet footnote-reference
-	 inline-babel-call inline-src-block italic line-break latex-fragment
-	 link macro radio-target statistics-cookie strike-through subscript
-	 superscript table-cell target timestamp underline verbatim)
+  '(bold citation citation-reference code entity export-snippet
+	 footnote-reference inline-babel-call inline-src-block italic line-break
+	 latex-fragment link macro radio-target statistics-cookie strike-through
+	 subscript superscript table-cell target timestamp underline verbatim)
   "Complete list of object types.")
 
 (defconst org-element-recursive-objects
-  '(bold footnote-reference italic link subscript radio-target strike-through
-	 superscript table-cell underline)
+  '(bold citation footnote-reference italic link subscript radio-target
+	 strike-through superscript table-cell underline)
   "List of recursive object types.")
 
 (defconst org-element-object-containers
@@ -295,13 +295,15 @@ match group 2.
 Don't modify it, set `org-element-affiliated-keywords' instead.")
 
 (defconst org-element-object-restrictions
-  (let* ((standard-set (remq 'table-cell org-element-all-objects))
+  (let* ((standard-set
+	  (remq 'citation-reference (remq 'table-cell org-element-all-objects)))
 	 (standard-set-no-line-break (remq 'line-break standard-set))
 	 (minimal-set '(bold code entity italic latex-fragment strike-through
 			     subscript superscript underline superscript
 			     verbatim)))
     `((bold ,@standard-set)
-      (citation ,@(cons 'line-break minimal-set))
+      (citation reference)
+      (citation-reference ,@(cons 'line-break minimal-set))
       (footnote-reference ,@standard-set)
       (headline ,@standard-set-no-line-break)
       (inlinetask ,@standard-set-no-line-break)
@@ -347,7 +349,8 @@ still has an entry since one of its properties (`:title') does.")
   '((citation :prefix :suffix)
     (headline :title)
     (inlinetask :title)
-    (item :tag))
+    (item :tag)
+    (citation-reference :prefix :suffix))
   "Alist between element types and locations of secondary values.")
 
 (defconst org-element--pair-round-table
@@ -2738,8 +2741,8 @@ CONTENTS is the contents of the object."
   "Parse citation object at point, if any.
 
 When at a citation object, return a list whose car is `citation'
-and cdr is a plist with `:begin', `:end', `:references' and
-`:parenthetical', `:common-prefix', `:common-suffix' and
+and cdr is a plist with `:parenthetical', `:prefix', `:suffix',
+`:begin', `:end', `:contents-begin', `:contents-end' and
 `:post-blank' keywords.  Otherwise, return nil.
 
 Assume point is at the beginning of the citation."
@@ -2749,113 +2752,141 @@ Assume point is at the beginning of the citation."
       (and (or (bolp) (memq (char-before) '(?\s ?\t)))
 	   (list 'citation
 		 (save-excursion
-		   (list :references
-			 (list (list :key (substring-no-properties match 1)))
-			 :begin (point)
-			 :post-blank (progn (goto-char (match-end 0))
-					    (skip-chars-forward " \t"))
+		   (list :begin (point)
+			 :contents-begin (point)
+			 :contents-end (goto-char (match-end 0))
+			 :post-blank (skip-chars-forward " \t")
 			 :end (point))))))
      ((string-prefix-p "[@" match)
       (list 'citation
 	    (save-excursion
-	      (list :references
-		    (list (list :key (substring-no-properties match 2 -1)))
-		    :parenthetical t
+	      (list :parenthetical t
 		    :begin (point)
+		    :contents-begin (1+ (point))
+		    :contents-end (1- (match-end 0))
 		    :post-blank (progn (goto-char (match-end 0))
 				       (skip-chars-forward " \t"))
 		    :end (point)))))
      (t
-      (let ((closing (with-syntax-table org-element--pair-square-table
+      (let ((begin (point))
+	    ;; Ignore blanks between cite type and prefix or key.
+	    (start (save-excursion (search-forward ":")
+				   (skip-chars-forward " \r\t\n")
+				   (point)))
+	    (closing (with-syntax-table org-element--pair-square-table
 		       (ignore-errors (scan-lists (point) 1 0)))))
-	(when closing
-	  (let ((cite (list 'citation
-			    (save-excursion
-			      (list :parenthetical (string-prefix-p "[(" match)
-				    :begin (point)
-				    :post-blank (progn
-						  (goto-char closing)
-						  (skip-chars-forward " \t"))
-				    :end (point)))))
-		;; Ignore blanks between cite type and prefix or key.
-		(start (save-excursion (search-forward ":")
-				       (skip-chars-forward " \r\t\n")
-				       (point)))
-		(restriction (org-element-restriction 'citation))
-		references)
-	    (save-excursion
-	      (while (re-search-forward org-element--citation-key-re closing t)
-		(let ((key (substring-no-properties (match-string 0) 1))
-		      (key-start (match-beginning 0))
-		      (key-end (match-end 0)))
-		  (when (and (null references) (search-backward ";" start t))
-		    (when (> (point) start)
-		      (save-excursion
-			(skip-chars-backward " \r\t\n" start)
-			(org-element-put-property
-			 cite :common-prefix
-			 (mapcar
-			  (lambda (o) (org-element-put-property o :parent cite))
-			  (org-element--parse-objects
-			   start (point) nil restriction)))))
-		    (forward-char)
-		    (skip-chars-forward " \r\t\n")
-		    (setq start (point)))
-		  (search-forward ";" closing 'move)
-		  (push (list
-			 :key key
-			 :prefix
-			 (when (< start key-start)
-			   (mapcar
-			    (lambda (o)
-			      (org-element-put-property o :parent cite))
-			    (org-element--parse-objects
-			     start key-start nil restriction)))
-			 :suffix
+	(save-excursion
+	  (when (and closing
+		     (re-search-forward org-element--citation-key-re closing t))
+	    ;; Find prefix, if any.
+	    (let ((first-key-end (match-end 0))
+		  (cite
+		   (list 'citation
 			 (save-excursion
-			   (forward-char -1)
-			   (skip-chars-backward " \r\t\n")
-			   (when (< key-end (point))
-			     (mapcar
-			      (lambda (o)
-				(org-element-put-property o :parent cite))
-			      (org-element--parse-objects
-			       key-end (point) nil restriction)))))
-			references)
-		  (skip-chars-forward " \r\t\n" closing)
-		  (setq start (point)))))
-	    (when references
-	      (org-element-put-property cite :references (nreverse references))
-	      (when (< start (1- closing))
-		(org-element-put-property
-		 cite :common-suffix
-		 (mapcar (lambda (o) (org-element-put-property o :parent cite))
-			 (org-element--parse-objects
-			  start
-			  (save-excursion
-			    (goto-char (1- closing))
-			    (skip-chars-backward " \r\t\n")
-			    (point))
-			  nil restriction))))
+			   (list :parenthetical (string-prefix-p "[(" match)
+				 :begin begin
+				 :post-blank (progn
+					       (goto-char closing)
+					       (skip-chars-forward " \t"))
+				 :end (point)))))
+		  ;; Prefix and suffix can contain the same set of
+		  ;; objects as citation references.
+		  (data (org-element-restriction 'citation-reference)))
+	      ;; `:contents-begin' depends on the presence of
+	      ;; a non-empty common prefix.
+	      (if (not (search-backward ";" start t))
+		  (org-element-put-property cite :contents-begin start)
+		(when (< start (point))
+		  (save-excursion
+		    (skip-chars-backward " \r\t\n")
+		    (org-element-put-property
+		     cite :prefix
+		     (mapcar
+		      (lambda (o) (org-element-put-property o :parent cite))
+		      (org-element--parse-objects start (point) nil data)))))
+		(forward-char)
+		(skip-chars-forward " \r\t\n")
+		(org-element-put-property cite :contents-begin (point)))
+	      ;; `:contents-end' depends on the presence of a non-empty
+	      ;; common suffix.
+	      (goto-char (1- closing))
+	      (skip-chars-backward " \r\t\n")
+	      (let ((end (point)))
+		(if (or (not (search-backward ";" first-key-end t))
+			(re-search-forward org-element--citation-key-re end t))
+		    (org-element-put-property cite :contents-end end)
+		  (when (< (1+ (point)) end)
+		    (save-excursion
+		      (forward-char)
+		      (skip-chars-forward " \r\t\n")
+		      (org-element-put-property
+		       cite :suffix
+		       (mapcar
+			(lambda (o) (org-element-put-property o :parent cite))
+			(org-element--parse-objects (point) end nil data)))))
+		  (org-element-put-property cite :contents-end (point))))
 	      cite))))))))
 
 (defun org-element-citation-interpreter (citation contents)
   "Interpret CITATION object as Org syntax.
-CONTENTS is nil."
+CONTENTS is the contents of the object, as a string."
   (concat "["
 	  (if (org-element-property :parenthetical citation) "(cite):" "cite:")
-	  (let ((prefix (org-element-property :common-prefix citation)))
+	  (let ((prefix (org-element-property :prefix citation)))
 	    (and prefix (concat (org-element-interpret-data prefix) " ; ")))
-	  (mapconcat
-	   (lambda (r)
-	     (concat (org-element-interpret-data (plist-get r :prefix))
-		     "@" (plist-get r :key)
-		     (org-element-interpret-data (plist-get r :suffix))))
-	   (org-element-property :references citation)
-	   " ; ")
-	  (let ((suffix (org-element-property :common-suffix citation)))
+	  ;; Remove trailing semi-column.
+	  (substring contents 0 -1)
+	  (let ((suffix (org-element-property :suffix citation)))
 	    (and suffix (concat " ; " (org-element-interpret-data suffix))))
 	  "]"))
+
+
+;;;; Citation Reference
+
+(defun org-element-citation-reference-parser ()
+  "Parse citation reference object at point, if any.
+
+When at a reference, return a list whose car is
+`citation-reference', and cdr is a plist with `:key', `:prefix',
+`:suffix', `:begin', `:end' and `:post-blank'. keywords.
+
+Assume point is at the beginning of the reference."
+  (save-excursion
+    (let ((begin (point)))
+      (re-search-forward org-element--citation-key-re)
+      (let ((key-start (match-beginning 0))
+	    (key-end (match-end 0))
+	    (restriction (org-element-restriction 'citation-reference))
+	    (reference
+	     (list 'citation-reference
+		   (list :key (substring-no-properties (match-string 0) 1)
+			 :begin begin
+			 :end (re-search-forward "[ \t]*\\(?:;[ \t]*\\|$\\)")
+			 :post-blank 0))))
+	(goto-char (match-beginning 0))
+	(when (< begin key-start)
+	  (org-element-put-property
+	   reference :prefix
+	   (mapcar
+	    (lambda (o) (org-element-put-property o :parent reference))
+	    (org-element--parse-objects begin key-start nil restriction))))
+	(when (< key-end (point))
+	  (org-element-put-property
+	   reference :suffix
+	   (mapcar
+	    (lambda (o) (org-element-put-property o :parent reference))
+	    (org-element--parse-objects key-end (point) nil restriction))))
+	reference))))
+
+(defun org-element-citation-reference-interpreter (citation-reference _)
+  "Interpret CITATION-REFERENCE object as Org syntax.
+CONTENTS is nil."
+  (let ((key (org-element-property :key citation-reference))
+	(prefix (org-element-interpret-data
+		 (org-element-property :prefix citation-reference)))
+	(suffix (org-element-interpret-data
+		 (org-element-property :suffix citation-reference))))
+    (format "%s@%s%s;" prefix key suffix)))
 
 
 ;;;; Code
@@ -4493,7 +4524,10 @@ Elements are accumulated into ACC."
 RESTRICTION is a list of object types, as symbols, that should be
 looked after.  This function assumes that the buffer is narrowed
 to an appropriate container (e.g., a paragraph)."
-  (if (memq 'table-cell restriction) (org-element-table-cell-parser)
+  (cond
+   ((memq 'table-cell restriction) (org-element-table-cell-parser))
+   ((memq 'reference restriction) (org-element-citation-reference-parser))
+   (t
     (let* ((start (point))
 	   (limit
 	    ;; Object regexp sometimes needs to have a peek at
