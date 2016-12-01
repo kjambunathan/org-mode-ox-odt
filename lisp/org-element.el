@@ -4633,8 +4633,8 @@ to an appropriate container (e.g., a paragraph)."
 	    (or (eobp) (forward-char))))
 	(cond (found)
 	      (limit (forward-char -1)
-		     (org-element-link-parser)) ;radio link
-	      (t nil))))))
+		     (org-element-link-parser))	;radio link
+	      (t nil)))))))
 
 (defun org-element--parse-objects (beg end acc restriction &optional parent)
   "Parse objects between BEG and END and return recursive structure.
