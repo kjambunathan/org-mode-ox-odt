@@ -1,5 +1,6 @@
 * Git Repositories
 
+#+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git config -e
 
 [core]
@@ -19,9 +20,11 @@ kjambunathan@debian:~/src/ox-odt$ git config -e
 [remote "origin"]
         url =  git@github.com:kjambunathan/org-mode.git
         fetch = +refs/heads/*:refs/remotes/origin/*
+#+END_EXAMPLE
 
 * State of the repositories at the start of merge
 
+#+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline ox-odt/master
 f0f93716ce9de71dc904887c066e03644c795545 (ox-odt/master) ox-odt.el: Add support for JabRef
 
@@ -33,6 +36,8 @@ kjambunathan@debian:~/src/ox-odt$ git merge-base ox-odt/master Orgmode.org/maste
 
 kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline 40ef7af622cb461527555538965b7a6a023e76d2
 40ef7af622cb461527555538965b7a6a023e76d2 (tag: my-common-ancestor) org-element: Elements can accept multiple secondary strings
+#+END_EXAMPLE
+
 
 * Ongoing state of the merge
 
@@ -40,12 +45,11 @@ Patches that are to be merged are in the root directory.
 
 Patches that have already been merged are in "done/" subdirectory
 
-912a385518bcf2e320cc161d573ad329111de6c7 
-
 * Commits to lisp/ox-odt.el on Orgmode.org since I forked 
 
 (Common ancestor: 40ef7af622cb461527555538965b7a6a023e76d2)
 
+#+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git log --reverse --format=oneline my-common-ancestor..Orgmode.org/master -- lisp/ox-odt.el 
 
 fd8c843692e4c487bd03ed0d71b0bac69112b335 ox-odt: Fix bugs in metadata generation
@@ -107,11 +111,14 @@ b7cb9b54d53fa4e246138791ccc863ae8f927860 Backport commit eeecac7 from Emacs
 7278899697ef146ed7048245a9a75a09922f46e0 Merge branch 'maint'
 7b065b1d0a0811304a7599b9feb1c239df1a48db ox-odt: Include #+latex_header when converting LaTeX to PNG
 09e61233ed5a24687e20b7dc18a1c985d423fb24 Merge branch 'maint'
+#+END_EXAMPLE
+
 
 * Commits to lisp/ox-odt.el on Orgmode.org since I forked 
 
 (Common ancestor: 40ef7af622cb461527555538965b7a6a023e76d2)
 
+#+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git log --reverse --pretty=format:%H my-common-ancestor..Orgmode.org/master -- lisp/ox-odt.el 
 
 fd8c843692e4c487bd03ed0d71b0bac69112b335
@@ -173,3 +180,5 @@ b7cb9b54d53fa4e246138791ccc863ae8f927860
 7278899697ef146ed7048245a9a75a09922f46e0
 7b065b1d0a0811304a7599b9feb1c239df1a48db
 09e61233ed5a24687e20b7dc18a1c985d423fb24
+#+END_EXAMPLE
+
