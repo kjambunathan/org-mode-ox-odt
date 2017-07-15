@@ -232,3 +232,66 @@ a8a675e9326c7d33d55c000d29c91a7eb7f7736c ox-odt.el: Fix leading whitespace
 7599897f933766c68420a3035caeb7cad66f54d4 Remove @ from the :key property of citations
 f0f93716ce9de71dc904887c066e03644c795545 ox-odt.el: Add support for JabRef
 #+END_EXAMPLE
+
+* Commit ids on this repository, after the merge
+
+#+BEGIN_VERSE
+kjambunathan@debian:~/src/ox-odt$ git log --reverse --format=oneline Orgmode.org/master..
+9d81860593dd12a8ee6ce9637fe4e4b92d4cf19e Preparing to merge my ox-odt changes to Orgmode.org master
+06bfe66aec27459994c3eb5e40db0cec40823f17 ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
+c06478c9d99be23ecfda9b33edb33bad860659fd Revert "ox-odt.el (org-odt-table-style-format): Use %s for inserting the rel-width property as a string"
+8071ce913c1a34b1cbfed4920066d4d2b714c68f Revert "Fix ox-odt bugs"
+be9840d204e37939b354c2361e1a6cbee2bd474a ox-odt: Support for typesetting Description lists as in LaTeX
+f1e4f96edc0228fdbcb7db544cf00d72530ed7f1 ox-odt.el: Fix handling of ODT attributes
+92f0ee559d166cb9539f17134373f50cd332cab3 ox-odt.el: Support for pagebreaks, custom paragraph styles.
+6fc6c7468473a7e03f18cbd9fe53cb902c9770ef ox-odt.el: Specify cell widths using `:widths' attribute
+4578504b92175733bde483a2e13f26691852d752 ox-odt.el: Don't allow table row to split across pages
+271212243d8923297c494588c9ef5a7c1c7fdb8d ox-odt.el: Support hrule and table attributes in list tables
+4fa8daa03c6461c15a7990a2209cbb2a88eed436 contrib/lisp/ox-freemind.el: Require cl
+40bfe609ed5e71ef1ee3365eedb0b363135fe386 ox-odt.el: Explicitly set coding system of XML files to 'utf-8
+8072610932d29be81bd1af3a76b2da504d969c66 ox-odt.el: Fix issues seen with ODT files having multiple images
+65d7400a9472d175fd83107564172c9d6d59ee74 ox-odt.el: Fix paths of data and styles directories
+2d25f217e11a2bf22837acad082f6d80883238fe ox-odt.el (generated-autoload-file): Don't set it
+b5afbc2f459bc06cc144649848efa659bf1ee606 ox-odt.el (org-odt-schema-dir-list): Add git and elpa paths
+c51f4ba71ccaa08b8723b2acfe77ba9d46d12a53 ox-odt.el: Fix cell borders
+befa2c8b3d7dbefb5d539c4c17624d8899d56870 ox-odt.el: Cope with empty title
+d0fe9e23b53dae59e643d6f27d69f7b1f3c17d77 ox-odt.el: Support for page nos. etc as part of xref-es
+1bf39dfd76f8cd29b04495fe698d6b3dab126311 Use a "OrgPageBreakDefault" as default PAGEBREAK style
+b2a15b5c383624e1a2f77f57ceae95d43190b586 ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
+99008bbb89f5e3908ea78a6eacee7710cc461168 Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
+82ea45464dfc7dea63c8a4e4c0e44c2bfd3e987f ox-odt: Use `org-element-lineage' instead of `org-export-get-genealogy'
+d105d1e5746ec69778648288c1b5a5ccdff79651 ox-odt: Fix invocation of `org-format-latex'
+19723fd47abef8272477e91e17489ca7f3842825 ox-odt.el (org-odt-special-block): Preserve case
+4b8ffd3c20b671bae50b8728b3ca74bc283a4308 ox-odt.el: Remove some export options associated to variables
+0a7ced81c391e20c857d8b5ce8eb912bd54e5965 ox-odt.el: Use options instead of hard-coded variables
+ee2d0e43aeebe647b61a7bb9315630c0eeac8ebd ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
+d6e349ec787755a8fdbd4c35d0041383842c056a ox-odt.el: Misc. changes
+cb1f884ee690717ed0194804c7bad2263f05cfc9 ox-odt.el: Fix exporting radio link with missing radio target
+5b1989cba2acb4f4dfbae0ac841331e19de35c37 ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
+11dbb5a3581c95a0b99b30e36963a6ef0b76b36c ox-odt.el: Support `:with-title'
+4c40f0109f059a00e815841d88c14c9c1aec2f1d ox-odt.el: Support `:with-title'
+b577fdd5f2aa38506d2c06314b6841b26cb52986 ox-odt.el: Enumerate footnotes based on body text
+1d7dd0ab565eea48bbfd287d55138c79e1e412b6 ox-odt.el: Update copyright years
+d84859213045a552e12e519c7ed01522d903db88 ox-odt.el: Use scope param in org-export-footnote-* calls
+96b4bbb568a473844b8ed1d6180c5eb38af7f157 ox-odt.el (org-odt-link): Fix custom link handling
+0f0513e07ef9312e4cdf0cff9de50fd563e5dde6 ox-odt.el (org-odt-template): Don't create empty paragraphs
+b5e1d0b85588d81824348f229090525963225a60 ox-odt.el: Preserve white space when converting LaTeX code.
+b3eedee14c5665c4102faa3e886d333196df1d15 ox-odt.el: Fix leading whitespace
+2922956cd3440484a46b4ef340aab014c2da2e8e org-element: Add basic citation support
+fbe3059c74132938b76a553c85599c86cfe82ede Remove @ from the :key property of citations
+7dd98d9c8db6f0b4a1d241e60be600e02239e7a1 org-element: Fix `org-element-citation-interpreter'
+7d19a295bd9b356f377af9a747d82230ebd0066a org-element: Change syntax for citation keys
+bab686d56560cb1dde78bdf329cede7791b6a636 org-element: Allow any word character in citation keys
+2a357f2f7da8d5b0eb5424509b8948995f9fa04f org-element: Parse multi citations
+3a6ae8034e55b9dd150ae8e78f72c9e10bd0197c org-element: Split citations and citation-references objects
+8ae8017afa5224fd7a9f03ca1081dbdd4780fff3 org-element: Fix typo
+5f5cd2ee77d3de636a7f7a005f871f0768accc4d org-element: Get rid of compiler warning
+905d6ba8034bc5b1b2fa052d2197e0edce8d4896 ox-odt.el: Add support for JabRef
+df47e82848379451f51a2d156d169b30f0186e53 lisp/ox-odt.el: Use lexical binding
+32618d8025392b411b21062087e7b37b87a254bf lisp/ox-odt.el: Use `cl-lib'
+9ddb3a9f73c9796d1925abe128e50a610386d129 lisp/ox-odt.el: Add kludge to get past compilation errors
+ea8415d73f545671abee66ee6c7e14dd1cd55981 * lisp/ox-odt.el: Remove `:export-block' from backend definition
+b3c2eebf374ff841abea972ff7c090bddc273913 lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
+#+END_VERSE
+
+
