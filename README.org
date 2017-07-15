@@ -235,7 +235,7 @@ f0f93716ce9de71dc904887c066e03644c795545 ox-odt.el: Add support for JabRef
 
 * Commit ids on this repository, after the merge
 
-#+BEGIN_VERSE
+#+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git log --reverse --format=oneline Orgmode.org/master..
 9d81860593dd12a8ee6ce9637fe4e4b92d4cf19e Preparing to merge my ox-odt changes to Orgmode.org master
 06bfe66aec27459994c3eb5e40db0cec40823f17 ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
@@ -292,6 +292,6 @@ df47e82848379451f51a2d156d169b30f0186e53 lisp/ox-odt.el: Use lexical binding
 9ddb3a9f73c9796d1925abe128e50a610386d129 lisp/ox-odt.el: Add kludge to get past compilation errors
 ea8415d73f545671abee66ee6c7e14dd1cd55981 * lisp/ox-odt.el: Remove `:export-block' from backend definition
 b3c2eebf374ff841abea972ff7c090bddc273913 lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
-#+END_VERSE
+#+END_EXAMPLE
 
 
