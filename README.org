@@ -237,6 +237,7 @@ f0f93716ce9de71dc904887c066e03644c795545 ox-odt.el: Add support for JabRef
 
 #+BEGIN_EXAMPLE
 kjambunathan@debian:~/src/ox-odt$ git log --reverse --format=oneline Orgmode.org/master..
+
 9d81860593dd12a8ee6ce9637fe4e4b92d4cf19e Preparing to merge my ox-odt changes to Orgmode.org master
 06bfe66aec27459994c3eb5e40db0cec40823f17 ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
 c06478c9d99be23ecfda9b33edb33bad860659fd Revert "ox-odt.el (org-odt-table-style-format): Use %s for inserting the rel-width property as a string"
