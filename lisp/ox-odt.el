@@ -33,6 +33,10 @@
 (require 'ox)
 (require 'org-compat)
 
+;;; Workarounds
+
+(defalias 'org-export-solidify-link-text 'identity) ; FIXME
+
 ;;; Define Back-End
 
 (org-export-define-backend 'odt
