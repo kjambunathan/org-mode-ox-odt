@@ -1,0 +1,46 @@
+From af8e3d84ee18609a83e03af44efc5601700d57fc Mon Sep 17 00:00:00 2001
+From: Brian Carlson <hacker@abutilize.com>
+Date: Mon, 16 May 2016 10:58:01 -0400
+Subject: [PATCH 29/50] ox: Provide offset to [+-]n in SRC/EXAMPLE export
+
+* lisp/org-element.el (org-element-example-block-parser): Use cons cell
+  for :number-lines specifying offset in addition to type (new/continue).
+  ('continue . offset) for :number-lines will add this offset count to
+  the last line number. ('new . offset) for :number-lines will reset the
+  line number counting starting at offset
+(org-element-src-block-parser): same for SRC block as EXAMPLE block
+
+* lisp/ox-html.el (org-html-format-code):
+* lisp/ox-latex.el (org-latex-src-block):
+* lisp/ox-odt.el (org-odt-format-code):
+* lisp/ox.el (org-export-resolve-coderef):
+(org-export-get-loc):
+(org-export-format-code-default):
+* contrib/lisp/ox-groff.el (org-groff-src-block): Use new cons cell
+  for :number-lines.
+
+* testing/lisp/test-ox.el  (ert-deftest test-org-export/get-loc): Tests for
+changes
+(test-org-gen-loc-list): Helper function for `test-org-export/get-loc'.
+---
+ lisp/ox-odt.el | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index d99668907..548445c36 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3168,9 +3168,7 @@ and prefix with \"OrgSrc\".  For example,
+ 	 ;; Does the src block contain labels?
+ 	 (retain-labels (org-element-property :retain-labels element))
+ 	 ;; Does it have line numbers?
+-	 (num-start (case (org-element-property :number-lines element)
+-		      (continued (org-export-get-loc element info))
+-		      (new 0))))
++	 (num-start (org-export-get-loc element info)))
+     (org-odt-do-format-code code info lang refs retain-labels num-start)))
+ 
+ (defun org-odt-src-block (src-block _contents info)
+-- 
+2.13.2
+

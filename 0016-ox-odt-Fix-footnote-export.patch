@@ -1,0 +1,43 @@
+From 8d00cd896614a6e794765bdcfc7ee9bedd6dc075 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sat, 15 Aug 2015 23:42:33 +0200
+Subject: [PATCH 16/50] ox-odt: Fix footnote export
+
+* lisp/ox-odt.el (org-odt-footnote-reference): Only inline footnotes are
+  to be wrapped within a paragraph.
+
+Reported-by: Gerald Wildgruber <Gerald.Wildgruber@unibas.ch> <>
+<http://permalink.gmane.org/gmane.emacs.orgmode/100084>
+---
+ lisp/ox-odt.el | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index fa86bd074..c98d9c393 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1765,8 +1765,6 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 	((not
+ 	  (org-export-footnote-first-reference-p footnote-reference info nil t))
+ 	 (funcall --format-footnote-reference n))
+-	;; Inline definitions are secondary strings.
+-	;; Non-inline footnotes definitions are full Org data.
+ 	(t
+ 	 (let* ((raw (org-export-get-footnote-definition
+ 		      footnote-reference info))
+@@ -1784,7 +1782,11 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 						 "OrgFootnoteCenter"
+ 						 "OrgFootnoteQuotations")))))
+ 			      info))))
+-		   (if (eq (org-element-type raw) 'org-data) def
++		   ;; Inline definitions are secondary strings.  We
++		   ;; need to wrap them within a paragraph.
++		   (if (org-element-map raw org-element-all-elements
++			 #'identity info t)
++		       def
+ 		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+ 			     "Footnote" def)))))
+ 	   (funcall --format-footnote-definition n def))))))))
+-- 
+2.13.2
+

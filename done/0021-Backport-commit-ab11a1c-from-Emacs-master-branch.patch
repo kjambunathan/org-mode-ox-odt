@@ -1,0 +1,38 @@
+From cc0d491739b6c81282dfd86330f646d3e4e92b60 Mon Sep 17 00:00:00 2001
+From: Paul Eggert <eggert@cs.ucla.edu>
+Date: Sun, 20 Sep 2015 09:40:35 -0700
+Subject: [PATCH 21/50] Backport commit ab11a1c from Emacs master branch
+
+* lisp/ob-latex.el (convert-pdf):
+* lisp/org-crypt.el (org-crypt-check-auto-save):
+* lisp/ox-man.el (org-man-compile):
+* lisp/ox-odt.el (org-odt--export-wrap):
+* lisp/ox-texinfo.el (org-texinfo-compile):
+Use %s to avoid translating quotes of file names etc. in diagnostics.
+
+Use %s to format strings instead of splicing them
+ab11a1cf27ebe3791df45cccde3c851affd184dd
+Paul Eggert
+Sun Sep 20 09:42:05 2015 -0700
+---
+ lisp/ox-odt.el | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 2d2db89db..75353a0f1 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -4115,8 +4115,8 @@ contextual information."
+ 					 nil standard-output nil (cdr cmd)))))
+ 		    (or (zerop exitcode)
+ 			(error (concat "Unable to create OpenDocument file."
+-				       (format "  Zip failed with error (%s)"
+-					       err-string)))))
++				       "  Zip failed with error (%s)")
++			       err-string)))
+ 		  cmds)))
+ 	     ;; Move the zip file from temporary work directory to
+ 	     ;; user-mandated location.
+-- 
+2.13.2
+

@@ -1,0 +1,29 @@
+From 8e89c0e3b40bb2a140bbbb85def17b1c190eb158 Mon Sep 17 00:00:00 2001
+From: Vicente Vera Parra <vicentemvp@gmail.com>
+Date: Mon, 27 Apr 2015 18:02:22 -0300
+Subject: [PATCH 09/50] ox-odt: Allow attaching SVG images by default
+
+* lisp/ox-odt.el (org-odt-inline-image-rules): Modify default rule to
+  allow including inline SVG images in exported ODT documents.
+
+TINYCHANGE
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index faf0b1c86..444c1b7b0 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -765,7 +765,7 @@ link's path."
+ 		:value-type (regexp :tag "Path")))
+ 
+ (defcustom org-odt-inline-image-rules
+-  '(("file" . "\\.\\(jpeg\\|jpg\\|png\\|gif\\)\\'"))
++  '(("file" . "\\.\\(jpeg\\|jpg\\|png\\|gif\\|svg\\)\\'"))
+   "Rules characterizing image files that can be inlined into ODT.
+ 
+ A rule consists in an association whose key is the type of link
+-- 
+2.13.2
+

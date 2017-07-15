@@ -1,0 +1,97 @@
+From d9070419119cf6b19f2f471aa2eb81ec3d9b0d0f Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Wed, 5 Oct 2016 11:18:39 +0200
+Subject: [PATCH 40/50] Change :version in defcustoms from "25.1" to "25.2"
+
+* lisp/ob-exp.el (org-babel-exp-inline-code-template):
+* lisp/ob-lisp.el (org-babel-lisp-eval-fn):
+* lisp/org-agenda.el (org-agenda-view-columns-initially):
+* lisp/org-attach.el (org-attach-commit):
+(org-attach-archive-delete):
+(org-attach-annex-auto-get):
+* lisp/org-bibtex.el (org-bibtex-inherit-tags):
+* lisp/org-clock.el (org-clock-into-drawer):
+* lisp/org-colview.el (org-columns-summary-types):
+* lisp/org-table.el (org-table-copy-increment):
+(org-table-formula-create-columns):
+(org-table-convert-region-max-lines):
+* lisp/org-timer.el (org-timer-default-timer):
+* lisp/org.el (org-export-backends):
+(org-cycle-hook):
+(org-occur-case-fold-search):
+(org-preview-latex-image-directory):
+(org-latex-default-packages-alist):
+(org-sparse-tree-default-date-type):
+(org-structure-template-alist):
+(org-effort-durations):
+(org-agenda-ignore-properties): Change :version from "25.1" to "25.2".
+(customize-package-emacs-version-alist): Fix associations between Org
+and Emacs releases.
+* lisp/ox-ascii.el (org-ascii-list-margin):
+* lisp/ox-beamer.el (org-beamer-subtitle-format):
+* lisp/ox-html.el (org-html-format-headline-function):
+(org-html-format-inlinetask-function):
+(org-html-viewport):
+* lisp/ox-latex.el (org-latex-caption-above):
+(org-latex-prefer-user-labels):
+(org-latex-subtitle-format):
+(org-latex-hyperref-template):
+(org-latex-images-centered):
+(org-latex-text-markup-alist):
+(org-latex-format-inlinetask-function):
+(org-latex-custom-lang-environments):
+(org-latex-compiler-file-string):
+(org-latex-compiler):
+(org-latex-bib-compiler):
+(org-latex-logfiles-extensions):
+(org-latex-known-warnings):
+* lisp/ox-md.el (org-md-footnotes-section):
+(org-md-footnote-format):
+* lisp/ox-odt.el (org-odt-format-headline-function):
+(org-odt-format-inlinetask-function):
+(org-odt-inline-image-rules):
+* lisp/ox-texinfo.el (org-texinfo-format-headline-function):
+* lisp/ox.el (org-export-with-creator):
+(org-export-with-title):
+(org-export-with-broken-links):
+(org-export-copy-to-kill-ring): Change :version from "25.1" to "25.2".
+
+Neither Org 8.3 nor Org 9.0 were released with Emacs 25.1.
+---
+ lisp/ox-odt.el | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index d68faf441..edc883bd8 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -673,7 +673,7 @@ TAGS      the tags string, separated with colons (string or nil).
+ 
+ The function result will be used as headline text."
+   :group 'org-export-odt
+-  :version "25.1"
++  :version "25.2"
+   :package-version '(Org . "8.3")
+   :type 'function)
+ 
+@@ -694,7 +694,7 @@ The function must accept six parameters:
+ 
+ The function should return the string to be exported."
+   :group 'org-export-odt
+-  :version "25.1"
++  :version "25.2"
+   :package-version '(Org . "8.3")
+   :type 'function)
+ 
+@@ -753,7 +753,7 @@ A rule consists in an association whose key is the type of link
+ to consider, and value is a regexp that will be matched against
+ link's path."
+   :group 'org-export-odt
+-  :version "25.1"
++  :version "25.2"
+   :package-version '(Org . "8.3")
+   :type '(alist :key-type (string :tag "Type")
+ 		:value-type (regexp :tag "Path")))
+-- 
+2.13.2
+

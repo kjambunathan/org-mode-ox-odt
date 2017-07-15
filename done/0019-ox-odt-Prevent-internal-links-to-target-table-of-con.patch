@@ -1,0 +1,46 @@
+From c290921a0d3a90d7efb702e89c955421a6090116 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Fri, 18 Sep 2015 23:58:51 +0200
+Subject: [PATCH 19/50] ox-odt: Prevent internal links to target table of
+ contents
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+* lisp/ox-odt.el (org-odt-toc): Ignore targets, links and footnote
+  references from table of contents.
+
+Reported-by: dbitouze@wanadoo.fr (Denis Bitouzé)
+<http://permalink.gmane.org/gmane.emacs.orgmode/101040>
+---
+ lisp/ox-odt.el | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index a9f1242e6..225b64303 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1175,14 +1175,15 @@ table of contents as a string, or nil."
+   ;; /TOC/, as otherwise there will be duplicated anchors one in TOC
+   ;; and one in the document body.
+   ;;
+-  ;; FIXME: Are there any other objects that need to be suppressed
+-  ;; within TOC?
++  ;; Likewise, links, footnote references and regular targets are also
++  ;; suppressed.
+   (let* ((headlines (org-export-collect-headlines info depth scope))
+ 	 (backend (org-export-create-backend
+ 		   :parent (org-export-backend-name (plist-get info :back-end))
+-		   :transcoders (mapcar
+-				 (lambda (type) (cons type (lambda (d c i) c)))
+-				 (list 'radio-target)))))
++		   :transcoders '((footnote-reference . ignore)
++				  (link . (lambda (object c i) c))
++				  (radio-target . (lambda (object c i) c))
++				  (target . ignore)))))
+     (when headlines
+       (org-odt--format-toc
+        (and (not scope) (org-export-translate "Table of Contents" :utf-8 info))
+-- 
+2.13.2
+

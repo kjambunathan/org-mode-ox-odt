@@ -1,0 +1,34 @@
+From 17a225621c73b4990bd4458924a249aa0a11650e Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sun, 16 Aug 2015 19:30:39 +0200
+Subject: [PATCH 17/50] ox-odt: Small refactoring
+
+* lisp/ox-odt.el (org-odt-footnote-reference): Small refactoring.
+---
+ lisp/ox-odt.el | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index c98d9c393..ffe8b2ee5 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1784,11 +1784,12 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 			      info))))
+ 		   ;; Inline definitions are secondary strings.  We
+ 		   ;; need to wrap them within a paragraph.
+-		   (if (org-element-map raw org-element-all-elements
+-			 #'identity info t)
++		   (if (memq (org-element-type (car (org-element-contents raw)))
++			     org-element-all-elements)
+ 		       def
+-		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+-			     "Footnote" def)))))
++		     (format
++		      "\n<text:p text:style-name=\"Footnote\">%s</text:p>"
++		      def)))))
+ 	   (funcall --format-footnote-definition n def))))))))
+ 
+ 
+-- 
+2.13.2
+

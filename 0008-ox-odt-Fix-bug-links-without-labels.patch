@@ -1,0 +1,39 @@
+From aad7dd24864f3ce988a67061a391d85e649aa375 Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Thu, 23 Apr 2015 12:35:43 +0200
+Subject: [PATCH 08/50] ox-odt: Fix bug links without labels.
+
+* ox-odt.el (org-odt-format-label): Determine label more carefully.
+
+Reported-by: Vicente Vera <vicentemvp@gmail.com>
+<http://permalink.gmane.org/gmane.emacs.orgmode/97090>
+---
+ lisp/ox-odt.el | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index a8544a435..faf0b1c86 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2152,13 +2152,15 @@ Return value is a string if OP is set to `reference' or a cons
+ cell like CAPTION . SHORT-CAPTION) where CAPTION and
+ SHORT-CAPTION are strings."
+   (assert (memq (org-element-type element) '(link table src-block paragraph)))
+-  (let* ((caption-from
++  (let* ((element-or-parent
+ 	  (case (org-element-type element)
+ 	    (link (org-export-get-parent-element element))
+ 	    (t element)))
+ 	 ;; Get label and caption.
+-	 (label (org-export-get-reference element info))
+-	 (caption (let ((c (org-export-get-caption caption-from)))
++	 (label (and (or (org-element-property :name element)
++			 (org-element-property :name element-or-parent))
++		     (org-export-get-reference element-or-parent info)))
++	 (caption (let ((c (org-export-get-caption element-or-parent)))
+ 		    (and c (org-export-data c info))))
+ 	 ;; FIXME: We don't use short-caption for now
+ 	 (short-caption nil))
+-- 
+2.13.2
+

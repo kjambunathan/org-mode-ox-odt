@@ -1,0 +1,45 @@
+From 07e16c2fc5687de5e1761bbf4ba3cf1777de15eb Mon Sep 17 00:00:00 2001
+From: Aaron Ecay <aaronecay@gmail.com>
+Date: Thu, 5 Nov 2015 16:47:38 +0000
+Subject: [PATCH 23/50] Use setq-local and defvar-local.
+
+* lisp/org-macs.el (org-set-local): Remove.  All callers changed.
+* lisp/org-clock.el:
+* lisp/org-colview.el:
+* lisp/org-macro.el:
+* lisp/org-mouse.el:
+* lisp/org-table.el:
+* lisp/org.el: Use defvar-local.
+* lisp/org-agenda.el:
+* lisp/org-capture.el:
+* lisp/org-crypt.el:
+* lisp/org-ctags.el:
+* lisp/org-plot.el:
+* lisp/org.el:
+* lisp/ox-odt.el:
+* lisp/ox.el: Use setq-local instead of set + make-local-variable.
+
+Changes in contrib:
+
+* contrib/lisp/org-colview-xemacs.el (org-colview-xemacs-set-local): New
+macro. Adjust old callers of `org-set-local'.
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 83509ced1..ce5f9d4ab 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1441,7 +1441,7 @@ original parsed data.  INFO is a plist holding export options."
+       ;; currently the zip command zips up the entire temp directory so
+       ;; that any auto-generated files created under the hood ends up in
+       ;; the resulting odt file.
+-      (set (make-local-variable 'backup-inhibited) t)
++      (setq-local backup-inhibited t)
+ 
+       ;; Outline numbering is retained only upto LEVEL.
+       ;; To disable outline numbering pass a LEVEL of 0.
+-- 
+2.13.2
+

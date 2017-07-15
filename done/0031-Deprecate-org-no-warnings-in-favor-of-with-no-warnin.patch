@@ -1,0 +1,43 @@
+From ee7aa9878f4ae76fce63be763e7825c654719f1b Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Thu, 23 Jun 2016 15:20:32 +0200
+Subject: [PATCH 31/50] Deprecate `org-no-warnings' in favor of
+ `with-no-warnings'
+
+* lisp/org-macs.el (org-no-warnings): Rewove macro.
+* lisp/org-compat.el (org-no-warnings): Mark `org-no-warnings' as
+  obsolete.
+* contrib/lisp/org-contacts.el (defvar):
+* contrib/lisp/org-wl.el (org-wl-open):
+* lisp/org-agenda.el (defvar):
+(org-anniversary):
+(org-cyclic):
+(org-block):
+(org-date):
+* lisp/org-bbdb.el (defvar):
+* lisp/org-clock.el (org-clock-out):
+(org-clock-cancel):
+* lisp/org-mouse.el (org-mouse-show-context-menu):
+* lisp/org.el (org-modify-ts-extra):
+(org-order-calendar-date-args): Small refactoring.
+* lisp/ox-odt.el (org-odt-htmlfontify-string):
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index e2fcb07d3..0bb1dfd6d 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3107,7 +3107,7 @@ and prefix with \"OrgSrc\".  For example,
+ 	  (lambda (style _text-block _text-id _text-begins-block-p)
+ 	    (insert (format "<text:span text:style-name=\"%s\">" style))))
+ 	 (hfy-end-span-handler (lambda () (insert "</text:span>"))))
+-    (org-no-warnings (htmlfontify-string line))))
++    (with-no-warnings (htmlfontify-string line))))
+ 
+ (defun org-odt-do-format-code
+   (code info &optional lang refs retain-labels num-start)
+-- 
+2.13.2
+

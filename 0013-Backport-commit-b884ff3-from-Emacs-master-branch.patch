@@ -1,0 +1,41 @@
+From 0cec91d0392c06cc6504b1cbd63d0a8fd3974789 Mon Sep 17 00:00:00 2001
+From: Paul Eggert <eggert@cs.ucla.edu>
+Date: Sun, 5 Apr 2015 23:40:54 -0700
+Subject: [PATCH 13/50] Backport commit b884ff3 from Emacs master branch
+
+Spelling fix for 'hfy-optimizations'
+b884ff380dc341ca8dc8fcfe4357110e191216ce
+Paul Eggert
+Sun Apr 5 23:43:22 2015 -0700
+---
+ lisp/ox-odt.el | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 941fa5333..0324540ba 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -262,7 +262,8 @@ This style is much the same as that of \"OrgFixedWidthBlock\"
+ except that the foreground and background colors are set
+ according to the default face identified by the `htmlfontify'.")
+ 
+-(defvar hfy-optimisations)
++(defvar hfy-optimizations)
++(define-obsolete-variable-alias 'hfy-optimisations 'hfy-optimizations "25.1")
+ (defvar org-odt-embedded-formulas-count 0)
+ (defvar org-odt-embedded-images-count 0)
+ (defvar org-odt-image-size-probe-method
+@@ -3116,8 +3117,8 @@ and prefix with \"OrgSrc\".  For example,
+ 			       (" " "<text:s/>")
+ 			       ("	" "<text:tab/>")))
+ 	 (hfy-face-to-css 'org-odt-hfy-face-to-css)
+-	 (hfy-optimisations-1 (copy-sequence hfy-optimisations))
+-	 (hfy-optimisations (add-to-list 'hfy-optimisations-1
++	 (hfy-optimizations-1 (copy-sequence hfy-optimizations))
++	 (hfy-optimizations (add-to-list 'hfy-optimizations-1
+ 					 'body-text-only))
+ 	 (hfy-begin-span-handler
+ 	  (lambda (style text-block text-id text-begins-block-p)
+-- 
+2.13.2
+

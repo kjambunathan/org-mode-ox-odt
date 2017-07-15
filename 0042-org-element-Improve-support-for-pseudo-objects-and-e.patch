@@ -1,0 +1,54 @@
+From 1a88cf920e5090c311f77ba3f74183aa51253fb5 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 25 Oct 2016 13:13:26 +0200
+Subject: [PATCH 42/50] org-element: Improve support for pseudo objects and
+ elements
+
+* lisp/org-element.el (org-element-class): New function.
+(org-element-map):
+(org-element-interpret-data):
+* lisp/org-footnote.el (org-footnote--allow-reference-p):
+* lisp/org-src.el (org-src--on-datum-p):
+* lisp/ox-odt.el (org-odt-footnote-reference):
+(org-odt-table-cell):
+* lisp/ox.el (org-export-data):
+(org-export-expand): Use new function.
+
+* testing/lisp/test-org-element.el (test-org-element/class): New test.
+
+Using generic `org-element-class' allows to handle unknown, i.e.,
+pseudo, object or element types.  It also reduces code duplication in
+`org-element-interpret-data' and `org-export-data', preventing, e.g.,
+bugs as the one fixed in c58e1b5.
+---
+ lisp/ox-odt.el | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 4fb8c15c2..05d86bfb0 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1747,8 +1747,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 			      info))))
+ 		   ;; Inline definitions are secondary strings.  We
+ 		   ;; need to wrap them within a paragraph.
+-		   (if (memq (org-element-type (car (org-element-contents raw)))
+-			     org-element-all-elements)
++		   (if (eq (org-element-class (car (org-element-contents raw)))
++			   'element)
+ 		       def
+ 		     (format
+ 		      "\n<text:p text:style-name=\"Footnote\">%s</text:p>"
+@@ -3334,8 +3334,7 @@ channel."
+      (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
+ 	     cell-attributes
+ 	     (let ((table-cell-contents (org-element-contents table-cell)))
+-	       (if (memq (org-element-type (car table-cell-contents))
+-			 org-element-all-elements)
++	       (if (eq (org-element-class (car table-cell-contents)) 'element)
+ 		   contents
+ 		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+ 			 paragraph-style contents))))
+-- 
+2.13.2
+

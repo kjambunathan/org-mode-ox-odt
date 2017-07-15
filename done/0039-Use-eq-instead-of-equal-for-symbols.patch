@@ -1,0 +1,59 @@
+From 140aacbf2f57e207a33417bb446060de52a4b312 Mon Sep 17 00:00:00 2001
+From: Aaron Ecay <aaronecay@gmail.com>
+Date: Sun, 25 Sep 2016 16:29:06 +0100
+Subject: [PATCH 39/50] =?UTF-8?q?Use=20=E2=80=98eq=E2=80=99=20instead=20of?=
+ =?UTF-8?q?=20=E2=80=98equal=E2=80=99=20for=20symbols?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+* lisp/ob-C.el (org-babel-C-val-to-C-type):
+* lisp/ob-core.el (org-babel-get-colnames):
+(org-babel-disassemble-tables):
+* lisp/ob-lua.el (org-babel-lua-var-to-lua):
+(org-babel-lua-table-or-string):
+* lisp/ob-python.el (org-babel-python-var-to-python):
+(org-babel-python-table-or-string):
+* lisp/ob-ruby.el (org-babel-ruby-var-to-ruby):
+(org-babel-ruby-table-or-string):
+* lisp/ob-shell.el (org-babel-sh-var-to-string):
+* lisp/ob-sqlite.el (org-babel-sqlite-table-or-scalar):
+* lisp/org-agenda.el (org-agenda-prepare-window):
+(org-compile-prefix-format):
+* lisp/org-bibtex.el (org-bibtex-headline):
+* lisp/org-capture.el (org-capture):
+* lisp/org-colview.el (org-columns-next-allowed-value):
+* lisp/org-mhe.el (org-mhe-store-link):
+(org-mhe-get-message-real-folder):
+(org-mhe-get-message-folder):
+(org-mhe-get-message-num):
+(org-mhe-get-header):
+(org-mhe-follow-link):
+* lisp/org-table.el (org-define-lookup-function):
+* lisp/org.el (format-spec):
+* lisp/ox-odt.el (org-odt--translate-description-lists):
+* lisp/ox-publish.el (org-publish-compare-directory-files):
+Use `eq' instead of `equal' when comparing to symbols.
+* lisp/org-timer.el (org-timer-set-mode-line):
+* lisp/org-capture.el (org-capture-finalize):
+Use `cl-case' instead of `(cond ((eq x 'foo) ...) ...)'.
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 5f9333689..d68faf441 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3827,7 +3827,7 @@ contextual information."
+   ;;
+   (org-element-map tree 'plain-list
+     (lambda (el)
+-      (when (equal (org-element-property :type el) 'descriptive)
++      (when (eq (org-element-property :type el) 'descriptive)
+ 	(org-element-set-element
+ 	 el
+ 	 (apply 'org-element-adopt-elements
+-- 
+2.13.2
+

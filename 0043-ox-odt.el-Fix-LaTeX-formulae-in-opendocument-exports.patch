@@ -1,0 +1,36 @@
+From 73694b21d7233c88bbd6e67eefaf8f4c321e4863 Mon Sep 17 00:00:00 2001
+From: Lixin Chin <lixinchin@gmail.com>
+Date: Tue, 29 Nov 2016 09:24:11 +0100
+Subject: [PATCH 43/50] ox-odt.el: Fix LaTeX formulae in opendocument exports
+
+* lisp/ox-odt.el (org-odt--translate-latex-fragments): Apply signature
+  change for `org-format-latex'.
+
+Commit a24f339f58a5a97a813514b8768faf9131c83dd0 changed the signature
+for `org-format-latex' (lisp/org.el) to add `beg' and `end' optional
+parameters.  This led to an error in ox-odt.el when exporting an
+odt document containing LaTeX formulae.
+---
+ lisp/ox-odt.el | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 05d86bfb0..a705b6835 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3741,9 +3741,9 @@ contextual information."
+ 		 (org-link
+ 		  (let ((link (with-temp-buffer
+ 				(insert latex-frag)
+-				(org-format-latex cache-subdir cache-dir
+-						  nil display-msg
+-						  nil processing-type)
++				(org-format-latex cache-subdir nil nil cache-dir
++						  nil display-msg nil
++						  processing-type)
+ 				(buffer-substring-no-properties
+ 				 (point-min) (point-max)))))
+ 		    (if (string-match-p "file:\\([^]]*\\)" link) link
+-- 
+2.13.2
+

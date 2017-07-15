@@ -1,0 +1,38 @@
+From 6b04312e85f04219aeaa7c7f9669a51ec2cbec17 Mon Sep 17 00:00:00 2001
+From: Paul Eggert <eggert@cs.ucla.edu>
+Date: Thu, 21 May 2015 10:04:45 -0700
+Subject: [PATCH 14/50] Backport commit 96794d2 from Emacs master branch
+
+Don't quote nil and t in doc strings
+96794d2f97cd064e4c2bf4f71459b42558cc8c79
+Paul Eggert
+Thu May 21 10:06:44 2015 -0700
+---
+ lisp/ox-odt.el | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 0324540ba..db14bfe0e 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -847,7 +847,7 @@ TABLE-CELL-STYLE-SELECTOR := `use-first-row-styles'       |
+                              `use-banding-rows-styles'    |
+                              `use-banding-columns-styles' |
+                              `use-first-row-styles'
+-ON-OR-OFF                 := `t' | `nil'
++ON-OR-OFF                 := t | nil
+ 
+ For example, with the following configuration
+ 
+@@ -3261,7 +3261,7 @@ contextual information."
+   "Retrieve styles applicable to a table cell.
+ R and C are (zero-based) row and column numbers of the table
+ cell.  STYLE-SPEC is an entry in `org-odt-table-styles'
+-applicable to the current table.  It is `nil' if the table is not
++applicable to the current table.  It is nil if the table is not
+ associated with any style attributes.
+ 
+ Return a cons of (TABLE-CELL-STYLE-NAME . PARAGRAPH-STYLE-NAME).
+-- 
+2.13.2
+

@@ -1,0 +1,30 @@
+From 21ef130752bdfb0ae841d53dd1458b5a505236af Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 19 Apr 2016 21:30:39 +0200
+Subject: [PATCH 28/50] ox-odt: Fix styles location
+
+* lisp/ox-odt.el (org-odt-styles-dir-list): Point to correct location
+  for styles.
+
+Reported-by: Colin Baxter <m43cap@yandex.com>
+<http://permalink.gmane.org/gmane.emacs.orgmode/106209>
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 9fce5e723..37ed03e7e 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -172,7 +172,7 @@ and `org-odt-data-dir'.")
+    (eval-when-compile
+      (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
+ 	  (expand-file-name "./styles/" org-odt-data-dir)))
+-   (expand-file-name "../../etc/styles/" org-odt-lib-dir) ; git
++   (expand-file-name "../etc/styles/" org-odt-lib-dir) ; git
+    (expand-file-name "./etc/styles/" org-odt-lib-dir)  ; elpa
+    (expand-file-name "./org/" data-directory)	       ; system
+    )
+-- 
+2.13.2
+

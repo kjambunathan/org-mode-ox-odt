@@ -1,0 +1,60 @@
+From 1749dfe091308d33799de20fb839cb3604afacc2 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Thu, 12 Jan 2017 15:27:39 +0100
+Subject: [PATCH 48/50] ox-odt: Fix verse environment
+
+* lisp/ox-odt.el (org-odt--encode-tabs-and-spaces): Small refactoring.
+(org-odt-verse-block): Only replace leading blanks.
+---
+ lisp/ox-odt.el | 27 ++++++++++-----------------
+ 1 file changed, 10 insertions(+), 17 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 19decccc9..e245217b4 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2882,15 +2882,10 @@ contextual information."
+ 
+ (defun org-odt--encode-tabs-and-spaces (line)
+   (replace-regexp-in-string
+-   "\\([\t]\\|\\([ ]+\\)\\)"
++   "\\(\t\\| \\{2,\\}\\)"
+    (lambda (s)
+-     (cond
+-      ((string= s "\t") "<text:tab/>")
+-      (t (let ((n (length s)))
+-	   (cond
+-	    ((= n 1) " ")
+-	    ((> n 1) (concat " " (format "<text:s text:c=\"%d\"/>" (1- n))))
+-	    (t ""))))))
++     (if (string= s "\t") "<text:tab/>"
++       (format " <text:s text:c=\"%d\"/>" (1- (length s)))))
+    line))
+ 
+ (defun org-odt--encode-plain-text (text &optional no-whitespace-filling)
+@@ -3673,15 +3668,13 @@ channel."
+   "Transcode a VERSE-BLOCK element from Org to ODT.
+ CONTENTS is verse block contents.  INFO is a plist holding
+ contextual information."
+-  ;; Add line breaks to each line of verse.
+-  (setq contents (replace-regexp-in-string
+-		  "\\(<text:line-break/>\\)?[ \t]*\n"
+-		  "<text:line-break/>" contents))
+-  ;; Replace tabs and spaces.
+-  (setq contents (org-odt--encode-tabs-and-spaces contents))
+-  ;; Surround it in a verse environment.
+-  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+-	  "OrgVerse" contents))
++  (format "\n<text:p text:style-name=\"OrgVerse\">%s</text:p>"
++	  (replace-regexp-in-string
++	   ;; Replace leading tabs and spaces.
++	   "^[ \t]+" #'org-odt--encode-tabs-and-spaces
++	   ;; Add line breaks to each line of verse.
++	   (replace-regexp-in-string
++	    "\\(<text:line-break/>\\)?[ \t]*$" "<text:line-break/>" contents))))
+ 
+ 
+ 
+-- 
+2.13.2
+

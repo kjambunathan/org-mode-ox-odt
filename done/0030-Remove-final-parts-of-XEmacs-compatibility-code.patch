@@ -1,0 +1,68 @@
+From 0ac099a6f8f58770c583de450a665be755a95b60 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Thu, 26 May 2016 12:18:00 +0200
+Subject: [PATCH 30/50] Remove final parts of XEmacs compatibility code
+
+* lisp/org-compat.el: Declare `org-add-hook', `org-decompose-region',
+  `org-detach-overlay', `org-file-equal-p', `org-float-time',
+  `org-indent-line-to', `org-indent-to-column', `org-looking-at-p',
+  `org-looking-back', `org-propertize', `org-re' and
+  `org-select-frame-set-input-focus' as obsolete.
+(org-overlay-display, org-overlay-before-string, org-find-overlays):
+Move to "org.el"
+(org-xemacs-key-equivalents, org-xemacs-p): Remove variables.
+(org-region-active-p): Drop XEmacs support.
+(org-xemacs-without-invisibility): Remove macro.
+(org-get-x-clipboard-compat): Remove function.
+* lisp/org-macs.el (org-match-string-no-properties): Remove function.
+
+* lisp/ob-core.el:
+* lisp/org-agenda.el:
+* lisp/org-archive.el:
+* lisp/org-clock.el:
+* lisp/org-colview.el:
+* lisp/org-crypt.el:
+* lisp/org-element.el:
+* lisp/org-faces.el:
+* lisp/org-feed.el:
+* lisp/org-footnote.el:
+* lisp/org-habit.el:
+* lisp/org-id.el:
+* lisp/org-indent.el:
+* lisp/org-inlinetask.el:
+* lisp/org-lint.el:
+* lisp/org-list.el:
+* lisp/org-mouse.el:
+* lisp/org-pcomplete.el:
+* lisp/org-src.el:
+* lisp/org-table.el:
+* lisp/org-timer.el:
+* lisp/org.el:
+* lisp/ox-ascii.el:
+* lisp/ox-odt.el:
+* lisp/ox.el:
+* contrib/lisp/org-notify.el:
+* contrib/lisp/ox-taskjuggler.el:
+* contrib/lisp/org-wikinodes.el:
+* testing/lisp/test-org-src.el:
+* testing/lisp/test-org.el: Silence byte-compiler.
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 548445c36..e2fcb07d3 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2047,7 +2047,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ ;;;; Latex Fragment
+ 
+ ;; (when latex-frag			; FIXME
+-;; 	(setq href (org-propertize href :title "LaTeX Fragment"
++;; 	(setq href (propertize href :title "LaTeX Fragment"
+ ;; 				   :description latex-frag)))
+ ;; handle verbatim
+ ;; provide descriptions
+-- 
+2.13.2
+

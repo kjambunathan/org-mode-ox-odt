@@ -1,0 +1,31 @@
+From 07ee690dce504c6082d5ebbe90e6cf4478e07586 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 9 Feb 2016 21:52:10 +0100
+Subject: [PATCH 27/50] ox-odt: Fix End of file during parsing error
+
+* lisp/ox-odt.el (org-odt-template): Do not call `read' on an empty
+  string.
+
+Reported-by: Damien Cassou <damien@cassou.me>
+<http://permalink.gmane.org/gmane.emacs.orgmode/104947>
+---
+ lisp/ox-odt.el | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 31b06de91..9fce5e723 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1383,7 +1383,8 @@ original parsed data.  INFO is a plist holding export options."
+   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
+   ;; Write styles file.
+   (let* ((styles-file (plist-get info :odt-styles-file))
+-	 (styles-file (and styles-file (read (org-trim styles-file))))
++	 (styles-file (and (org-string-nw-p styles-file)
++			   (read (org-trim styles-file))))
+ 	 ;; Non-availability of styles.xml is not a critical
+ 	 ;; error. For now, throw an error.
+ 	 (styles-file (or styles-file
+-- 
+2.13.2
+

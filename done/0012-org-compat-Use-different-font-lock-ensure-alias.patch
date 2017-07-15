@@ -1,0 +1,32 @@
+From c115c7b4e86b68fe4f903636252a8b22b46a044f Mon Sep 17 00:00:00 2001
+From: Kyle Meyer <kyle@kyleam.com>
+Date: Sun, 26 Jul 2015 23:29:14 -0400
+Subject: [PATCH 12/50] org-compat: Use different font-lock-ensure alias
+
+* lisp/org-compat.el (org-font-lock-ensure): Remove in favor of
+  font-lock-ensure alias from dcbaebc.
+
+Instead of org-font-lock-ensure alias introduced in dcbaebc ("Backport
+commit 6711a21 from Emacs master branch", 2014-05-28), use
+font-lock-ensure alias added in e6883dd ("org-compat: Provide
+compatibility definition for font-lock-ensure", 2014-06-01).
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 4ccef1ad7..941fa5333 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3139,7 +3139,7 @@ and prefix with \"OrgSrc\".  For example,
+ 		 (with-temp-buffer
+ 		   (insert code)
+ 		   (funcall lang-mode)
+-		   (org-font-lock-ensure)
++		   (font-lock-ensure)
+ 		   (buffer-string))))
+ 	 (fontifier (if use-htmlfontify-p 'org-odt-htmlfontify-string
+ 		      'org-odt--encode-plain-text))
+-- 
+2.13.2
+

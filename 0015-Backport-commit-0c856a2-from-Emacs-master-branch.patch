@@ -1,0 +1,45 @@
+From 3a81c7ee6f392463db1db4b3e77a0e0411032382 Mon Sep 17 00:00:00 2001
+From: Paul Eggert <eggert@cs.ucla.edu>
+Date: Wed, 5 Aug 2015 19:06:57 -0700
+Subject: [PATCH 15/50] Backport commit 0c856a2 from Emacs master branch
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+* lisp/ob-core.el (org-babel-check-evaluate)
+(org-babel-confirm-evaluate):
+* lisp/ob-fortran.el (org-babel-fortran-var-to-fortran):
+* lisp/ox-latex.el (org-latex-compile):
+* lisp/ox-man.el (org-man-compile):
+* lisp/ox-odt.el (org-odt-template):
+* lisp/ox-texinfo.el (org-texinfo-compile):
+Change (message (format ...)) to (message ...), and likewise
+for ‘error’.  This lessens the probability of confusion when the
+output of ‘format’ contains ‘%’.
+
+Fix some confusion with ‘format’
+0c856a2c459016f1f9cce173f5b2b49be36e3452
+Paul Eggert
+Wed Aug 5 19:07:28 2015 -0700
+---
+ lisp/ox-odt.el | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index e578a1776..fa86bd074 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1410,8 +1410,8 @@ original parsed data.  INFO is a plist holding export options."
+ 	 ((member styles-file-type '("odt" "ott"))
+ 	  (org-odt--zip-extract styles-file "styles.xml" org-odt-zip-dir)))))
+      (t
+-      (error (format "Invalid specification of styles.xml file: %S"
+-		     (plist-get info :odt-styles-file)))))
++      (error "Invalid specification of styles.xml file: %S"
++	     (plist-get info :odt-styles-file))))
+ 
+     ;; create a manifest entry for styles.xml
+     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
+-- 
+2.13.2
+

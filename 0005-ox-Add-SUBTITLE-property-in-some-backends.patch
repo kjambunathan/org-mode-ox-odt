@@ -1,0 +1,101 @@
+From a780080fcf38ca6412658323eae9367a17a12bdf Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Sun, 1 Mar 2015 22:09:19 +0100
+Subject: [PATCH 05/50] ox: Add #+SUBTITLE property in some backends
+
+* ox-texinfo.el (texinfo, org-texinfo-template): Parse subtitle.
+* ox-s5.el (org-s5-title-slide-template):
+* ox-deck.el (org-deck-title-slide-template):
+* ox-odt.el (odt, org-odt-template):
+* ox-latex.el (latex, org-latex-template):
+* ox-html.el (html, org-html-format-spec, org-html-template):
+* ox-ascii.el (ascii, org-ascii-template--document-title):
+* ox-beamer.el (beamer, org-beamer-template): Support #+SUBTITLE.
+* ox-html.el (org-html-postamble-format)
+(org-html-preamble-format):
+* ox-latex.el (org-latex-title-command)
+(org-latex-hyperref-template): Update docstring.
+* ox-html.el (org-html-style-default): New .subtitle css property.
+* ox-beamer.el (org-beamer-subtitle-format):
+* ox-latex.el (org-latex-subtitle-format)
+(org-latex-subtitle-separate): New variable.
+* org.texi (ASCII/Latin-1/UTF-8 export)
+(Beamer specific export settings)
+(HTML Specific export settings)
+(@LaTeX{} specific export settings, CSS support)
+(ODT specific export settings)
+(Texinfo specific export settings, Document preamble)
+(Publishing options, Publishing options): Document #+SUBTITLE.
+
+The patch adds a #+SUBTITLE keyword to ox-ascii, ox-latex, ox-html and
+ox-odt.
+---
+ lisp/ox-odt.el | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index d52a3aece..d060adfec 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -99,6 +99,7 @@
+   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+     (:description "DESCRIPTION" nil nil newline)
+     (:keywords "KEYWORDS" nil nil space)
++    (:subtitle "SUBTITLE" nil nil parse)
+     ;; Other variables.
+     (:odt-content-template-file nil nil org-odt-content-template-file)
+     (:odt-display-outline-level nil nil org-odt-display-outline-level)
+@@ -1328,6 +1329,7 @@ CONTENTS is the transcoded contents string.  RAW-DATA is the
+ original parsed data.  INFO is a plist holding export options."
+   ;; Write meta file.
+   (let ((title (org-export-data (plist-get info :title) info))
++	(subtitle (org-export-data (plist-get info :subtitle) info))
+ 	(author (let ((author (plist-get info :author)))
+ 		  (if (not author) "" (org-export-data author info))))
+ 	(email (plist-get info :email))
+@@ -1365,6 +1367,10 @@ original parsed data.  INFO is a plist holding export options."
+       (format "<meta:keyword>%s</meta:keyword>\n" keywords)
+       (format "<dc:subject>%s</dc:subject>\n" description)
+       (format "<dc:title>%s</dc:title>\n" title)
++      (when (org-string-nw-p subtitle)
++	(format
++	 "<meta:user-defined meta:name=\"subtitle\">%s</meta:user-defined>\n"
++	 subtitle))
+       "\n"
+       "  </office:meta>\n" "</office:document-meta>")
+      nil (concat org-odt-zip-dir "meta.xml"))
+@@ -1510,6 +1516,8 @@ original parsed data.  INFO is a plist holding export options."
+       (insert
+        (let* ((title (and (plist-get info :with-title)
+ 			  (org-export-data (plist-get info :title) info)))
++	      (subtitle (when title
++			  (org-export-data (plist-get info :subtitle) info)))
+ 	      (author (and (plist-get info :with-author)
+ 			   (let ((auth (plist-get info :author)))
+ 			     (and auth (org-export-data auth info)))))
+@@ -1521,10 +1529,20 @@ original parsed data.  INFO is a plist holding export options."
+ 	  ;; Title.
+ 	  (when (org-string-nw-p title)
+ 	    (concat
+-	     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
++	     (format "\n<text:p text:style-name=\"%s\">%s</text:p>\n"
+ 		     "OrgTitle" (format "\n<text:title>%s</text:title>" title))
+ 	     ;; Separator.
+-	     "\n<text:p text:style-name=\"OrgTitle\"/>"))
++	     "\n<text:p text:style-name=\"OrgTitle\"/>\n"
++	     ;; Subtitle.
++	     (when (org-string-nw-p subtitle)
++	       (concat
++		(format "<text:p text:style-name=\"OrgSubtitle\">\n%s\n</text:p>\n"
++			(concat
++			 "<text:user-defined style:data-style-name=\"N0\" text:name=\"subtitle\">\n"
++			 subtitle
++			 "</text:user-defined>\n"))
++		;; Separator.
++		"<text:p text:style-name=\"OrgSubtitle\"/>\n"))))
+ 	  (cond
+ 	   ((and author (not email))
+ 	    ;; Author only.
+-- 
+2.13.2
+

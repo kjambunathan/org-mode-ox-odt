@@ -1,0 +1,30 @@
+From 690e25d9323276ccf013197c71619dbfe1382baa Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 28 Apr 2015 00:25:11 +0200
+Subject: [PATCH 10/50] ox-odt: Fix defcustom keywords
+
+* lisp/ox-odt.el (org-odt-inline-image-rules): Update keywords.
+
+Default value changed in 8e89c0e3b40bb2a140bbbb85def17b1c190eb158.
+---
+ lisp/ox-odt.el | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 444c1b7b0..163f5804c 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -772,8 +772,8 @@ A rule consists in an association whose key is the type of link
+ to consider, and value is a regexp that will be matched against
+ link's path."
+   :group 'org-export-odt
+-  :version "24.4"
+-  :package-version '(Org . "8.0")
++  :version "25.1"
++  :package-version '(Org . "8.3")
+   :type '(alist :key-type (string :tag "Type")
+ 		:value-type (regexp :tag "Path")))
+ 
+-- 
+2.13.2
+

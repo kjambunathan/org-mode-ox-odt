@@ -1,0 +1,43 @@
+From 0c0bc8419093a1034ae5e1cdb2a63b04ae8267fc Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 11 Oct 2016 18:00:08 +0200
+Subject: [PATCH 41/50] Change "Org-mode" into "Org mode"
+
+* lisp/org-agenda.el:
+* lisp/org-attach.el:
+* lisp/org-bbdb.el:
+* lisp/org-capture.el:
+* lisp/org-clock.el:
+* lisp/org-entities.el:
+* lisp/org-gnus.el:
+* lisp/org-habit.el:
+* lisp/org-id.el:
+* lisp/org-info.el:
+* lisp/org-inlinetask.el:
+* lisp/org-irc.el:
+* lisp/org-list.el:
+* lisp/org-mhe.el:
+* lisp/org-mouse.el:
+* lisp/org-table.el:
+* lisp/ox-html.el:
+* lisp/ox-odt.el: Use "Org mode", or "Org", instead of "Org-mode".
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index edc883bd8..4fb8c15c2 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3572,7 +3572,7 @@ pertaining to indentation here."
+     ;;
+     ;; - Description lists are simulated as plain lists.
+     ;; - Low-level headlines can be listified.
+-    ;; - In Org-mode, a table can occur not only as a regular list
++    ;; - In Org mode, a table can occur not only as a regular list
+     ;;   item, but also within description lists and low-level
+     ;;   headlines.
+ 
+-- 
+2.13.2
+

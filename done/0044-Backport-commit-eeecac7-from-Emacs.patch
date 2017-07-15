@@ -1,0 +1,29 @@
+From b7cb9b54d53fa4e246138791ccc863ae8f927860 Mon Sep 17 00:00:00 2001
+From: Paul Eggert <eggert@cs.ucla.edu>
+Date: Wed, 7 Dec 2016 11:29:54 -0800
+Subject: [PATCH 44/50] Backport commit eeecac7 from Emacs
+
+Fix minor quoting problems in doc strings
+eeecac7ab9d1f8c3a29cffe4586e5fd2414dd671
+Paul Eggert
+Wed Dec 7 11:31:16 2016 -0800
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index a705b6835..24658363c 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -847,7 +847,7 @@ ON-OR-OFF                 := t | nil
+ For example, with the following configuration
+ 
+ \(setq org-odt-table-styles
+-      '((\"TableWithHeaderRowsAndColumns\" \"Custom\"
++      \\='((\"TableWithHeaderRowsAndColumns\" \"Custom\"
+          ((use-first-row-styles . t)
+           (use-first-column-styles . t)))
+         (\"TableWithHeaderColumns\" \"Custom\"
+-- 
+2.13.2
+

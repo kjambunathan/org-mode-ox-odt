@@ -1,0 +1,50 @@
+From 16cea3d7b74e34945355cf434a684890f4c52cb2 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 17 Mar 2015 15:40:52 +0100
+Subject: [PATCH 02/50] ox: Remove `comment' special value for
+ `org-export-with-creator'
+
+* lisp/ox.el (org-export-with-creator): Change default value.
+
+* lisp/ox-ascii.el (org-ascii-template):
+* lisp/ox-beamer.el (org-beamer-template):
+* lisp/ox-latex.el (org-latex-template):
+* lisp/ox-odt.el (org-odt-template):
+* lisp/ox-org.el (org-org-template):
+* lisp/ox-texinfo.el (org-texinfo-template): Treat
+  `org-export-with-creator' as a boolean.
+
+* testing/lisp/test-ox.el (test-org-export/parse-option-keyword):
+  Update test.
+
+* doc/org.texi (Export settings): Update allowed values in
+  `org-export-with-creator'.
+
+* etc/ORG-NEWS: Signal change.
+
+Special `comment' value isn't meaningful for all back-ends and is not
+implemented in every back-end where it makes sense anyway.
+
+It is possible to add a comment including creator at the end of the
+document using a body filter instead.
+---
+ lisp/ox-odt.el | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index edbd9b810..e32ca2613 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1360,7 +1360,8 @@ original parsed data.  INFO is a plist holding export options."
+ 		     iso-date)))))
+       (format "<meta:generator>%s</meta:generator>\n"
+ 	      (if (plist-get info :with-creator)
+-		  (plist-get info :creator) ""))
++		  (plist-get info :creator)
++		""))
+       (format "<meta:keyword>%s</meta:keyword>\n" keywords)
+       (format "<dc:subject>%s</dc:subject>\n" description)
+       (format "<dc:title>%s</dc:title>\n" title)
+-- 
+2.13.2
+

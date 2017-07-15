@@ -1,0 +1,41 @@
+From fd8c843692e4c487bd03ed0d71b0bac69112b335 Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Tue, 17 Mar 2015 01:09:50 +0100
+Subject: [PATCH 01/50] ox-odt: Fix bugs in metadata generation
+
+* ox-odt.el (org-odt-template): Use empty quotes when keyword and
+  description is missing.  Fill the generator field like ox-latex.
+---
+ lisp/ox-odt.el | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 386e89426..edbd9b810 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1329,8 +1329,8 @@ original parsed data.  INFO is a plist holding export options."
+ 	(author (let ((author (plist-get info :author)))
+ 		  (if (not author) "" (org-export-data author info))))
+ 	(email (plist-get info :email))
+-	(keywords (plist-get info :keywords))
+-	(description (plist-get info :description)))
++	(keywords (or (plist-get info :keywords) ""))
++	(description (or (plist-get info :description) "")))
+     (write-region
+      (concat
+       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+@@ -1359,9 +1359,8 @@ original parsed data.  INFO is a plist holding export options."
+ 	     (format "<meta:creation-date>%s</meta:creation-date>\n"
+ 		     iso-date)))))
+       (format "<meta:generator>%s</meta:generator>\n"
+-	      (let ((creator-info (plist-get info :with-creator)))
+-		(if (or (not creator-info) (eq creator-info 'comment)) ""
+-		  (plist-get info :creator))))
++	      (if (plist-get info :with-creator)
++		  (plist-get info :creator) ""))
+       (format "<meta:keyword>%s</meta:keyword>\n" keywords)
+       (format "<dc:subject>%s</dc:subject>\n" description)
+       (format "<dc:title>%s</dc:title>\n" title)
+-- 
+2.13.2
+

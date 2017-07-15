@@ -1,0 +1,29 @@
+From e9fd19968b69f3acd102c393336d9d93a72de624 Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Fri, 27 Mar 2015 12:51:01 +0100
+Subject: [PATCH 03/50] ox: Always insert creator in metadata
+
+* ox-odt.el (org-odt-template): Always insert creator.
+* ox-latex.el (org-latex--format-spec): Creator always available.
+---
+ lisp/ox-odt.el | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index e32ca2613..02d3f4422 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1359,9 +1359,7 @@ original parsed data.  INFO is a plist holding export options."
+ 	     (format "<meta:creation-date>%s</meta:creation-date>\n"
+ 		     iso-date)))))
+       (format "<meta:generator>%s</meta:generator>\n"
+-	      (if (plist-get info :with-creator)
+-		  (plist-get info :creator)
+-		""))
++	      (plist-get info :creator))
+       (format "<meta:keyword>%s</meta:keyword>\n" keywords)
+       (format "<dc:subject>%s</dc:subject>\n" description)
+       (format "<dc:title>%s</dc:title>\n" title)
+-- 
+2.13.2
+

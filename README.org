@@ -1,0 +1,175 @@
+* Git Repositories
+
+kjambunathan@debian:~/src/ox-odt$ git config -e
+
+[core]
+        repositoryformatversion = 0
+        filemode = true
+        bare = false
+        logallrefupdates = true
+[remote "Orgmode.org"]
+        url = git://orgmode.org/org-mode.git
+        fetch = +refs/heads/*:refs/remotes/Orgmode.org/*
+[branch "master"]
+        remote = Orgmode.org
+        merge = refs/heads/master
+[remote "ox-odt"]
+        url = git://repo.or.cz/org-mode/cv.git
+        fetch = +refs/heads/*:refs/remotes/ox-odt/*
+[remote "origin"]
+        url =  git@github.com:kjambunathan/org-mode.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+
+* State of the repositories at the start of merge
+
+kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline ox-odt/master
+f0f93716ce9de71dc904887c066e03644c795545 (ox-odt/master) ox-odt.el: Add support for JabRef
+
+kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline Orgmode.org/master
+912a385518bcf2e320cc161d573ad329111de6c7 (origin/master, Orgmode.org/master, Orgmode.org/HEAD) org-agenda: Support for dimming local to each agenda.
+
+kjambunathan@debian:~/src/ox-odt$ git merge-base ox-odt/master Orgmode.org/master
+40ef7af622cb461527555538965b7a6a023e76d2
+
+kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline 40ef7af622cb461527555538965b7a6a023e76d2
+40ef7af622cb461527555538965b7a6a023e76d2 (tag: my-common-ancestor) org-element: Elements can accept multiple secondary strings
+
+* Ongoing state of the merge
+
+Patches that are to be merged are in the root directory.
+
+Patches that have already been merged are in "done/" subdirectory
+
+912a385518bcf2e320cc161d573ad329111de6c7 
+
+* Commits to lisp/ox-odt.el on Orgmode.org since I forked 
+
+(Common ancestor: 40ef7af622cb461527555538965b7a6a023e76d2)
+
+kjambunathan@debian:~/src/ox-odt$ git log --reverse --format=oneline my-common-ancestor..Orgmode.org/master -- lisp/ox-odt.el 
+
+fd8c843692e4c487bd03ed0d71b0bac69112b335 ox-odt: Fix bugs in metadata generation
+16cea3d7b74e34945355cf434a684890f4c52cb2 ox: Remove `comment' special value for `org-export-with-creator'
+e9fd19968b69f3acd102c393336d9d93a72de624 ox: Always insert creator in metadata
+79c0aa21ca2657f2ea7272040bce3ff4754bab1b ox: Remove #+KEYWORD and #+DESCRIPTION
+a780080fcf38ca6412658323eae9367a17a12bdf ox: Add #+SUBTITLE property in some backends
+459033265295723cbfb0fccb3577acbfdc9d0285 Export back-ends: Use `org-export-get-reference'
+e0567c9cacc3a13d21a24ba3058d653a335ae9cb Export back-ends: Use `org-export-file-uri'
+aad7dd24864f3ce988a67061a391d85e649aa375 ox-odt: Fix bug links without labels.
+8e89c0e3b40bb2a140bbbb85def17b1c190eb158 ox-odt: Allow attaching SVG images by default
+690e25d9323276ccf013197c71619dbfe1382baa ox-odt: Fix defcustom keywords
+d81e6b52b7a02bb3401f2f17dedc746b63eeecc7 Backport commit 6711a21 from Emacs master branch
+c115c7b4e86b68fe4f903636252a8b22b46a044f org-compat: Use different font-lock-ensure alias
+0cec91d0392c06cc6504b1cbd63d0a8fd3974789 Backport commit b884ff3 from Emacs master branch
+6b04312e85f04219aeaa7c7f9669a51ec2cbec17 Backport commit 96794d2 from Emacs master branch
+6f9184a294e4e7914041c2ae42ef147d11e9ebec Merge branch 'maint' into backport-master
+3a81c7ee6f392463db1db4b3e77a0e0411032382 Backport commit 0c856a2 from Emacs master branch
+8d00cd896614a6e794765bdcfc7ee9bedd6dc075 ox-odt: Fix footnote export
+17a225621c73b4990bd4458924a249aa0a11650e ox-odt: Small refactoring
+5adb8bcfa2d3611eaa6c69aab23103e60d28bd57 ox-odt: Tiny fix
+c290921a0d3a90d7efb702e89c955421a6090116 ox-odt: Prevent internal links to target table of contents
+c86a10b0bcc930379ebc9364e6e9e22ba082a64f Backport commit 284c470 from Emacs master branch
+cc0d491739b6c81282dfd86330f646d3e4e92b60 Backport commit ab11a1c from Emacs master branch
+4ca1179c9e9c707267ac3738cc7c8442001b204b ox-odt: Use lexical binding
+07e16c2fc5687de5e1761bbf4ba3cf1777de15eb Use setq-local and defvar-local.
+54318add34f09ff39d3fd034a4c1a89f60fd8759 Change export block syntax
+6bc48c5f4124a56b84e87b04020d255d126d2aa8 Update copyright years
+6345de2d05412113954efd6881d7d5e5a29586cd Merge branch 'maint'
+a4edee4069007591d0159df518936a2699123c6e org-compat: Update font-lock-ensure alias
+23ca3fa100c2fd8e3dab839fba5ca205e32d83d5 Merge branch 'maint'
+07ee690dce504c6082d5ebbe90e6cf4478e07586 ox-odt: Fix End of file during parsing error
+16dbf6ded6f79c0b7797856004b0ebc5fe49fb04 Merge branch 'maint'
+21ef130752bdfb0ae841d53dd1458b5a505236af ox-odt: Fix styles location
+b2411769cfa3bd5267b08bb266ac502ec58a786e Merge branch 'maint'
+af8e3d84ee18609a83e03af44efc5601700d57fc ox: Provide offset to [+-]n in SRC/EXAMPLE export
+0ac099a6f8f58770c583de450a665be755a95b60 Remove final parts of XEmacs compatibility code
+ee7aa9878f4ae76fce63be763e7825c654719f1b Deprecate `org-no-warnings' in favor of `with-no-warnings'
+b2091f6d75ee10928b12d115dc3286e479f303d5 Move obsolete declarations into "org-compat.el"
+72461eaeaf0317a211a01d31f85eeed0d0ab7b0a Use `string-match-p' instead of `org-string-match-p'
+2b99f910e1c0d1f4701772f9bedf66894e16c403 ox-odt: Use cl-lib
+c4da20a2f33a3e859df6a5d9d8f95e3a46e453ec Silence byte-compiler
+67c29aa1e8b1ffd4dcfb0d86822e42a8139cf203 ox-odt: Remove obnoxious messages when compiling library
+ab21e2b72d504c13e035757a4765d02f8e938968 Use file-name-extension where appropriate
+48e7f17bc6df8bf7d6ed8d34c849beefb7262dfc Use assq instead of assoc with quoted symbols
+140aacbf2f57e207a33417bb446060de52a4b312 Use ‘eq’ instead of ‘equal’ for symbols
+d9070419119cf6b19f2f471aa2eb81ec3d9b0d0f Change :version in defcustoms from "25.1" to "25.2"
+0c0bc8419093a1034ae5e1cdb2a63b04ae8267fc Change "Org-mode" into "Org mode"
+1a88cf920e5090c311f77ba3f74183aa51253fb5 org-element: Improve support for pseudo objects and elements
+73694b21d7233c88bbd6e67eefaf8f4c321e4863 ox-odt.el: Fix LaTeX formulae in opendocument exports
+b7cb9b54d53fa4e246138791ccc863ae8f927860 Backport commit eeecac7 from Emacs
+5ffb373a2ca6833617e344154c3dc1b877ec4784 Implement `org-export-insert-image-links'
+3469830e3d95c6176fb91017463c5ef4140dd1c0 ox-odt: Fix typo
+713f785017e908333caddd244fcc685745e78539 Update copyright years
+0d3683f2cd5490f213b471385d76479f819e2f41 Merge branch 'maint'
+1749dfe091308d33799de20fb839cb3604afacc2 ox-odt: Fix verse environment
+400d46e547d265623e8af75dc436b67526def04c Merge branch 'maint'
+7c710f6f57ab7dcc539511cc9c51ee350a966fce Change :version in defcustoms from "25.2" to "26.1"
+7278899697ef146ed7048245a9a75a09922f46e0 Merge branch 'maint'
+7b065b1d0a0811304a7599b9feb1c239df1a48db ox-odt: Include #+latex_header when converting LaTeX to PNG
+09e61233ed5a24687e20b7dc18a1c985d423fb24 Merge branch 'maint'
+
+* Commits to lisp/ox-odt.el on Orgmode.org since I forked 
+
+(Common ancestor: 40ef7af622cb461527555538965b7a6a023e76d2)
+
+kjambunathan@debian:~/src/ox-odt$ git log --reverse --pretty=format:%H my-common-ancestor..Orgmode.org/master -- lisp/ox-odt.el 
+
+fd8c843692e4c487bd03ed0d71b0bac69112b335
+16cea3d7b74e34945355cf434a684890f4c52cb2
+e9fd19968b69f3acd102c393336d9d93a72de624
+79c0aa21ca2657f2ea7272040bce3ff4754bab1b
+a780080fcf38ca6412658323eae9367a17a12bdf
+459033265295723cbfb0fccb3577acbfdc9d0285
+e0567c9cacc3a13d21a24ba3058d653a335ae9cb
+aad7dd24864f3ce988a67061a391d85e649aa375
+8e89c0e3b40bb2a140bbbb85def17b1c190eb158
+690e25d9323276ccf013197c71619dbfe1382baa
+d81e6b52b7a02bb3401f2f17dedc746b63eeecc7
+c115c7b4e86b68fe4f903636252a8b22b46a044f
+0cec91d0392c06cc6504b1cbd63d0a8fd3974789
+6b04312e85f04219aeaa7c7f9669a51ec2cbec17
+6f9184a294e4e7914041c2ae42ef147d11e9ebec
+3a81c7ee6f392463db1db4b3e77a0e0411032382
+8d00cd896614a6e794765bdcfc7ee9bedd6dc075
+17a225621c73b4990bd4458924a249aa0a11650e
+5adb8bcfa2d3611eaa6c69aab23103e60d28bd57
+c290921a0d3a90d7efb702e89c955421a6090116
+c86a10b0bcc930379ebc9364e6e9e22ba082a64f
+cc0d491739b6c81282dfd86330f646d3e4e92b60
+4ca1179c9e9c707267ac3738cc7c8442001b204b
+07e16c2fc5687de5e1761bbf4ba3cf1777de15eb
+54318add34f09ff39d3fd034a4c1a89f60fd8759
+6bc48c5f4124a56b84e87b04020d255d126d2aa8
+6345de2d05412113954efd6881d7d5e5a29586cd
+a4edee4069007591d0159df518936a2699123c6e
+23ca3fa100c2fd8e3dab839fba5ca205e32d83d5
+07ee690dce504c6082d5ebbe90e6cf4478e07586
+16dbf6ded6f79c0b7797856004b0ebc5fe49fb04
+21ef130752bdfb0ae841d53dd1458b5a505236af
+b2411769cfa3bd5267b08bb266ac502ec58a786e
+af8e3d84ee18609a83e03af44efc5601700d57fc
+0ac099a6f8f58770c583de450a665be755a95b60
+ee7aa9878f4ae76fce63be763e7825c654719f1b
+b2091f6d75ee10928b12d115dc3286e479f303d5
+72461eaeaf0317a211a01d31f85eeed0d0ab7b0a
+2b99f910e1c0d1f4701772f9bedf66894e16c403
+c4da20a2f33a3e859df6a5d9d8f95e3a46e453ec
+67c29aa1e8b1ffd4dcfb0d86822e42a8139cf203
+ab21e2b72d504c13e035757a4765d02f8e938968
+48e7f17bc6df8bf7d6ed8d34c849beefb7262dfc
+140aacbf2f57e207a33417bb446060de52a4b312
+d9070419119cf6b19f2f471aa2eb81ec3d9b0d0f
+0c0bc8419093a1034ae5e1cdb2a63b04ae8267fc
+1a88cf920e5090c311f77ba3f74183aa51253fb5
+73694b21d7233c88bbd6e67eefaf8f4c321e4863
+b7cb9b54d53fa4e246138791ccc863ae8f927860
+5ffb373a2ca6833617e344154c3dc1b877ec4784
+3469830e3d95c6176fb91017463c5ef4140dd1c0
+713f785017e908333caddd244fcc685745e78539
+0d3683f2cd5490f213b471385d76479f819e2f41
+1749dfe091308d33799de20fb839cb3604afacc2
+400d46e547d265623e8af75dc436b67526def04c
+7c710f6f57ab7dcc539511cc9c51ee350a966fce
+7278899697ef146ed7048245a9a75a09922f46e0
+7b065b1d0a0811304a7599b9feb1c239df1a48db
+09e61233ed5a24687e20b7dc18a1c985d423fb24

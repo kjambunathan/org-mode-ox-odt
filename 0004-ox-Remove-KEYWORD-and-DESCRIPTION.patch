@@ -1,0 +1,30 @@
+From 79c0aa21ca2657f2ea7272040bce3ff4754bab1b Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Fri, 13 Mar 2015 21:38:26 +0100
+Subject: [PATCH 04/50] ox: Remove #+KEYWORD and #+DESCRIPTION
+
+* ox.el: Remove #+KEYWORD: and #+DESCRIPTION:.
+* ox-deck.el, ox-rss.el, ox-html, ox-latex, ox-odt, ox-org: Add
+  #+KEYWORD and #+DESCRIPTION.
+* org.texi (Export settings): Explicit state which backends
+  support #+DESCRIPTION and #+KEYWORDS.
+---
+ lisp/ox-odt.el | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 02d3f4422..d52a3aece 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -97,6 +97,8 @@
+ 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
+   :options-alist
+   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
++    (:description "DESCRIPTION" nil nil newline)
++    (:keywords "KEYWORDS" nil nil space)
+     ;; Other variables.
+     (:odt-content-template-file nil nil org-odt-content-template-file)
+     (:odt-display-outline-level nil nil org-odt-display-outline-level)
+-- 
+2.13.2
+

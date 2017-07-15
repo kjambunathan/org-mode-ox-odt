@@ -1,0 +1,115 @@
+From 72461eaeaf0317a211a01d31f85eeed0d0ab7b0a Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Mon, 25 Jul 2016 15:21:12 +0200
+Subject: [PATCH 33/50] Use `string-match-p' instead of `org-string-match-p'
+
+* contrib/lisp/org-contacts.el (org-contacts-filter):
+(org-contacts-complete-group):
+(org-contacts-complete-tags-props):
+* contrib/lisp/org-wl.el (org-wl-open):
+* contrib/lisp/ox-bibtex.el (org-bibtex-merge-contiguous-citations):
+* lisp/ob-core.el (org-babel-demarcate-block):
+* lisp/ob-processing.el (org-babel-processing-view-sketch):
+* lisp/ob-stan.el (org-babel-execute:stan):
+* lisp/org-agenda.el (org-agenda-get-category-icon):
+* lisp/org-clock.el (org-clock-into-drawer):
+* lisp/org-element.el (org-element-link-parser):
+* lisp/org-lint.el (org-lint-orphaned-affiliated-keywords):
+(org-lint-invalid-babel-call-block):
+(org-lint-colon-in-name):
+* lisp/org-list.el (org-list-item-body-column):
+* lisp/org-macro.el (org-macro-replace-all):
+* lisp/org-plot.el (org-plot/gnuplot-script):
+* lisp/org-table.el (org-table-export):
+(org-table-align):
+(org-table-get-range):
+(org-table-recalculate):
+(org-table-expand-lhs-ranges):
+(org-table-formula-substitute-names):
+(org-table-show-reference):
+(orgtbl-to-texinfo):
+(org-table-remote-reference-indirection):
+* lisp/org.el (org-make-link-string):
+(org--open-elisp-link):
+(org-open-at-point):
+(org-store-log-note):
+(org-cached-entry-get):
+(org--valid-property-p):
+(org-entry-properties):
+(org-buffer-property-keys):
+(org-insert-drawer):
+(org-display-inline-images):
+(org-in-commented-heading-p):
+* lisp/ox-ascii.el (org-ascii-keyword):
+* lisp/ox-beamer.el (org-beamer--format-frame):
+* lisp/ox-html.el (org-html-keyword):
+* lisp/ox-latex.el (org-latex--label):
+(org-latex-headline):
+(org-latex-item):
+(org-latex-keyword):
+(org-latex--inline-image):
+(org-latex-src-block):
+* lisp/ox-odt.el (org-odt-styles-dir):
+(org-odt-keyword):
+(org-odt--translate-latex-fragments):
+* lisp/ox-texinfo.el (org-texinfo-template):
+(org-texinfo-keyword):
+(org-texinfo-src-block):
+* lisp/ox.el (org-export-inline-image-p):
+(org-export-file-uri):
+* testing/lisp/test-org-table.el (test-org-table/to-generic):
+(test-org-table/to-latex):
+(test-org-table/to-html):
+(test-org-table/named-field):
+(test-org-table/named-column):
+(test-org-table/tab-indent):
+(test-org-table/first-rc):
+(test-org-table/last-rc): Use `string-match-p' instead of
+`org-string-match-p'.
+---
+ lisp/ox-odt.el | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 29a0b8573..4aee7b543 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -200,8 +200,7 @@ heuristically based on the values of `org-odt-lib-dir' and
+ 			   (file-readable-p
+ 			    (expand-file-name
+ 			     "OrgOdtStyles.xml" styles-dir)))
+-		  (message "Debug (ox-odt): Using styles under %s"
+-			   styles-dir)
++		  (message "Debug (ox-odt): Using styles under %s" styles-dir)
+ 		  (throw 'styles-dir styles-dir)))))))
+     (unless styles-dir
+       (error "Error (ox-odt): Cannot find factory styles files, aborting"))
+@@ -2013,13 +2012,13 @@ information."
+      ((string= key "TOC")
+       (let ((case-fold-search t))
+ 	(cond
+-	 ((org-string-match-p "\\<headlines\\>" value)
++	 ((string-match-p "\\<headlines\\>" value)
+ 	  (let ((depth (or (and (string-match "\\<[0-9]+\\>" value)
+ 				(string-to-number (match-string 0 value)))
+ 			   (plist-get info :headline-levels)))
+-		(localp (org-string-match-p "\\<local\\>" value)))
++		(localp (string-match-p "\\<local\\>" value)))
+ 	    (org-odt-toc depth info (and localp keyword))))
+-	 ((org-string-match-p "tables\\|figures\\|listings" value)
++	 ((string-match-p "tables\\|figures\\|listings" value)
+ 	  ;; FIXME
+ 	  (ignore))))))))
+ 
+@@ -3765,7 +3764,7 @@ contextual information."
+ 						  nil processing-type)
+ 				(buffer-substring-no-properties
+ 				 (point-min) (point-max)))))
+-		    (if (org-string-match-p "file:\\([^]]*\\)" link) link
++		    (if (string-match-p "file:\\([^]]*\\)" link) link
+ 		      (message "LaTeX Conversion failed.")
+ 		      nil))))
+ 	    (when org-link
+-- 
+2.13.2
+

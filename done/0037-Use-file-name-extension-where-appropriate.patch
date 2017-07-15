@@ -1,0 +1,39 @@
+From ab21e2b72d504c13e035757a4765d02f8e938968 Mon Sep 17 00:00:00 2001
+From: Aaron Ecay <aaronecay@gmail.com>
+Date: Thu, 1 Sep 2016 18:44:30 +0100
+Subject: [PATCH 37/50] Use file-name-extension where appropriate
+
+* lisp/ob-R.el (org-babel-R-construct-graphics-device-call):
+* lisp/ob-asymptote.el (org-babel-execute:asymptote):
+* lisp/ob-latex.el (org-babel-execute:latex):
+* lisp/org-agenda.el (org-agenda-write):
+* lisp/ox-odt.el (org-odt--copy-formula-file): Use `file-name-extension'
+instead of string munging.
+---
+ lisp/ox-odt.el | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 9978c1e07..23a012997 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2388,13 +2388,13 @@ used as a communication channel."
+     ;; Copy over the formula file from user directory to zip
+     ;; directory.
+     (message "Embedding %s as %s..." src-file target-file)
+-    (let ((case-fold-search nil))
++    (let ((ext (file-name-extension src-file)))
+       (cond
+        ;; Case 1: Mathml.
+-       ((string-match "\\.\\(mathml\\|mml\\)\\'" src-file)
++       ((member ext '("mathml" "mml"))
+ 	(copy-file src-file (concat org-odt-zip-dir target-file) 'overwrite))
+        ;; Case 2: OpenDocument formula.
+-       ((string-match "\\.odf\\'" src-file)
++       ((string= ext "odf")
+ 	(org-odt--zip-extract src-file "content.xml"
+ 				(concat org-odt-zip-dir target-dir)))
+        (t (error "%s is not a formula file" src-file))))
+-- 
+2.13.2
+

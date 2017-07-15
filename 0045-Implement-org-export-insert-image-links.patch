@@ -1,0 +1,42 @@
+From 5ffb373a2ca6833617e344154c3dc1b877ec4784 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sat, 17 Dec 2016 11:36:49 +0100
+Subject: [PATCH 45/50] Implement `org-export-insert-image-links'
+
+* lisp/ox.el (org-export-insert-image-links):
+* lisp/ox-odt.el (org-odt--translate-image-links):
+* lisp/ox-latex.el (org-latex-image-link-filter):
+* lisp/ox-html.el (org-html-image-link-filter): New functions.
+---
+ lisp/ox-odt.el | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 24658363c..92c54cf8d 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -85,7 +85,8 @@
+   :filters-alist '((:filter-parse-tree
+ 		    . (org-odt--translate-latex-fragments
+ 		       org-odt--translate-description-lists
+-		       org-odt--translate-list-tables)))
++		       org-odt--translate-list-tables
++		       org-odt--translate-image-links)))
+   :menu-entry
+   '(?o "Export to ODT"
+        ((?o "As ODT file" org-odt-export-to-odt)
+@@ -3687,6 +3688,11 @@ contextual information."
+ 
+ ;;; Filters
+ 
++;;; Images
++
++(defun org-odt--translate-image-links (data _backend info)
++  (org-export-insert-image-links data info inline image rules))
++
+ ;;;; LaTeX fragments
+ 
+ (defun org-odt--translate-latex-fragments (tree _backend info)
+-- 
+2.13.2
+

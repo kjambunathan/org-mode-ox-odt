@@ -1,0 +1,85 @@
+From 54318add34f09ff39d3fd034a4c1a89f60fd8759 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 3 Feb 2015 16:16:54 +0100
+Subject: [PATCH 24/50] Change export block syntax
+
+* lisp/org-element.el (org-element-export-block-parser):
+(org-element--current-element): Use new syntax for export blocks.
+(org-element-block-name-alist): Remove.
+
+* lisp/ox.el (org-export-register-backend):
+(org-export-define-derived-backend): Remove :export-block keyword from
+back-end's definition.
+(org-export-expand-include-keyword): Use new syntax for include
+keywords.
+
+* lisp/ox-ascii.el (ascii):
+* lisp/ox-beamer.el (beamer):
+* lisp/ox-html.el (html):
+* lisp/ox-latex.el (latex):
+(org-latex-prefer-user-labels):
+* lisp/ox-man.el (man):
+* lisp/ox-md.el (md):
+* lisp/ox-odt.el (odt):
+* lisp/ox-texinfo.el (texinfo): Propagate changes to "ox.el".
+
+* lisp/ob-core.el (org-babel-insert-result):
+* lisp/ob-haskell.el (org-babel-haskell-export-to-lhs): Use new syntax.
+
+* lisp/org.el (org-structure-template-alist): Use new syntax.
+(org-protecting-blocks): Add "export" to protected blocks.  Remove
+  back-ends blocks, which are now special blocks.
+(org-fontify-meta-lines-and-blocks-1): Fontify correctly new blocks.
+
+* lisp/org-footnote.el (org-footnote-forbidden-blocks):
+* lisp/org-list.el (org-list-forbidden-blocks): Add "export" to
+  forbidden blocks.  Remove back-ends blocks, which are now special
+  blocks.
+
+* contrib/lisp/ox-extra.el: Update comments.
+
+* testing/lisp/test-org-element.el (test-org-element/export-block-parser):
+(test-org-element/export-block-interpreter):
+* testing/lisp/test-ob.el (test-ob/org-babel-remove-result--results-html):
+(test-ob/org-babel-remove-result--results-latex):
+* testing/lisp/test-ox.el (test-org-export/expand-include): Update tests.
+
+Export blocks are explicitly marked as such at the syntax level to
+disambiguate their parsing from special blocks.  The new syntax is
+
+  #+BEGIN_EXPORT backend
+  ...
+  #+END_EXPORT
+
+instead of
+
+  #+BEGIN_backend
+  ...
+  #+END_backend
+
+As a consequence, =INCLUDE= keywords syntax is modified, e.g.,
+
+  #+INCLUDE: "file.org" HTML
+
+becomes
+
+  #+INCLUDE: "file.org" export html
+---
+ lisp/ox-odt.el | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index ce5f9d4ab..7a285b690 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -83,7 +83,6 @@
+     (underline . org-odt-underline)
+     (verbatim . org-odt-verbatim)
+     (verse-block . org-odt-verse-block))
+-  :export-block "ODT"
+   :filters-alist '((:filter-parse-tree
+ 		    . (org-odt--translate-latex-fragments
+ 		       org-odt--translate-description-lists
+-- 
+2.13.2
+

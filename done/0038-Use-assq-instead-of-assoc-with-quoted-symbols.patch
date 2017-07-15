@@ -1,0 +1,58 @@
+From 48e7f17bc6df8bf7d6ed8d34c849beefb7262dfc Mon Sep 17 00:00:00 2001
+From: Aaron Ecay <aaronecay@gmail.com>
+Date: Fri, 23 Sep 2016 11:18:24 +0100
+Subject: [PATCH 38/50] Use assq instead of assoc with quoted symbols
+
+* lisp/ob-core.el (org-babel-merge-params):
+* lisp/org-agenda.el (org-agenda-prepare-window):
+(org-agenda-to-appt):
+* lisp/org-capture.el (org-capture-finalize):
+* lisp/org.el (org-find-invisible-foreground):
+(org-open-file):
+(org-todo-trigger-tag-changes):
+(org-back-over-empty-lines):
+* lisp/ox-odt.el (org-odt-get-table-cell-styles):
+Use assq instead of assoc with quoted symbols.
+---
+ lisp/ox-odt.el | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 23a012997..5f9333689 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3256,23 +3256,23 @@ styles congruent with the ODF-1.2 specification."
+ 	     (cell-style-selectors (nth 2 style-spec))
+ 	     (cell-type
+ 	      (cond
+-	       ((and (cdr (assoc 'use-first-column-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-first-column-styles cell-style-selectors))
+ 		     (= c 0)) "FirstColumn")
+-	       ((and (cdr (assoc 'use-last-column-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-last-column-styles cell-style-selectors))
+ 		     (= (1+ c) (cdr table-dimensions)))
+ 		"LastColumn")
+-	       ((and (cdr (assoc 'use-first-row-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-first-row-styles cell-style-selectors))
+ 		     (= r 0)) "FirstRow")
+-	       ((and (cdr (assoc 'use-last-row-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-last-row-styles cell-style-selectors))
+ 		     (= (1+ r) (car table-dimensions)))
+ 		"LastRow")
+-	       ((and (cdr (assoc 'use-banding-rows-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-banding-rows-styles cell-style-selectors))
+ 		     (= (% r 2) 1)) "EvenRow")
+-	       ((and (cdr (assoc 'use-banding-rows-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-banding-rows-styles cell-style-selectors))
+ 		     (= (% r 2) 0)) "OddRow")
+-	       ((and (cdr (assoc 'use-banding-columns-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-banding-columns-styles cell-style-selectors))
+ 		     (= (% c 2) 1)) "EvenColumn")
+-	       ((and (cdr (assoc 'use-banding-columns-styles cell-style-selectors))
++	       ((and (cdr (assq 'use-banding-columns-styles cell-style-selectors))
+ 		     (= (% c 2) 0)) "OddColumn")
+ 	       (t ""))))
+ 	(concat template-name cell-type)))))
+-- 
+2.13.2
+
