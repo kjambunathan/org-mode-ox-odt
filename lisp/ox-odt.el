@@ -89,7 +89,7 @@
     (verbatim . org-odt-verbatim)
     (verse-block . org-odt-verse-block)
     (citation . org-odt-citation))
-  :export-block "ODT"
+  ;; :export-block "ODT"			; FIXME
   :filters-alist '((:filter-parse-tree
 		    . (org-odt--collect-cite-keys
 		       org-odt--translate-latex-fragments
