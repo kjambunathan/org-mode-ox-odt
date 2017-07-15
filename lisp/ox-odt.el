@@ -1,6 +1,6 @@
 ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2015 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2017 Free Software Foundation, Inc.
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -257,13 +257,13 @@ standard Emacs.")
 (defvar org-odt-automatic-styles '()
   "Registry of automatic styles for various OBJECT-TYPEs.
 The variable has the following form:
-\(\(OBJECT-TYPE-A
-  \(\(OBJECT-NAME-A.1 OBJECT-PROPS-A.1\)
-   \(OBJECT-NAME-A.2 OBJECT-PROPS-A.2\) ...\)\)
- \(OBJECT-TYPE-B
-  \(\(OBJECT-NAME-B.1 OBJECT-PROPS-B.1\)
-   \(OBJECT-NAME-B.2 OBJECT-PROPS-B.2\) ...\)\)
- ...\).
+((OBJECT-TYPE-A
+  ((OBJECT-NAME-A.1 OBJECT-PROPS-A.1)
+   (OBJECT-NAME-A.2 OBJECT-PROPS-A.2) ...))
+ (OBJECT-TYPE-B
+  ((OBJECT-NAME-B.1 OBJECT-PROPS-B.1)
+   (OBJECT-NAME-B.2 OBJECT-PROPS-B.2) ...))
+ ...).
 
 OBJECT-TYPEs could be \"Section\", \"Table\", \"Figure\" etc.
 OBJECT-PROPS is (typically) a plist created by passing
@@ -318,7 +318,7 @@ according to the default face identified by the `htmlfontify'.")
 
 This is a list where each entry is of the form:
 
-  \(CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME ENUMERATOR-PREDICATE)
+  (CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME ENUMERATOR-PREDICATE)
 
 CATEGORY_HANDLE identifies the captionable entity in question.
 
@@ -668,15 +668,15 @@ The default value simply returns the value of CONTENTS."
   "Function to format headline text.
 
 This function will be called with 5 arguments:
-TODO      the todo keyword \(string or nil\).
-TODO-TYPE the type of todo \(symbol: `todo', `done', nil\)
-PRIORITY  the priority of the headline \(integer or nil\)
-TEXT      the main headline text \(string\).
-TAGS      the tags string, separated with colons \(string or nil\).
+TODO      the todo keyword (string or nil).
+TODO-TYPE the type of todo (symbol: `todo', `done', nil)
+PRIORITY  the priority of the headline (integer or nil)
+TEXT      the main headline text (string).
+TAGS      the tags string, separated with colons (string or nil).
 
 The function result will be used as headline text."
   :group 'org-export-odt
-  :version "25.1"
+  :version "26.1"
   :package-version '(Org . "8.3")
   :type 'function)
 
@@ -697,7 +697,7 @@ The function must accept six parameters:
 
 The function should return the string to be exported."
   :group 'org-export-odt
-  :version "25.1"
+  :version "26.1"
   :package-version '(Org . "8.3")
   :type 'function)
 
@@ -749,15 +749,15 @@ link's path."
 		:value-type (regexp :tag "Path")))
 
 (defcustom org-odt-inline-image-rules
-  '(("file" . "\\.\\(jpeg\\|jpg\\|png\\|gif\\)\\'"))
+  '(("file" . "\\.\\(jpeg\\|jpg\\|png\\|gif\\|svg\\)\\'"))
   "Rules characterizing image files that can be inlined into ODT.
 
 A rule consists in an association whose key is the type of link
 to consider, and value is a regexp that will be matched against
 link's path."
   :group 'org-export-odt
-  :version "24.4"
-  :package-version '(Org . "8.0")
+  :version "26.1"
+  :package-version '(Org . "8.3")
   :type '(alist :key-type (string :tag "Type")
 		:value-type (regexp :tag "Path")))
 
@@ -1001,16 +1001,16 @@ TABLE-CELL-STYLE-SELECTOR := `use-first-row-styles'       |
                              `use-banding-rows-styles'    |
                              `use-banding-columns-styles' |
                              `use-first-row-styles'
-ON-OR-OFF                 := `t' | `nil'
+ON-OR-OFF                 := t | nil
 
 For example, with the following configuration
 
 \(setq org-odt-table-styles
-      '\(\(\"TableWithHeaderRowsAndColumns\" \"Custom\"
-         \(\(use-first-row-styles . t\)
-          \(use-first-column-styles . t\)\)\)
-        \(\"TableWithHeaderColumns\" \"Custom\"
-         \(\(use-first-column-styles . t\)\)\)\)\)
+      \\='((\"TableWithHeaderRowsAndColumns\" \"Custom\"
+         ((use-first-row-styles . t)
+          (use-first-column-styles . t)))
+        (\"TableWithHeaderColumns\" \"Custom\"
+         ((use-first-column-styles . t)))))
 
 1. A table associated with \"TableWithHeaderRowsAndColumns\"
    style will use the following table-cell styles -
@@ -1335,21 +1335,17 @@ See `org-odt--build-date-styles' for implementation details."
   ;; /TOC/, as otherwise there will be duplicated anchors one in TOC
   ;; and one in the document body.
   ;;
-  ;; FIXME-1: Currently exported headings are memoized.  `org-export.el'
-  ;; doesn't provide a way to disable memoization.  So this doesn't
-  ;; work.
-  ;;
-  ;; FIXME-2: Are there any other objects that need to be suppressed
-  ;; within TOC?
+  ;; Likewise, links, footnote references and regular targets are also
+  ;; suppressed.
   (let* ((title (org-export-translate "Table of Contents" :utf-8 info))
 	 (headlines (org-export-collect-headlines
 		     info (and (wholenump depth) depth)))
 	 (backend (org-export-create-backend
-		   :parent (org-export-backend-name
-			    (plist-get info :back-end))
-		   :transcoders (mapcar
-				 (lambda (type) (cons type (lambda (_d c _i) c)))
-				 (list 'radio-target)))))
+		   :parent (org-export-backend-name (plist-get info :back-end))
+		   :transcoders '((footnote-reference . ignore)
+				  (link . (lambda (object c i) c))
+				  (radio-target . (lambda (object c i) c))
+				  (target . ignore)))))
     (when headlines
       (concat
        (org-odt-begin-toc title depth)
@@ -1547,7 +1543,8 @@ original parsed data.  INFO is a plist holding export options."
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
   ;; Write styles file.
   (let* ((styles-file (plist-get info :odt-styles-file))
-	 (styles-file (and styles-file (read (org-trim styles-file))))
+	 (styles-file (and (org-string-nw-p styles-file)
+			   (read (org-trim styles-file))))
 	 ;; Non-availability of styles.xml is not a critical
 	 ;; error. For now, throw an error.
 	 (styles-file (or styles-file
@@ -1575,8 +1572,8 @@ original parsed data.  INFO is a plist holding export options."
 	 ((member styles-file-type '("odt" "ott"))
 	  (org-odt--zip-extract styles-file "styles.xml" org-odt-zip-dir)))))
      (t
-      (error (format "Invalid specification of styles.xml file: %S"
-		     (plist-get info :odt-styles-file)))))
+      (error "Invalid specification of styles.xml file: %S"
+	     (plist-get info :odt-styles-file))))
 
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
@@ -1609,7 +1606,7 @@ original parsed data.  INFO is a plist holding export options."
       ;; currently the zip command zips up the entire temp directory so
       ;; that any auto-generated files created under the hood ends up in
       ;; the resulting odt file.
-      (set (make-local-variable 'backup-inhibited) t)
+      (setq-local backup-inhibited t)
 
       ;; Outline numbering is retained only upto LEVEL.
       ;; To disable outline numbering pass a LEVEL of 0.
@@ -1929,7 +1926,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		      footnote-reference info))
 		(def
 		 (let ((def (org-trim (org-export-data raw info))))
-		   (if (eq (org-element-type raw) 'org-data) def
+		   (if (eq (org-element-class (car (org-element-contents raw)))
+			   'element)
+		       def
 		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			     "Footnote" def)))))
 	   (org-odt--format-footnote-definition n def))))))))
@@ -2274,7 +2273,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 ;;;; Latex Fragment
 
 ;; (when latex-frag			; FIXME
-;; 	(setq href (org-propertize href :title "LaTeX Fragment"
+;; 	(setq href (propertize href :title "LaTeX Fragment"
 ;; 				   :description latex-frag)))
 ;; handle verbatim
 ;; provide descriptions
@@ -2693,13 +2692,13 @@ used as a communication channel."
     ;; Copy over the formula file from user directory to zip
     ;; directory.
     (message "Embedding %s as %s..." src-file target-file)
-    (let ((case-fold-search nil))
+    (let ((ext (file-name-extension src-file)))
       (cond
        ;; Case 1: Mathml.
-       ((string-match "\\.\\(mathml\\|mml\\)\\'" src-file)
+       ((member ext '("mathml" "mml"))
 	(copy-file src-file (concat org-odt-zip-dir target-file) 'overwrite))
        ;; Case 2: OpenDocument formula.
-       ((string-match "\\.odf\\'" src-file)
+       ((string= ext "odf")
 	(org-odt--zip-extract src-file "content.xml"
 				(concat org-odt-zip-dir target-dir)))
        (t (error "%s is not a formula file" src-file))))
@@ -3559,7 +3558,7 @@ and prefix with \"OrgSrc\".  For example,
 		 (with-temp-buffer
 		   (insert code)
 		   (funcall lang-mode)
-		   (font-lock-ensure)
+		   (org-font-lock-ensure)
 		   (buffer-string))))
 	 (fontifier (if use-htmlfontify-p 'org-odt-htmlfontify-string
 		      'org-odt--encode-plain-text))
@@ -3715,23 +3714,23 @@ styles congruent with the ODF-1.2 specification."
 	     (cell-style-selectors (nth 2 style-spec))
 	     (cell-type
 	      (cond
-	       ((and (cdr (assoc 'use-first-column-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-first-column-styles cell-style-selectors))
 		     (= c 0)) "FirstColumn")
-	       ((and (cdr (assoc 'use-last-column-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-last-column-styles cell-style-selectors))
 		     (= (1+ c) (cdr table-dimensions)))
 		"LastColumn")
-	       ((and (cdr (assoc 'use-first-row-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-first-row-styles cell-style-selectors))
 		     (= r 0)) "FirstRow")
-	       ((and (cdr (assoc 'use-last-row-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-last-row-styles cell-style-selectors))
 		     (= (1+ r) (car table-dimensions)))
 		"LastRow")
-	       ((and (cdr (assoc 'use-banding-rows-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-banding-rows-styles cell-style-selectors))
 		     (= (% r 2) 1)) "EvenRow")
-	       ((and (cdr (assoc 'use-banding-rows-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-banding-rows-styles cell-style-selectors))
 		     (= (% r 2) 0)) "OddRow")
-	       ((and (cdr (assoc 'use-banding-columns-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-banding-columns-styles cell-style-selectors))
 		     (= (% c 2) 1)) "EvenColumn")
-	       ((and (cdr (assoc 'use-banding-columns-styles cell-style-selectors))
+	       ((and (cdr (assq 'use-banding-columns-styles cell-style-selectors))
 		     (= (% c 2) 0)) "OddColumn")
 	       (t ""))))
 	(concat template-name cell-type)))))
@@ -3808,8 +3807,7 @@ channel."
      (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
 	     cell-attributes
 	     (let ((table-cell-contents (org-element-contents table-cell)))
-	       (if (memq (org-element-type (car table-cell-contents))
-			 org-element-all-elements)
+	       (if (eq (org-element-class (car table-cell-contents)) 'element)
 		   contents
 		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			 paragraph-style contents))))
@@ -4040,7 +4038,7 @@ pertaining to indentation here."
     ;;
     ;; - Description lists are simulated as plain lists.
     ;; - Low-level headlines can be listified.
-    ;; - In Org-mode, a table can occur not only as a regular list
+    ;; - In Org mode, a table can occur not only as a regular list
     ;;   item, but also within description lists and low-level
     ;;   headlines.
 
@@ -4237,12 +4235,12 @@ exported file."
 		 (org-link
 		  (let ((link (with-temp-buffer
 				(insert latex-frag)
-				(org-format-latex cache-subdir cache-dir
-						  nil display-msg
-						  nil processing-type)
+				(org-format-latex cache-subdir nil nil cache-dir
+						  nil display-msg nil
+						  processing-type)
 				(buffer-substring-no-properties
 				 (point-min) (point-max)))))
-		    (if (org-string-match-p "file:\\([^]]*\\)" link) link
+		    (if (string-match-p "file:\\([^]]*\\)" link) link
 		      (prog1 nil (message "LaTeX Conversion failed."))))))
 	    (when org-link
 	      ;; Conversion succeeded.  Parse above Org-style link to a
@@ -4343,7 +4341,7 @@ exported file."
   ;;
   (org-element-map tree 'plain-list
     (lambda (el)
-      (when (equal (org-element-property :type el) 'descriptive)
+      (when (eq (org-element-property :type el) 'descriptive)
 	(org-element-set-element
 	 el
 	 (apply 'org-element-adopt-elements
@@ -4408,7 +4406,7 @@ exported file."
   ;;
   (org-element-map tree 'plain-list
     (lambda (el)
-      (when (equal (org-element-property :type el) 'descriptive)
+      (when (eq (org-element-property :type el) 'descriptive)
 	(org-element-set-element
 	 el
 	 (apply 'org-element-adopt-elements
@@ -4659,8 +4657,8 @@ exported file."
 					 nil standard-output nil (cdr cmd)))))
 		    (or (zerop exitcode)
 			(error (concat "Unable to create OpenDocument file."
-				       (format "  Zip failed with error (%s)"
-					       err-string)))))
+				       "  Zip failed with error (%s)")
+			       err-string)))
 		  cmds)))
 	     ;; Move the zip file from temporary work directory to
 	     ;; user-mandated location.
