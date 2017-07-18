@@ -4443,12 +4443,13 @@ exported file."
 ;;
 ;; #+ATTR_ODT: :rel-width 80
 ;; #+ATTR_ODT: :list-table t
-;; - Row 1
+;; -
+;;   - Row 1
 ;;   - 1.1
 ;;   - 1.2
 ;;   - 1.3
 ;; - -----
-;; - Row 2
+;;   - Row 2
 ;;   - 2.1
 ;;   - 2.2
 ;;   - 2.3
@@ -4461,21 +4462,50 @@ exported file."
 ;; | Row 2 | 2.1 | 2.2 | 2.3 |
 ;;
 ;; List tables can contain hrule (see example above).  They can also
-;; contain table specific attributes.
+;; contain table specific attributes.  
 ;;
-;; Note that org-tables are NOT multi-line and each line is mapped to
-;; a unique row in the exported document.  So if an exported table
-;; needs to contain a single paragraph (with copious text) it needs to
-;; be typed up in a single line.  Editing such long lines using the
-;; table editor will be a cumbersome task.  Furthermore inclusion of
-;; multi-paragraph text in a table cell is well-nigh impossible.
+;; Specifically, with a list table such as the one below, 
 ;;
-;; A LIST-TABLE circumvents above problems.
+;; #+ATTR_ODT: :list-table t
+;; - --------
+;;   - Row 1
+;;   - Row 1.1
+;;     - Subitem under 1.1
+;;     - Yet another subitem under 1.1
+;;   - Row 1.2
+;;   - Row 1.3
+;; - --------
+;;   - Row 2
+;;   - Row 2.1
+
+;;     Subtext for 2.1
+;;   - Row 2.2
+;;   - Row 2.3
+;; - --------
 ;;
-;; Note that in the example above the list items could be paragraphs
-;; themselves and the list can be arbitrarily deep.
+;; you could get, the following table, in to the exported document.
 ;;
-;; Inspired by following thread:
+;; |-------+-----------------------------------+---------+---------|
+;; | Row 1 | - Row 1.1                         | Row 1.2 | Row 1.3 |
+;; |       |   - Subitem under 1.1             |         |         |
+;; |       |   - Yet another subitem under 1.1 |         |         |
+;; |-------+-----------------------------------+---------+---------|
+;; | Row 2 | Row 2.1                           | Row 2.2 | Row 2.3 |
+;; |       |                                   |         |         |
+;; |       | Subtext for 2.1                   |         |         |
+;; |-------+-----------------------------------+---------+---------|
+;;
+;;
+;; MOTIVATION: Org mode's tables have limitations: (1) Specifically,
+;; if you want a paragraph with copious text in an exported document,
+;; all of it needs to be typed up in a single line.  Editing such long
+;; lines using the table editor is be a cumbersome task.  (2)
+;; Furthermore, if one wants a multi-paragraph text in a table cell is
+;; well-nigh impossible.
+;;
+;; A LIST-TABLE overcomes the above problem.
+;;
+;; This feature is inspired by following thread:
 ;; https://lists.gnu.org/archive/html/emacs-orgmode/2011-03/msg01101.html
 
 ;; Translate lists to tables
@@ -4491,53 +4521,54 @@ exported file."
 	 (apply 'org-element-adopt-elements
 		(list 'table (list :type 'org :attr_odt
 				   (org-element-property :attr_odt l1-list)))
-		(org-element-map l1-list 'item
-		  (lambda (l1-item)
-		    (let* ((l1-item-contents (org-element-contents l1-item))
-			   l1-item-leading-text l2-list)
-		      ;; Remove Level-2 list from the Level-item.  It
-		      ;; will be subsequently attached as table-cells.
-		      (let ((cur l1-item-contents) prev)
-			(while (and cur (not (eq (org-element-type (car cur))
-						 'plain-list)))
-			  (setq prev cur)
-			  (setq cur (cdr cur)))
-			(when prev
-			  (setcdr prev nil)
-			  (setq l2-list (car cur)))
-			(setq l1-item-leading-text l1-item-contents))
-		      (cond
-		       ;; Check for hrule.
-		       ((and
-			 (null l2-list)
-			 (not (cdr l1-item-leading-text))
-			 (eq (org-element-type (car l1-item-leading-text))
-			     'paragraph)
-			 (string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
-				       (org-element-interpret-data
-					(car l1-item-leading-text))))
-			;; Level-1 items start a table row.
-			(org-element-adopt-elements
-			 (list 'table-row (list :type 'rule))))
-		       ;; No hrule.
-		       (t
-			;; Level-1 items start a table row.
-			(apply 'org-element-adopt-elements
-			       (list 'table-row (list :type 'standard))
-			       ;;  Leading text of level-1 item define
-			       ;;  the first table-cell.
-			       (apply 'org-element-adopt-elements
-				      (list 'table-cell nil)
-				      l1-item-leading-text)
-			       ;; Level-2 items define subsequent
-			       ;; table-cells of the row.
-			       (org-element-map l2-list 'item
-				 (lambda (l2-item)
-				   (apply 'org-element-adopt-elements
-					  (list 'table-cell nil)
-					  (org-element-contents l2-item)))
-				 info nil 'item))))))
-		  info nil 'item))))
+		(delq nil
+		      (apply 'append
+			     (org-element-map l1-list 'item
+			       (lambda (l1-item)
+				 (let* ((l1-item-contents (org-element-contents l1-item))
+					l1-item-leading-text l2-list)
+				   ;; Remove Level-2 list from the Level-item.  It
+				   ;; will be subsequently attached as table-cells.
+				   (let ((cur l1-item-contents) prev)
+				     (while (and cur (not (eq (org-element-type (car cur))
+							      'plain-list)))
+				       (setq prev cur)
+				       (setq cur (cdr cur)))
+
+				     (if (null prev)
+					 (setq l2-list (car cur))
+				       (setcdr prev nil)
+				       (setq l2-list (car cur))
+				       (setq l1-item-leading-text l1-item-contents)))
+
+				   (list
+				    ;; Is the leading text of the
+				    ;; Level-2 a horizontal rule?
+				    (when (and l1-item-leading-text
+					       (eq (org-element-type (car l1-item-leading-text))
+						   'paragraph)
+					       (string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
+							     (org-element-interpret-data
+							      (car l1-item-leading-text))))
+				      ;; Yes. Splice a rule in to the
+				      ;; table.
+				      (org-element-adopt-elements
+				       (list 'table-row (list :type 'rule))))
+
+				    (when l2-list
+				      (apply 'org-element-adopt-elements
+					     ;; Level-1 items start a table row.
+					     (list 'table-row (list :type 'standard))
+					     ;; Level-2 items define
+					     ;; subsequent table-cells
+					     ;; of the row.
+					     (org-element-map l2-list 'item
+					       (lambda (l2-item)
+						 (apply 'org-element-adopt-elements
+							(list 'table-cell nil)
+							(org-element-contents l2-item)))
+					       info nil 'item))))))
+			       info nil 'item))))))
       nil)
     info)
   tree)
