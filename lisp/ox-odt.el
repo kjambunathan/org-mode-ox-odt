@@ -4168,13 +4168,14 @@ exported file."
   (let ((citations-alist nil))
     (org-element-map tree 'citation
       (lambda (citation)
-	(let* ((value (org-element-property :key citation)))
-	  (let ((cite-keys (split-string value ",")))
-	    (mapc (lambda (cite-key)
-		    (setq cite-key (org-trim cite-key))
-		    (unless (assoc cite-key citations-alist)
-		      (push (cons cite-key citation) citations-alist)))
-		  cite-keys))))
+	(let ((cite-keys (org-element-map citation 'citation-reference
+			   (lambda (citation-reference)
+			     (org-element-property :key citation-reference)))))
+	  (mapc (lambda (cite-key)
+		  (setq cite-key (org-trim cite-key))
+		  (unless (assoc cite-key citations-alist)
+		    (push (cons cite-key citation) citations-alist)))
+		cite-keys)))
       info)
     ;; Modify INFO by side-effects.
     (nconc info (list :citations-alist citations-alist)))

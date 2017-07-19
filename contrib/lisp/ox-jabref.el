@@ -1,4 +1,4 @@
-;;; ox-jabref.el --- JabRef Citation Processor for Orgmode
+;;; ox-jabref.el --- JabRef Citation Processor for Orgmode -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015 Vaidheeswaran C <vaidheeswaran.chinnaraju at gmail dot com>
 
@@ -402,7 +402,7 @@ For a list of export formats registered with JabRef use:
 (defun ox-jabref-unload-function ()
   "Restore the stock ODT backend."
   (prog1 nil
-    (ad-deactivate 'org-export-collect-tree-properties)
+    (ad-deactivate 'org-export--collect-tree-properties)
     (dolist (backend org-jabref-org-export-backends)
       (org-export-register-backend
        (assoc-default backend org-jabref--stock-backends)))
@@ -447,10 +447,7 @@ is the current export backend."
 				   (expand-file-name bib-file))
 				 :citation-style (nth 1 values))))
 	  (plist-get attributes property)))
-       (t
-	(let ((attribute (intern (format ":attr_%s" (org-export-backend-name
-						     (plist-get info :back-end))))))
-	  (org-odt--read-attribute bibliography property)))))))
+       (t (org-odt--read-attribute bibliography property))))))
 
 (defun org-jabref--get-citation-style (info)
   "Return Citation style."
@@ -571,7 +568,7 @@ Throw an error if a key in CITE-KEYS does not occur in BIB-FILE."
 	    (error (user-error "Pls. upgrade your chicago.ODF plugin")))
 	  (setq result-alist (nreverse result-alist)))))))
 
-(defun org-jabref-do-export-bib-file (bib-file export-format &optional dummy)
+(defun org-jabref-do-export-bib-file (bib-file export-format &optional _dummy)
   "Export BIB-FILE to EXPORT-FORMAT.
 Return the resulting XML as string.  Specifically,
 
@@ -633,7 +630,7 @@ Return the XML representation as a string. Specifically,
 
 ;;;; Export Filters :: Read-in and Write-out of caches
 
-(defadvice org-export-collect-tree-properties
+(defadvice org-export--collect-tree-properties
     (around org-jabref-load-citation-cache activate)
   "Add `:citation-cache' property to INFO."
   (let* ((info ad-do-it)
@@ -757,20 +754,18 @@ Return the XML representation as a string. Specifically,
 
 ;;;; Bibliography
 
-(defun org-jabref-bibliography (bibliography contents info)
+(defun org-jabref-bibliography (_bibliography _contents info)
   "Transcode a CITATION element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information.
 
 Pass each CITE-KEY from CITATION in to `:in-text'
 EXPORT-FORMAT.  Return the concatenated result, after adding some
 separators."
-  (let* ((bib-file (org-jabref--read-bibliography-attribute info :bib-file))
-	 (export-format (org-jabref--get-export-format info :bibliography :jabref-format))
+  (let* ((export-format (org-jabref--get-export-format info :bibliography :jabref-format))
 	 (formatter-name (org-jabref--get-export-format info :bibliography :formatter))
 	 (formatter (org-jabref--get-citation-formatter info formatter-name))
 	 (citation-cache (plist-get info :citation-cache))
 	 (bib-alist (assoc-default export-format citation-cache))
-	 (citation-alist (plist-get info :citations-alist))
 	 (pre-note nil)
 	 (post-note nil))
     (funcall (car formatter) bib-alist pre-note post-note (cdr formatter))))
@@ -778,7 +773,7 @@ separators."
 
 ;;;; Citation Reference
 
-(defun org-jabref-citation (citation contents info)
+(defun org-jabref-citation (citation _contents info)
   "Transcode a CITATION element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information.
 
@@ -787,8 +782,8 @@ EXPORT-FORMAT.  Return the concatenated result, after adding some
 separators."
   (let* ((pre-note (org-export-data (org-element-property :prefix citation) info))
 	 (post-note (org-export-data (org-element-property :suffix citation) info))
-	 (cite-keys (list (org-element-property :key citation)))
-	 (bib-file (org-jabref--read-bibliography-attribute info :bib-file))
+	 (cite-keys (org-element-map citation 'citation-reference
+		      (lambda (citation-reference) (org-element-property :key citation-reference))))
 	 (export-formats (org-jabref--get-export-format info :in-text :jabref-format))
 	 (formatter-name (org-jabref--get-export-format info :in-text :formatter))
 	 (formatter (org-jabref--get-citation-formatter info formatter-name))
@@ -824,8 +819,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information.
 If KEYWORD is a BIBLIOGRAPHY element, use
 `org-jabref-bibliography'.  Otherwise, call the standard
 transcoder for KEYWORD element."
-  (let ((key (org-element-property :key keyword))
-	(value (org-element-property :value keyword)))
+  (let ((key (org-element-property :key keyword)))
     (cond
      ;; Handle BIBLIOGRAPHY code.
      ((string= key "BIBLIOGRAPHY")
@@ -881,7 +875,7 @@ transcoder for KEYWORD element."
 ;;;; Citation reference: Footnote (for use with Chicago::Full note etc))
 
 (defun org-jabref-odt-format-citation-as-footnote-definition
-    (cite-key text pre-note post-note formatter-info)
+    (_cite-key text pre-note post-note formatter-info)
   (org-odt--format-footnote-definition
    nil (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 	       "Footnote"
