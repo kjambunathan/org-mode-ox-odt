@@ -1,0 +1,8 @@
+\begin{author}
+\format[RTFChars,AuthorFirstFirstCommas]{\author}, \end{author}"\format[RTFChars]{\title}," {\\i \format[RTFChars]{\journal}}
+\begin{volume} \volume\end{volume}
+\begin{number}, no. \number\end{number} 
+(
+\begin{month}\format[RTFChars]{\month} \end{month}
+\begin{year}\format[RTFChars]{\year})\end{year}
+\begin{pages}: \pages\end{pages}. 

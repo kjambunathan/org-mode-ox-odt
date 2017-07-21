@@ -1,0 +1,5 @@
+\begin{author}
+\format[RTFChars,AuthorLastFirstCommas]{\author}. \end{author}
+\begin{title}"\format[RTFChars]{\title}." \end{title}PhD diss., \format[RTFChars]{\school}, 
+\begin{year}\format[RTFChars]{\year}. \end{year}\\par\\par
+\begin{abstract}\format[RTFChars]{\abstract}\\par\\par\end{abstract}

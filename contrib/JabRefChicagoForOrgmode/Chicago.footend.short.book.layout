@@ -1,0 +1,4 @@
+\begin{author}
+\format[RTFChars,AuthorNatBib]{\author}, \end{author}
+{\\i \format[RTFChars]{\title}}
+\begin{volume}, \volume: \end{volume}. 

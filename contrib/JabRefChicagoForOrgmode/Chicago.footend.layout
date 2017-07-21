@@ -1,0 +1,60 @@
+\format[RTFChars,AuthorFirstFirstCommas]{\author} \format[RTFChars]{\title}.
+
+
+\begin{journal}
+}{\\i \format[RTFChars]{\journal}}{ }{\\b \volume}{
+\end{journal}
+
+
+\begin{number}
+ (\number) 
+\end{number}
+
+
+\begin{editor}
+ \format[RTFChars,AuthorFirstFirstCommas]{\editor}, eds.
+\end{editor}
+
+\begin{booktitle}
+}{\\i \format[RTFChars]{\booktitle}}{
+\end{booktitle}
+
+\begin{organization}
+, \organization
+\end{organization}
+
+
+\begin{institution}
+, \institution
+\end{institution}
+
+
+\begin{publisher}
+, \format[RTFChars]{\publisher}
+\end{publisher}
+
+
+\begin{howpublished}
+, \howpublished
+\end{howpublished}
+
+
+\begin{address}
+, \format[RTFChars]{\address}
+\end{address}
+
+(\year).
+
+\begin{note}
+, \note
+\end{note}
+
+
+\begin{pages}
+, \pages
+\end{pages}
+
+.
+\\par
+\\par
+

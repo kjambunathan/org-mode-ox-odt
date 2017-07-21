@@ -1,0 +1,7 @@
+\begin{author}
+\format[RTFChars,AuthorLastFirstCommas]{\author}. \end{author}
+\begin{year}\format[RTFChars]{\year}. \end{year}
+\begin{title}\format[RTFChars]{\title}. \end{title}
+\begin{organization}\format[RTFChars]{\organization}. \end{organization}
+\begin{month}\format[RTFChars]{\month}. \end{month}
+\begin{url}\format[RTFChars]{\url}. \end{url}\\par\\par

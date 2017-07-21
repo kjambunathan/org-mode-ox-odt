@@ -1,0 +1,2 @@
+The JabRef export filters in this directory are from
+https://github.com/kjambunathan/JabRefChicagoForOrgmode.

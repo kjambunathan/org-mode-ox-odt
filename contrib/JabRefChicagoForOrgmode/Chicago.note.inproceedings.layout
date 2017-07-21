@@ -1,0 +1,13 @@
+\begin{author}
+\format[RTFChars,AuthorLastFirstCommas]{\author}. \end{author}
+\begin{title}"\format[RTFChars]{\title}." \end{title}{En \\i \format[RTFChars]{\booktitle}}
+\begin{editor}, editado por \format[RTFChars,AuthorFirstFirstCommas]{\editor}\end{editor}}
+\begin{pages}, \pages\end{pages}.
+\begin{edition}\format[RTFChars]{\edition}\end{edition}
+\begin{volume} Vol. \format[RTFChars]{\volume}.\end{volume}
+\begin{number}, bk. \format[RTFChars]{\number}.\end{number} 
+\begin{address}\format[RTFChars]{\address}\end{address}{:
+\begin{publisher} \format[RTFChars]{\publisher}\end{publisher}, 
+\begin{year}\format[RTFChars]{\year}. \end{year}
+\begin{note}\\par
+\format[RTFChars]{\note} \end{note}  \\par\\par

@@ -1,0 +1,10 @@
+\begin{author}
+\format[RTFChars,AuthorFirstFirstCommas]{\author}, \end{author}
+{\\i \format[RTFChars]{\title}}{
+\begin{edition}, \format[RTFChars,ToLowerCase]{\edition}\end{edition}
+\begin{editor} Edited by \format[RTFChars,AuthorFirstFirstCommas]{\editor}.\end{editor}}
+\begin{volume}, vol. \format[RTFChars]{\volume}\end{volume}
+\begin{number}, bk. \format[RTFChars]{\number}\end{number}
+\begin{address} (\format[RTFChars]{\address}\end{address}:
+\begin{publisher} \format[RTFChars]{\publisher}\end{publisher}, 
+\begin{year}\format[RTFChars]{\year})\end{year}. 

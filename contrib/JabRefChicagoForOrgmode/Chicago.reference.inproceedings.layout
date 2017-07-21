@@ -1,0 +1,11 @@
+\begin{author}
+\format[RTFChars,AuthorLastFirstCommas]{\author}. \end{author}
+\begin{year}\format[RTFChars]{\year}. \end{year}
+\begin{title}\format[RTFChars]{\title}. \end{title}{In \\i \format[RTFChars]{\booktitle}}
+\begin{editor}, ed. \format[RTFChars,AuthorFirstAbbrLastCommas]{\editor}\end{editor}}
+\begin{pages}, \pages\end{pages}.
+\begin{edition}\format[RTFChars]{\edition}\end{edition}
+\begin{volume} Vol. \format[RTFChars]{\volume}.\end{volume}
+\begin{number}, bk. \format[RTFChars]{\number}.\end{number} 
+\begin{address}\format[RTFChars]{\address}\end{address}{:
+\begin{publisher} \format[RTFChars]{\publisher}\end{publisher}. \\par\\par
