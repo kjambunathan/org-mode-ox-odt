@@ -1,0 +1,1141 @@
+#+TITLE: Testfile for OpenDocumentText Exporter
+#+AUTHOR:    Jambunathan K
+#+EMAIL:     kjambunathan@gmail.com
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:dvipng skip:nil d:nil todo:t pri:nil tags:not-in-toc
+
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+XSLT:
+#+STARTUP: overview
+
+# #+ODT_STYLES_FILE: "~/list-table-1.odt"
+
+#+toc: headlines 4
+
+Some text before first headline[fn:1].
+
+* Quick start guide
+
+  Use =C-c C-e O= or =C-c C-e o= to export this buffer to OpenDocument
+  Text format. For exercising full set of features proceed as below:
+
+** Recommended packages
+   1. htmlfontify.el
+
+      Download an [[http://debbugs.gnu.org/cgi/bugreport.cgi?msg=5;filename=htmlfontify.el;att=9;bug=9914][enhanced version of htmlfontify.el]] and put it in
+      your load-path. This will enable fontification of srcblocks in
+      this file.
+
+   2. MathToWeb
+
+      Download the [[http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl][MathToWeb converter]] and register it with exporter
+      as noted below. This will enable LaTeX fragments in this file to
+      be embedded as MathML formula in the exported document.
+
+** Recommended configuration
+
+#+BEGIN_SRC emacs-lisp 
+(custom-set-variables
+ ;; enable these two if you have installed BasicODConverter and want
+ ;; to export directly to pdf via odt
+ ;; '(org-export-odt-preferred-output-format "pdf") ;;
+ ;; '(org-export-odt-convert-process "BasicODConverter")
+ '(org-export-odt-table-styles
+   (quote (("OrgEquation" "OrgEquation"
+	    ((use-first-column-styles . t) (use-last-column-styles . t)))
+	   ("TableWithHeaderRowAndColumn" "Custom"
+	    ((use-first-row-styles . t) (use-first-column-styles . t)))
+	   ("TableWithFirstRowandLastRow" "Custom"
+	    ((use-first-row-styles . t) (use-last-row-styles . t))))))
+ '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+ '(org-latex-to-mathml-jar-file "~/tmp-odt/mathtoweb.jar"))
+#+END_SRC
+
+** Exporting
+
+   Visit this file or any of your Org files.  Use =C-c C-e O= to
+   export it to ODT.
+
+* Testcases for Tags, TODOs, Timestamps, Checkboxes etc     :project:hacking:
+** Online References
+   - [[http://docs.oasis-open.org/office/v1.1/OS/OpenDocument-v1.1-html/OpenDocument-v1.1.html][ODF Specification]]
+   - [[http://books.evc-cit.info/odbook/book.html][OASIS OpenDocument Essentials (Book)]]
+   - [[http://wiki.services.openoffice.org/wiki/Documentation/OOo3_User_Guides/Writer_Guide][OpenOffice.org's Writer Guide]]
+     Downloadable pdf version are available [[http://wiki.services.openoffice.org/wiki/Documentation/OOo3_User_Guides/Chapters][here]]
+
+** Validation tools
+   - [[http://docs.oasis-open.org/office/v1.1/OS/OpenDocument-schema-v1.1.rng][OpenDocument-schema-v1.1.rng]]
+   - Use [[http://www.thaiopensource.com/relaxng/trang.html][Trang]] to generate .rnc file from .rng file.
+
+** org-odt.el Bugs and Pending Items
+*** TODO Links to Listified Headlines are not generated
+    Export this documen with H:3 and note that link references under
+    [[References]] are broken. To circumvent this issue change default
+    settings from H:3 to H:4 for now.
+*** TODO Cleanup on crash
+    When odt exporter throws an error the xml files are content.xml,
+    styles.xml etc are left staying around. Need to clean these up
+    using unwind-protect?
+*** TODO Fix all interactive commands
+    org-export-region-as-odt, org-export-as-odt-to-buffer etc.
+#+BEGIN_SRC sh 
+emacs --batch -L "~/src/org-jambu/lisp" --eval "(progn (require 'org-odt) (setq org-export-headline-levels 3) (toggle-debug-on-error))" --visit=draftcopy.org --funcall org-export-as-odt-batch
+#+END_SRC
+
+*** TODO Fix issues reported by Christian Moe (first post)
+    SCHEDULED: <2011-01-31 Mon>
+    See [[http://lists.gnu.org/archive/html/emacs-orgmode/2011-01/msg01293.html][this post]].
+
+    - Fix cross references to Tables, Images etc. Ability to choose
+      other types names, like Chart, Figure, etc.
+    - Paragraphs were frequently split up, mid-sentence, by unwanted
+      paragraph breaks. Not sure whether this problem still exists
+      with the latest release of org-odt.
+
+*** TODO Fix issues reported by Christian Moe (second post)
+    SCHEDULED: <2011-03-21 Mon>
+    See [[http://lists.gnu.org/archive/html/emacs-orgmode/2011-03/msg01379.html][this post]]
+
+**** TODO Syntax highlighting of source code blocks
+     - Use htmlfontify.el maybe
+
+**** TODO OrgVerse can be aesthetically more pleasing?
+
+**** TODO Export of test.org with LaTeX:verbatim option
+     Equations under  [[LaTeX Fragments]] go invisible
+
+**** TODO Broken link within [[References to Dedicated Target]]
+
+*** TODO Support for MathML
+    [2011-03-29 Tue]
+    MathToWeb could be used for this. See [[http://lists.gnu.org/archive/html/emacs-orgmode/2011-03/msg01755.html][following post]].
+
+*** TODO Validation failures with =HTML_CONTAINER_CLASS=
+    [2011-04-02 Sat]
+    :PROPERTIES:
+    :HTML_CONTAINER_CLASS: custom
+    :END:
+
+    This section introduces two issues.
+    - A text:span element cannot occur within text:bookmark-ref. How
+      to handle this.
+    - text:style-name attribute for text:section cannot have
+      spaces. Explore styling of section in OpenOffice.
+
+*** TODO Tables within a list-item
+    Tables cannot occur as list-item. OpenOffice Writer seems to
+    handle this scenario as follows: While encountering a table
+    terminate the top-level list. Insert formatted Table with the same
+    indentation as if it were a list-item of the original list. Once
+    the table is inserted, re-open the list and start emitting the
+    following list-items at the right nested level.
+
+    Fixing this bug would require that the list callbacks provide
+    information on the indentation level of the current list. Not sure
+    how to set the Table indentation properties?
+
+    - L1.1
+    - L1.2
+      - L2.1
+      - L2.2
+
+	|   | formula debugger label | processing stage           |
+	| / | <                      | <>                         |
+	|---+------------------------+----------------------------|
+	|   | Result:                | output of Calc             |
+	|   | Format:                | reformatting with =printf= |
+
+
+      - L2.3
+    - L1.3
+
+*** DONE Support for Custom Styles
+    CLOSED: <2011-03-24 Thu>
+    :LOGBOOK:
+    - CLOSING NOTE  <2011-03-24 Thu>
+    :END:
+
+    See following [[http://lists.gnu.org/archive/html/emacs-orgmode/2011-03/msg01512.html][post]]
+
+*** TODO Emit Table Of Contents in Native Format
+*** TODO Pull Changes from Master Branch
+    SCHEDULED: <2011-04-02 Sat .+21d>
+
+*** TODO Merge with Master branch [1/3]
+    - [X] Synchronize with Master branch
+    - [ ] Update Org's Info Manual
+    - [-] Fix Byte-compilation, Docstrings, Copyright, license text
+      etc etc
+
+* Sample Content (Proof Of Concept)
+** Character Styles
+*** Bold
+
+    *This is bold text*
+
+*** Italic
+
+    /This is an italicized text/
+
+*** Underline
+
+    _This is an underlined text_
+
+*** Code
+
+    =This is a code text=
+
+*** Verbatim
+
+    ~This is a verbatim text~
+
+*** Strikethrough
+
+    +This is a strikethorugh text+
+
+*** Super and Subscripts
+
+    Y = a_{0}X^{2}+a_{1}X^{1}+a_{2}
+** Miscellaneous
+
+   Here is a ndash --, a mdash ---, an ellipsis ....
+
+   and a horizontal line
+   ---------------------
+
+** Special entities
+
+   \alpha^{n} = \beta^{n} + \gamma^{n}
+
+** Paragraph Styles
+*** Quotation
+
+**** Style1
+
+#+BEGIN_QUOTE
+    Everything should be made as simple as possible,
+    but not any simpler -- Albert Einstein
+
+    Ok
+#+END_QUOTE
+
+**** QUOTE Style2
+
+     Everything should be made as simple as possible,
+     but not any simpler -- Albert Einstein
+
+*** Verse
+
+#+BEGIN_VERSE
+  Great clouds overhead
+  Tiny black birds rise and fall
+  Snow covers Emacs
+
+      -- AlexSchroeder
+#+END_VERSE
+
+*** Centered
+
+#+BEGIN_CENTER
+   This is a centered paragraph.
+
+   One more
+
+   One more
+#+END_CENTER
+
+*** Example
+**** Example Style 1
+
+#+begin_example
+  First line of the example.
+  Second line of the example.
+#+end_example
+
+**** Example Style 2
+
+:     First line of the example.
+:     Second line of the example.
+
+
+*** Source Block
+**** Emacs Lisp Block
+#+BEGIN_SRC emacs-lisp 
+(defun helloworld ()
+  ""
+  (message "hello world"))
+#+END_SRC
+
+**** Advanced Source Blocks
+     Advanced source blocks takes the following options
+     - [-+]n: restart or continue numbering
+     - r: remove labels
+     - k: keep
+     - i: preserve indentation
+     - t: text area
+     - w: width
+     - h: height
+     #+BEGIN_SRC emacs-lisp -n -r
+     (save-excursion                  (ref:sc)
+	(ignore)
+	(goto-char (point-min))       (ref:jump)
+     #+END_SRC
+
+     In line [[(sc)]] we remember the current position.  [[(jump)][Line (jump)]] jumps
+     to point-min.
+
+     #+BEGIN_SRC emacs-lisp +n -r
+     (save-excursion                  (ref:sc1)
+	(ignore)
+	(goto-char (point-min))       (ref:jump1)
+     #+END_SRC
+
+     In line [[(sc1)]] we remember the current position.  [[(jump1)][Line (jump1)]]
+     jumps to point-min.
+
+**** Text Areas in HTML export
+
+     #+BEGIN_EXAMPLE -t -w 40
+       (defun org-xor (a b)
+          "Exclusive or."
+          (if a (not b) b))
+     #+END_EXAMPLE
+
+
+** Custom Paragraph Styles
+
+#+ATTR_ODT: :style "Text_20_body_20_bold"
+You can customize paragraphs - standalone one and those occurring
+within lists - using `:style' and `:p-style' attributes.  Try out
+the following example and see for yourself what you can achieve.
+
+#+ATTR_ODT: :style "OrgBulletedList" :p-style "Text_20_body_20_bold"
+1. N1
+   1. N11
+   2. N12
+2. N2
+   #+ATTR_ODT: :style "OrgNumberedList" :p-style "Preformatted_20_Text"
+   - B21
+
+   - B22
+     - B221
+
+       First paragraph.
+
+       #+ATTR_ODT: :style "OrgBibliographyList" :p-style "Text_20_body"
+       1. one
+       2. two
+       3. three
+
+       #+ATTR_ODT: :style "Text_20_body_20_indent"
+       Second paragraph.
+
+     - B222
+   - B23
+3. N3
+
+** Textboxes
+
+#+attr_odt: :width 10 :height 5 :style OrgInlineTaskFrame
+#+BEGIN_TEXTBOX
+First pargarph First pargarph First pargarph First pargarph First
+pargarph First pargarph First pargarph First pargarph First pargarph
+
+Second paragraph Second paragraph Second paragraph Second paragraph
+Second paragraph Second paragraph Second paragraph Second paragraph
+#+END_TEXTBOX
+
+** PageBreaks, Textboxes and Miscellanea
+
+In the example below, a landscape and centered table is created in the
+middle of what is essentially a portrait document.
+
+#+ATTR_ODT: :style "OrgPageBreakLandscape"
+#+PAGEBREAK:
+
+#+ATTR_ODT: :width 5 :style "OrgPageImage" :anchor "page"
+#+BEGIN_TEXTBOX
+| a          | b          |
+| e          | f          |
+#+END_TEXTBOX
+
+#+ATTR_ODT: :style "OrgPageBreakDefault"
+#+PAGEBREAK:
+
+It takes some coaxing from user's side for LibreOffice to actually
+show the table.  It is there, don't worry.
+
+** Native HTML and ODT
+*** Handcrafted Para
+
+#+begin_html
+  <p>
+    This is a handwritten html para
+  </p>
+#+end_html
+
+
+#+begin_odt
+  <text:p> This is a handwritten odt para</text:p>
+#+end_odt
+
+#+HTML: <div style="width:50%;float:left;">
+  *English Alphabets*
+    - A
+    - B
+    - C
+  *Greek Alphabets*
+    - Alpha
+    - Beta
+    - Gamma
+  #+html: </div>
+  #+html: <div style="width:50%;float:right;">
+  *Reversed English Alphabets*
+    - C
+    - B
+    - A
+  *Reversed Greek Alphabets*
+    - Gamma
+    - Beta
+    - Alpha
+  #+HTML: </div>
+
+
+*** An Equation as Embeded MathML
+   A trigonometric equation embedded in *MathML*
+
+#+begin_odt
+  <text:p>
+    <draw:frame draw:style-name="fr2" draw:name="Object3" text:anchor-type="as-char" svg:width="6.371cm" svg:height="0.483cm" draw:z-index="3">
+      <draw:object>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <semantics>
+            <mrow>
+              <mi>sin</mi>
+              <mrow>
+                <mrow>
+                  <mo stretchy="false">(</mo>
+                  <mrow>
+                    <mi>A</mi>
+                    <mo stretchy="false">+</mo>
+                    <mi>B</mi>
+                  </mrow>
+                  <mo stretchy="false">)</mo>
+                </mrow>
+                <mi mathvariant="normal">=</mi>
+                <mi>sin</mi>
+              </mrow>
+              <mi mathvariant="italic">ACos</mi>
+              <mrow>
+                <mi>B</mi>
+                <mo stretchy="false">+</mo>
+                <mi>cos</mi>
+              </mrow>
+              <mi>A</mi>
+              <mi>sin</mi>
+              <mi>B</mi>
+            </mrow>
+            <annotation encoding="StarMath 5.0">sin (A+B) = sin ACos B + cos A sin B
+            </annotation>
+          </semantics>
+        </math>
+      </draw:object>
+    </draw:frame>
+  </text:p>
+#+end_odt
+
+** Lists
+*** Simple Lists
+**** Numbered List
+
+     This is a numbered list.
+
+     1. L1N1
+     2. L1N2
+     3. L1N3
+
+**** Bulleted List
+
+     This is a bulleted list.
+     - L1B1
+     - L1B2
+     - L1B3
+
+**** Description List
+
+     There is a nested description list down below
+     - Term-1 :: This is a definition for Term-1 which wraps around to
+                 the next line
+     - Term-1.1 :: This is a definition for Term-2 which wraps around to
+                 the next line
+     - Term-2 :: This is a definition for Term-2 which wraps around to
+                 the next line
+       - Term-2.1 :: Definition for Term-2.1
+       - Term-2.2 :: Definition for Term-2.2
+       - Term-2.3 :: Definition for Term-2.3
+
+**** A Complex List
+
+     1. L1N1
+       	1. L2N2
+       	2. L2N3
+     2. L1N4
+       	* L2B1
+       	* L2B2
+	  - L3B3
+
+	    First paragraph.
+
+	    Second paragraph.
+
+	  - L3B4
+     3. L1N5
+       	1. L2N6
+           1. L3N7
+
+*** A Very Complex List
+**** Lord of the Rings
+
+     My favorite scenes are (in this order)
+     1. The attack of the Rohirrim
+     2. Eowyn's fight with the witch king
+       	+ this was already my favorite scene in the book
+       	+ I really like Miranda Otto.
+          - Definition-1 :: Description-1
+          - Definition-2 :: Description-2
+     3. Peter Jackson being shot by Legolas
+       	He makes a really funny face when it happens.
+       	- on DVD only
+     But in the end, no individual scenes matter but the film as a whole.
+     Important actors in this film are:
+     - Elijah Wood :: He plays Frodo
+     - Sean Austin :: He plays Sam, Frodo's friend.  I still remember
+		      him very well from his role as Mikey Walsh in
+		      The Goonies
+		      
+       - Embedded Definition 1 :: Embedded Description 1
+       - Embedded Definition 2 :: Embedded Description 2
+
+** Images
+
+*** Inline Tasks
+
+    This is regular text. This is regular text. This is regular
+    text. This is regular text. This is regular text.
+
+*************** This is a simple inline task
+
+*************** This is an inline task with some text
+Some notes about the task
+*************** END
+
+    This is regular text. This is regular text. This is regular
+    text. This is regular text. This is regular text.
+
+
+*** Image URLs
+    See the You can see the official logo of Orgmode here:
+    [[http://orgmode.org/img/org-mode-unicorn.png]]
+
+*** Inlined Images
+**** A simple inlined image
+
+    [[./org-mode-unicorn.png]]
+**** A simple image with caption and label
+
+#+caption: Unicorn Logo
+#+name: fig:1024
+  [[./org-mode-unicorn.png]]
+
+**** An image that is explicitly sized
+#+caption: Unicorn Logo
+#+name: fig:1025
+#+ATTR_ODT: :width 10 :height 10
+  [[./org-mode-unicorn.png]]
+
+**** An image that is scaled
+#+ATTR_ODT: :scale 0.5
+  [[./org-mode-unicorn.png]]
+
+*** Thumbnails
+    This is a clickable image [[http://orgmode.org][./org-mode-unicorn.png]]
+
+
+*** Reference to an Image
+    Please refer to [[fig:1025]] for further information.
+
+*** LaTeX Fragments
+
+**** LaTeX Fragment1
+#   See org-format-latex-options
+
+     The equation down below has both a caption and a label.
+
+#+caption: Kinetic Energy
+#+name: Equation:1
+   \begin{equation*}
+     e = \frac{1}{2}mv^2
+   \end{equation*}
+
+**** LaTeX Fragment2
+     The equation down below has just a label.
+
+#+name: Equation:2
+     \begin{equation*}
+     x=\sqrt{b}
+     \end{equation*}
+
+     If $a^2=b$ and \( b=2 \), then the solution must be either \[
+     a=+\sqrt{2} \] or \[ a=-\sqrt{2} \].
+
+
+$\int_{K_1} \int_{K_2} \dotsi \int_{K_n}$
+
+$f'(a) = \lim_{h \to 0} \frac{f(a+h)-f(a)}{h}$
+
+\begin{equation}
+\Re{z} = \frac{n\pi \dfrac{\theta +\psi}{2}}{
+         \left(\dfrac{\theta +\psi}{2}\right)^2 + \left( \dfrac{1}{2}
+         \log \left\lvert\dfrac{B}{A}\right\rvert\right)^2}.
+\end{equation}
+
+
+$f \mapsto \frac{1}{\sqrt{2 \pi}}
+\left\{\int_{-\pi}^\pi f(t) e^{-i k t} \, dt \right\}_{k \in \mathbb{Z}}$   
+
+**** LaTeX Fragment3
+     The equation down below has just a caption.
+
+#+caption: Kinetic Energy
+     \begin{equation*}
+     x=\sqrt{b}
+     \end{equation*}
+
+**** LaTeX Fragment4
+     The equation down below is neither captioned nor labelled.
+
+     \begin{equation*}
+     x=\sqrt{b}
+     \end{equation*}
+
+**** Reference to LaTeX Fragments
+     This is a reference to LaTeX Fragment2  [[Equation:2]].
+
+
+** File URLs
+*** Relative URL
+    [[../../src/org-mode/etc/styles/OrgOdtStyles.xml][This is a relative link to org-html.el]]
+
+    [[file:../../src/org-mode/etc/styles/OrgOdtStyles.xml][This is a relative link to org-html.el (uses file protocol)]]
+
+*** Link to Org files
+
+    [[file:~/Index.org][Index.org]]
+    [[../../Index.org][Index.org]]
+
+
+
+*** Absolute URL
+    [[~/src/org-mode/etc/styles/OrgOdtStyles.xml][This is an absolute link to styles file]]
+    [[file:~/src/org-mode/etc/styles/OrgOdtStyles.xml][This is an absolute link to styles file (uses file protocol)]]
+
+** Links
+*** Targets
+**** Fuzzy Target
+**** Target with CUSTOMID
+     :PROPERTIES:
+     :CUSTOM_ID: aabbccddeeff
+     :END:
+
+**** Target with ID
+     :PROPERTIES:
+     :ID:       bc5e1097-7644-4d33-a930-bfd075d4665f
+     :END:
+
+**** Dedicated Target Style1
+
+#+TARGET: Dedicated Target
+**** Dedicated Target Style2
+
+     There is a dedicated target at the end of this sentence -
+     <<Dedicated Target1>>.
+
+**** <<<Radioed Target>>>
+     
+*** References
+**** References to Fuzzy Target
+
+     This is a link to [[Fuzzy Target]].
+
+**** References to CUSTOMID links
+
+     This is a link to [[#aabbccddeeff][Target with CUSTOMID]]. This is nodesc link to [[#aabbccddeeff]].
+
+**** Reference to ID links
+     This is an ID link - [[id:bc5e1097-7644-4d33-a930-bfd075d4665f][Target with ID]].
+
+**** References to Dedicated Target
+
+     There is a link to nodesc [[Dedicated Target]] here. There is a link
+     to [[Dedicated%20Target][Jump to Dedicated Target]] here.
+
+#     There is a link to [[Dedicated%20Target1][Dedicated Target1]] here.
+
+**** References to Radioed Links
+
+     This section has references to Radioed Target. One more reference
+     to Radioed Target.
+
+*** Custom link
+    This is a link to BBDB entry - [[bbdb:Jambunathan%20K][Jambunathan K]]
+
+** Tables
+*** A simple Orgmode Table
+
+    | EST | New York | -5:00 |
+    | IST | Madras   | +5:30 |
+    | AST | Bahrain  |       |
+
+
+*** A formatted Orgmode Table
+
+    - Columns are proportioned in the ratio 10:5:20:10
+    - Alignment is specified by colcookies.
+    - Table width is 70%
+
+    See https://lists.gnu.org/archive/html/emacs-orgmode/2011-08/msg01186.html
+
+#+caption: An Example Table
+#+name: table:10
+#+attr_odt: :rel-width 70
+    |------------+-------+----------------------+------------|
+    |     Labels | C1    | C2                   |         C3 |
+    |------------+-------+----------------------+------------|
+    |          / | <     | >                    |         <> |
+    |      <r10> | <l5>  | <c20>                |      <r10> |
+    |         10 | 5     | 20                   |         10 |
+    | R1 (Right) | R1C1 (Left) | R1C2 (Center)        | R1C3 (Right) |
+    |         R2 | R2C1  | R2C2                 |       R2C3 |
+    |------------+-------+----------------------+------------|
+    |         R3 | R3C1  | R3C2                 |       R3C3 |
+    |         R4 | R4C1  | R4C2                 |       R4C3 |
+    |------------+-------+----------------------+------------|
+    |         R5 | R5C1  | R5C2                 |       R5C3 |
+    |         R6 | R6C1  | R6C2                 |       R6C3 |
+    |         R7 | R7C1  | R7C2                 |            |
+    |------------+-------+----------------------+------------|
+
+*** A formatted Orgmode Table (using Table Templates)
+
+    See https://lists.gnu.org/archive/html/emacs-orgmode/2011-09/msg00319.html
+
+**** Settings
+
+     #+BEGIN_SRC emacs-lisp 
+     (setq org-odt-table-styles
+	   '(("TableWithHeaderRowAndColumn" "Custom"
+	      ((use-first-row-styles . t)
+	       (use-first-column-styles . t)))
+	     ("TableWithFirstRowandLastRow" "Custom"
+	      ((use-first-row-styles . t)
+	       (use-last-row-styles . t)))))
+     #+END_SRC
+
+
+
+**** Table using header row and column styles
+     This table uses table template named _Custom_ and selects the
+     following styles:
+     - 80% table width
+     - first row
+     - first column
+
+#+ATTR_ODT: :style "TableWithHeaderRowAndColumn"
+    |     Labels | C1          | C2            |           C3 |
+    |------------+-------------+---------------+--------------|
+    |          / | <           | >             |           <> |
+    |        <r> | <l>         | <c>           |          <r> |
+    | R1 (Right) | R1C1 (Left) | R1C2 (Center) | R1C3 (Right) |
+    |         R2 | R2C1        | R2C2          |         R2C3 |
+    |------------+-------------+---------------+--------------|
+    |         R3 | R3C1        | R3C2          |         R3C3 |
+    |         R4 | R4C1        | R4C2          |         R4C3 |
+    |------------+-------------+---------------+--------------|
+    |         R5 | R5C1        | R5C2          |         R5C3 |
+    |         R6 | R6C1        | R6C2          |         R6C3 |
+    |         R7 | R7C1        | R7C2          |              |
+    |------------+-------------+---------------+--------------|
+
+**** Table using first row and last row styles
+     This table also uses the same table template named _Custom_ and
+     selects the following styles:
+     - 80% column width
+     - first row
+     - last row
+     - columns in the ratio 1:2:3:4
+
+#+ATTR_ODT: :style "TableWithFirstRowandLastRow"
+    |     Labels | C1                   | C2                             |                                       C3 |
+    |------------+----------------------+--------------------------------+------------------------------------------|
+    |          / | <                    | >                              |                                       <> |
+    |      <r10> | <l20>                | <c30>                          |                                    <r40> |
+    | R1 (Right) | R1C1 (Left)          | R1C2 (Center)                  |                             R1C3 (Right) |
+    |         R2 | R2C1                 | R2C2                           |                                     R2C3 |
+    |------------+----------------------+--------------------------------+------------------------------------------|
+    |         R3 | R3C1                 | R3C2                           |                                     R3C3 |
+    |         R4 | R4C1                 | R4C2                           |                                     R4C3 |
+    |------------+----------------------+--------------------------------+------------------------------------------|
+    |         R5 | R5C1                 | R5C2                           |                                     R5C3 |
+    |         R6 | R6C1                 | R6C2                           |                                     R6C3 |
+    |         R7 | R7C1                 | R7C2                           |                                          |
+    |------------+----------------------+--------------------------------+------------------------------------------|
+
+
+
+
+*** Table.el Table with no Spanning
+# See org-export-prefer-native-exporter-for-tables
+
+    +---------------+---------------+
+    |Term           |Percentage     |
+    +---------------+---------------+
+    |Quarter        |25%            |
+    |One-Fourth     |               |
+    +---------------+---------------+
+    |Half           |50%            |
+    |One-by-Two     |               |
+    +---------------+---------------+
+    |Three-Quarters |75%            |
+    |Three-Fourths  |               |
+    +---------------+---------------+
+    |Full           |100%           |
+    |Whole          |               |
+    +---------------+---------------+
+
+*** Table.el Table with Spanning
+
+    +----------+---------------------+----------+
+    |Name      |cmd        calls     |Percentage|
+    +----------+                     +----------+
+    |rgb       |93         534       |46%       |
+    +----------+                     +----------+
+    |Xah       |82         090       |40%       |
+    +----------+                     +----------+
+    |total     |203        118       |100%      |
+    +----------+---------------------+----------+
+
+*** Another Table.el Table with Spanning
+
+    +-----------+----------+
+    |   R1C1    |   R1C2   |
+    +-----------+----------+
+    |      R2C1 R2C2       |
+    +-----------+----------+
+    |   R3C1    |   R3C2   |
+    |           +----------+
+    |   R4C1    |   R4C2   |
+    +-----------+----------+
+
+*** Indented tables
+
+**** A Simple indented table
+
+1. Item 11
+2. Item 12
+   #+attr_odt: 
+   | 1 | 2 |
+   | 3 | 4 |
+   Some followup text
+3. Item 13
+
+**** A Homogenous indented table
+
+     Indented table
+
+     1. Item 11
+       	#+attr_odt: 
+       	| 1 | 2 |
+       	| 3 | 4 |
+     2. Item 12
+       	1. Item 121
+	   #+attr_odt: 
+           | 5 | 6 |
+           | 7 | 8 |
+       
+	   Some followup text
+
+	   #+attr_odt: 
+           |  9 | 10 |
+           | 11 | 12 |
+
+	   More followup text
+	   1. Item 1211
+	   2. Item 1212
+
+	      Some paragraph
+
+              #+attr_odt: 
+              | 13 | 14 |
+              | 15 | 16 |
+
+           #+attr_odt: 
+           | 17 | 18 |
+           | 19 | 20 |
+	   
+       	#+attr_odt: 
+       	| 21 | 22 |
+       	| 23 | 24 |
+       	2. Item 122
+     3. Item 1.3
+
+
+
+**** A Heterogenous indented table
+
+     Indented table
+
+     1. Item 11
+       	#+attr_odt: 
+       	| 1 | 2 |
+       	| 3 | 4 |
+     2. Item 12
+       	- Item 121
+       	  #+attr_odt: 
+       	  | 5 | 6 |
+       	  | 7 | 8 |
+       
+       	  Some followup text
+
+       	  #+attr_odt: 
+       	  |  9 | 10 |
+       	  | 11 | 12 |
+
+       	  More followup text
+       	  1. Item 1211
+       	  2. Item 1212
+
+	     Some paragraph
+
+             #+attr_odt: 
+             | 13 | 14 |
+             | 15 | 16 |
+
+       	  #+attr_odt: 
+       	  | 17 | 18 |
+       	  | 19 | 20 |
+	   
+       	  #+attr_odt: 
+       	  | 21 | 22 |
+       	  | 23 | 24 |
+       	- Item 122
+     3. Item 1.3
+
+
+
+*** List Tables
+
+    See
+    https://lists.gnu.org/archive/html/emacs-orgmode/2011-09/msg00017.html
+
+**** Settings
+
+#+BEGIN_SRC emacs-lisp 
+(setq org-lparse-list-table-enable t)
+#+END_SRC
+
+**** List Tables1
+     A normal list
+
+     - a
+     - b
+     - c
+
+**** List Table 2
+
+     A homogenous list-table
+
+     #+attr_odt: :list-table t
+     - Row 1
+       - Row 1.1
+       - Row 1.2
+       - Row 1.3
+     - Row 2
+       - Row 2.1
+       - Row 2.2
+       - Row 2.3
+
+
+**** List Table 3
+
+     A degenerate list-table
+
+     #+attr_odt: :list-table t
+     - Row 1
+     - Row 2
+     - Row 3
+
+**** List Table 4
+
+     A non-homogenous list-table
+
+     #+attr_odt: :list-table t
+     - Row 1
+       - Row 1.1
+       - Row 1.2
+       - Row 1.3
+     - Row 2
+       - Row 2.1
+     - Row 3
+       - Row 3.1
+       - Row 3.2
+
+**** List Tables 4
+     A complex true-to-the-spirit multiline list-table
+
+     #+attr_odt: :list-table t
+      - Row 1
+       	- Row 1.1
+	  - Subitem under 1.1
+	  - Yet another subitem under 1.1
+       	- Row 1.2
+       	- Row 1.3
+      - Row 2
+       	- Row 2.1
+       	- Row 2.2
+
+	  Subtext for 2.1
+       	- Row 2.3
+
+** Table Referenced
+
+   Please refer to [[table:10]] for further information.
+
+** Footnote Definitions (Part 1)
+
+[fn:XYZ] There is a link to [[http://Orgmode.org][Orgmode.org]].
+
+** Footnote Usage
+*** Plain Footnotes
+
+    This paragraph has multiple references to the same footnote. This
+    is the first reference to a footnote [1]. This is a second
+    reference to the same footnote [1].
+
+*** Named Footnotes
+
+    Footnote named XYZ [fn:XYZ].
+
+*** Inlined Footnote
+
+    Inlined footnote [fn:: inline definition]
+
+*** Named and Inlined Footnote
+
+   Named and Inlined footnote [fn:name: named definition]
+
+# Footnote Definitions (Part 2)
+
+[1] Quick brown fox jumps over the lazy dog. Quick brown fox jumps ove
+the lazy dog.
+
+
+** Citations
+
+Citations and Bibliography are supported using ox-jabref.el
+
+Here I cite a Master Thesis \cite{zhubajie} and few books
+\cite{watts_way_1999,blyth_zen_1966}.  Cite one more
+reference. \cite{suzuki_studies_1998}.  Here I re-cite an earlier book
+\cite{watts_way_1999}.
+
+#+ATTR_ODT: :style custom
+#+BIBLIOGRAPHY: MyLibrary plain option:-d
+
+** Back-to-back footnotes
+
+   Sample examples down below are taken from
+   http://lists.gnu.org/archive/html/emacs-orgmode/2011-05/msg00426.html.
+
+*** First headline
+
+# [fn::fake footnote
+
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna
+    aliqua[fn::inline1][1].
+
+*** Second headline
+
+    Duis aute irure dolor in reprehenderit in voluptate velit esse
+    cillum dolore eu fugiat nulla pariatur[fn:inlabel:an inline
+    footnote][fn:inlabel2:[[http://www.google.com][google]] this].
+
+    Call an already defined inline footnote[fn:inlabel].
+
+** About Orgmode
+   Org is a mode for keeping notes, maintaining TODO lists, and doing
+   project planning with a fast and effective plain-text system.
+
+   Org develops organizational tasks around NOTES files that contain
+   lists or information about projects as plain text. Org is
+   implemented on top of Outline mode, which makes it possible to keep
+   the content of large files well structured. Visibility cycling and
+   structure editing help to work with the tree. Tables are easily
+   created with a built-in table editor. Org supports TODO items,
+   deadlines, timestamps, and scheduling. It dynamically compiles
+   entries into an agenda that utilizes and smoothly integrates much of
+   the Emacs calendar and diary. Plain text URL-like links connect to
+   websites, emails, Usenet messages, BBDB entries, and any files
+   related to the projects. For printing and sharing of notes, an Org
+   file can be exported as a structured ASCII file, as HTML, or (TODO
+   and agenda items only) as an iCalendar file. It can also serve as a
+   publishing tool for a set of linked web pages.
+
+# #+ATTR_ODT: :style "OrgPageBreakLandscape"
+# #+PAGEBREAK: 
+   As a project planning environment, Org works by adding metadata to
+   outline nodes. Based on this data, specific entries can be extracted
+   in queries and create dynamic agenda views.
+
+   Org mode contains the Org Babel environment which allows you to work
+   with embedded source code blocks in a file, to facilitate code
+   evaluation, documentation, and tangling.
+
+   Org's automatic, context-sensitive table editor with spreadsheet
+   capabilities can be integrated into any major mode by activating the
+   minor Orgtbl mode. Using a translation step, it can be used to
+   maintain tables in arbitrary file types, for example in LaTeX. The
+   structure editing and list creation capabilities can be used outside
+   Org with the minor Orgstruct mode.
+
+# #+ATTR_ODT: :style "OrgPageBreakDefault"
+# #+PAGEBREAK: 
+   Org keeps simple things simple. When first fired up, it should feel
+   like a straightforward, easy to use outliner. Complexity is not
+   imposed, but a large amount of functionality is available when you
+   need it. Org is a toolbox and can be used in different ways and for
+   different ends, for example:
+
+   -  an outline extension with visibility cycling and structure editing
+   -  an ASCII system and table editor for taking structured notes
+   -  a TODO list editor
+   -  a full agenda and planner with deadlines and work scheduling
+   -  an environment in which to implement David Allen's GTD system
+   -  a simple hypertext system, with HTML and LaTeX export
+   -  a publishing tool to create a set of interlinked webpages
+   -  an environment for literate programming
+
+   There is a website for Org which provides links to the newest
+   version of Org, as well as additional information, frequently asked
+   questions (FAQ), links to tutorials, etc. This page is located at
+   http://orgmode.org.
+
+* Footnotes
+
+[fn:1] This footnote referenced before first headline.
