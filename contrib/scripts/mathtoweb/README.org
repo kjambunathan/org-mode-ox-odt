@@ -1,0 +1,3 @@
+The [[mathtoweb.jar][MathToWeb 4.0.0 (Command-line)]] binary here is
+sourced from http://www.mathtoweb.com/cgi-bin/mathtoweb_download.pl on
+<2017-07-21 Fri>.
