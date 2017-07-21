@@ -41,6 +41,6 @@ kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline 40ef7af622cb461527
 
 * Ongoing state of the merge
 
-Patches that are to be merged are in the root ~todo1/~ directory.
+Patches that are to be merged are in the root ~./todo[N]/~ directory.
 
-Patches that have already been merged are in ~done1~ subdirectory
+Patches that have already been merged are in ~./done[N]~ directory
