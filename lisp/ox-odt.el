@@ -91,7 +91,8 @@
     (citation . org-odt-citation))
   ;; :export-block "ODT"			; FIXME
   :filters-alist '((:filter-parse-tree
-		    . (org-odt--collect-cite-keys
+		    . (org-odt--translate-cite-fragments
+		       org-odt--collect-cite-keys
 		       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables)))
@@ -4155,6 +4156,38 @@ contextual information."
 
 
 ;;; Filters
+
+(defun org-odt--translate-cite-fragments (tree _backend info)
+  "Translate all \\cite{} LaTeX fragments in TREE to `citation-reference'.
+Return the translated tree.
+
+`citation-reference' is a non-standard element (stricly speaking,
+an object) used internally by the ODT exporter.  See
+`org-odt-citation-transcoders'.
+
+Modify INFO plist by appending a `:citations-alist' property.
+The value of this property is a list where each element is of the
+form (CITE-KEY . CITATION-REFERENCE), with CITATION-REFERENCE
+being the first element that references CITE-KEY.  The list is
+sorted in reverse order of appearance of CITE-KEYs in the
+exported file."
+  (org-element-map tree 'latex-fragment
+      (lambda (latex-*)
+	(let* ((latex-frag (org-element-property :value latex-*)))
+	  (when (string-match "\\\\cite{\\(.*?\\)}" latex-frag)
+	    ;; LaTeX fragment matches \cite{...}
+	    (let* ((value (match-string 1 latex-frag))
+		   (cite-keys (split-string value ",")))
+	      ;; Replace LaTeX fragment with it's equivalent `citation' object.
+	      (let* ((citation (apply 'org-element-adopt-elements
+				      (list 'citation (list :parenthetical nil))
+				      (mapcar (lambda (cite-key)
+						(list 'citation-reference
+						      (list :key cite-key)))
+					      cite-keys))))
+		(org-element-set-element latex-* citation))))))
+      info)
+  tree)
 
 (defun org-odt--collect-cite-keys (tree _backend info)
   "Collect cite keys (in reverse order) in to INFO.
