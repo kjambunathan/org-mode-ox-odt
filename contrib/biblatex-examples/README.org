@@ -1,0 +1,15 @@
+The file 'biblatex-examples.bib' in this directory is a replica of the
+file '/usr/share/texlive/texmf-dist/bibtex/bib/biblatex/biblatex/biblatex-examples.bib'
+distributed with the following version of 'texlive-bibtex-extra'.
+
+kjambunathan@debian:~/src/org-mode-ox-odt/contrib/biblatex-examples$ apt-cache showpkg texlive-bibtex-extra
+Package: texlive-bibtex-extra
+Versions: 
+2017.20170629-1 (/var/lib/apt/lists/httpredir.debian.org_debian_dists_unstable_main_binary-amd64_Packages) (/var/lib/apt/lists/httpredir.debian.org_debian_dists_unstable_main_binary-i386_Packages) (/var/lib/dpkg/status)
+ Description Language: 
+                 File: /var/lib/apt/lists/httpredir.debian.org_debian_dists_unstable_main_binary-amd64_Packages
+                  MD5: 751154d619a21e23a92d773de2248dd9
+ Description Language: en
+                 File: /var/lib/apt/lists/httpredir.debian.org_debian_dists_unstable_main_i18n_Translation-en
+                  MD5: 751154d619a21e23a92d773de2248dd9
+
