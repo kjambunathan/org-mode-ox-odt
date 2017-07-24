@@ -1,0 +1,52 @@
+From 39001557880e92f6a73fb4378544a25ee4beece5 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sun, 4 Jan 2015 21:54:41 +0100
+Subject: [PATCH 13/26] Implement `org-export-custom-protocol-maybe' and use it
+
+* lisp/ox.el (org-export-custom-protocol-maybe): New function.
+* contrib/lisp/ox-groff.el (org-groff-link):
+* lisp/ox-ascii.el (org-ascii-link):
+* lisp/ox-beamer.el (org-beamer-link):
+* lisp/ox-html.el (org-html-link):
+* lisp/ox-latex.el (org-latex-link):
+* lisp/ox-man.el (org-man-link):
+* lisp/ox-md.el (org-md-link):
+* lisp/ox-odt.el (org-odt-link):
+* lisp/ox-texinfo.el (org-texinfo-link): Use new function.
+
+* testing/lisp/test-ox.el (test-org-export/custom-protocol-maybe): New
+  test.
+---
+ lisp/ox-odt.el | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 062b721d9..e96bc1d64 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2736,9 +2736,10 @@ INFO is a plist holding contextual information.  See
+ 		 (concat "file:" raw-path))
+ 		(t raw-path)))
+ 	 ;; Convert & to &amp; for correct XML representation
+-	 (path (replace-regexp-in-string "&" "&amp;" path))
+-	 protocol)
++	 (path (replace-regexp-in-string "&" "&amp;" path)))
+     (cond
++     ;; Link type is handled by a special function.
++     ((org-export-custom-protocol-maybe link desc info))
+      ;; Image file.
+      ((and (not desc) (org-export-inline-image-p
+ 		       link (plist-get info :odt-inline-image-rules)))
+@@ -2820,9 +2821,6 @@ INFO is a plist holding contextual information.  See
+ 	 (format
+ 	  "<text:bookmark-ref text:reference-format=\"number\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
+ 	  href line-no))))
+-     ;; Link type is handled by a special function.
+-     ((functionp (setq protocol (nth 2 (assoc type org-link-protocols))))
+-      (funcall protocol (org-link-unescape path) desc 'odt))
+      ;; External link with a description part.
+      ((and path desc)
+       (let ((link-contents (org-element-contents link)))
+-- 
+2.13.2
+

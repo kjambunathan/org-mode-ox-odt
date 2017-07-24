@@ -1,0 +1,36 @@
+From 8daf4a89f1a157c0ee2c91e5b990203679b31cf7 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 28 Oct 2014 23:51:38 +0100
+Subject: [PATCH 11/26] Fix preview latex
+
+* lisp/org.el (org-toggle-latex-fragment): Fix previewing nested
+  environments.
+(org-format-latex): Change signature.  Rewrite using Elements.
+
+* lisp/ox-html (org-html-format-latex):
+* lisp/ox-odt (org-odt--translate-latex-fragments): Apply signature
+  change.
+
+Reported-by: Andreas Leha <andreas.leha@med.uni-goettingen.de>
+
+<http://permalink.gmane.org/gmane.emacs.orgmode/92142>
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index cc156fff3..3b2596fb2 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3804,7 +3804,7 @@ contextual information."
+ 				(insert latex-frag)
+ 				(org-format-latex cache-subdir cache-dir
+ 						  nil display-msg
+-						  nil nil processing-type)
++						  nil processing-type)
+ 				(buffer-substring-no-properties
+ 				 (point-min) (point-max)))))
+ 		    (if (not (string-match "file:\\([^]]*\\)" link))
+-- 
+2.13.2
+

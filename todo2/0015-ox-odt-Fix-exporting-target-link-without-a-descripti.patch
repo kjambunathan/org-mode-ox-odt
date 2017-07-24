@@ -1,0 +1,55 @@
+From 880a2b4f9042e188462c7c6a8996500774c21884 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Tue, 10 Feb 2015 22:23:40 +0100
+Subject: [PATCH 15/26] ox-odt: Fix exporting target link without a description
+
+* lisp/ox-odt.el (org-odt-link--infer-description): Fix comment.
+(org-odt-link): When link to target has no description, use a number.
+
+Reported-by: Christian Moe <mail@christianmoe.com>
+<http://permalink.gmane.org/gmane.emacs.orgmode/94815>
+---
+ lisp/ox-odt.el | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 03b3214a4..95e73f540 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2610,11 +2610,12 @@ Return nil, otherwise."
+ 			 (t nil))))))))
+ 
+ (defun org-odt-link--infer-description (destination info)
+-  ;; DESTINATION is a HEADLINE, a "<<target>>" or an element (like
+-  ;; paragraph, verse-block etc) to which a "#+NAME: label" can be
+-  ;; attached.  Note that labels that are attached to captioned
+-  ;; entities - inline images, math formulae and tables - get resolved
+-  ;; as part of `org-odt-format-label' and `org-odt--enumerate'.
++  ;; DESTINATION is a headline or an element (like paragraph,
++  ;; verse-block etc) to which a "#+NAME: label" can be attached.
++
++  ;; Note that labels that are attached to captioned entities - inline
++  ;; images, math formulae and tables - get resolved as part of
++  ;; `org-odt-format-label' and `org-odt--enumerate'.
+ 
+   ;; Create a cross-reference to DESTINATION but make best-efforts to
+   ;; create a *meaningful* description.  Check item numbers, section
+@@ -2770,11 +2771,10 @@ INFO is a plist holding contextual information.  See
+ 	  (target
+ 	   ;; If there's a description, create a hyperlink.
+ 	   ;; Otherwise, try to provide a meaningful description.
+-	   (if (not desc) (org-odt-link--infer-description destination info)
+-	     (let ((label (org-element-property :value destination)))
+-	       (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
+-		       (org-export-solidify-link-text label)
+-		       desc))))
++	   (let ((label (org-element-property :value destination)))
++	     (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
++		     (org-export-solidify-link-text label)
++		     (or desc (org-export-get-ordinal destination info)))))
+ 	  ;; Case 4: Fuzzy link points to some element (e.g., an
+ 	  ;; inline image, a math formula or a table).
+ 	  (otherwise
+-- 
+2.13.2
+

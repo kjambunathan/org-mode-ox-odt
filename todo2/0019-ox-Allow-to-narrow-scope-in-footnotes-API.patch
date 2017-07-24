@@ -1,0 +1,40 @@
+From fa145361ec10a503fa004c7073edc40b27e11268 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sat, 21 Feb 2015 09:34:15 +0100
+Subject: [PATCH 19/26] ox: Allow to narrow scope in footnotes API
+
+* lisp/ox.el (org-export--footnote-reference-map,
+  org-export-collect-footnote-definitions,
+  org-export-footnote-first-reference-p,
+  org-export-get-footnote-number): Allow to specify scope, through
+  a new optional argument.
+
+* lisp/ox-odt.el (org-odt-footnote-reference): Apply API change.
+
+* testing/lisp/test-ox.el (test-org-export/footnote-first-reference-p,
+  test-org-export/get-footnote-number,
+  test-org-export/collect-footnote-definitions): Update tests.
+---
+ lisp/ox-odt.el | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 4a94de11f..f96027104 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1740,9 +1740,10 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 	    (format "<text:span text:style-name=\"%s\">%s</text:span>"
+ 		    "OrgSuperscript" ",")))
+      ;; Transcode footnote reference.
+-     (let ((n (org-export-get-footnote-number footnote-reference info t)))
++     (let ((n (org-export-get-footnote-number footnote-reference info nil t)))
+        (cond
+-	((not (org-export-footnote-first-reference-p footnote-reference info t))
++	((not
++	  (org-export-footnote-first-reference-p footnote-reference info nil t))
+ 	 (funcall --format-footnote-reference n))
+ 	;; Inline definitions are secondary strings.
+ 	;; Non-inline footnotes definitions are full Org data.
+-- 
+2.13.2
+

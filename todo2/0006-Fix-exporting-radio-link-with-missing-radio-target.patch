@@ -1,0 +1,35 @@
+From ae457e7dce5c7b4321a95589382311e8056e6743 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Thu, 28 Aug 2014 00:48:17 +0200
+Subject: [PATCH 06/26] Fix exporting radio link with missing radio target
+
+* contrib/lisp/ox-groff.el (org-groff-link):
+* lisp/ox-beamer.el (org-beamer-link):
+* lisp/ox-html.el (org-html-link):
+* lisp/ox-latex.el (org-latex-link):
+* lisp/ox-odt.el (org-odt-link): When radio link has no valid
+  target (e.g., this is a subtree export and the radio target is not
+  in the exported subtree), simply return contents.
+
+Thanks to Daniel Clement for reporting it.
+http://permalink.gmane.org/gmane.emacs.orgmode/90218
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 6640e8aba..03b3214a4 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -2733,7 +2733,7 @@ INFO is a plist holding contextual information.  See
+      ;; link's description.
+      ((string= type "radio")
+       (let ((destination (org-export-resolve-radio-link link info)))
+-	(when destination
++	(if (not destination) desc
+ 	  (format
+ 	   "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"OrgXref.%s\">%s</text:bookmark-ref>"
+ 	   (org-export-solidify-link-text
+-- 
+2.13.2
+

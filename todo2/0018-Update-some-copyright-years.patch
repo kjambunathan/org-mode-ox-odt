@@ -1,0 +1,24 @@
+From 0d240866579b609c58bc74de30a8e62f72961267 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Mon, 16 Feb 2015 01:40:07 +0100
+Subject: [PATCH 18/26] Update some copyright years
+
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 39849acbe..4a94de11f 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1,6 +1,6 @@
+ ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode
+ 
+-;; Copyright (C) 2010-2014 Free Software Foundation, Inc.
++;; Copyright (C) 2010-2015 Free Software Foundation, Inc.
+ 
+ ;; Author: Jambunathan K <kjambunathan at gmail dot com>
+ ;; Keywords: outlines, hypermedia, calendar, wp
+-- 
+2.13.2
+

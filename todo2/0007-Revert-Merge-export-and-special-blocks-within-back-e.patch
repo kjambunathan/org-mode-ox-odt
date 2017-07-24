@@ -1,0 +1,116 @@
+From e3369c07f01f6c604c9a835fe7ea6e27b017ce5f Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Mon, 8 Sep 2014 11:57:27 +0200
+Subject: [PATCH 07/26] Revert "Merge export and special blocks within
+ back-ends"
+
+This reverts commit fbc7097ffa30225ace2b80e9f7466ee387491c44.
+
+Conflicts:
+	lisp/ox-texinfo.el
+---
+ lisp/ox-odt.el | 73 ++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 40 insertions(+), 33 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 26ed8725d..205712ace 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -43,6 +43,7 @@
+     (dynamic-block . org-odt-dynamic-block)
+     (entity . org-odt-entity)
+     (example-block . org-odt-example-block)
++    (export-block . org-odt-export-block)
+     (export-snippet . org-odt-export-snippet)
+     (fixed-width . org-odt-fixed-width)
+     (footnote-definition . org-odt-footnote-definition)
+@@ -1676,6 +1677,15 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+     (org-element-property :value export-snippet)))
+ 
+ 
++;;;; Export Block
++
++(defun org-odt-export-block (export-block contents info)
++  "Transcode a EXPORT-BLOCK element from Org to ODT.
++CONTENTS is nil.  INFO is a plist holding contextual information."
++  (when (string= (org-element-property :type export-block) "ODT")
++    (org-remove-indentation (org-element-property :value export-block))))
++
++
+ ;;;; Fixed Width
+ 
+ (defun org-odt-fixed-width (fixed-width contents info)
+@@ -3049,40 +3059,37 @@ contextual information."
+   "Transcode a SPECIAL-BLOCK element from Org to ODT.
+ CONTENTS holds the contents of the block.  INFO is a plist
+ holding contextual information."
+-  (if (org-export-raw-special-block-p special-block info)
+-      (org-remove-indentation (org-element-property :raw-value special-block))
+-    (let ((type (downcase (org-element-property :type special-block)))
+-	  (attributes (org-export-read-attribute :attr_odt special-block)))
+-      (cond
+-       ;; Annotation.
+-       ((string= type "annotation")
+-	(let* ((author (or (plist-get attributes :author)
+-			   (let ((author (plist-get info :author)))
+-			     (and author (org-export-data author info)))))
+-	       (date (or (plist-get attributes :date)
+-			 ;; FIXME: Is `car' right thing to do below?
+-			 (car (plist-get info :date)))))
+-	  (format "\n<text:p>%s</text:p>"
+-		  (format "<office:annotation>\n%s\n</office:annotation>"
+-			  (concat
+-			   (and author
+-				(format "<dc:creator>%s</dc:creator>" author))
+-			   (and date
+-				(format "<dc:date>%s</dc:date>"
+-					(org-odt--format-timestamp
+-					 date nil 'iso-date)))
+-			   contents)))))
+-       ;; Textbox.
+-       ((string= type "textbox")
+-	(let ((width (plist-get attributes :width))
+-	      (height (plist-get attributes :height))
+-	      (style (plist-get attributes :style))
+-	      (extra (plist-get attributes :extra))
+-	      (anchor (plist-get attributes :anchor)))
+-	  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+-		  "Text_20_body" (org-odt--textbox contents width height
++  (let ((type (downcase (org-element-property :type special-block)))
++	(attributes (org-export-read-attribute :attr_odt special-block)))
++    (cond
++     ;; Annotation.
++     ((string= type "annotation")
++      (let* ((author (or (plist-get attributes :author)
++			 (let ((author (plist-get info :author)))
++			   (and author (org-export-data author info)))))
++	     (date (or (plist-get attributes :date)
++		       ;; FIXME: Is `car' right thing to do below?
++		       (car (plist-get info :date)))))
++	(format "\n<text:p>%s</text:p>"
++		(format "<office:annotation>\n%s\n</office:annotation>"
++			(concat
++			 (and author
++			      (format "<dc:creator>%s</dc:creator>" author))
++			 (and date
++			      (format "<dc:date>%s</dc:date>"
++				      (org-odt--format-timestamp date nil 'iso-date)))
++			 contents)))))
++     ;; Textbox.
++     ((string= type "textbox")
++      (let ((width (plist-get attributes :width))
++	    (height (plist-get attributes :height))
++	    (style (plist-get attributes :style))
++	    (extra (plist-get attributes :extra))
++	    (anchor (plist-get attributes :anchor)))
++	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
++		"Text_20_body" (org-odt--textbox contents width height
+ 						   style extra anchor))))
+-       (t contents)))))
++     (t contents))))
+ 
+ 
+ ;;;; Src Block
+-- 
+2.13.2
+

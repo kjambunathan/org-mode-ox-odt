@@ -1,0 +1,187 @@
+From b07e2f6ff1feddde83506b7fdb370bfe8e0a5337 Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Sat, 25 Oct 2014 17:14:34 +0200
+Subject: [PATCH 14/26] ox: Implement local table of contents
+
+* lisp/ox.el (org-export-collect-headlines): Allow to collect
+  headlines locally.
+* testing/lisp/test-ox.el (test-org-export/collect-headlines): Add
+  tests.
+
+* lisp/ox-ascii.el (org-ascii--build-toc):
+(org-ascii-keyword):
+* lisp/ox-html.el (org-html-toc):
+(org-html-keyword):
+* lisp/ox-odt.el (org-odt-toc): Allow local table of contents.
+(org-odt--format-toc): New function.
+(org-odt-begin-toc, org-odt-end-toc): Remove functions.
+
+* lisp/ox-latex.el (org-latex-logfiles-extensions): Optionally remove
+  "ptc" files.
+(org-latex-headline, org-latex-keyword): Implement partial table of
+contents assuming "titletoc" package is loaded.
+
+* etc/ORG-NEWS:
+* doc/org.texi (Table of contents): Document new parameter.
+---
+ lisp/ox-odt.el | 93 +++++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 49 insertions(+), 44 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index e96bc1d64..aff9edd88 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1080,13 +1080,20 @@ See `org-odt--build-date-styles' for implementation details."
+ 
+ ;;;; Table of Contents
+ 
+-(defun org-odt-begin-toc (index-title depth)
++(defun org-odt--format-toc (title entries depth)
++  "Return a table of contents.
++TITLE is the title of the table, as a string, or nil.  ENTRIES is
++the contents of the table, as a string.  DEPTH is an integer
++specifying the depth of the table."
+   (concat
+-   (format "
+-    <text:table-of-content text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Table of Contents\">
+-     <text:table-of-content-source text:outline-level=\"%d\">
+-      <text:index-title-template text:style-name=\"Contents_20_Heading\">%s</text:index-title-template>
+-" depth index-title)
++   "
++<text:table-of-content text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Table of Contents\">\n"
++   (format "  <text:table-of-content-source text:outline-level=\"%d\">" depth)
++   (and title
++	(format "
++    <text:index-title-template text:style-name=\"Contents_20_Heading\">%s</text:index-title-template>
++"
++		title))
+ 
+    (let ((levels (number-sequence 1 10)))
+      (mapconcat
+@@ -1098,23 +1105,21 @@ See `org-odt--build-date-styles' for implementation details."
+        <text:index-entry-chapter/>
+        <text:index-entry-text/>
+        <text:index-entry-link-end/>
+-      </text:table-of-content-entry-template>
+-" level level)) levels ""))
+-
+-   (format  "
+-     </text:table-of-content-source>
+-
+-     <text:index-body>
+-      <text:index-title text:style-name=\"Sect1\" text:name=\"Table of Contents1_Head\">
+-       <text:p text:style-name=\"Contents_20_Heading\">%s</text:p>
+-      </text:index-title>
+- " index-title)))
+-
+-(defun org-odt-end-toc ()
+-  (format "
+-     </text:index-body>
+-    </text:table-of-content>
+-"))
++      </text:table-of-content-entry-template>\n"
++	 level level)) levels ""))
++   "
++  </text:table-of-content-source>
++  <text:index-body>"
++   (and title
++	(format "
++    <text:index-title text:style-name=\"Sect1\" text:name=\"Table of Contents1_Head\">
++      <text:p text:style-name=\"Contents_20_Heading\">%s</text:p>
++    </text:index-title>\n"
++		title))
++   entries
++   "
++  </text:index-body>
++</text:table-of-content>"))
+ 
+ (defun* org-odt-format-toc-headline
+     (todo todo-type priority text tags
+@@ -1149,7 +1154,12 @@ See `org-odt--build-date-styles' for implementation details."
+   (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
+ 	  headline-label text))
+ 
+-(defun org-odt-toc (depth info)
++(defun org-odt-toc (depth info &optional scope)
++  "Build a table of contents.
++DEPTH is an integer specifying the depth of the table.  INFO is
++a plist containing current export properties.  Optional argument
++SCOPE, when non-nil, defines the scope of the table.  Return the
++table of contents as a string, or nil."
+   (assert (wholenump depth))
+   ;; When a headline is marked as a radio target, as in the example below:
+   ;;
+@@ -1161,24 +1171,17 @@ See `org-odt--build-date-styles' for implementation details."
+   ;; /TOC/, as otherwise there will be duplicated anchors one in TOC
+   ;; and one in the document body.
+   ;;
+-  ;; FIXME-1: Currently exported headings are memoized.  `org-export.el'
+-  ;; doesn't provide a way to disable memoization.  So this doesn't
+-  ;; work.
+-  ;;
+-  ;; FIXME-2: Are there any other objects that need to be suppressed
++  ;; FIXME: Are there any other objects that need to be suppressed
+   ;; within TOC?
+-  (let* ((title (org-export-translate "Table of Contents" :utf-8 info))
+-	 (headlines (org-export-collect-headlines
+-		     info (and (wholenump depth) depth)))
++  (let* ((headlines (org-export-collect-headlines info depth scope))
+ 	 (backend (org-export-create-backend
+-		   :parent (org-export-backend-name
+-			    (plist-get info :back-end))
++		   :parent (org-export-backend-name (plist-get info :back-end))
+ 		   :transcoders (mapcar
+ 				 (lambda (type) (cons type (lambda (d c i) c)))
+ 				 (list 'radio-target)))))
+     (when headlines
+-      (concat
+-       (org-odt-begin-toc title depth)
++      (org-odt--format-toc
++       (and (not scope) (org-export-translate "Table of Contents" :utf-8 info))
+        (mapconcat
+ 	(lambda (headline)
+ 	  (let* ((entry (org-odt-format-headline--wrap
+@@ -1188,7 +1191,7 @@ See `org-odt--build-date-styles' for implementation details."
+ 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+ 		    style entry)))
+ 	headlines "\n")
+-       (org-odt-end-toc)))))
++       depth))))
+ 
+ 
+ ;;;; Document styles
+@@ -2013,7 +2016,8 @@ contextual information."
+ 
+ (defun org-odt-keyword (keyword contents info)
+   "Transcode a KEYWORD element from Org to ODT.
+-CONTENTS is nil.  INFO is a plist holding contextual information."
++CONTENTS is nil.  INFO is a plist holding contextual
++information."
+   (let ((key (org-element-property :key keyword))
+ 	(value (org-element-property :value keyword)))
+     (cond
+@@ -2022,14 +2026,15 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+       ;; FIXME
+       (ignore))
+      ((string= key "TOC")
+-      (let ((value (downcase value)))
++      (let ((case-fold-search t))
+ 	(cond
+-	 ((string-match "\\<headlines\\>" value)
+-	  (let ((depth (or (and (string-match "[0-9]+" value)
++	 ((org-string-match-p "\\<headlines\\>" value)
++	  (let ((depth (or (and (string-match "\\<[0-9]+\\>" value)
+ 				(string-to-number (match-string 0 value)))
+-			   (plist-get info :with-toc))))
+-	    (when (wholenump depth) (org-odt-toc depth info))))
+-	 ((member value '("tables" "figures" "listings"))
++			   (plist-get info :headline-levels)))
++		(localp (org-string-match-p "\\<local\\>" value)))
++	    (org-odt-toc depth info (and localp keyword))))
++	 ((org-string-match-p "tables\\|figures\\|listings" value)
+ 	  ;; FIXME
+ 	  (ignore))))))))
+ 
+-- 
+2.13.2
+

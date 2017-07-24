@@ -1,0 +1,28 @@
+From ce7b3fc74b5f26d3d4ca6ef200b9466c02f4bacb Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Thu, 26 Feb 2015 15:45:24 +0100
+Subject: [PATCH 23/26] ox-odt: Small fix
+
+* lisp/ox-odt.el (org-odt--translate-latex-fragments): Fix bug
+  introduced in cebdec663d63d6971c20cb99e5502e646ee12187.
+---
+ lisp/ox-odt.el | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 2042aa219..9fe5e9f00 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3813,7 +3813,8 @@ contextual information."
+ 				(buffer-substring-no-properties
+ 				 (point-min) (point-max)))))
+ 		    (if (org-string-match-p "file:\\([^]]*\\)" link) link
+-		      (message "LaTeX Conversion failed.")))))
++		      (message "LaTeX Conversion failed.")
++		      nil))))
+ 	    (when org-link
+ 	      ;; Conversion succeeded.  Parse above Org-style link to
+ 	      ;; a `link' object.
+-- 
+2.13.2
+

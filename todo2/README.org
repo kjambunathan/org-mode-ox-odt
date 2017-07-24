@@ -1,0 +1,41 @@
+* Pending commits
+
+# git format-patch 8ad20618d1ff574406dc1ad6e998f400..40ef7af622cb461527555538965b7a6a023e76d2 -- lisp/ox-odt.el
+
+#+BEGIN_EXAMPLE
+
+kjambunathan@debian:~/src/org-mode-ox-odt$ git log --format=oneline 8ad20618d1ff574406dc1ad6e998f400..40ef7af622cb461527555538965b7a6a023e76d2 -- lisp/ox-odt.el > todo2/README.org
+
+fc850ce623c24b5eb3066917599956940fc0fda3 ox-odt: Small refactoring
+ac55f280d45922d0efc79a697384fb98cf77bfab ox-odt: Small fix
+398165f5a1d90b89ed40ee8750ccb2072df02113 ox-odt: Remove unnecessary space when no date
+ce7b3fc74b5f26d3d4ca6ef200b9466c02f4bacb ox-odt: Small fix
+cebdec663d63d6971c20cb99e5502e646ee12187 ox-odt: Preserve white space when converting LaTeX code
+50a0e712cceeef02c0d6a7c41b619b308ea1b15c ox-odt: Fix handling math snippets in captions
+c76f254e8be9801563599b39c08ced97ae966c0c ox: Fix custom link handling in anonymous back-end
+fa145361ec10a503fa004c7073edc40b27e11268 ox: Allow to narrow scope in footnotes API
+0d240866579b609c58bc74de30a8e62f72961267 Update some copyright years
+68f094a7064f783abd98a3420bb52d4d132884cd ox-odt: Fix nested footnotes export
+e6fcc853c52d27d746e3ab985db2ac44e0f73453 ox: Optional export of title
+f620efe1b8621725f29a389fa077d81d8bc3d32e Merge branch 'maint'
+880a2b4f9042e188462c7c6a8996500774c21884 ox-odt: Fix exporting target link without a description
+b07e2f6ff1feddde83506b7fdb370bfe8e0a5337 ox: Implement local table of contents
+39001557880e92f6a73fb4378544a25ee4beece5 Implement `org-export-custom-protocol-maybe' and use it
+61ba40c37152c41866e5d918ad6527bf0994599d ox: Deprecate `org-export-get-genealogy' for `org-element-lineage'
+8daf4a89f1a157c0ee2c91e5b990203679b31cf7 Fix preview latex
+7f97406542f8c9ccd9ada8c366803352d7b8d56d Bump Emacs version
+464cd965cb916b1ff60754226a3c2cc85b874abf ox: Support unnumbered headlines via property
+3432681fbe2894f2ef6e65872ff5deae4175d99a Parsing and exporting special blocks preserve case
+e3369c07f01f6c604c9a835fe7ea6e27b017ce5f Revert "Merge export and special blocks within back-ends"
+5da35ee0cadd7d1f6282a8f4c03eabfcb54e281f Merge branch 'maint'
+ae457e7dce5c7b4321a95589382311e8056e6743 Fix exporting radio link with missing radio target
+3c22bb19e025e350ebcc25c6fc23e2dd59e49693 ox-odt: Use options instead of hard-coded variables
+fd448cb1e28727aa845b50350d755bf4b14322ed Remove some options associated to variables
+fbc7097ffa30225ace2b80e9f7466ee387491c44 Merge export and special blocks within back-ends
+f4455f4902324d1b53d048960a2995c7b01d3863 Merge branch 'maint'
+43a8b979f8245bed276cc6142e38141a3055c0b0 ox-odt: Silence byte-compiler
+010d105b044e522f704bd4c42a7b69b7e07c7d7a Merge branch 'maint'
+776972cfe83ef79fd76dee79398351797f8cf9ff ox-odt: Fix handling of quoted and centered paragraphs
+#+END_EXAMPLE
+
+

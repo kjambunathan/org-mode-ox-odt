@@ -1,0 +1,42 @@
+From 398165f5a1d90b89ed40ee8750ccb2072df02113 Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Tue, 24 Feb 2015 15:13:36 +0100
+Subject: [PATCH 24/26] ox-odt: Remove unnecessary space when no date
+
+* ox-odt.el (org-odt-template): Remove unnecessary space in header
+  when no date.
+---
+ lisp/ox-odt.el | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 9fe5e9f00..63984f634 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1553,14 +1553,15 @@ original parsed data.  INFO is a plist holding export options."
+ 		   (timestamp (and (not (cdr date))
+ 				   (eq (org-element-type (car date)) 'timestamp)
+ 				   (car date))))
+-	      (concat
+-	       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+-		       "OrgSubtitle"
+-		       (if (and (plist-get info :odt-use-date-fields) timestamp)
+-			   (org-odt--format-timestamp (car date))
+-			 (org-export-data (plist-get info :date) info)))
+-	       ;; Separator
+-	       "<text:p text:style-name=\"OrgSubtitle\"/>"))))))
++	      (when date
++		(concat
++		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
++			 "OrgSubtitle"
++			 (if (and (plist-get info :odt-use-date-fields) timestamp)
++			     (org-odt--format-timestamp (car date))
++			   (org-export-data date info)))
++		 ;; Separator
++		 "<text:p text:style-name=\"OrgSubtitle\"/>")))))))
+       ;; Table of Contents
+       (let* ((with-toc (plist-get info :with-toc))
+ 	     (depth (and with-toc (if (wholenump with-toc)
+-- 
+2.13.2
+

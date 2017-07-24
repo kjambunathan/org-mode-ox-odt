@@ -1,0 +1,30 @@
+From 50a0e712cceeef02c0d6a7c41b619b308ea1b15c Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Wed, 25 Feb 2015 23:45:15 +0100
+Subject: [PATCH 21/26] ox-odt: Fix handling math snippets in captions
+
+* lisp/ox-odt.el (org-odt--translate-latex-fragments): Fix handling
+  math snippets in captions.
+
+Reported-by: Rasmus <rasmus@gmx.us>
+<http://permalink.gmane.org/gmane.emacs.orgmode/95446>
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index aba8232bd..157ceca4d 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3851,7 +3851,7 @@ contextual information."
+ 						  (list :value latex-frag)))
+ 		  ;; Replace now.
+ 		  (org-element-set-element latex-* replacement))))))
+-	info)))
++	info nil nil t)))
+   tree)
+ 
+ 
+-- 
+2.13.2
+

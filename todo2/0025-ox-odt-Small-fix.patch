@@ -1,0 +1,27 @@
+From ac55f280d45922d0efc79a697384fb98cf77bfab Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Thu, 26 Feb 2015 16:29:59 +0100
+Subject: [PATCH 25/26] ox-odt: Small fix
+
+* ox-odt.el (org-odt--translate-latex-fragments): Fix small
+  bug in cebdec663d63d6971c20cb99e5502e646ee12187.
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 63984f634..ec2be870c 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3821,7 +3821,7 @@ contextual information."
+ 	      ;; a `link' object.
+ 	      (let* ((link (org-element-map
+ 			       (org-element-parse-secondary-string
+-				org-link 'paragraph)
++				org-link '(paragraph link))
+ 			       'link #'identity info t))
+ 		     (replacement
+ 		      (case (org-element-type latex-*)
+-- 
+2.13.2
+

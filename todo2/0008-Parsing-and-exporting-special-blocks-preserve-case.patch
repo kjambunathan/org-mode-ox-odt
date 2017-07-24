@@ -1,0 +1,35 @@
+From 3432681fbe2894f2ef6e65872ff5deae4175d99a Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Wed, 17 Sep 2014 19:38:06 +0200
+Subject: [PATCH 08/26] Parsing and exporting special blocks preserve case
+
+* lisp/org-element.el (org-element-special-block-parser):
+* lisp/ox-latex.el (org-latex-special-block):
+* lisp/ox-html.el (org-html-special-block):
+* lisp/ox-man.el (org-man-special-block):
+* lisp/ox-odt.el (org-odt-special-block):
+* lisp/ox-texinfo.el (org-texinfo-special-block):
+* contrib/lisp/ox-groff.el (org-groff-special-block): Preserve case.
+
+* testing/lisp/test-org-element.el (test-org-element/special-block-parser):
+  Add test.
+---
+ lisp/ox-odt.el | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index 205712ace..96a3b8334 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -3059,7 +3059,7 @@ contextual information."
+   "Transcode a SPECIAL-BLOCK element from Org to ODT.
+ CONTENTS holds the contents of the block.  INFO is a plist
+ holding contextual information."
+-  (let ((type (downcase (org-element-property :type special-block)))
++  (let ((type (org-element-property :type special-block))
+ 	(attributes (org-export-read-attribute :attr_odt special-block)))
+     (cond
+      ;; Annotation.
+-- 
+2.13.2
+

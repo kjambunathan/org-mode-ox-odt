@@ -1,0 +1,41 @@
+From e6fcc853c52d27d746e3ab985db2ac44e0f73453 Mon Sep 17 00:00:00 2001
+From: Rasmus <rasmus@gmx.us>
+Date: Wed, 11 Feb 2015 00:09:39 +0100
+Subject: [PATCH 16/26] ox: Optional export of title
+
+* ox.el (org-export-with-title): New variable.
+* ox (org-export-options-alist),
+  ox-ascii.el (org-ascii-template--document-title),
+  ox-beamer.el (org-beamer-template), ox-html.el (org-html-template),
+  ox-latex.el (org-latex-template), ox-man.el (org-man-template),
+  ox-odt.el (org-odt-template), ox-org.el (org-org-template),
+  ox-publish.el (org-publish-project-alist),
+  ox-texinfo.el (org-texinfo-template),
+  ox-groff.el (org-groff--mt-head): Use new variable.
+* ox-koma-letter.el (org-koma-letter-use-title): Mark obsolete.
+* test-ox.el (test-org-export/parse-option-keyword): Add :with-title.
+* ORG-NEWS, org.texi: Mention org-export-with-title.
+
+This is useful in e.g. ox-html where title can be set via
+`org-html-preamble-template' or when using the {{{title}}}-macro.
+---
+ lisp/ox-odt.el | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index af22ca03c..b23e5f7c7 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1508,7 +1508,8 @@ original parsed data.  INFO is a plist holding export options."
+ 
+       ;; Preamble - Title, Author, Date etc.
+       (insert
+-       (let* ((title (org-export-data (plist-get info :title) info))
++       (let* ((title (and (plist-get info :with-title)
++			  (org-export-data (plist-get info :title) info)))
+ 	      (author (and (plist-get info :with-author)
+ 			   (let ((auth (plist-get info :author)))
+ 			     (and auth (org-export-data auth info)))))
+-- 
+2.13.2
+

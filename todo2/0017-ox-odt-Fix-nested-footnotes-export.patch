@@ -1,0 +1,33 @@
+From 68f094a7064f783abd98a3420bb52d4d132884cd Mon Sep 17 00:00:00 2001
+From: Nicolas Goaziou <mail@nicolasgoaziou.fr>
+Date: Fri, 13 Feb 2015 14:14:39 +0100
+Subject: [PATCH 17/26] ox-odt: Fix nested footnotes export
+
+* lisp/ox-odt.el (org-odt-footnote-reference): Fix nested footnotes
+  export.
+
+Reported-by: Vaidheeswaran <vaidheeswaran.chinnaraju@gmail.com>
+<http://permalink.gmane.org/gmane.emacs.orgmode/94900>
+---
+ lisp/ox-odt.el | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lisp/ox-odt.el b/lisp/ox-odt.el
+index b23e5f7c7..39849acbe 100644
+--- a/lisp/ox-odt.el
++++ b/lisp/ox-odt.el
+@@ -1740,9 +1740,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
+ 	    (format "<text:span text:style-name=\"%s\">%s</text:span>"
+ 		    "OrgSuperscript" ",")))
+      ;; Transcode footnote reference.
+-     (let ((n (org-export-get-footnote-number footnote-reference info)))
++     (let ((n (org-export-get-footnote-number footnote-reference info t)))
+        (cond
+-	((not (org-export-footnote-first-reference-p footnote-reference info))
++	((not (org-export-footnote-first-reference-p footnote-reference info t))
+ 	 (funcall --format-footnote-reference n))
+ 	;; Inline definitions are secondary strings.
+ 	;; Non-inline footnotes definitions are full Org data.
+-- 
+2.13.2
+
