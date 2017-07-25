@@ -1,0 +1,12 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorFirstFirstCommas]{\author}, \end{author}
+<text:span text:style-name="Emphasis">\format[FormatChars]{\title}</text:span>{
+\begin{edition}, \format[FormatChars,ToLowerCase]{\edition}\end{edition}
+\begin{editor} Edited by \format[FormatChars,AuthorFirstFirstCommas]{\editor}.\end{editor}}
+\begin{volume}, vol. \format[FormatChars]{\volume}\end{volume}
+\begin{number}, bk. \format[FormatChars]{\number}\end{number}
+\begin{address} (\format[FormatChars]{\address}\end{address}:
+\begin{publisher} \format[FormatChars]{\publisher}\end{publisher},
+\begin{year}\format[FormatChars]{\year})\end{year}.
+<!-- END: \bibtexkey -->

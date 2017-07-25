@@ -1,0 +1,39 @@
+<!-- BEGIN: \bibtexkey -->
+\format[FormatChars,AuthorLastFirstCommas]{\author} \format[FormatChars]{\title}.
+\begin{journal}
+<text:span text:style-name="Emphasis">\format[FormatChars]{\journal}</text:span> <text:span text:style-name="Bold">\volume</text:span>
+\end{journal}
+\begin{number}
+ (\format[FormatChars]{\number})
+\end{number}
+\begin{editor}
+ \format[FormatChars,AuthorLastFirstCommas]{\editor}, eds.
+\end{editor}
+\begin{booktitle}
+<text:span text:style-name="Emphasis">\format[FormatChars]{\booktitle}</text:span>
+\end{booktitle}
+\begin{organization}
+, \format[FormatChars]{\organization}
+\end{organization}
+\begin{institution}
+, \format[FormatChars]{\institution}
+\end{institution}
+\begin{publisher}
+, \format[FormatChars]{\publisher}
+\end{publisher}
+\begin{howpublished}
+, \howpublished
+\end{howpublished}
+\begin{address}
+, \format[FormatChars]{\address}
+\end{address}
+\begin{year}(\year)\end{year}
+\begin{note}
+, \note
+\end{note}
+\begin{pages}
+, \format[FormatPagesForXML]{\pages}
+\end{pages}
+.
+\begin{abstract}<text:line-break/><text:line-break/>\format[Replace("\n,<text:line-break/><text:line-break/>"),FormatChars]{\abstract}\end{abstract}
+<!-- END: \bibtexkey -->

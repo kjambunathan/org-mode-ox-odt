@@ -1,0 +1,6 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorFirstFirstCommas]{\author}, \end{author}
+\begin{title}"\format[FormatChars]{\title}" \end{title}(master's thesis, \format[FormatChars]{\school},
+\begin{year}\format[FormatChars]{\year})\end{year}.
+<!-- END: \bibtexkey -->

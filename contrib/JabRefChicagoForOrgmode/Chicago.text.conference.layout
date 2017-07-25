@@ -1,3 +1,0 @@
-(\begin{author}
-\format[RTFChars,AuthorNatBib]{\author} \end{author}
-\begin{year}\format[RTFChars]{\year}, \end{year}) 

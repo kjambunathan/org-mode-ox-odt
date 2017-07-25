@@ -1,4 +1,0 @@
-\begin{author}
-\format[RTFChars,AuthorFirstFirstCommas]{\author}, \end{author}
-\begin{title}"\format[RTFChars]{\title}" \end{title}(PhD diss., \format[RTFChars]{\school}, 
-\begin{year}\format[RTFChars]{\year})\end{year}. 

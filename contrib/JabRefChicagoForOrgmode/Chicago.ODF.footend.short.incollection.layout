@@ -1,0 +1,6 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorNatBib]{\author}, \end{author}
+\begin{title}"\format[FormatChars]{\title}," \end{title}
+\begin{volume}\volume: \end{volume}.
+<!-- END: \bibtexkey -->

@@ -1,0 +1,8 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorFirstFirstCommas]{\author}, \end{author}
+\begin{title}"\format[FormatChars]{\title}" \end{title}(Paper presented at the meeting of the \format[FormatChars]{\booktitle},
+\begin{address}\format[FormatChars]{\address},\end{address}
+\begin{month}\format[FormatChars]{\month}, \end{month}
+\begin{year}\format[FormatChars]{\year})\end{year}.
+<!-- END: \bibtexkey -->

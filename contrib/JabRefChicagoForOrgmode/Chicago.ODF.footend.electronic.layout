@@ -1,0 +1,8 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorFirstFirstCommas]{\author}, \end{author}\begin{title}"\format[FormatChars]{\title}," \end{title}
+\begin{organization}\format[FormatChars]{\organization}, \end{organization}
+\begin{month}\format[FormatChars]{\month}, \end{month}
+\begin{year}\format[FormatChars]{\year}, \end{year}
+\begin{url}\format[FormatChars]{\url}. \end{url}
+<!-- END: \bibtexkey -->

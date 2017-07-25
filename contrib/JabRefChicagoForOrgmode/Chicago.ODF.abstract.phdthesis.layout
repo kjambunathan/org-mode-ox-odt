@@ -1,0 +1,7 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorLastFirstCommas]{\author}. \end{author}
+\begin{title}"\format[FormatChars]{\title}." \end{title}PhD diss., \format[FormatChars]{\school},
+\begin{year}\format[FormatChars]{\year}. \end{year}
+\begin{abstract}<text:line-break/><text:line-break/>\format[Replace("\n,<text:line-break/><text:line-break/>"),FormatChars]{\abstract}\end{abstract}
+<!-- END: \bibtexkey -->

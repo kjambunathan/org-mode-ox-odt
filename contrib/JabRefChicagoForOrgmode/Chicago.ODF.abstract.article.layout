@@ -1,0 +1,12 @@
+<!-- BEGIN: \bibtexkey -->
+\begin{author}
+\format[FormatChars,AuthorLastFirstCommas]{\author}. \end{author}"
+\format[FormatChars]{\title}." <text:span text:style-name="Emphasis">\format[FormatChars]{\journal}</text:span>
+\begin{volume} \volume\end{volume}
+\begin{number}, no. \format[FormatChars]{\number}\end{number}
+(
+\begin{month}\format[FormatChars]{\month}, \end{month}
+\begin{year}\format[FormatChars]{\year})\end{year}
+\begin{pages}: \format[FormatPagesForXML]{\pages}\end{pages}.
+\begin{abstract}<text:line-break/><text:line-break/>\format[Replace("\n,<text:line-break/><text:line-break/>"),FormatChars]{\abstract}\end{abstract}
+<!-- END: \bibtexkey -->

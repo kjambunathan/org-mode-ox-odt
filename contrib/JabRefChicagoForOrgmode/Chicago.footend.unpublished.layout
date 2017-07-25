@@ -1,6 +1,0 @@
-\begin{author}
-\format[RTFChars,AuthorFirstFirstCommas]{\author}, \end{author}
-\begin{title}"\format[RTFChars]{\title}," \end{title}
-\begin{month}\format[RTFChars] {\month}, \end{month}
-\begin{year}\format[RTFChars]{\year}, \end{year}
-\begin{url}\format[RTFChars]{\url}. \end{url}
