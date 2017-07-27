@@ -849,11 +849,29 @@
   </style:style>
 
   <style:style style:name="OrgPageBreakLandscape" style:family="paragraph" style:parent-style-name="Text_20_body" style:master-page-name="Landscape">
-   <style:paragraph-properties style:page-number="auto"  fo:break-before="auto">
-    <style:tab-stops/>
-    <style:background-image/>
-   </style:paragraph-properties>
+    <style:paragraph-properties style:page-number="auto"  fo:break-before="auto">
+      <style:tab-stops/>
+      <style:background-image/>
+    </style:paragraph-properties>
   </style:style>
+
+  <!-- Styles for displaying Indices of Figures, Tables, Listings etc -->
+
+  <style:style style:name="Index_20_Link" style:display-name="Index Link" style:family="text"/>
+  
+  <style:style style:name="Org_20_Index_20_Heading" style:display-name="Org Index Heading" style:family="paragraph" style:parent-style-name="Heading" style:class="index">
+    <style:paragraph-properties fo:margin-left="0cm" fo:margin-right="0cm" fo:text-indent="0cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
+    <style:text-properties fo:font-size="16pt" fo:font-weight="bold" style:font-size-asian="16pt" style:font-weight-asian="bold" style:font-size-complex="16pt" style:font-weight-complex="bold"/>
+  </style:style>
+
+  <style:style style:name="Org_20_Index" style:display-name="Org Index" style:family="paragraph" style:parent-style-name="Index" style:class="index">
+    <style:paragraph-properties fo:margin-left="0cm" fo:margin-right="0cm" fo:text-indent="0cm" style:auto-text-indent="false">
+      <style:tab-stops>
+	<style:tab-stop style:position="17cm" style:type="right" style:leader-style="dotted" style:leader-text="."/>
+      </style:tab-stops>
+    </style:paragraph-properties>
+  </style:style>
+
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
