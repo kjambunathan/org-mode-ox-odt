@@ -2210,8 +2210,31 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			   (plist-get info :with-toc))))
 	    (when (wholenump depth) (org-odt-toc depth info))))
 	 ((member value '("tables" "figures" "listings"))
-	  ;; FIXME
-	  (ignore)))))
+	  ;; Return an index template.
+	  (cl-destructuring-bind (counter category _predicate)
+	      (assoc-default (assoc-default value '(("figures" . :FIGURE:)
+						    ("listings" . :LISTING:)
+						    ("tables" . :TABLE:)))
+			     org-odt-category-map-alist)
+	    (let ((caption-sequence-format "text")
+		  (index-title (format "List of %ss" category)))
+	      (format "
+   <text:illustration-index text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Org Index1\">
+    <text:illustration-index-source text:caption-sequence-name=\"%s\" text:caption-sequence-format=\"%s\">
+     <text:index-title-template text:style-name=\"Org_20_Index_20_Heading\">%s</text:index-title-template>
+     <text:illustration-index-entry-template text:style-name=\"Org_20_Index\">
+      <text:index-entry-link-start text:style-name=\"Index_20_Link\"/>
+      <text:index-entry-text/>
+      <text:index-entry-tab-stop style:type=\"right\" style:leader-char=\".\"/>
+      <text:index-entry-page-number/>
+      <text:index-entry-link-end/>
+     </text:illustration-index-entry-template>
+    </text:illustration-index-source>
+   </text:illustration-index>
+"
+		      counter
+		      caption-sequence-format
+		      index-title)))))))
      ;; Handle BIBLIOGRAPHY.  Ignore it.
      ((string= key "BIBLIOGRAPHY")
       ;; Citation Processors (see ox-jabref.el) may handle this by
@@ -4496,9 +4519,9 @@ exported file."
 ;; | Row 2 | 2.1 | 2.2 | 2.3 |
 ;;
 ;; List tables can contain hrule (see example above).  They can also
-;; contain table specific attributes.  
+;; contain table specific attributes.
 ;;
-;; Specifically, with a list table such as the one below, 
+;; Specifically, with a list table such as the one below,
 ;;
 ;; #+ATTR_ODT: :list-table t
 ;; - --------
