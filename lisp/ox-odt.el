@@ -500,6 +500,51 @@ a per-file basis.  For example,
   :package-version '(Org . "8.0")
   :type 'integer)
 
+;;;; Document transformation
+
+(defcustom org-odt-transform-processes
+  '(("Update indices and xrefs"
+     "soffice" "--norestore" "--invisible" "--headless"
+     "macro:///OrgMode.Utilities.UpdateAllIndexes(%I)"))
+  "List of shell commands that transforms an exported document.
+
+Pipe an exported document through these commands in the order
+they are listed.  These tranformations occurs right before
+conversion to `org-odt-preferred-output-format'.
+
+The default setting, has a sole transformer, which fills out 
+
+(1) index templates created with following Org directives
+
+    #+TOC: headlines
+    #+TOC: figures
+    #+TOC: tables
+    #+TOC: listings
+
+(2) xrefs created with `org-odt-caption-and-xref-settings'
+
+The above transformer, a LibreOffice Basic macro, does what one
+would accomplish with LibreOffice's Menu-> Tools-> Update->
+Update All.
+
+Each element is of the form (PURPOSE SHELL-CMD CMD-ARG1 CMD-ARG2
+...).  PURPOSE, a human-readable string, summarizes what the
+command accomplishes.  SHELL-CMD is the name of the executable.
+CMD-ARG-1 etc. are the arguments to the command.  These arguments
+can contain format specifiers.  These format specifiers are
+interpreted as below:
+
+%i input file name in full
+%I input file name as a URL."
+  :group 'org-export-odt
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (alist :tag "Transformers"
+	   :key-type (string :tag "Remarks")
+	   :value-type (cons :tag "Shell Command" (string :tag "Executable")
+			     (repeat (string :tag "Argument"))))))
+
 ;;;; Document conversion
 
 (defcustom org-odt-convert-processes
@@ -803,10 +848,10 @@ variable, see examples towards the end of this docstring.
 
 If you customize this option, the following text—\"[PLS. UPDATE
 FIELDS]\"—is used as a placeholder for unresolvable
-cross-reference fields (like page number etc).  Use an external
-application to synchronize these fields to their right values.
-When using LibreOffice, use Tools -> Update-> Fields / Update
-All.
+cross-reference fields (like page number etc).  When using
+LibreOffice, use Menu -> Tools -> Update-> Fields / Update All
+manually or leave `org-odt-transform-processes' at it's factory
+value.
 
 This variable is an alist of pairs (RULE-TAG . RULE-PLIST).
 RULE-TAG is a symbol.  RULE-PLIST is a property list, the allowed
@@ -4754,6 +4799,8 @@ exported file."
 	     (message "Created %s" (expand-file-name target))
 	     ;; Cleanup work directory and work files.
 	     (funcall --cleanup-xml-buffers)
+	     ;; Transform the exported document.
+	     (org-odt-transform target)
 	     ;; Open the OpenDocument file in archive-mode for
 	     ;; examination.
 	     (find-file-noselect target t)
@@ -4907,6 +4954,35 @@ Return output file's name."
 			     (concat org-odt-zip-dir "content.xml") t)))))
 	   (with-current-buffer out-buf (erase-buffer) (insert output))))))))
 
+
+;;;; Transform the exported OpenDocument file through 3rd-party converters
+
+(defun org-odt-transform (in-file)
+  "Transform IN-FILE using `org-odt-transform-processes'.
+IN-FILE is an OpenDocument Text document, usually created as part
+of `org-odt-export-as-odf'."
+  (require 'browse-url)
+  (let* ((in-file (expand-file-name (or in-file buffer-file-name))))
+    (cl-loop for (purpose cmd . args) in org-odt-transform-processes
+	     with err-string
+	     with exit-code do
+
+	     (setq cmd (cons cmd
+			     (mapcar (lambda (arg)
+				       (format-spec arg `((?i . ,in-file)
+							  (?I . ,(browse-url-file-url in-file)))))
+				     args)))
+
+	     (message "Applying Transformation: %s" purpose)
+	     (message "Running %s" (mapconcat #'identity cmd " "))
+	     (setq err-string
+		   (with-output-to-string
+		     (setq exit-code
+			   (apply 'call-process (car cmd)
+				  nil standard-output nil (cdr cmd)))))
+	     (or (zerop exit-code)
+		 (error (format "Command failed with error (%s)"
+				err-string))))))
 
 ;;;; Convert between OpenDocument and other formats
 
