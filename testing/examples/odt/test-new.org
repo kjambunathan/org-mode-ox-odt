@@ -27,6 +27,8 @@
 #+PAGEBREAK:
 #+TOC: tables
 
+#+PAGEBREAK:
+
 Some text before first headline[fn:1].
 
 * Quick start guide
@@ -1166,13 +1168,13 @@ article with prefix and suffix [cite:See @moore Pg. 2].
 # the article once more \cite{moore}.  
 
 #+ATTR_ODT: :style "Chicago (full-note)"
-#+BIBLIOGRAPHY: ../../../contrib/biblatex-examples/biblatex-examples.bib
+#+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
 
 # #+ATTR_ODT: :style "Numeric"
-# #+BIBLIOGRAPHY: ../../../contrib/biblatex-examples/biblatex-examples.bib
+# #+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
 
 # #+ATTR_ODT: :style "Chicago (author-date)"
-# #+BIBLIOGRAPHY: ../../../contrib/biblatex-examples/biblatex-examples.bib
+# #+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
 
 # #+ATTR_ODT: :style custom
 # #+BIBLIOGRAPHY: MyLibrary plain option:-d
