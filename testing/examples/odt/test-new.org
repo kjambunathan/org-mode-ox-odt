@@ -18,6 +18,15 @@
 
 #+toc: headlines 4
 
+#+PAGEBREAK:
+#+TOC: figures
+
+#+PAGEBREAK:
+#+TOC: listings
+
+#+PAGEBREAK:
+#+TOC: tables
+
 Some text before first headline[fn:1].
 
 * Quick start guide
@@ -40,6 +49,7 @@ Some text before first headline[fn:1].
 
 ** Recommended configuration
 
+#+CAPTION: Style your tables
 #+BEGIN_SRC emacs-lisp 
 (custom-set-variables
  ;; enable these two if you have installed BasicODConverter and want
@@ -281,6 +291,7 @@ emacs --batch -L "~/src/org-jambu/lisp" --eval "(progn (require 'org-odt) (setq 
      - t: text area
      - w: width
      - h: height
+
      #+BEGIN_SRC emacs-lisp -n -r
      (save-excursion                  (ref:sc)
 	(ignore)
@@ -290,6 +301,7 @@ emacs --batch -L "~/src/org-jambu/lisp" --eval "(progn (require 'org-odt) (setq 
      In line [[(sc)]] we remember the current position.  [[(jump)][Line (jump)]] jumps
      to point-min.
 
+     #+CAPTION: Add line numbers to your listings
      #+BEGIN_SRC emacs-lisp +n -r
      (save-excursion                  (ref:sc1)
 	(ignore)
