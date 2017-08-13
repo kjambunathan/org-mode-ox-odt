@@ -502,30 +502,42 @@ a per-file basis.  For example,
 
 ;;;; Document transformation
 
-(defcustom org-odt-transform-processes
-  '(("Update indices and xrefs"
-     "soffice" "--norestore" "--invisible" "--headless"
-     "macro:///OrgMode.Utilities.UpdateAllIndexes(%I)"))
+(defcustom org-odt-transform-processes nil
   "List of shell commands that transforms an exported document.
 
 Pipe an exported document through these commands in the order
 they are listed.  These tranformations occurs right before
 conversion to `org-odt-preferred-output-format'.
 
-The default setting, has a sole transformer, which fills out 
+The customization buffer suggests some useful transformers (See
+below for details).  To use these transformers install the
+LibreOffice extension, \"OrgModeUtilities.oxt\" found under
+\"./contrib/odt/\" subdirectory of this repository.
 
-(1) index templates created with following Org directives
+I. Update indices and xrefs
+---------------------------
 
-    #+TOC: headlines
-    #+TOC: figures
-    #+TOC: tables
-    #+TOC: listings
+  This transformer, a LibreOffice macro, fills out
 
-(2) xrefs created with `org-odt-caption-and-xref-settings'
+     1. index templates created with following Org directives
 
-The above transformer, a LibreOffice Basic macro, does what one
-would accomplish with LibreOffice's Menu-> Tools-> Update->
-Update All.
+  	  #+TOC: headlines
+  	  #+TOC: figures
+  	  #+TOC: tables
+  	  #+TOC: listings
+
+     2. xrefs created with `org-odt-caption-and-xref-settings'
+
+  This macro is the equivalent to running Menu-> Tools->
+  Update-> Update All from within LibreOffice GUI.
+
+II. Optimize Column Width of all Tables
+---------------------------------------
+
+  This transformer, a LibreOffice macro, optimizes the column width
+  of all tables in the document.  This macro is equivalent to
+  running LibreOffice's Menu-> Table-> Size-> Optimal Column Width
+  on all the tables within the document.
 
 Each element is of the form (PURPOSE SHELL-CMD CMD-ARG1 CMD-ARG2
 ...).  PURPOSE, a human-readable string, summarizes what the
@@ -538,12 +550,17 @@ interpreted as below:
 %I input file name as a URL."
   :group 'org-export-odt
   :type
-  '(choice
-    (const :tag "None" nil)
-    (alist :tag "Transformers"
-	   :key-type (string :tag "Remarks")
-	   :value-type (cons :tag "Shell Command" (string :tag "Executable")
-			     (repeat (string :tag "Argument"))))))
+  '(alist :tag "Transformers"
+	  :key-type (string :tag "Remarks")
+	  :value-type (cons :tag "Shell Command" (string :tag "Executable")
+			    (repeat (string :tag "Argument")))
+	  :options
+	  (("Update indices and xrefs"
+	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
+			   "macro:///OrgMode.Utilities.UpdateAllIndexes(%I)")))
+	   ("Optimize Column Width of all Tables"
+	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
+			   "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)"))))))
 
 ;;;; Document conversion
 
