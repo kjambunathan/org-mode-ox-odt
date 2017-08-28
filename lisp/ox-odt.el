@@ -333,6 +333,40 @@ CATEGORY-NAME is used for qualifying captions on export.
 ENUMERATOR-PREDICATE is used for assigning a sequence number to
 the entity.  See `org-odt--enumerate'.")
 
+(defvar org-odt-toc-templates
+  (mapcar (lambda (value)
+	    (cl-destructuring-bind (counter category _predicate)
+		(assoc-default (assoc-default value '(("figures" . :FIGURE:)
+						      ("listings" . :LISTING:)
+						      ("tables" . :TABLE:)))
+			       org-odt-category-map-alist)
+	      (let ((caption-sequence-format "text")
+		    (index-title (format "List of %ss" category)))
+		(cons
+		 value
+		 (format
+		  "
+   <text:illustration-index text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Org Index1\">
+    <text:illustration-index-source text:caption-sequence-name=\"%s\" text:caption-sequence-format=\"%s\">
+     <text:index-title-template text:style-name=\"Org_20_Index_20_Heading\">%s</text:index-title-template>
+     <text:illustration-index-entry-template text:style-name=\"Org_20_Index\">
+      <text:index-entry-link-start text:style-name=\"Index_20_Link\"/>
+      <text:index-entry-text/>
+      <text:index-entry-tab-stop style:type=\"right\" style:leader-char=\".\"/>
+      <text:index-entry-page-number/>
+      <text:index-entry-link-end/>
+     </text:illustration-index-entry-template>
+    </text:illustration-index-source>
+    <text:index-body>
+      <text:index-title text:style-name=\"OrgIndexSection\" text:name=\"Org Index1_Head\">
+        <text:p text:style-name=\"Org_20_Index_20_Heading\">%s</text:p>
+      </text:index-title>
+    </text:index-body>
+   </text:illustration-index>
+"
+		  counter caption-sequence-format index-title index-title)))))
+	  '("figures" "listings" "tables")))
+
 (defvar org-odt-manifest-file-entries nil)
 (defvar hfy-user-sheet-assoc)
 
@@ -1317,27 +1351,37 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Table of Contents
 
-(defun org-odt-begin-toc (index-title depth)
+(defun org-odt-begin-toc (index-title max-depth &optional parent-depth)
   (concat
-   (format "
+   (let ((scope (if (zerop parent-depth) "document" "chapter")))
+     (format "
     <text:table-of-content text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Table of Contents\">
-     <text:table-of-content-source text:outline-level=\"%d\">
+     <text:table-of-content-source text:outline-level=\"%d\" text:use-outline-level=\"false\" text:use-index-source-styles=\"true\" text:index-scope=\"%s\">
       <text:index-title-template text:style-name=\"Contents_20_Heading\">%s</text:index-title-template>
-" depth index-title)
+" max-depth scope index-title))
 
-   (let ((levels (number-sequence 1 10)))
-     (mapconcat
-      (lambda (level)
-	(format
-	 "
+   (cl-loop for level from 1 to 10
+	    concat
+	    (format
+	     "
       <text:table-of-content-entry-template text:outline-level=\"%d\" text:style-name=\"Contents_20_%d\">
        <text:index-entry-link-start text:style-name=\"Internet_20_link\"/>
        <text:index-entry-chapter/>
        <text:index-entry-text/>
        <text:index-entry-link-end/>
       </text:table-of-content-entry-template>
-" level level)) levels ""))
+" level level))
 
+   (cl-loop for depth from (1+ parent-depth) to max-depth
+	    for level from 1
+	    concat
+	    (format
+	     "
+    <text:index-source-styles text:outline-level=\"%d\">
+      <text:index-source-style text:style-name=\"Heading_20_%d\"/>
+    </text:index-source-styles>
+"
+	     level depth))
    (format  "
      </text:table-of-content-source>
 
@@ -1386,7 +1430,7 @@ See `org-odt--build-date-styles' for implementation details."
   (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
 	  headline-label text))
 
-(defun org-odt-toc (depth info)
+(defun org-odt-toc (depth info &optional scope)
   (cl-assert (wholenump depth))
   ;; When a headline is marked as a radio target, as in the example below:
   ;;
@@ -1402,7 +1446,10 @@ See `org-odt--build-date-styles' for implementation details."
   ;; suppressed.
   (let* ((title (org-export-translate "Table of Contents" :utf-8 info))
 	 (headlines (org-export-collect-headlines
-		     info (and (wholenump depth) depth)))
+		     info (and (wholenump depth) depth) scope))
+	 (parent-level (or (and scope (org-export-get-relative-level
+				       (org-export-get-parent-headline scope) info))
+			   0))
 	 (backend (org-export-create-backend
 		   :parent (org-export-backend-name (plist-get info :back-end))
 		   :transcoders '((footnote-reference . ignore)
@@ -1410,18 +1457,18 @@ See `org-odt--build-date-styles' for implementation details."
 				  (radio-target . (lambda (object c i) c))
 				  (target . ignore)))))
     (when headlines
-      (concat
-       (org-odt-begin-toc title depth)
-       (mapconcat
-	(lambda (headline)
-	  (let* ((entry (org-odt-format-headline--wrap
-			 headline backend info 'org-odt-format-toc-headline))
-		 (level (org-export-get-relative-level headline info))
-		 (style (format "Contents_20_%d" level)))
-	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		    style entry)))
-	headlines "\n")
-       (org-odt-end-toc)))))
+      (let ((toc-text (mapconcat
+		       (lambda (headline)
+			 (let* ((entry (org-odt-format-headline--wrap
+					headline backend info 'org-odt-format-toc-headline))
+				(level (org-export-get-relative-level headline info))
+				(style (format "Contents_20_%d" (- level parent-level))))
+			   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+				   style entry)))
+		       headlines "\n")))
+	(if (> parent-level 1) toc-text
+	    (concat (org-odt-begin-toc title depth parent-level) toc-text
+		    (org-odt-end-toc)))))))
 
 
 ;;;; Document styles
@@ -2269,34 +2316,26 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	 ((string-match "\\<headlines\\>" value)
 	  (let ((depth (or (and (string-match "[0-9]+" value)
 				(string-to-number (match-string 0 value)))
-			   (plist-get info :with-toc))))
-	    (when (wholenump depth) (org-odt-toc depth info))))
-	 ((member value '("tables" "figures" "listings"))
+			   (plist-get info :with-toc)))
+		(localp (string-match-p "\\<local\\>" value)))
+	    (when (wholenump depth) (org-odt-toc depth info (and localp keyword)))))
+	 ((or (string-match-p "\\<tables\\>" value)
+	      (string-match-p "\\<figures\\>" value)
+	      (string-match-p "\\<listings\\>" value))
 	  ;; Return an index template.
-	  (cl-destructuring-bind (counter category _predicate)
-	      (assoc-default (assoc-default value '(("figures" . :FIGURE:)
-						    ("listings" . :LISTING:)
-						    ("tables" . :TABLE:)))
-			     org-odt-category-map-alist)
-	    (let ((caption-sequence-format "text")
-		  (index-title (format "List of %ss" category)))
-	      (format "
-   <text:illustration-index text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Org Index1\">
-    <text:illustration-index-source text:caption-sequence-name=\"%s\" text:caption-sequence-format=\"%s\">
-     <text:index-title-template text:style-name=\"Org_20_Index_20_Heading\">%s</text:index-title-template>
-     <text:illustration-index-entry-template text:style-name=\"Org_20_Index\">
-      <text:index-entry-link-start text:style-name=\"Index_20_Link\"/>
-      <text:index-entry-text/>
-      <text:index-entry-tab-stop style:type=\"right\" style:leader-char=\".\"/>
-      <text:index-entry-page-number/>
-      <text:index-entry-link-end/>
-     </text:illustration-index-entry-template>
-    </text:illustration-index-source>
-   </text:illustration-index>
-"
-		      counter
-		      caption-sequence-format
-		      index-title)))))))
+	  (let* ((localp (string-match-p "\\<local\\>" value))
+		 (template (assoc-default (car (split-string value)) org-odt-toc-templates)))
+	    ;; Specify the scope of the index.
+	    (if (string-match "<text:illustration-index-source\\(.\\|\n\\)*?>" template)
+		(setq  template (replace-match (concat (match-string 1 template)
+						       (format " text:index-scope=\"%s\""
+							       (if localp "chapter" "document")))
+					       t t template 1)))
+	    ;; Translate the title.
+	    (if (string-match "\\(?:<text:index-title-template.*>\\(?1:\\(?:.\\|\n\\)+?\\)</text:index-title-template>\\)"
+			      template)
+		(replace-match (org-export-translate (org-trim (match-string 1 template)) :utf-8 info) t t template 1)
+	      template))))))
      ;; Handle BIBLIOGRAPHY.  Ignore it.
      ((string= key "BIBLIOGRAPHY")
       ;; Citation Processors (see ox-jabref.el) may handle this by
