@@ -1754,16 +1754,16 @@ original parsed data.  INFO is a plist holding export options."
       (goto-char (match-beginning 0))
       ;; - Dump automatic table styles.
       (cl-loop for (style-name props) in
-	    (plist-get org-odt-automatic-styles 'Table) do
-	    (when (setq props (or (let ((value (plist-get props :rel-width)))
-				    (and value (ignore-errors (read value)))) 96))
-	      (insert (format org-odt-table-style-format style-name props))))
+	       (plist-get org-odt-automatic-styles 'Table) do
+	       (when (setq props (or (let ((value (plist-get props :rel-width)))
+				       (and value (ignore-errors (read value)))) 96))
+		 (insert (format org-odt-table-style-format style-name props))))
       ;; - Dump date-styles.
       (when (plist-get info :odt-use-date-fields)
 	(insert (org-odt--build-date-styles (car custom-time-fmts)
-					      "OrgDate1")
+					    "OrgDate1")
 		(org-odt--build-date-styles (cdr custom-time-fmts)
-					      "OrgDate2")))
+					    "OrgDate2")))
       ;; Update display level.
       ;; - Remove existing sequence decls.  Also position the cursor.
       (goto-char (point-min))
@@ -1799,32 +1799,23 @@ original parsed data.  INFO is a plist holding export options."
 	 (concat
 	  ;; Title.
 	  (when (org-string-nw-p title)
-	    (concat
-	     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		     "OrgTitle" (format "\n<text:title>%s</text:title>" title))
-	     ;; Separator.
-	     "\n<text:p text:style-name=\"OrgTitle\"/>"))
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgTitle" (format "\n<text:title>%s</text:title>" title)))
 	  (cond
 	   ((and author (not email))
 	    ;; Author only.
-	    (concat
-	     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		     "OrgSubtitle"
-		     (format "<text:initial-creator>%s</text:initial-creator>" author))
-	     ;; Separator.
-	     "\n<text:p text:style-name=\"OrgSubtitle\"/>"))
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgSubtitle"
+		    (format "<text:initial-creator>%s</text:initial-creator>" author)))
 	   ((and author email)
 	    ;; Author and E-mail.
-	    (concat
+	    (format
+	     "\n<text:p text:style-name=\"%s\">%s</text:p>"
+	     "OrgSubtitle"
 	     (format
-	      "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	      "OrgSubtitle"
-	      (format
-	       "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
-	       (concat "mailto:" email)
-	       (format "<text:initial-creator>%s</text:initial-creator>" author)))
-	     ;; Separator.
-	     "\n<text:p text:style-name=\"OrgSubtitle\"/>")))
+	      "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
+	      (concat "mailto:" email)
+	      (format "<text:initial-creator>%s</text:initial-creator>" author)))))
 	  ;; Date, if required.
 	  (when (plist-get info :with-date)
 	    (let* ((date (plist-get info :date))
@@ -1837,12 +1828,9 @@ original parsed data.  INFO is a plist holding export options."
 		    (if (and (plist-get info :odt-use-date-fields) timestamp)
 			(org-odt--format-timestamp (car date))
 		      (org-export-data (plist-get info :date) info))))
-	      (concat
-	       (when (org-string-nw-p subtitle)
-		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			 "OrgSubtitle" subtitle))
-	       ;; Separator
-	       "<text:p text:style-name=\"OrgSubtitle\"/>"))))))
+	      (when (org-string-nw-p subtitle)
+		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			"OrgSubtitle" subtitle)))))))
       ;; Table of Contents
       (let* ((with-toc (plist-get info :with-toc))
 	     (depth (and with-toc (if (wholenump with-toc)
