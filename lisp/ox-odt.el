@@ -4608,11 +4608,15 @@ exported file."
 ;; | Row 2 | 2.1 | 2.2 | 2.3 |
 ;;
 ;; List tables can contain hrule (see example above).  They can also
-;; contain table specific attributes.
+;; contain table specific attributes.  Except for column alignment
+;; (i.e., lrc spec), all other attributes (column sizing and grouping)
+;; are honored on export.
 ;;
 ;; Specifically, with a list table such as the one below,
 ;;
 ;; #+ATTR_ODT: :list-table t
+;; - | /    | <    |    > |       |
+;; - | <l8> | <r4> | <c2> | <l1>  |
 ;; - --------
 ;;   - Row 1
 ;;   - Row 1.1
@@ -4688,19 +4692,43 @@ exported file."
 				       (setq l1-item-leading-text l1-item-contents)))
 
 				   (list
-				    ;; Is the leading text of the
-				    ;; Level-2 a horizontal rule?
 				    (when (and l1-item-leading-text
 					       (eq (org-element-type (car l1-item-leading-text))
-						   'paragraph)
-					       (string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
-							     (org-element-interpret-data
-							      (car l1-item-leading-text))))
-				      ;; Yes. Splice a rule in to the
-				      ;; table.
-				      (org-element-adopt-elements
-				       (list 'table-row (list :type 'rule))))
-
+						   'paragraph))
+				      (let ((leading-text (org-trim
+							   (org-element-interpret-data
+							    (car l1-item-leading-text)))))
+					(cond
+					 ;; Is the leading text of the Level-1 a horizontal rule?
+					 ((string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
+							leading-text)
+					  ;; Yes. Splice a rule in to the table.
+					  (org-element-adopt-elements
+					   (list 'table-row (list :type 'rule))))
+					 ;; Is the leading text of the Level-1 a special row?
+					 ((string-match "^|" leading-text)
+					  ;; Yes. Splice that special row in to the table.
+					  (org-element-map
+					      (with-temp-buffer
+						(insert leading-text)
+						(org-element-parse-buffer))
+					      'table-row
+					    (lambda (table-row)
+					      ;; Nuke all attributes other than `:parent'.
+					      (setcar (cdr table-row) (list :type 'standard))
+					      (org-element-map table-row 'table-cell
+						(lambda (table-cell)
+						  ;; Nuke all attributes other than `:parent'.
+						  (setcar (cdr table-cell) (list :parent table-row))
+						  table-cell))
+					      ;; Unfortunately,`org-export--prune-tree'runs before
+					      ;; this filter is called. Do what prune would have done
+					      ;; had it run *after* the listified table has got in to tree.
+					      (when info
+						(plist-put info :ignore-list
+							   (cons table-row (plist-get info :ignore-list))))
+					      table-row)
+					    nil 'first-match)))))
 				    (when l2-list
 				      (apply 'org-element-adopt-elements
 					     ;; Level-1 items start a table row.
@@ -4714,7 +4742,15 @@ exported file."
 							(list 'table-cell nil)
 							(org-element-contents l2-item)))
 					       info nil 'item))))))
-			       info nil 'item))))))
+			       info nil 'item)))))
+	;; Complain if the listified table is non-homogenous.
+	;; Note: A list table is non-homogenous if it's rows has
+	;; uneven number of cells.
+	(unless (apply '= (org-element-map l1-list 'table-row
+			    (lambda (table-row)
+			      (when (eq (org-element-property :type table-row) 'standard)
+				(length (org-element-contents table-row))))))
+	  (user-error "List table is non-homogenous")))
       nil)
     info)
   tree)
