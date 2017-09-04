@@ -1014,7 +1014,7 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
      - Row 2
      - Row 3
 
-**** List Table 4
+**** COMMENT List Table 4
 
      A non-homogenous list-table
 
@@ -1036,6 +1036,8 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
      A complex true-to-the-spirit multiline list-table
 
      #+ATTR_ODT: :list-table t
+     - | /    | <    |    > |       |
+     - | <l8> | <r4> | <c2> | <l1>  |
      - --------
        - Row 1
        - Row 1.1
