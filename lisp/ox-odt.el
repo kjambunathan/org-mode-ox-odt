@@ -4706,7 +4706,7 @@ exported file."
 					  (org-element-adopt-elements
 					   (list 'table-row (list :type 'rule))))
 					 ;; Is the leading text of the Level-1 a special row?
-					 ((string-match "^|" leading-text)
+					 ((string-match "\\`|" leading-text)
 					  ;; Yes. Splice that special row in to the table.
 					  (org-element-map
 					      (with-temp-buffer
