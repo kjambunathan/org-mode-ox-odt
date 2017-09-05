@@ -3298,7 +3298,7 @@ information."
 ;;    * B23
 ;; 3. N3
 
-(defun org-odt-paragraph (paragraph contents _info)
+(defun org-odt-paragraph (paragraph contents info)
   "Transcode a PARAGRAPH element from Org to ODT.
 CONTENTS is the contents of the paragraph, as a string.  INFO is
 the plist used as a communication channel."
@@ -3314,7 +3314,8 @@ the plist used as a communication channel."
 	  ;; Case 1: If an element specifies an EXPLICIT STYLE of it's
 	  ;; own via the #+ATTR_ODT line, use it.  PARAGRAPH and
 	  ;; SPECIAL-BLOCK use the `:style' attribute for this
-	  ;; purpose, while PLAIN-LIST uses `:p-style' attribute.
+	  ;; purpose, while TABLE and PLAIN-LIST uses `:p-style'
+	  ;; attribute.
 
 	  ;; Case 2: If an element does not have an explicit style but
 	  ;; has an IMPLICIT, PRE-CONFIGURE STYLE of it's own, use it.
@@ -3324,9 +3325,9 @@ the plist used as a communication channel."
 
 	  ;; Case 3: If an element specifies neither an IMPLICIT style
 	  ;; or an EXPLICIT style, use the style from it's parent.
-	  ;; For example, a paragraph within a PLAIN-LIST (that
-	  ;; doesn't specify a `:p-style' of it's own) inherit it's
-	  ;; style from the it's parent.
+	  ;; For example, a paragraph within a TABLE and PLAIN-LIST
+	  ;; (that doesn't specify a `:p-style' of it's own) inherit
+	  ;; it's style from the it's parent.
 
 	  ;; Case 4: If an element has no parent (i.e., root node),
 	  ;; use the fallback style "Text_20_body".
@@ -3379,7 +3380,11 @@ the plist used as a communication channel."
 			     ;; Case 2: Handle user-specified
 			     ;; SPECIAL-BLOCKs not known to the
 			     ;; exporter.
-			     (t (org-odt--read-attribute el :style))))))
+			     (t (org-odt--read-attribute el :style)))))
+			 (table-cell
+			  ;; A table cell can have paragraphs, only if
+			  ;; it is part of a list table.
+			  (org-odt-table-cell--get-paragraph-styles el info)))
 		       ;; Case 2: Element doesn't specify a style of
 		       ;; it's own.  Use the parent style.
 		       style))
@@ -3864,31 +3869,73 @@ styles congruent with the ODF-1.2 specification."
       info)))
 
 (defun org-odt-table-cell--get-paragraph-styles (table-cell info)
+  "Get paragraph style for TABLE-CELL.
+INFO is a plist holding contextual information.
+
+Style names used for paragraphs in a table is a concatenation of
+three components: BASE-STYLE CELL-TYPE CELL-ALIGNMENT.  These are
+chosen as below:
+
+   BASE-STYLE:     The base paragraph style, as specified by the user
+		   with \"#+ATTR_ODT: :p-style ...\".  Or
+		   \"OrgTable\", if none.
+
+   CELL-TYPE:      One of \"Heading\" or \"Contents\", according
+		   as the table cell is part of a header column /
+		   header row or otherwise.
+
+   CELL-ALIGNMENT: One of \"Left\", \"Right\" or \"Center\",
+		   based on the column alignment.
+
+By default, a table cell can have one of the following 6 styles:
+
+  - OrgTableContents
+  - OrgTableContentsLeft
+  - OrgTableContentsRight
+  - OrgTableContentsCenter
+  - OrgTableContents
+  - OrgTableHeadingLeft
+  - OrgTableHeadingRight
+  - OrgTableHeadingCenter
+
+If you are custom paragraph styles for a table, you need to
+define all the above 8 styles in your styles file."
   (let* ((table-cell-address (org-export-table-cell-address table-cell info))
 	 (_r (car table-cell-address))
 	 (c (cdr table-cell-address))
 	 (table-row (org-export-get-parent table-cell))
 	 (custom-style-prefix (org-odt-get-table-cell-styles
-			       table-cell info)))
+			       table-cell info))
+	 (table (org-export-get-parent-table table-cell))
+	 (p-style (or (org-odt--read-attribute table :p-style) "OrgTable")))
     (or
      (and custom-style-prefix
 	  (format "%sTableParagraph" custom-style-prefix))
+     ;; Style names used for paragraphs in a table is a concatenation
+     ;; of BASE-STYLE, CELL-TYPE and CELL-ALIGNMENT
      (concat
+      ;; BASE-STYLE: The base paragraph style, as specified by the
+      ;; user.  Or "OrgTable", if none.
+      p-style
+      ;; CELL-TYPE: One of "Heading" or "Contents", according as the
+      ;; table cell is part of a header column / header row or
+      ;; otherwise.
       (cond
        ((and (= 1 (org-export-table-row-group table-row info))
 	     (org-export-table-has-header-p
 	      (org-export-get-parent-table table-row) info))
-	"OrgTableHeading")
-       ((let* ((table (org-export-get-parent-table table-cell))
-	       (table-header-columns
+	"Heading")
+       ((let* ((table-header-columns
 		(let ((cols (org-odt--read-attribute table :header-columns)))
 		  (and cols (read cols)))))
 	  (<= c (cond ((wholenump table-header-columns)
 		       (- table-header-columns 1))
 		      (table-header-columns 0)
 		      (t -1))))
-	"OrgTableHeading")
-       (t "OrgTableContents"))
+	"Heading")
+       (t "Contents"))
+      ;; CELL-ALIGNMENT: One of "Left", "Right" or "Center" based on
+      ;; the column alignment.
       (capitalize (symbol-name (org-export-table-cell-alignment
 				table-cell info)))))))
 
