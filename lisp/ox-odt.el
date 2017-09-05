@@ -3935,9 +3935,12 @@ define all the above 8 styles in your styles file."
 	"Heading")
        (t "Contents"))
       ;; CELL-ALIGNMENT: One of "Left", "Right" or "Center" based on
-      ;; the column alignment.
-      (capitalize (symbol-name (org-export-table-cell-alignment
-				table-cell info)))))))
+      ;; the column alignment.  BUT, ignore column alignment
+      ;; attributes on list tables, to work around
+      ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
+      (unless (org-odt--read-attribute table :list-table)
+	(capitalize (symbol-name (org-export-table-cell-alignment
+				  table-cell info))))))))
 
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
