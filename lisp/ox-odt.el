@@ -3863,6 +3863,35 @@ styles congruent with the ODF-1.2 specification."
 	    (org-export-table-cell-width table-cell info) 0))
       info)))
 
+(defun org-odt-table-cell--get-paragraph-styles (table-cell info)
+  (let* ((table-cell-address (org-export-table-cell-address table-cell info))
+	 (_r (car table-cell-address))
+	 (c (cdr table-cell-address))
+	 (table-row (org-export-get-parent table-cell))
+	 (custom-style-prefix (org-odt-get-table-cell-styles
+			       table-cell info)))
+    (or
+     (and custom-style-prefix
+	  (format "%sTableParagraph" custom-style-prefix))
+     (concat
+      (cond
+       ((and (= 1 (org-export-table-row-group table-row info))
+	     (org-export-table-has-header-p
+	      (org-export-get-parent-table table-row) info))
+	"OrgTableHeading")
+       ((let* ((table (org-export-get-parent-table table-cell))
+	       (table-header-columns
+		(let ((cols (org-odt--read-attribute table :header-columns)))
+		  (and cols (read cols)))))
+	  (<= c (cond ((wholenump table-header-columns)
+		       (- table-header-columns 1))
+		      (table-header-columns 0)
+		      (t -1))))
+	"OrgTableHeading")
+       (t "OrgTableContents"))
+      (capitalize (symbol-name (org-export-table-cell-alignment
+				table-cell info)))))))
+
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
@@ -3873,31 +3902,8 @@ channel."
 	 (c (cdr table-cell-address))
 	 (horiz-span (nth c (org-odt--table-cell-widths
 			     (org-export-get-parent-table table-cell) info)))
-	 (table-row (org-export-get-parent table-cell))
 	 (custom-style-prefix (org-odt-get-table-cell-styles
 			       table-cell info))
-	 (paragraph-style
-	  (or
-	   (and custom-style-prefix
-		(format "%sTableParagraph" custom-style-prefix))
-	   (concat
-	    (cond
-	     ((and (= 1 (org-export-table-row-group table-row info))
-		   (org-export-table-has-header-p
-		    (org-export-get-parent-table table-row) info))
-	      "OrgTableHeading")
-	     ((let* ((table (org-export-get-parent-table table-cell))
-		     (table-header-columns
-		      (let ((cols (org-odt--read-attribute table :header-columns)))
-			(and cols (read cols)))))
-		(<= c (cond ((wholenump table-header-columns)
-			     (- table-header-columns 1))
-			    (table-header-columns 0)
-			    (t -1))))
-	      "OrgTableHeading")
-	     (t "OrgTableContents"))
-	    (capitalize (symbol-name (org-export-table-cell-alignment
-				      table-cell info))))))
 	 (cell-style-name
 	  (or
 	   (and custom-style-prefix (format "%sTableCell"
@@ -3916,14 +3922,14 @@ channel."
 			(1+ horiz-span))))))
     (unless contents (setq contents ""))
     (concat
-     (cl-assert paragraph-style)
      (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
 	     cell-attributes
 	     (let ((table-cell-contents (org-element-contents table-cell)))
 	       (if (eq (org-element-class (car table-cell-contents)) 'element)
 		   contents
 		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			 paragraph-style contents))))
+			 (org-odt-table-cell--get-paragraph-styles table-cell info)
+			 contents))))
      (let (s)
        (dotimes (_i horiz-span s)
 	 (setq s (concat s "\n<table:covered-table-cell/>"))))
