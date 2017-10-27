@@ -3340,6 +3340,9 @@ the plist used as a communication channel."
 		       ;; Case 1: Does this node IMPLICITLY or
 		       ;; EXPLICITLY specify a style?  Use it.
 		       (cl-case (org-element-type el)
+			 (verse-block
+			  (or (org-odt--read-attribute el :style)
+			      "OrgVerse"))
 			 (center-block
 			  (or (org-odt--read-attribute el :style)
 			      (if footnote-definition-p "OrgFootnoteCenter"
@@ -4307,7 +4310,7 @@ channel."
 
 ;;;; Verse Block
 
-(defun org-odt-verse-block (_verse-block contents _info)
+(defun org-odt-verse-block (verse-block contents info)
   "Transcode a VERSE-BLOCK element from Org to ODT.
 CONTENTS is verse block contents.  INFO is a plist holding
 contextual information."
@@ -4318,8 +4321,7 @@ contextual information."
   ;; Replace tabs and spaces.
   (setq contents (org-odt--encode-tabs-and-spaces contents))
   ;; Surround it in a verse environment.
-  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	  "OrgVerse" contents))
+  (org-odt-paragraph verse-block contents info))
 
 
 
