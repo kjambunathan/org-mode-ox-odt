@@ -255,7 +255,7 @@ standard Emacs.")
 "
   "Template for auto-generated Table styles.")
 
-(defvar org-odt-automatic-styles '()
+(defvar org-odt--automatic-styles '()
   "Registry of automatic styles for various OBJECT-TYPEs.
 The variable has the following form:
 ((OBJECT-TYPE-A
@@ -1481,7 +1481,7 @@ OBJECT-PROPS is (typically) a plist created by passing
 
 Use `org-odt-object-counters' to generate an automatic
 OBJECT-NAME and STYLE-NAME.  If OBJECT-PROPS is non-nil, add a
-new entry in `org-odt-automatic-styles'.  Return (OBJECT-NAME
+new entry in `org-odt--automatic-styles'.  Return (OBJECT-NAME
 . STYLE-NAME)."
   (cl-assert (stringp object-type))
   (let* ((object (intern object-type))
@@ -1492,10 +1492,10 @@ new entry in `org-odt-automatic-styles'.  Return (OBJECT-NAME
 	  (plist-put org-odt-object-counters seqvar seqno))
     (when object-props
       (setq style-name (format "Org%s" object-name))
-      (setq org-odt-automatic-styles
-	    (plist-put org-odt-automatic-styles object
+      (setq org-odt--automatic-styles
+	    (plist-put org-odt--automatic-styles object
 		       (append (list (list style-name object-props))
-			       (plist-get org-odt-automatic-styles object)))))
+			       (plist-get org-odt--automatic-styles object)))))
     (cons object-name style-name)))
 
 ;;;; Checkbox
@@ -1754,7 +1754,7 @@ original parsed data.  INFO is a plist holding export options."
       (goto-char (match-beginning 0))
       ;; - Dump automatic table styles.
       (cl-loop for (style-name props) in
-	       (plist-get org-odt-automatic-styles 'Table) do
+	       (plist-get org-odt--automatic-styles 'Table) do
 	       (when (setq props (or (let ((value (plist-get props :rel-width)))
 				       (and value (ignore-errors (read value)))) 96))
 		 (insert (format org-odt-table-style-format style-name props))))
@@ -5056,7 +5056,7 @@ Return output file's name."
 	     ,outfile
 	     (let* ((org-odt-embedded-images-count 0)
 		    (org-odt-embedded-formulas-count 0)
-		    (org-odt-automatic-styles nil)
+		    (org-odt--automatic-styles nil)
 		    (org-odt-object-counters nil)
 		    ;; Let `htmlfontify' know that we are interested in
 		    ;; collecting styles.
@@ -5078,7 +5078,7 @@ Return output file's name."
        outfile
        (let* ((org-odt-embedded-images-count 0)
 	      (org-odt-embedded-formulas-count 0)
-	      (org-odt-automatic-styles nil)
+	      (org-odt--automatic-styles nil)
 	      (org-odt-object-counters nil)
 	      ;; Let `htmlfontify' know that we are interested in collecting
 	      ;; styles.
