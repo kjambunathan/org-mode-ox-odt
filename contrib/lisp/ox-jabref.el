@@ -773,7 +773,7 @@ separators."
 
 ;;;; Citation Reference
 
-(defun org-jabref-citation (citation _contents info)
+(defun org-jabref-citation (citation contents info)
   "Transcode a CITATION element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information.
 
@@ -808,7 +808,9 @@ separators."
 		     (assoc-default cite-key
 				    (assoc-default export-format citation-cache)))))
 	   cite-keys)))
-    (funcall (car formatter) cite-key-text-alist pre-note post-note (cdr formatter))))
+    (or (when (cl-every (lambda (cite-key-text) (cdr cite-key-text)) cite-key-text-alist)
+	  (funcall (car formatter) cite-key-text-alist pre-note post-note (cdr formatter)))
+	(org-odt-citation citation contents info))))
 
 ;;;; Keyword
 

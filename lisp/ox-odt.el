@@ -2040,7 +2040,11 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   ;; Just interpret the citation object.
   ;; Citation processors (like ox-jabref.el) may handle citation
   ;; by registering their own transcoders.
-  (org-element-interpret-data citation))
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+	  "OrgCode" (org-odt--encode-plain-text
+		     (org-element-interpret-data
+		      (or (org-element-property :replaces citation)
+			  citation)))))
 
 ;;;; Headline
 
@@ -4355,6 +4359,8 @@ exported file."
 						(list 'citation-reference
 						      (list :key cite-key)))
 					      cite-keys))))
+		;; Note down the original cite fragment.
+		(org-element-put-property citation :replaces latex-*)
 		(org-element-set-element latex-* citation))))))
       info)
   tree)
