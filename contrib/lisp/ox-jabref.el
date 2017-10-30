@@ -499,7 +499,9 @@ that is registered for the current export backend.  See
 
 (defun org-jabref--run-cmd (&rest args)
   "Run JabRef command with ARGS.
-Append ARGS to `org-jabref-command' and use `call-process'."
+Append ARGS to `org-jabref-command' and use `call-process'.
+Return output, if the command succeeds.  Otherwise throw an
+error."
   (let ((cmd (append org-jabref-command args)))
     (let (exitcode err-string)
       (message "Running %s" (mapconcat 'identity cmd " "))
@@ -508,7 +510,7 @@ Append ARGS to `org-jabref-command' and use `call-process'."
 	      (setq exitcode
 		    (apply 'call-process (car cmd)
 			   nil standard-output nil (cdr cmd)))))
-      (or (zerop exitcode)
+      (if (zerop exitcode) err-string
 	  (error (format "JabRef command failed with error (%s)"
 			 err-string))))))
 
@@ -541,6 +543,17 @@ Specifically,
     (delete-file aux-file)
     ;; Return filtered bib file.
     filtered-bib-file))
+
+;;;; JabRef Capabilities
+
+(defun org-jabref-get-available-export-formats ()
+  (let* ((help (org-jabref--run-cmd "-h" ))
+	 (available-formats
+	  (when (string-match
+		 "\\(?:Available export formats:\\(?1:\\(?:.\\|\n\\)+?\\)\\(?:\n\n\\|\\'\\)\\)" help)
+	    (match-string 1 help))))
+    (when available-formats
+      (mapcar 'org-trim (split-string available-formats "[,\f\t\n\r\v]+")))))
 
 ;;;; Export a BIB file, enbloc
 
@@ -656,8 +669,16 @@ Return the XML representation as a string. Specifically,
 	     (cite-keys-used (mapcar 'car (plist-get info :citations-alist)))
 	     citation-cache)
 	(message "Citation style is %s" citation-style)
-	;; When export formats are encountered for the first time,
-	;; create empty entry for those.
+
+	;; Does JabRef export to formats that we expect?
+	(let ((missing-formats (cl-set-difference jabref-formats
+						  (org-jabref-get-available-export-formats)
+						  :test #'string=)))
+	  (when missing-formats
+	    (user-error "(ox-jabref): No JabRef plugin for %S" missing-formats)))
+
+	;; Export BIBFILE to each of the required formats and stash
+	;; the results in citation cache.
 	(dolist (jabref-format jabref-formats)
 	  (unless (assoc-default jabref-format citation-cache)
 	    (push (cons jabref-format (org-jabref-export-bib-file
