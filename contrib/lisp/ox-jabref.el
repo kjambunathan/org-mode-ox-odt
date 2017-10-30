@@ -389,6 +389,20 @@ For a list of export formats registered with JabRef use:
 		    '((keyword . org-jabref-keyword)
 		      (citation . org-jabref-citation))
 		    (org-export-backend-transcoders stock-backend)))
+	     ;; Override default export options with our own.
+	     (setf (org-export-backend-options enhanced-backend)
+		   (append (org-export-backend-options stock-backend)
+			   '((:jabref-citation-style
+			      "ODT_JABREF_CITATION_STYLE" nil
+			      ;; For the default value, use *all*
+			      ;; supported Citation styles.  Once a
+			      ;; user inserts the template with `C-C
+			      ;; C-e # odt', he can edit this line to
+			      ;; his needs.
+			      (mapconcat (lambda (s)
+					   (format "\"%s\"" (car s)))
+					 (assoc-default "odt" org-jabref-citation-styles) " | ")
+			      t))))	     
 	     ;; Modify the menu description.
 	     (let ((menu (org-export-backend-menu enhanced-backend)))
 	       (setf (cadr menu) (concat (cadr menu) " (With Jabref Processing)")))
@@ -411,57 +425,37 @@ For a list of export formats registered with JabRef use:
 
 ;;; Internal functions
 
-(defun org-jabref--read-bibliography-attribute (info property)
-  "Return value of PROPERTY of #+BIBLIOGRAPHY keyword.
-INFO is a plist holding contextual information for purposes of
-export.  PROPERTY is one of `:bib-file' or `:citation-style'.  If
-it is neither, treat is as one of the properties in
-#+ATTR_BACKEND attribute of #+BIBLIOGRAPHY keyword, where BACKEND
-is the current export backend."
-  (let* ((data (plist-get info :parse-tree))
-	 (bibliography (org-element-map data 'keyword
-			 (lambda (keyword)
-			   (let ((key (org-element-property :key keyword)))
-			     (and (string= (upcase key) "BIBLIOGRAPHY")
-				  keyword)))
-			 info 'first-match)))
-    (when bibliography
-      (cond
-       ((memq property '(:bib-file :citation-style))
-	(let* ((value (org-element-property :value bibliography))
-	       (values (split-string value))
-	       (attributes (list :bib-file
-				 (let* ((bib-file (nth 0 values)))
-				   (unless bib-file
-				     (user-error
-				      "(ox-jabref): #+BIBLIOGRAPHY specifies no bib file."))
-				   ;; Add a ".bib" extension, if it is missing.
-				   (unless (file-name-extension bib-file)
-				     (setq bib-file (format "%s.bib" bib-file)))
-				   ;; Does the bib file exist?
-				   (unless (and (file-regular-p bib-file)
-						(file-readable-p bib-file))
-				     (user-error
-				      "(ox-jabref): Bibliography file %s not readable"
-				      bib-file))
-				   (expand-file-name bib-file))
-				 :citation-style (nth 1 values))))
-	  (plist-get attributes property)))
-       (t (org-odt--read-attribute bibliography property))))))
+(defun org-jabref--sanitize-options (info)
+  ;; Sanitize value of #+BIB_FILE.
+  (let ((bib-file (plist-get info :bib-file)))
+    (when bib-file
+      ;; Parse value.
+      (setq bib-file (ignore-errors (read bib-file)))
+      ;; Does bibfile exists?
+      (unless (and (stringp bib-file)
+		   (file-regular-p bib-file)
+		   (file-readable-p bib-file))
+	(user-error "(ox-jabref): Unreadable Bibliography file: %s" (or bib-file "")))
+      ;; Convert bibfile to an absolute path and stash it.
+      (plist-put info :bib-file (expand-file-name bib-file))))
 
-(defun org-jabref--get-citation-style (info)
-  "Return Citation style."
-  (let* ((backend (plist-get info :back-end))
-	 (backend-name (symbol-name (org-export-backend-name backend)))
-	 (styles-alist (assoc-default backend-name org-jabref-citation-styles))
-	 ;; FIXME: Ignore the "style" entry in "#+BIBLIOGRAPHY" line.  Just
-	 ;; go with the first registered style for this backend in
-	 ;; `org-jabref-citation-styles'.
-	 (citation-style (org-jabref--read-bibliography-attribute info :style)))
-    (if (and (stringp citation-style) (assoc-string citation-style styles-alist t))
-	(car (assoc-string citation-style styles-alist t))
-      (message "Unknown Citation style \"%s\"" citation-style)
-      (caar styles-alist))))
+  ;; Sanitize value of #+ODT_JABREF_CITATION_STYLE.
+  (let ((citation-style (plist-get info :jabref-citation-style)))
+    (when citation-style
+      ;; Parse value.
+      (setq citation-style (ignore-errors (read citation-style)))
+      ;; Can I handle the requested Citation Style?
+      (let* ((backend (plist-get info :back-end))
+	     (backend-name (symbol-name (org-export-backend-name backend)))
+	     (styles-alist (assoc-default backend-name org-jabref-citation-styles)))
+	(unless (and (stringp citation-style) (assoc-string citation-style styles-alist t))
+	  (message "(ox-jabref): Unsupported Citation style \"%s\"" citation-style)
+	  ;; No.  Just use the first of the available citation styles.
+	  (setq citation-style (caar styles-alist))))
+      (plist-put info :jabref-citation-style citation-style)))
+  
+  (message "(ox-jabref): Bib file:  %s" (plist-get info :bib-file))
+  (message "(ox-jabref): Citation style: %s" (plist-get info :jabref-citation-style)))
 
 (defun org-jabref--get-export-format (info op prop)
   "Return the EXPORT-FORMAT configured for operation OP.
@@ -472,10 +466,7 @@ that is registered for the current export backend.  See
   (let* ((backend (plist-get info :back-end))
 	 (backend-name (symbol-name (org-export-backend-name backend)))
 	 (styles-alist (assoc-default backend-name org-jabref-citation-styles))
-	 ;; FIXME: Ignore the "style" entry in "#+BIBLIOGRAPHY" line.
-	 ;; Just go with the first registered style for this backend
-	 ;; in `org-jabref-citation-styles'.
-	 (citation-style (org-jabref--get-citation-style info))
+	 (citation-style (plist-get info :jabref-citation-style))
  	 ;; Get JabRef export format that match this backend and
 	 ;; citation-style.
 	 (export-formats-plist (assoc-default citation-style styles-alist)))
@@ -646,16 +637,18 @@ Return the XML representation as a string. Specifically,
 (defadvice org-export--collect-tree-properties
     (around org-jabref-load-citation-cache activate)
   "Add `:citation-cache' property to INFO."
+
+  (org-jabref--sanitize-options info)
+  
   (let* ((info ad-do-it)
-	 (bib-file (org-jabref--read-bibliography-attribute info :bib-file)))
-    (message "Bib file is %s" bib-file)
+	 (bib-file (plist-get info :bib-file)))
     (if (not bib-file) info
-      ;; A #+BIBLIOGRAPHY file is specified.
+      ;; A #+BIB_FILE file is specified.
       (let* ((in-text-jabref-format
 	      (org-jabref--get-export-format info :in-text :jabref-format))
 	     (bibliography-jabref-format
 	      (org-jabref--get-export-format info :bibliography :jabref-format))
-	     (citation-style (org-jabref--get-citation-style info))
+	     (citation-style (plist-get info :jabref-citation-style))
 	     ;; Collect the list of JabRef export formats that will be
 	     ;; used for the specified citation style.
 	     (jabref-formats (nconc
@@ -668,8 +661,6 @@ Return the XML representation as a string. Specifically,
 			       (t (list in-text-jabref-format)))))
 	     (cite-keys-used (mapcar 'car (plist-get info :citations-alist)))
 	     citation-cache)
-	(message "Citation style is %s" citation-style)
-
 	;; Does JabRef export to formats that we expect?
 	(let ((missing-formats (cl-set-difference jabref-formats
 						  (org-jabref-get-available-export-formats)

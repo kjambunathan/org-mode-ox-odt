@@ -105,6 +105,12 @@
 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
   :options-alist
   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+    ;; Org has no *native* support Bibliographies and Citations .  So,
+    ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
+    ;; and should be prefixed with "ODT_".  However, since the
+    ;; Bibliography file option makes sense for *all* backends,
+    ;; skipping the "ODT_" prefix, makes much sense.
+    (:bib-file "BIB_FILE" nil nil t)
     ;; Other variables.
     (:odt-content-template-file nil nil org-odt-content-template-file)
     (:odt-display-outline-level nil nil org-odt-display-outline-level)
