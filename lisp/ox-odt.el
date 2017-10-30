@@ -1658,7 +1658,6 @@ original parsed data.  INFO is a plist holding export options."
 	 ;; Non-availability of styles.xml is not a critical
 	 ;; error. For now, throw an error.
 	 (styles-file (or styles-file
-			  (plist-get info :odt-styles-file)
 			  (expand-file-name "OrgOdtStyles.xml"
 					    org-odt-styles-dir)
 			  (error "org-odt: Missing styles file?"))))
