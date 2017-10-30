@@ -14,7 +14,14 @@
 #+XSLT:
 #+STARTUP: overview
 
-# #+ODT_STYLES_FILE: "~/list-table-1.odt"
+# #+ODT_STYLES_FILE: "~/list-table-1.ott"
+
+#+BIB_FILE: "./biblatex-examples/biblatex-examples.bib"
+#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"
+
+# #+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"
+# #+ODT_JABREF_CITATION_STYLE: "Numeric"
+
 
 #+toc: headlines 4
 
@@ -1186,17 +1193,7 @@ article with prefix and suffix [cite:See @moore Pg. 2].
 # Here I cite a book \cite{wilde} and an article \cite{moore}.  Cite
 # the article once more \cite{moore}.  
 
-#+ATTR_ODT: :style "Chicago (full-note)"
-#+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
-
-# #+ATTR_ODT: :style "Numeric"
-# #+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
-
-# #+ATTR_ODT: :style "Chicago (author-date)"
-# #+BIBLIOGRAPHY: ./biblatex-examples/biblatex-examples.bib
-
-# #+ATTR_ODT: :style custom
-# #+BIBLIOGRAPHY: MyLibrary plain option:-d
+#+BIBLIOGRAPHY: 
 
 * Footnotes
 
