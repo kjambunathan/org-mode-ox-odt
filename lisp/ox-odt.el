@@ -4367,7 +4367,7 @@ exported file."
 		;; Note down the original cite fragment.
 		(org-element-put-property citation :replaces latex-*)
 		(org-element-set-element latex-* citation))))))
-      info)
+      info nil nil '--with-affiliated)
   tree)
 
 (defun org-odt--collect-cite-keys (tree _backend info)
@@ -4390,7 +4390,7 @@ exported file."
 		  (unless (assoc cite-key citations-alist)
 		    (push (cons cite-key citation) citations-alist)))
 		cite-keys)))
-      info)
+      info nil nil '--with-affiliated)
     ;; Modify INFO by side-effects.
     (nconc info (list :citations-alist citations-alist)))
   tree)
