@@ -1,6 +1,0 @@
-<!-- BEGIN: \bibtexkey -->
-\begin{author}
-\format[FormatChars,AuthorNatBib]{\author}, \end{author}
-<text:span text:style-name="Emphasis">\format[FormatChars]{\title}</text:span>
-\begin{volume}, \volume: \end{volume}.
-<!-- END: \bibtexkey -->
