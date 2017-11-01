@@ -1,3 +1,6 @@
 [submodule "testing/jump"]
 	path = testing/jump
 	url = https://github.com/eschulte/jump.el.git
+[submodule "contrib/odt/JabRefChicagoForOrgmode"]
+	path = contrib/odt/JabRefChicagoForOrgmode
+	url = https://github.com/kjambunathan/JabRefChicagoForOrgmode.git
