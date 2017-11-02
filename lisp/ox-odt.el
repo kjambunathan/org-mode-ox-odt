@@ -1761,7 +1761,7 @@ original parsed data.  INFO is a plist holding export options."
 
       ;; - Dump automatic styles specified with "#+ODT_AUTOMATIC_STYLES: ...".
       (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
-      
+
       ;; - Dump automatic table styles.
       (cl-loop for (style-name props) in
 	       (plist-get org-odt-automatic-styles 'Table) do
@@ -3394,6 +3394,8 @@ the plist used as a communication channel."
 			     ;; the ODT exporter.
 			     ((string= type "textbox")
 			      (org-odt--read-attribute el :p-style))
+			     ((string= type "section")
+			      (org-odt--read-attribute el :p-style))
 			     ;; Case 2: Handle user-specified
 			     ;; SPECIAL-BLOCKs not known to the
 			     ;; exporter.
@@ -3591,6 +3593,10 @@ holding contextual information."
 			      (format "<dc:date>%s</dc:date>"
 				      (org-odt--format-timestamp date nil 'iso-date)))
 			 contents)))))
+     ;; Section.
+     ((string= type "section")
+      (org-odt-format-section contents (or (org-odt--read-attribute special-block :style)
+					   "OrgSection")))
      ;; Textbox.
      ((string= type "textbox")
       ;; Textboxes an be used for centering tables etc horizontally

@@ -49,6 +49,51 @@
 
     <!-- Section styles -->
 
+    <!-- Default section style -->
+    <style:style style:name="OrgSection" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="1" fo:column-gap="0cm"/>
+      </style:section-properties>
+    </style:style>
+
+    <!-- Other handy section styles -->
+    <style:style style:name="OrgTwoColumnSection" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="2" fo:column-gap="0cm">
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	</style:columns>
+      </style:section-properties>
+    </style:style>
+
+    <style:style style:name="OrgThreeColumnSection" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="3" fo:column-gap="0cm">
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	</style:columns>
+      </style:section-properties>
+    </style:style>
+
+    <style:style style:name="OrgTwoColumnSection-1-2" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="2">
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	  <style:column style:rel-width="2*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	</style:columns>
+      </style:section-properties>
+    </style:style>
+    
+    <style:style style:name="OrgTwoColumnSection-2-1" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="2">
+	  <style:column style:rel-width="2*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	  <style:column style:rel-width="1*" fo:start-indent="0cm" fo:end-indent="0cm"/>
+	</style:columns>
+      </style:section-properties>
+    </style:style>
+
     <!-- Section styles for Table Of Contents and Other Indices -->
     <style:style style:name="OrgIndexSection" style:family="section">
       <style:section-properties style:editable="true">
