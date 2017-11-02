@@ -105,6 +105,7 @@
 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
   :options-alist
   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
     ;; and should be prefixed with "ODT_".  However, since the
@@ -1757,6 +1758,10 @@ original parsed data.  INFO is a plist holding export options."
       (goto-char (point-min))
       (re-search-forward "  </office:automatic-styles>" nil t)
       (goto-char (match-beginning 0))
+
+      ;; - Dump automatic styles specified with "#+ODT_AUTOMATIC_STYLES: ...".
+      (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
+      
       ;; - Dump automatic table styles.
       (cl-loop for (style-name props) in
 	       (plist-get org-odt-automatic-styles 'Table) do
