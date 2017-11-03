@@ -674,9 +674,9 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
 
 *** Link to Org files
 
-    [[file:~/Index.org][Index.org]]
+[[file:subdocument1.org]]
 
-    [[../../Index.org][Index.org]]
+[[file:subdocument2.org]]
 
 *** Absolute URL
 
