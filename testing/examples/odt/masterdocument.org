@@ -672,11 +672,29 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
 
     [[file:../../../etc/styles/OrgOdtStyles.xml][This is a relative link to ~OrgOdtStyles.xml~ (uses ~file://~ protocol)]]
 
-*** Link to Org files
+** Org file URLs
 
+*** Plain link to ODT document.
+
+[[file:subdocument1.odt]]
+
+*** Simple Transclusion of ODT document
+
+#+ATTR_ODT: :transclude t
+[[file:subdocument1.odt]]
+
+*** Plain link to Org file
+
+#+ATTR_ODT: :transclude t
 [[file:subdocument1.org]]
 
-[[file:subdocument2.org]]
+*** Transclusion of ODT document, but in a styled section
+
+#+ATTR_ODT: :style "OrgTwoColumnSection"
+#+BEGIN_section 
+#+ATTR_ODT: :transclude t
+[[file:subdocument1.odt]]
+#+END_section
 
 *** Absolute URL
 

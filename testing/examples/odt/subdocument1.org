@@ -2,7 +2,7 @@
 #+OPTIONS: author:t broken-links:nil c:nil creator:nil
 #+OPTIONS: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
 #+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
-#+OPTIONS: timestamp:t title:t toc:t todo:t |:t
+#+OPTIONS: timestamp:t title:t toc:nil todo:t |:t
 #+TITLE: Subdocument1
 #+DATE: <2017-11-03 Fri>
 #+AUTHOR: Jambunathan K
@@ -17,6 +17,8 @@
 #+ODT_AUTOMATIC_STYLES:
 #+BIB_FILE: "./biblatex-examples/biblatex-examples.bib"
 #+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)" | "Chicago (full-note)" | "Numeric"
+
+-- *SUBDOCUMENT BEGINS HERE* -- 
 
 Pellentesque dapibus suscipit ligula.  Donec posuere augue in quam.
 Etiam vel tortor sodales tellus ultricies commodo.  Suspendisse
@@ -101,7 +103,4 @@ accumsan nisl.
 | Nam vestibulum accumsan nisl                                                         | Donec hendrerit tempor tellus    |
 | Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus | Nullam tristique diam non turpis |
 
-
-
-
-
+-- *SUBDOCUMENT ENDS HERE* -- 
