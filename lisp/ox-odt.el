@@ -2984,6 +2984,67 @@ used as a communication channel."
      (cl-assert (eq (org-element-type l) 'link))
      (org-export-inline-image-p l (plist-get info :odt-inline-formula-rules)))))
 
+
+;; To transclude a subdocument in to the currently exported document,
+;; use either
+;;
+;;     #+ATTR_ODT: :transclude t
+;;     [[file:subdocument.odt]]
+;;
+;;     or
+;;
+;;     #+ATTR_ODT: :style \"OrgTwoColumnSection\"
+;;     #+BEGIN_section
+;;       #+ATTR_ODT: :transclude t
+;;       [[file:subdocument.odt]]
+;;     #+END_section
+;;
+;; Once the document is exported, use LibreOffice's
+;; "Menu->Tools->Update->Update All" to do the actual transclusion.
+;; Or, equivalently, enable "Optimize Column Width of all Tables" step
+;; in `org-odt-transform-processes'.
+;;
+;; Link transclusion, as seen above, may seem equivalent to
+;;
+;;     #+INCLUDE: "./subdocument.org"
+;;
+;; But in the ODT context, it does offer an advantage.
+;;
+;; You can use link transclusion, to embed a subdocument that has
+;; Headlines / Chapters within a Office section.
+;;
+;;     #+BEGIN_section 
+;;       #+ATTR_ODT: :transclude t
+;;       [[file:subdocument.org]]
+;;     #+END_section
+;;
+;; But there is no way you can achieve the same with
+;;
+;;     #+BEGIN_section
+;;       #+INCLUDE: "./subdocument.org"
+;;     #+END_section
+;;
+;; because the following construct wouldn't parse well in Org.
+;;
+;;     #+BEGIN_section
+;;       * Heading
+;;       Body text
+;;     #+END_section
+
+(defun org-odt--transclude-link-p (element info)
+  ;; A link is transcluded, only if all the following conditions are met:
+  ;;   - It is a link to a ODT file.
+  ;;   - It is the *sole* content of the containing paragraph.
+  ;;   - The containing paragraph is marked with \"#+ATTR_ODT: :transclude t\".
+
+  (org-odt--standalone-link-p
+   element info
+   nil
+   (lambda (link)
+     (cl-assert (eq (org-element-type link) 'link))
+     (and (org-export-inline-image-p link '(("file" . "\\.\\(odt\\)\\'")))
+	  (org-odt--read-attribute (org-export-get-parent link) :transclude)))))
+
 (defun org-odt--standalone-link-p (element _info &optional
 					     paragraph-predicate
 					     link-predicate)
@@ -3162,6 +3223,17 @@ INFO is a plist holding contextual information.  See
     (cond
      ;; Link type is handled by a special function.
      ((org-export-custom-protocol-maybe link desc 'odt))
+     ;; Link to a transcluded ODT file.
+     ((org-odt--transclude-link-p link info)
+      (let* ((grandparent (org-export-get-parent (org-export-get-parent link)))
+	     (style (when (and (eq (org-element-type grandparent) 'special-block)
+			       (string= (org-element-property :type grandparent) "section"))
+		      (or (org-odt--read-attribute grandparent :style)
+			  "OrgSection"))))
+	      (org-odt-format-section
+	       (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
+		       path)
+	       style)))
      ;; Image file.
      ((and (not desc) (org-export-inline-image-p
 		       link (plist-get info :odt-inline-image-rules)))
@@ -3321,105 +3393,106 @@ information."
   "Transcode a PARAGRAPH element from Org to ODT.
 CONTENTS is the contents of the paragraph, as a string.  INFO is
 the plist used as a communication channel."
-  (let* ((parent (org-export-get-parent paragraph))
-	 (_parent-type (org-element-type parent))
-	 (genealogy (cons paragraph (org-element-lineage paragraph)))
-	 (data (reverse genealogy))
-	 (style
-	  ;; Traverse the parse-tree from root element to this
-	  ;; paragraph.  Use the following rule at each element to
-	  ;; calculate the paragraph style applicable at that element.
+  (if (org-odt--transclude-link-p paragraph info) contents
+    (let* ((parent (org-export-get-parent paragraph))
+	   (_parent-type (org-element-type parent))
+	   (genealogy (cons paragraph (org-element-lineage paragraph)))
+	   (data (reverse genealogy))
+	   (style
+	    ;; Traverse the parse-tree from root element to this
+	    ;; paragraph.  Use the following rule at each element to
+	    ;; calculate the paragraph style applicable at that element.
 
-	  ;; Case 1: If an element specifies an EXPLICIT STYLE of it's
-	  ;; own via the #+ATTR_ODT line, use it.  PARAGRAPH and
-	  ;; SPECIAL-BLOCK use the `:style' attribute for this
-	  ;; purpose, while TABLE and PLAIN-LIST uses `:p-style'
-	  ;; attribute.
+	    ;; Case 1: If an element specifies an EXPLICIT STYLE of it's
+	    ;; own via the #+ATTR_ODT line, use it.  PARAGRAPH and
+	    ;; SPECIAL-BLOCK use the `:style' attribute for this
+	    ;; purpose, while TABLE and PLAIN-LIST uses `:p-style'
+	    ;; attribute.
 
-	  ;; Case 2: If an element does not have an explicit style but
-	  ;; has an IMPLICIT, PRE-CONFIGURE STYLE of it's own, use it.
-	  ;; For example, paragraphs within a FOOTNOTE-DEFINITON,
-	  ;; CENTER-BLOCK or QUOTE-BLOCK get pre-configured styles
-	  ;; like "Footnote", "OrgCenter" or "Quotations" resply.
+	    ;; Case 2: If an element does not have an explicit style but
+	    ;; has an IMPLICIT, PRE-CONFIGURE STYLE of it's own, use it.
+	    ;; For example, paragraphs within a FOOTNOTE-DEFINITON,
+	    ;; CENTER-BLOCK or QUOTE-BLOCK get pre-configured styles
+	    ;; like "Footnote", "OrgCenter" or "Quotations" resply.
 
-	  ;; Case 3: If an element specifies neither an IMPLICIT style
-	  ;; or an EXPLICIT style, use the style from it's parent.
-	  ;; For example, a paragraph within a TABLE and PLAIN-LIST
-	  ;; (that doesn't specify a `:p-style' of it's own) inherit
-	  ;; it's style from the it's parent.
+	    ;; Case 3: If an element specifies neither an IMPLICIT style
+	    ;; or an EXPLICIT style, use the style from it's parent.
+	    ;; For example, a paragraph within a TABLE and PLAIN-LIST
+	    ;; (that doesn't specify a `:p-style' of it's own) inherit
+	    ;; it's style from the it's parent.
 
-	  ;; Case 4: If an element has no parent (i.e., root node),
-	  ;; use the fallback style "Text_20_body".
-	  (cl-loop for el in data
-		;; Fallback style.
-		with style = "Text_20_body"
-		with footnote-definition-p = nil do
-		(setq style
-		      (or
-		       ;; Case 1: Does this node IMPLICITLY or
-		       ;; EXPLICITLY specify a style?  Use it.
-		       (cl-case (org-element-type el)
-			 (verse-block
-			  (or (org-odt--read-attribute el :style)
-			      "OrgVerse"))
-			 (center-block
-			  (or (org-odt--read-attribute el :style)
-			      (if footnote-definition-p "OrgFootnoteCenter"
-				"OrgCenter")))
-			 (footnote-definition
-			  (setq footnote-definition-p t)
-			  (or (org-odt--read-attribute el :style) "Footnote"))
-			 (paragraph
-			  (or
-			   ;; Case 1: Some paragraphs are "created"
-			   ;; not by the user but by the
-			   ;; pre-processing stage.  They use the
-			   ;; `:style' property of the element rather
-			   ;; than the style property from the
-			   ;; attribute line.  See
-			   ;; `org-odt--translate-description-lists/latex',
-			   ;; `org-odt--translate-description-lists/html'
-			   ;; `org-odt--translate-latex-fragments'.
-			   (org-element-property :style el)
-			   (org-odt--read-attribute el :style)))
-			 (plain-list
-			  ;; NOTE: ITEMs cannot have #+ATTR_ODT
-			  ;; attached to them.  See
-			  ;;
-			  ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
-			  (org-odt--read-attribute el :p-style))
-			 (quote-block
-			  (if footnote-definition-p "OrgFootnoteQuotations"
-			    "Quotations"))
-			 (special-block
-			  (let ((type (downcase (org-element-property :type el))))
-			    (cond
-			     ;; Case 1: Handle SPECIAL-BLOCKs that are
-			     ;; well-known (and treated specially) by
-			     ;; the ODT exporter.
-			     ((string= type "textbox")
-			      (org-odt--read-attribute el :p-style))
-			     ((string= type "section")
-			      (org-odt--read-attribute el :p-style))
-			     ;; Case 2: Handle user-specified
-			     ;; SPECIAL-BLOCKs not known to the
-			     ;; exporter.
-			     (t (org-odt--read-attribute el :style)))))
-			 (table-cell
-			  ;; A table cell can have paragraphs, only if
-			  ;; it is part of a list table.
-			  (org-odt-table-cell--get-paragraph-styles el info)))
-		       ;; Case 2: Element doesn't specify a style of
-		       ;; it's own.  Use the parent style.
-		       style))
-		finally return style)))
-    ;; If this paragraph is a leading paragraph in an item and the
-    ;; item has a checkbox, splice the checkbox and paragraph contents
-    ;; together.
-    (when (and (eq (org-element-type parent) 'item)
-	       (eq paragraph (car (org-element-contents parent))))
-      (setq contents (concat (org-odt--checkbox parent) contents)))
-    (format "\n<text:p text:style-name=\"%s\">%s</text:p>" style contents)))
+	    ;; Case 4: If an element has no parent (i.e., root node),
+	    ;; use the fallback style "Text_20_body".
+	    (cl-loop for el in data
+		     ;; Fallback style.
+		     with style = "Text_20_body"
+		     with footnote-definition-p = nil do
+		     (setq style
+			   (or
+			    ;; Case 1: Does this node IMPLICITLY or
+			    ;; EXPLICITLY specify a style?  Use it.
+			    (cl-case (org-element-type el)
+			      (verse-block
+			       (or (org-odt--read-attribute el :style)
+				   "OrgVerse"))
+			      (center-block
+			       (or (org-odt--read-attribute el :style)
+				   (if footnote-definition-p "OrgFootnoteCenter"
+				     "OrgCenter")))
+			      (footnote-definition
+			       (setq footnote-definition-p t)
+			       (or (org-odt--read-attribute el :style) "Footnote"))
+			      (paragraph
+			       (or
+				;; Case 1: Some paragraphs are "created"
+				;; not by the user but by the
+				;; pre-processing stage.  They use the
+				;; `:style' property of the element rather
+				;; than the style property from the
+				;; attribute line.  See
+				;; `org-odt--translate-description-lists/latex',
+				;; `org-odt--translate-description-lists/html'
+				;; `org-odt--translate-latex-fragments'.
+				(org-element-property :style el)
+				(org-odt--read-attribute el :style)))
+			      (plain-list
+			       ;; NOTE: ITEMs cannot have #+ATTR_ODT
+			       ;; attached to them.  See
+			       ;;
+			       ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
+			       (org-odt--read-attribute el :p-style))
+			      (quote-block
+			       (if footnote-definition-p "OrgFootnoteQuotations"
+				 "Quotations"))
+			      (special-block
+			       (let ((type (downcase (org-element-property :type el))))
+				 (cond
+				  ;; Case 1: Handle SPECIAL-BLOCKs that are
+				  ;; well-known (and treated specially) by
+				  ;; the ODT exporter.
+				  ((string= type "textbox")
+				   (org-odt--read-attribute el :p-style))
+				  ((string= type "section")
+				   (org-odt--read-attribute el :p-style))
+				  ;; Case 2: Handle user-specified
+				  ;; SPECIAL-BLOCKs not known to the
+				  ;; exporter.
+				  (t (org-odt--read-attribute el :style)))))
+			      (table-cell
+			       ;; A table cell can have paragraphs, only if
+			       ;; it is part of a list table.
+			       (org-odt-table-cell--get-paragraph-styles el info)))
+			    ;; Case 2: Element doesn't specify a style of
+			    ;; it's own.  Use the parent style.
+			    style))
+		     finally return style)))
+      ;; If this paragraph is a leading paragraph in an item and the
+      ;; item has a checkbox, splice the checkbox and paragraph contents
+      ;; together.
+      (when (and (eq (org-element-type parent) 'item)
+		 (eq paragraph (car (org-element-contents parent))))
+	(setq contents (concat (org-odt--checkbox parent) contents)))
+      (format "\n<text:p text:style-name=\"%s\">%s</text:p>" style contents))))
 
 
 ;;;; Plain List
@@ -3600,8 +3673,14 @@ holding contextual information."
 			 contents)))))
      ;; Section.
      ((string= type "section")
-      (org-odt-format-section contents (or (org-odt--read-attribute special-block :style)
-					   "OrgSection")))
+      (cond
+       ((let ((c (org-element-contents special-block)))
+	  (and (null (cdr c)) (org-odt--transclude-link-p (car c) info)))
+	;;  This section encloses a transcluded link.  `org-odt-link'
+	;;  took care of all the formalities.  Nothing more to do.
+	contents)
+       (t (org-odt-format-section contents (or (org-odt--read-attribute special-block :style)
+					       "OrgSection")))))
      ;; Textbox.
      ((string= type "textbox")
       ;; Textboxes an be used for centering tables etc horizontally
@@ -4248,9 +4327,10 @@ pertaining to indentation here."
 	    (mapconcat 'car close-open-tags "\n")
 	    ;; Put the table in an indented section.
 	    (let* ((table (org-odt--table table contents info))
-		   (level (/ (length (mapcar 'car close-open-tags)) 2))
-		   (style (format "OrgIndentedSection-Level-%d" level)))
-	      (when table (org-odt-format-section table style)))
+		   (level (/ (length (mapcar 'car close-open-tags)) 2)))
+	      (when table
+		(if (zerop level) table
+		  (org-odt-format-section table (format "OrgIndentedSection-Level-%d" level)))))
 	    ;; Continue the list.
 	    (mapconcat 'cdr (nreverse close-open-tags) "\n"))))
 
