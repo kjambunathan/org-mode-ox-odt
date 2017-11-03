@@ -3145,15 +3145,20 @@ INFO is a plist holding contextual information.  See
 	 ;; Ensure DESC really exists, or set it to nil.
 	 (desc (and (not (string= desc "")) desc))
 	 (_imagep (org-export-inline-image-p
-		  link (plist-get info :odt-inline-image-rules)))
-	 (path (cond
-		((member type '("http" "https" "ftp" "mailto"))
-		 (concat type ":" raw-path))
-		((and (string= type "file") (file-name-absolute-p raw-path))
-		 (concat "file:" raw-path))
-		(t raw-path)))
-	 ;; Convert & to &amp; for correct XML representation
-	 (path (replace-regexp-in-string "&" "&amp;" path)))
+		   link (plist-get info :odt-inline-image-rules)))
+	 (path
+	  (cond
+	   ((member type '("http" "https" "ftp" "mailto"))
+	    (url-encode-url (org-link-unescape (concat type ":" raw-path))))
+	   ((string= type "file")
+	    (cond
+	     ;; If file path is absolute, prepend it with protocol
+	     ;; component - "file://".
+	     ((file-name-absolute-p raw-path)
+	      (org-export-file-uri raw-path))
+	     ;; Otherwise, use the relative path, but prepend it with "../".
+	     (t (concat "../" raw-path ))))
+	   (t raw-path))))
     (cond
      ;; Link type is handled by a special function.
      ((org-export-custom-protocol-maybe link desc 'odt))
