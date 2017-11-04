@@ -435,9 +435,9 @@ For a list of export formats registered with JabRef use:
       (unless (and (stringp bib-file)
 		   (file-regular-p bib-file)
 		   (file-readable-p bib-file))
-	(user-error "(ox-jabref): Unreadable Bibliography file: %s" (or bib-file "")))
+	(message "(ox-jabref): Unreadable Bibliography file: %s" (or bib-file "")))
       ;; Convert bibfile to an absolute path and stash it.
-      (plist-put info :bib-file (expand-file-name bib-file))))
+      (plist-put info :bib-file (and bib-file (expand-file-name bib-file)))))
 
   ;; Sanitize value of #+ODT_JABREF_CITATION_STYLE.
   (let ((citation-style (plist-get info :jabref-citation-style)))
@@ -470,10 +470,7 @@ that is registered for the current export backend.  See
  	 ;; Get JabRef export format that match this backend and
 	 ;; citation-style.
 	 (export-formats-plist (assoc-default citation-style styles-alist)))
-    (cond
-     ((null op) export-formats-plist)
-     ((null prop) (plist-get export-formats-plist op))
-     (t (plist-get (plist-get export-formats-plist op) prop)))))
+    (plist-get (plist-get export-formats-plist op) prop)))
 
 (defun org-jabref--get-citation-formatter (info formatter-name)
   "Return the EXPORT-FORMAT configured for operation OP.
