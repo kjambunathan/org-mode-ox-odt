@@ -106,6 +106,7 @@
   :options-alist
   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
+    (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
     ;; and should be prefixed with "ODT_".  However, since the
@@ -4989,7 +4990,8 @@ exported file."
 	   ;; Write mimetype file
 	   (let* ((mimetypes
 		   '(("odt" . "application/vnd.oasis.opendocument.text")
-		     ("odf" .  "application/vnd.oasis.opendocument.formula")))
+		     ("odf" .  "application/vnd.oasis.opendocument.formula")
+		     ("odm" . "application/vnd.oasis.opendocument.text-master")))
 		  (mimetype (cdr (assoc-string out-file-type mimetypes t))))
 	     (unless mimetype
 	       (error "Unknown OpenDocument backend %S" out-file-type))
@@ -5133,6 +5135,12 @@ formula file."
 (defun org-odt-export-to-odt (&optional async subtreep visible-only ext-plist)
   "Export current buffer to a ODT file.
 
+With 
+
+    \"#+ODT_FILE_EXTENSION: odm\"
+
+export current buffer to a ODM file.
+
 If narrowing is active in the current buffer, only export its
 narrowed part.
 
@@ -5155,7 +5163,12 @@ file-local settings.
 
 Return output file's name."
   (interactive)
-  (let ((outfile (org-export-output-file-name ".odt" subtreep)))
+  (let ((outfile (org-export-output-file-name
+		  (concat "." (or (let ((ext (plist-get
+					      (org-export-get-environment nil subtreep ext-plist)
+					      :odt-file-extension)))
+				    (unless (member ext '("odt" "odm")) "odt"))))
+		  subtreep)))
     (if async
 	(org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
 	  `(expand-file-name
