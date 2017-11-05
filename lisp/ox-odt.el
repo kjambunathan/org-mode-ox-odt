@@ -1307,9 +1307,15 @@ See `org-odt--build-date-styles' for implementation details."
 ;;;; Library wrappers :: Ox
 
 (defun org-odt--read-attribute (element property)
-  (let* ((attrs (org-export-read-attribute :attr_odt element))
-	 (value (plist-get attrs property)))
-    (and value (ignore-errors (read value)))))
+  (case (org-element-type element)
+    (headline
+     (let* ((value (org-element-property :ATTR_ODT  element))
+	    (attrs (and value (ignore-errors (read (format "(%s)" value))))))
+       (plist-get attrs property)))
+    (t
+     (let* ((attrs (org-export-read-attribute :attr_odt element))
+	    (value (plist-get attrs property)))
+       (and value (ignore-errors (read value)))))))
 
 
 ;;;; Target
@@ -2189,7 +2195,15 @@ holding contextual information."
 	(concat
 	 (format
 	  "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
-	  (format "Heading_20_%s" level)
+	  (let* ((style (org-odt--read-attribute headline :style)))
+	    (cond
+	     ((stringp style) style)
+	     (t (format "%s%d%s"
+			(let ((prefix (org-odt--read-attribute headline :style-prefix)))
+			  (if (stringp prefix) prefix "Heading_20_"))
+			level
+			(let ((suffix (org-odt--read-attribute headline :style-suffix)))
+			  (if (stringp suffix) suffix ""))))))
 	  level
 	  (concat extra-targets anchored-title))
 	 contents))))))
