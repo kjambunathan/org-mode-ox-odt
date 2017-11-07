@@ -255,6 +255,11 @@ standard Emacs.")
     ("odf" . "OpenDocument Formula")
     ("odc" . "OpenDocument Chart")))
 
+(defconst org-odt-page-break-style-format "
+<style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\" style:master-page-name=\"%s\">
+ <style:paragraph-properties %s/>
+</style:style>")
+
 (defconst org-odt-table-style-format
   "
 <style:style style:name=\"%s\" style:family=\"table\">
@@ -1306,16 +1311,15 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Library wrappers :: Ox
 
-(defun org-odt--read-attribute (element property)
-  (case (org-element-type element)
-    (headline
-     (let* ((value (org-element-property :ATTR_ODT  element))
-	    (attrs (and value (ignore-errors (read (format "(%s)" value))))))
-       (plist-get attrs property)))
-    (t
-     (let* ((attrs (org-export-read-attribute :attr_odt element))
-	    (value (plist-get attrs property)))
-       (and value (ignore-errors (read value)))))))
+(defun org-odt--read-attribute (element &optional property)
+  (let ((attrs (case (org-element-type element)
+		 (headline
+		  (let* ((value (org-element-property :ATTR_ODT  element)))
+		    (when value
+		      (ignore-errors (read (format "(%s)" value))))))
+		 (t (cl-loop for x on (org-export-read-attribute :attr_odt element) by 'cddr
+			     append (list (car x) (read (cadr x))))))))
+    (if property (plist-get attrs property) attrs)))
 
 
 ;;;; Target
@@ -1769,6 +1773,24 @@ original parsed data.  INFO is a plist holding export options."
       ;; - Dump automatic styles specified with "#+ODT_AUTOMATIC_STYLES: ...".
       (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
 
+      ;; - Dump automatic paragraph styles that request pagebreaks.
+      (cl-loop for (style-name props) in
+	       (plist-get org-odt-automatic-styles 'Paragraph) do
+	       (let* ((master-page-name (plist-get props :page-style))
+		      (pagebreak-after-p (string= (plist-get props :page-break) "after"))
+		      (page-number (plist-get props :page-number)))
+		 (insert (format org-odt-page-break-style-format
+				 style-name
+				 (plist-get props :parent-style-name)
+				 (or master-page-name "")
+				 (concat
+				  " style:writing-mode=\"page\"" 
+				  (if pagebreak-after-p " fo:break-after=\"page\""
+				    " fo:break-before=\"page\"")
+				  (when (numberp page-number)
+				    (unless master-page-name
+				      (user-error "You have specified `:page-number', but not `:page-style'."))
+				    (format " style:page-number=\"%d\"" page-number)))))))
       ;; - Dump automatic table styles.
       (cl-loop for (style-name props) in
 	       (plist-get org-odt-automatic-styles 'Table) do
@@ -2195,15 +2217,16 @@ holding contextual information."
 	(concat
 	 (format
 	  "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
-	  (let* ((style (org-odt--read-attribute headline :style)))
-	    (cond
-	     ((stringp style) style)
-	     (t (format "%s%d%s"
-			(let ((prefix (org-odt--read-attribute headline :style-prefix)))
-			  (if (stringp prefix) prefix "Heading_20_"))
-			level
-			(let ((suffix (org-odt--read-attribute headline :style-suffix)))
-			  (if (stringp suffix) suffix ""))))))
+	  (let* ((style (org-odt--read-attribute headline :style))
+		 (style (cond
+			 ((stringp style) style)
+			 (t (format "%s%d%s"
+				    (let ((prefix (org-odt--read-attribute headline :style-prefix)))
+				      (if (stringp prefix) prefix "Heading_20_"))
+				    level
+				    (let ((suffix (org-odt--read-attribute headline :style-suffix)))
+				      (if (stringp suffix) suffix "")))))))
+	    (org-odt--get-derived-paragraph-style headline style))
 	  level
 	  (concat extra-targets anchored-title))
 	 contents))))))
@@ -2387,10 +2410,11 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       ;; page is a bit displaced from other pages created by
       ;; LibreOffice.  A keen eye will definitely catch this
       ;; aberration.
-      (let ((style (org-odt--read-attribute keyword :style)))
-	(unless (and style (stringp style) (org-string-nw-p style))
-	  (setq style "OrgPageBreakDefault"))
-	(format "\n<text:p text:style-name=\"%s\"/>" style))))))
+
+      (unless (org-odt--read-attribute keyword :page-break)
+	(org-element-put-property keyword :attr_odt (list ":page-break \"after\"") ))
+      
+      (org-odt-paragraph keyword "" info)))))
 
 
 ;;;; Latex Environment
@@ -3404,6 +3428,16 @@ information."
 ;;    * B23
 ;; 3. N3
 
+(defun org-odt--get-derived-paragraph-style (paragraph parent-style)
+  (let* ((attributes (org-odt--read-attribute paragraph)))
+    (cond
+     ((or (plist-get attributes :page-style)
+	  (plist-get attributes :page-break)
+	  (plist-get attributes :page-number))
+      (cdr (org-odt-add-automatic-style
+	    "Paragraph" (nconc attributes (list :parent-style-name parent-style)))))
+     (t parent-style))))
+
 (defun org-odt-paragraph (paragraph contents info)
   "Transcode a PARAGRAPH element from Org to ODT.
 CONTENTS is the contents of the paragraph, as a string.  INFO is
@@ -3507,7 +3541,9 @@ the plist used as a communication channel."
       (when (and (eq (org-element-type parent) 'item)
 		 (eq paragraph (car (org-element-contents parent))))
 	(setq contents (concat (org-odt--checkbox parent) contents)))
-      (format "\n<text:p text:style-name=\"%s\">%s</text:p>" style contents))))
+      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+	      (org-odt--get-derived-paragraph-style paragraph style)
+	      contents))))
 
 
 ;;;; Plain List
@@ -3725,9 +3761,10 @@ holding contextual information."
 	    (style (org-odt--read-attribute special-block :style))
 	    (extra (org-odt--read-attribute special-block :extra))
 	    (anchor (org-odt--read-attribute special-block :anchor)))
-	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		"Text_20_body" (org-odt--textbox contents width height
-						 style extra anchor))))
+	(org-odt-paragraph special-block
+			   (org-odt--textbox contents width height
+					     style extra anchor)
+			   info)))
      (t contents))))
 
 

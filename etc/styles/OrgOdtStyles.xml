@@ -843,18 +843,6 @@
 
   <style:style style:name="OrgCite" style:family="text"/>
 
-  <!-- Page breaks -->
-  <style:style style:name="OrgPageBreakDefault" style:family="paragraph" style:parent-style-name="Text_20_body" style:master-page-name="Standard">
-   <style:paragraph-properties style:page-number="auto" fo:break-before="auto"/>
-  </style:style>
-
-  <style:style style:name="OrgPageBreakLandscape" style:family="paragraph" style:parent-style-name="Text_20_body" style:master-page-name="Landscape">
-    <style:paragraph-properties style:page-number="auto"  fo:break-before="auto">
-      <style:tab-stops/>
-      <style:background-image/>
-    </style:paragraph-properties>
-  </style:style>
-
   <!-- Styles for displaying Indices of Figures, Tables, Listings etc -->
 
   <style:style style:name="Index_20_Link" style:display-name="Index Link" style:family="text"/>
