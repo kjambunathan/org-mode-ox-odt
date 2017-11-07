@@ -1,0 +1,116 @@
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+OPTIONS: author:nil broken-links:nil c:nil creator:nil
+#+OPTIONS: d:(not "LOGBOOK") date:nil e:t email:nil f:t inline:t num:t
+#+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+OPTIONS: timestamp:t title:nil toc:nil todo:t |:t
+#+TITLE: Pagebreak and Page Styles
+#+DATE: <2017-11-07 Tue>
+#+AUTHOR: Jambunathan K
+#+EMAIL: kjambunathan@gmail.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.2.2 (Org mode 9.0.9)
+
+#+OPTIONS: tex:t
+#+ODT_STYLES_FILE:
+#+ODT_AUTOMATIC_STYLES:
+#+ODT_FILE_EXTENSION: odt | odm
+#+BIB_FILE:
+#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)" | "Chicago (full-note)" | "Numeric"
+
+#+ATTR_ODT: :style "OrgPageImage" :page-style "OrgTitlePage" :page-break "after"
+#+begin_textbox
+#+ATTR_ODT: :style OrgTitle
+{{{title}}}
+
+#+ATTR_ODT: :style "OrgSubtitle"
+{{{author}}}
+
+#+end_textbox
+
+#+ATTR_ODT: :style "Heading_20_1_unnumbered" :page-style "OrgFrontMatterPage" :page-number 1
+Copyright
+
+#+ATTR_ODT: :page-break "after"
+Mauris mollis tincidunt felis.  Lorem ipsum dolor sit amet,
+consectetuer adipiscing elit.  Donec at pede.  Etiam laoreet quam sed
+arcu.  Nulla posuere.  Aliquam erat volutpat.  Sed diam.  Integer
+placerat tristique nisl.
+
+#+toc: headlines 3
+
+* Sed bibendum
+:PROPERTIES:
+:ATTR_ODT: :page-style "OrgFirstPage" :page-number 1
+:END:
+
+Phasellus purus.  Nunc eleifend leo vitae magna.  Suspendisse potenti.
+Vivamus id enim.  Suspendisse potenti.
+
+Pellentesque condimentum, magna ut suscipit hendrerit, ipsum augue
+ornare nulla, non luctus diam neque sit amet urna.  Nam vestibulum
+accumsan nisl.  Etiam vel tortor sodales tellus ultricies commodo.
+Nullam rutrum.  Donec at pede.  Nunc eleifend leo vitae magna.
+
+Phasellus purus.  Etiam vel neque nec dui dignissim bibendum.
+Praesent fermentum tempor tellus.  Nunc porta vulputate tellus.
+Suspendisse potenti.  Pellentesque dapibus suscipit ligula.
+
+* Sed diam
+:PROPERTIES:
+:ATTR_ODT: :page-break t
+:END:
+
+Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Nam a
+sapien.  Donec pretium posuere tellus.  Nullam tempus.  Nulla
+facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et
+dictum nunc justo sit amet elit.
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit.  Nunc rutrum
+turpis sed pede.  Nulla facilisis, risus a rhoncus fermentum, tellus
+tellus lacinia purus, et dictum nunc justo sit amet elit.  Nunc rutrum
+turpis sed pede.  Donec vitae dolor.  Nullam rutrum.  Etiam vel tortor
+sodales tellus ultricies commodo.
+
+Nullam eu ante vel est convallis dignissim.  Nullam rutrum.  Donec
+neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Nulla
+facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et
+dictum nunc justo sit amet elit.  Nunc rutrum turpis sed pede.  Nullam
+rutrum.  Nullam tempus.  Cum sociis natoque penatibus et magnis dis
+parturient montes, nascetur ridiculus mus.  Etiam laoreet quam sed
+arcu.
+
+* Appendix
+:PROPERTIES:
+:ATTR_ODT: :page-break t :style-suffix "_unnumbered"
+:END:
+
+Donec vitae dolor.  Aenean in sem ac leo mollis blandit.  Curabitur
+vulputate vestibulum lorem.  Donec at pede.  Lorem ipsum dolor sit
+amet, consectetuer adipiscing elit.  Phasellus lacus.
+
+Phasellus purus.  Etiam laoreet quam sed arcu.  Aliquam erat volutpat.
+Fusce commodo.  Nullam tempus.
+
+Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada
+massa, quis varius mi purus non odio.  Nullam tristique diam non
+turpis.  Donec vitae dolor.  Mauris ac felis vel velit tristique
+imperdiet.  Etiam vel neque nec dui dignissim bibendum.  Etiam laoreet
+quam sed arcu.  Nunc rutrum turpis sed pede.  Donec hendrerit tempor
+tellus.  Nullam eu ante vel est convallis dignissim.
+
+Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.
+Mauris mollis tincidunt felis.  Donec hendrerit tempor tellus.
+Phasellus lacus.  Phasellus at dui in ligula mollis ultricies.  Etiam
+vel neque nec dui dignissim bibendum.  Proin quam nisl, tincidunt et,
+mattis eget, convallis nec, purus.  Nulla facilisis, risus a rhoncus
+fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet
+elit.
+
+Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo,
+quis tempor ligula erat quis odio.  Phasellus purus.  Aliquam feugiat
+tellus ut neque.  Nullam rutrum.  Aliquam feugiat tellus ut neque.
+Nunc porta vulputate tellus.  Nullam rutrum.  Integer placerat
+tristique nisl.  Fusce sagittis, libero non molestie mollis, magna
+orci ultrices dolor, at vulputate neque nulla lacinia eros.
