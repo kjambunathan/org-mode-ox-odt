@@ -561,8 +561,8 @@ below for details).  To use these transformers install the
 LibreOffice extension, \"OrgModeUtilities.oxt\" found under
 \"./contrib/odt/\" subdirectory of this repository.
 
-I. Update indices and xrefs
----------------------------
+I. Update All
+-------------
 
   This transformer, a LibreOffice macro, fills out
 
@@ -575,10 +575,23 @@ I. Update indices and xrefs
 
      2. xrefs created with `org-odt-caption-and-xref-settings'
 
-  This macro is the equivalent to running Menu-> Tools->
-  Update-> Update All from within LibreOffice GUI.
+     3. Update all transcluded links and break those links.
 
-II. Optimize Column Width of all Tables
+  This macro is the equivalent to running Menu-> Tools-> Update->
+  Update All.
+
+II. Update All and Break Links
+------------------------------
+
+  This transformer, a LibreOffice macro, does what \"Update All\"
+  macro does.  Additionally, it also breaks links to the external
+  files.
+
+  This macro is the equivalent to running Menu-> Tools-> Update->
+  Update All, followed by Menu->Edit->Links->[Select All]->Break
+  Link from within LibreOffice GUI.
+
+III. Optimize Column Width of all Tables
 ---------------------------------------
 
   This transformer, a LibreOffice macro, optimizes the column width
@@ -602,9 +615,12 @@ interpreted as below:
 	  :value-type (cons :tag "Shell Command" (string :tag "Executable")
 			    (repeat (string :tag "Argument")))
 	  :options
-	  (("Update indices and xrefs"
+	  (("Update All"
 	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
-			   "macro:///OrgMode.Utilities.UpdateAllIndexes(%I)")))
+			   "macro:///OrgMode.Utilities.UpdateAll(%I)")))
+	   ("Update All and Break Links"
+	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
+			   "macro:///OrgMode.Utilities.UpdateAll(%I, 1)")))
 	   ("Optimize Column Width of all Tables"
 	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
 			   "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)"))))))
@@ -1784,7 +1800,7 @@ original parsed data.  INFO is a plist holding export options."
 				 (plist-get props :parent-style-name)
 				 (or master-page-name "")
 				 (concat
-				  " style:writing-mode=\"page\"" 
+				  " style:writing-mode=\"page\""
 				  (if pagebreak-after-p " fo:break-after=\"page\""
 				    " fo:break-before=\"page\"")
 				  (when (numberp page-number)
@@ -2413,7 +2429,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
       (unless (org-odt--read-attribute keyword :page-break)
 	(org-element-put-property keyword :attr_odt (list ":page-break \"after\"") ))
-      
+
       (org-odt-paragraph keyword "" info)))))
 
 
@@ -3052,7 +3068,7 @@ used as a communication channel."
 ;; You can use link transclusion, to embed a subdocument that has
 ;; Headlines / Chapters within a Office section.
 ;;
-;;     #+BEGIN_section 
+;;     #+BEGIN_section
 ;;       #+ATTR_ODT: :transclude t
 ;;       [[file:subdocument.org]]
 ;;     #+END_section
@@ -3257,7 +3273,7 @@ INFO is a plist holding contextual information.  See
 	     ((file-name-absolute-p raw-path)
 	      (org-export-file-uri raw-path))
 	     ;; Otherwise, use the relative path, but prepend it with "../".
-	     (t (concat "../" raw-path ))))
+	     (t (concat "../" (file-relative-name raw-path) ))))
 	   (t raw-path))))
     (cond
      ;; Link type is handled by a special function.
@@ -3267,12 +3283,11 @@ INFO is a plist holding contextual information.  See
       (let* ((grandparent (org-export-get-parent (org-export-get-parent link)))
 	     (style (when (and (eq (org-element-type grandparent) 'special-block)
 			       (string= (org-element-property :type grandparent) "section"))
-		      (or (org-odt--read-attribute grandparent :style)
-			  "OrgSection"))))
+		      (org-odt--read-attribute grandparent :style))))
 	      (org-odt-format-section
 	       (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
 		       path)
-	       style)))
+	       (or style "OrgSection"))))
      ;; Image file.
      ((and (not desc) (org-export-inline-image-p
 		       link (plist-get info :odt-inline-image-rules)))
@@ -5186,7 +5201,7 @@ formula file."
 (defun org-odt-export-to-odt (&optional async subtreep visible-only ext-plist)
   "Export current buffer to a ODT file.
 
-With 
+With
 
     \"#+ODT_FILE_EXTENSION: odm\"
 
