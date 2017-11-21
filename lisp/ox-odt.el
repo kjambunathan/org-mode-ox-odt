@@ -1328,7 +1328,7 @@ See `org-odt--build-date-styles' for implementation details."
 ;;;; Library wrappers :: Ox
 
 (defun org-odt--read-attribute (element &optional property)
-  (let ((attrs (case (org-element-type element)
+  (let ((attrs (cl-case (org-element-type element)
 		 (headline
 		  (let* ((value (org-element-property :ATTR_ODT  element)))
 		    (when value
