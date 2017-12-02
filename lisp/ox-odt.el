@@ -1822,6 +1822,32 @@ original parsed data.  INFO is a plist holding export options."
 	       (when (setq props (or (let ((value (plist-get props :rel-width)))
 				       (and value (ignore-errors (read value)))) 96))
 		 (insert (format org-odt-table-style-format style-name props))))
+
+      ;; - Dump automatic styles for paragraphs within a table.  See
+      ;;   `org-odt-table-cell--get-paragraph-styles'.
+      (let* ((p-styles (cl-delete-duplicates
+			(org-element-map (plist-get info :parse-tree) 'table
+			  (lambda (table)
+			    (org-odt--read-attribute table :p-style))
+			  info) :test 'string=)))
+	(cl-loop for p-style in p-styles do
+		 (when p-style
+		   (cl-loop for cell-type in '("Heading" "Contents") do
+			    (cl-loop for cell-alignment in '(left right center) do
+				     (insert
+				      (format "
+  <style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\">
+    <style:paragraph-properties fo:text-align=\"%s\" style:justify-single-word=\"false\"/>
+  </style:style>
+"
+					      (concat p-style cell-type
+						      (capitalize (symbol-name cell-alignment)))
+					      (concat p-style cell-type)
+					      (assoc-default cell-alignment
+							     '((left . "start")
+							       (right . "end")
+							       (center . "center"))))))))))
+
       ;; - Dump date-styles.
       (when (plist-get info :odt-use-date-fields)
 	(insert (org-odt--build-date-styles (car custom-time-fmts)
@@ -4070,19 +4096,45 @@ chosen as below:
    CELL-ALIGNMENT: One of \"Left\", \"Right\" or \"Center\",
 		   based on the column alignment.
 
-By default, a table cell can have one of the following 6 styles:
+By default, a table cell uses the base style \"OrgTable\".  So it
+can have one of the following 8 styles:
 
   - OrgTableContents
   - OrgTableContentsLeft
   - OrgTableContentsRight
   - OrgTableContentsCenter
-  - OrgTableContents
+  - OrgTableHeading
   - OrgTableHeadingLeft
   - OrgTableHeadingRight
   - OrgTableHeadingCenter
 
-If you are custom paragraph styles for a table, you need to
-define all the above 8 styles in your styles file."
+The above styles are already defined for you in the default
+styles file.
+
+However, if you use a custom paragraph style, say \"MyOrgTable\",
+for a table with
+
+    #+ATTR_ODT: :p-style \"MyOrgTable\"
+    |  <r> | <c>  | <l>  |
+    | aaaa | bbbb | cccc |
+    |------+------+------|
+    | dddd | eeee | ffff |
+    | gggg | hhhh | iiii |
+
+then a table cell can have one of the following 8 styles:
+
+  - MyOrgTableContents
+  - MyOrgTableContentsLeft
+  - MyOrgTableContentsRight
+  - MyOrgTableContentsCenter
+  - MyOrgTableHeading
+  - MyOrgTableHeadingLeft
+  - MyOrgTableHeadingRight
+  - MyOrgTableHeadingCenter
+
+You need to define the styles \"MyOrgTableContents\" and
+\"MyOrgTableHeading\" as part of your styles file.  Rest of the 6
+styles will be defined *automatically* for you."
   (let* ((table-cell-address (org-export-table-cell-address table-cell info))
 	 (_r (car table-cell-address))
 	 (c (cdr table-cell-address))
