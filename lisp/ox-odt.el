@@ -106,6 +106,7 @@
   :options-alist
   '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
+    (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
     (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
@@ -1725,6 +1726,14 @@ original parsed data.  INFO is a plist holding export options."
     (with-current-buffer
 	(find-file-noselect (concat org-odt-zip-dir "styles.xml") t)
       (revert-buffer t t)
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write extra styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
 
       ;; Write custom styles for source blocks
       ;; Save STYLES used for colorizing of source blocks.
