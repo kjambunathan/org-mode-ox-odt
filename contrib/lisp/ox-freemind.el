@@ -309,9 +309,20 @@ will result in following node:
 (defun org-freemind--build-node-contents (element contents info)
   (let* ((title (case (org-element-type element)
 		  (headline
-		   (org-element-property :title element))
+		   (let* ((todo (and (plist-get info :with-todo-keywords)
+				     (let ((todo (org-element-property :todo-keyword element)))
+				       (and todo (org-export-data todo info)))))
+			  (todo-type (and todo (org-element-property :todo-type element)))
+			  (tags (and (plist-get info :with-tags)
+				     (org-export-get-tags element info)))
+			  (priority (and (plist-get info :with-priority)
+					 (org-element-property :priority element)))
+			  (text (org-export-data (org-element-property :title element)
+						 info)))
+		     (funcall (plist-get info :html-format-headline-function)
+			      todo todo-type priority text tags info)))
 		  (org-data
-		   (plist-get info :title))
+		   (org-export-data (plist-get info :title) info))
 		  (t (error "Shouldn't come here"))))
 	 (element-contents (org-element-contents element))
 	 (section (assq 'section element-contents))
@@ -330,25 +341,24 @@ will result in following node:
 	 (node-contents (concat section-contents
 				(when itemized-contents-p
 				  contents))))
-    (concat (let ((title (org-export-data title info)))
-	      (case org-freemind-section-format
-		(inline
-		  (org-freemind--richcontent
-		   'node (concat (format "\n<h2>%s</h2>" title)
-				 node-contents) ))
-		(note
-		 (concat (org-freemind--richcontent
-			  'node (format "\n<p>%s\n</p>" title))
-			 (org-freemind--richcontent
-			  'note node-contents)))
-		(node
-		 (concat
-		  (org-freemind--richcontent
-		   'node (format "\n<p>%s\n</p>" title))
-		  (when section
-		    (org-freemind--build-stylized-node
-		     (org-freemind--get-node-style section info) nil
-		     (org-freemind--richcontent 'node node-contents)))))))
+    (concat (case org-freemind-section-format
+	      (inline
+		(org-freemind--richcontent
+		 'node (concat (format "\n<h2>%s</h2>" title)
+			       node-contents) ))
+	      (note
+	       (concat (org-freemind--richcontent
+			'node (format "\n<p>%s\n</p>" title))
+		       (org-freemind--richcontent
+			'note node-contents)))
+	      (node
+	       (concat
+		(org-freemind--richcontent
+		 'node (format "\n<p>%s\n</p>" title))
+		(when section
+		  (org-freemind--build-stylized-node
+		   (org-freemind--get-node-style section info) nil
+		   (org-freemind--richcontent 'node node-contents))))))
 	    (unless itemized-contents-p
 	      contents))))
 
@@ -402,23 +412,6 @@ holding contextual information."
   (setq contents (or contents ""))
   (let* ((_numberedp (org-export-numbered-headline-p headline info))
 	 (level (org-export-get-relative-level headline info))
-	 (_text (org-export-data (org-element-property :title headline) info))
-	 (todo (and (plist-get info :with-todo-keywords)
-		    (let ((todo (org-element-property :todo-keyword headline)))
-		      (and todo (org-export-data todo info)))))
-	 (_todo-type (and todo (org-element-property :todo-type headline)))
-	 (tags (and (plist-get info :with-tags)
-		    (org-export-get-tags headline info)))
-	 (_priority (and (plist-get info :with-priority)
-			(org-element-property :priority headline)))
-	 (_section-number (and (not (org-export-low-level-p headline info))
-			      (org-export-numbered-headline-p headline info)
-			      (mapconcat 'number-to-string
-					 (org-export-get-headline-number
-					  headline info) ".")))
-	 ;; Create the headline text.
-	 (_full-text (org-export-data (org-element-property :title headline)
-				      info))
 	 ;; Headline order (i.e, first digit of the section number)
 	 (headline-order (car (org-export-get-headline-number headline info))))
     (cond
@@ -446,8 +439,7 @@ holding contextual information."
 		 preferred-id
 		 (if left-p "left" "right")
 		 (if (= level 1) "true" "false"))
-	 (concat (org-freemind--build-node-contents headline contents info)
-		 (org-freemind--tags tags))))))))
+	 (org-freemind--build-node-contents headline contents info)))))))
 
 
 ;;;; Section
