@@ -1,4 +1,4 @@
-;;; ox-freemind.el --- Freemind Mindmap Back-End for Org Export Engine
+;;; ox-freemind.el --- Freemind Mindmap Back-End for Org Export Engine  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2013-2018  Free Software Foundation, Inc.
 
@@ -195,7 +195,7 @@ mappings of different outline levels."
 	(assoc-default 'default org-freemind-styles)
 	"<node></node>")))
 
-(defun org-freemind-style-map--default (element info)
+(defun org-freemind-style-map--default (_element _info)
   "Return the default style for all ELEMENTs.
 ELEMENT can be any of the following types - `org-data',
 `headline' or `section'.  See `org-freemind-styles' for current
@@ -367,7 +367,7 @@ original parsed data.  INFO is a plist holding export options."
     (let ((org-data (plist-get info :parse-tree)))
       (org-freemind--build-node-contents org-data contents info)))))
 
-(defun org-freemind-inner-template (contents info)
+(defun org-freemind-inner-template (contents _info)
   "Return body of document string after Freemind Mindmap conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
@@ -386,7 +386,7 @@ holding export options."
 
 ;;;; Entity
 
-(defun org-freemind-entity (entity contents info)
+(defun org-freemind-entity (entity _contents _info)
   "Transcode an ENTITY object from Org to Freemind Mindmap.
 CONTENTS are the definition itself.  INFO is a plist holding
 contextual information."
@@ -400,25 +400,25 @@ CONTENTS holds the contents of the headline.  INFO is a plist
 holding contextual information."
   ;; Empty contents?
   (setq contents (or contents ""))
-  (let* ((numberedp (org-export-numbered-headline-p headline info))
+  (let* ((_numberedp (org-export-numbered-headline-p headline info))
 	 (level (org-export-get-relative-level headline info))
-	 (text (org-export-data (org-element-property :title headline) info))
+	 (_text (org-export-data (org-element-property :title headline) info))
 	 (todo (and (plist-get info :with-todo-keywords)
 		    (let ((todo (org-element-property :todo-keyword headline)))
 		      (and todo (org-export-data todo info)))))
-	 (todo-type (and todo (org-element-property :todo-type headline)))
+	 (_todo-type (and todo (org-element-property :todo-type headline)))
 	 (tags (and (plist-get info :with-tags)
 		    (org-export-get-tags headline info)))
-	 (priority (and (plist-get info :with-priority)
+	 (_priority (and (plist-get info :with-priority)
 			(org-element-property :priority headline)))
-	 (section-number (and (not (org-export-low-level-p headline info))
+	 (_section-number (and (not (org-export-low-level-p headline info))
 			      (org-export-numbered-headline-p headline info)
 			      (mapconcat 'number-to-string
 					 (org-export-get-headline-number
 					  headline info) ".")))
 	 ;; Create the headline text.
-	 (full-text (org-export-data (org-element-property :title headline)
-				     info))
+	 (_full-text (org-export-data (org-element-property :title headline)
+				      info))
 	 ;; Headline order (i.e, first digit of the section number)
 	 (headline-order (car (org-export-get-headline-number headline info))))
     (cond
@@ -438,7 +438,7 @@ holding contextual information."
 				(concat "sec-" section-number)
 				(org-element-property :ID headline))))
 	     (preferred-id (car ids))
-	     (extra-ids (cdr ids))
+	     (_extra-ids (cdr ids))
 	     (left-p (zerop (% headline-order 2))))
 	(org-freemind--build-stylized-node
 	 (org-freemind--get-node-style headline info)
@@ -464,7 +464,7 @@ holding contextual information."
 
 ;;; Filter Functions
 
-(defun org-freemind-final-function (contents backend info)
+(defun org-freemind-final-function (contents _backend _info)
   "Return CONTENTS as pretty XML using `indent-region'."
   (if (not org-freemind-pretty-output) contents
     (with-temp-buffer
@@ -473,7 +473,7 @@ holding contextual information."
       (indent-region (point-min) (point-max))
       (buffer-substring-no-properties (point-min) (point-max)))))
 
-(defun org-freemind-options-function (info backend)
+(defun org-freemind-options-function (info _backend)
   "Install script in export options when appropriate.
 EXP-PLIST is a plist containing export options.  BACKEND is the
 export back-end currently used."
