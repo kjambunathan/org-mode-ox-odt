@@ -1786,8 +1786,9 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (or (let* ((content-template-file
-		   (ignore-errors (read (plist-get info :odt-content-template-file)))))
+       (or (let* ((content-template-file (plist-get info :odt-content-template-file))
+		  (content-template-file (when (org-string-nw-p content-template-file)
+					   (ignore-errors (read content-template-file)))))
 	     (when (stringp content-template-file) content-template-file))
 	   (expand-file-name "OrgOdtContentTemplate.xml"
 			     org-odt-styles-dir)))
