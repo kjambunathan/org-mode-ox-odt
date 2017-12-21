@@ -104,10 +104,11 @@
 	      (if a (org-odt-export-to-odt t s v)
 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
   :options-alist
-  '((:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+  '((:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
+    (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
+    (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
-    (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
     ;; and should be prefixed with "ODT_".  However, since the
@@ -115,7 +116,6 @@
     ;; skipping the "ODT_" prefix, makes much sense.
     (:bib-file "BIB_FILE" nil nil t)
     ;; Other variables.
-    (:odt-content-template-file nil nil org-odt-content-template-file)
     (:odt-display-outline-level nil nil org-odt-display-outline-level)
     (:odt-fontify-srcblocks nil nil org-odt-fontify-srcblocks)
     (:odt-format-drawer-function nil nil org-odt-format-drawer-function)
@@ -1786,7 +1786,9 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (or (plist-get info :odt-content-template-file)
+       (or (let* ((content-template-file
+		   (ignore-errors (read (plist-get info :odt-content-template-file)))))
+	     (when (stringp content-template-file) content-template-file))
 	   (expand-file-name "OrgOdtContentTemplate.xml"
 			     org-odt-styles-dir)))
       ;; Write automatic styles.
