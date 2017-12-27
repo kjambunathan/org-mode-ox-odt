@@ -4147,7 +4147,7 @@ styles will be defined *automatically* for you."
 	 (table (org-export-get-parent-table table-cell))
 	 (p-style (or (org-odt--read-attribute table :p-style) "OrgTable")))
     (or
-     (and custom-style-prefix
+     (and custom-style-prefix (null (org-odt--read-attribute table :p-style))
 	  (format "%sContents" custom-style-prefix))
      ;; Style names used for paragraphs in a table is a concatenation
      ;; of BASE-STYLE, CELL-TYPE and CELL-ALIGNMENT
