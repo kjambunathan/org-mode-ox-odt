@@ -1112,7 +1112,7 @@ below) that is included in `org-odt-content-template-file'.
 TABLE-CELL-STYLE-NAME := TABLE-TEMPLATE-NAME + TABLE-CELL-TYPE +
                          \"TableCell\"
 PARAGRAPH-STYLE-NAME  := TABLE-TEMPLATE-NAME + TABLE-CELL-TYPE +
-                         \"TableParagraph\"
+                         \"Contents\"
 TABLE-CELL-TYPE       := \"FirstRow\"   | \"LastColumn\" |
                          \"FirstRow\"   | \"LastRow\"    |
                          \"EvenRow\"    | \"OddRow\"     |
@@ -1143,15 +1143,15 @@ For example, with the following configuration
    style will use the following table-cell styles -
    \"CustomFirstRowTableCell\", \"CustomFirstColumnTableCell\",
    \"CustomTableCell\" and the following paragraph styles
-   \"CustomFirstRowTableParagraph\",
-   \"CustomFirstColumnTableParagraph\", \"CustomTableParagraph\"
+   \"CustomFirstRowContents\",
+   \"CustomFirstColumnContents\", \"CustomContents\"
    as appropriate.
 
 2. A table associated with \"TableWithHeaderColumns\" style will
    use the following table-cell styles -
    \"CustomFirstColumnTableCell\", \"CustomTableCell\" and the
    following paragraph styles
-   \"CustomFirstColumnTableParagraph\", \"CustomTableParagraph\"
+   \"CustomFirstColumnContents\", \"CustomContents\"
    as appropriate..
 
 Note that TABLE-TEMPLATE-NAME corresponds to the
@@ -4148,7 +4148,7 @@ styles will be defined *automatically* for you."
 	 (p-style (or (org-odt--read-attribute table :p-style) "OrgTable")))
     (or
      (and custom-style-prefix
-	  (format "%sTableParagraph" custom-style-prefix))
+	  (format "%sContents" custom-style-prefix))
      ;; Style names used for paragraphs in a table is a concatenation
      ;; of BASE-STYLE, CELL-TYPE and CELL-ALIGNMENT
      (concat
