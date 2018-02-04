@@ -109,6 +109,7 @@
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
+    (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
     ;; and should be prefixed with "ODT_".  However, since the
@@ -116,7 +117,6 @@
     ;; skipping the "ODT_" prefix, makes much sense.
     (:bib-file "BIB_FILE" nil nil t)
     ;; Other variables.
-    (:odt-display-outline-level nil nil org-odt-display-outline-level)
     (:odt-fontify-srcblocks nil nil org-odt-fontify-srcblocks)
     (:odt-format-drawer-function nil nil org-odt-format-drawer-function)
     (:odt-format-headline-function nil nil org-odt-format-headline-function)
@@ -1871,7 +1871,8 @@ original parsed data.  INFO is a plist holding export options."
 	 (lambda (x)
 	   (format
 	    "<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-	    (plist-get info :odt-display-outline-level) (nth 1 x)))
+	    (string-to-number (plist-get info :odt-display-outline-level))
+	    (nth 1 x)))
 	 org-odt-category-map-alist "\n")))
       ;; Position the cursor to document body.
       (goto-char (point-min))
@@ -2541,7 +2542,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			counter))
 		 info 'first-match)))))
 	 (scope (funcall --numbered-parent-headline-at-<=-n
-			 element (or n (plist-get info :odt-display-outline-level)) info))
+			 element (or n (string-to-number (plist-get info :odt-display-outline-level)))
+			 info))
 	 (ordinal (funcall --enumerate element scope info predicate))
 	 (tag
 	  (concat
