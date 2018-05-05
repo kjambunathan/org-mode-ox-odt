@@ -3497,6 +3497,7 @@ information."
   "Transcode a PARAGRAPH element from Org to ODT.
 CONTENTS is the contents of the paragraph, as a string.  INFO is
 the plist used as a communication channel."
+  (setq contents (org-trim contents))
   (if (org-odt--transclude-link-p paragraph info) contents
     (let* ((parent (org-export-get-parent paragraph))
 	   (_parent-type (org-element-type parent))
