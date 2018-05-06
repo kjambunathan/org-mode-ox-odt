@@ -2269,14 +2269,21 @@ holding contextual information."
 	      "</text:list>")))
        ;; Case 3. Standard headline.  Export it as a section.
        (t
-	(let* ((style (org-odt--read-attribute headline :style))
-	       (style (if (stringp style) style
-			(format "%s%d%s"
-				(let ((prefix (org-odt--read-attribute headline :style-prefix)))
-				  (if (stringp prefix) prefix "Heading_20_"))
-				level
-				(let ((suffix (org-odt--read-attribute headline :style-suffix)))
-				  (if (stringp suffix) suffix "")))))
+	(let* ((get-headline-style
+		(lambda (h)
+		  (let* ((level (org-export-get-relative-level h info))
+			 (style (org-odt--read-attribute h :style))
+			 (prefix (org-odt--read-attribute h :style-prefix))
+			 (suffix (org-odt--read-attribute h :style-suffix)))
+		    (cond
+		     ((stringp style) style)
+		     ((stringp prefix)
+		      (concat prefix (number-to-string level) suffix))
+		     ((stringp suffix)
+		      (concat "Heading_20_" (number-to-string level) suffix))
+		     (t nil)))))
+	       (style (or (funcall get-headline-style headline)
+			  (concat "Heading_20_" (number-to-string level))))
 	       (text-h (format
 			"\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
 			(org-odt--get-derived-paragraph-style headline style)
