@@ -2215,7 +2215,7 @@ holding contextual information."
 	   ;; Create the headline text.
 	   (full-text (org-odt-format-headline--wrap headline nil info))
 	   ;; Get level relative to current parsed data.
-	   (level (org-export-get-relative-level headline info))
+	   ;; (level (org-export-get-relative-level headline info))
 	   ;; Get canonical label for the headline.
 	   (id (concat "sec-" (mapconcat 'number-to-string
 					 (org-export-get-headline-number
@@ -2269,27 +2269,25 @@ holding contextual information."
 	      "</text:list>")))
        ;; Case 3. Standard headline.  Export it as a section.
        (t
-	(let* ((get-headline-style
-		(lambda (h)
+	(let* ((format-headline
+		(lambda (h hc)
 		  (let* ((level (org-export-get-relative-level h info))
-			 (style (org-odt--read-attribute h :style))
-			 (prefix (org-odt--read-attribute h :style-prefix))
-			 (suffix (org-odt--read-attribute h :style-suffix)))
-		    (cond
-		     ((stringp style) style)
-		     ((stringp prefix)
-		      (concat prefix (number-to-string level) suffix))
-		     ((stringp suffix)
-		      (concat "Heading_20_" (number-to-string level) suffix))
-		     (t nil)))))
-	       (style (or (funcall get-headline-style headline)
-			  (concat "Heading_20_" (number-to-string level))))
-	       (text-h (format
-			"\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
-			(org-odt--get-derived-paragraph-style headline style)
-			level
-			(concat extra-targets anchored-title))))
-	  (concat text-h contents)))))))
+			 (style (let* ((style (org-odt--read-attribute h :style))
+				       (prefix (org-odt--read-attribute h :style-prefix))
+				       (suffix (org-odt--read-attribute h :style-suffix)))
+				  (cond
+				   ((stringp style) style)
+				   ((stringp prefix)
+				    (concat prefix (number-to-string level) suffix))
+				   ((stringp suffix)
+				    (concat "Heading_20_" (number-to-string level) suffix))
+				   (t (concat "Heading_20_" (number-to-string level)))))))
+		    (format
+		     "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
+		     (org-odt--get-derived-paragraph-style h style) level hc))))
+	       (headline-contents (concat extra-targets anchored-title)))
+	  (concat (funcall format-headline headline headline-contents)
+		  contents)))))))
 
 
 ;;;; Horizontal Rule
