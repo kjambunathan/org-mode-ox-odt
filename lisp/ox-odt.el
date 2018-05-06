@@ -2269,22 +2269,20 @@ holding contextual information."
 	      "</text:list>")))
        ;; Case 3. Standard headline.  Export it as a section.
        (t
-	(concat
-	 (format
-	  "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
-	  (let* ((style (org-odt--read-attribute headline :style))
-		 (style (cond
-			 ((stringp style) style)
-			 (t (format "%s%d%s"
-				    (let ((prefix (org-odt--read-attribute headline :style-prefix)))
-				      (if (stringp prefix) prefix "Heading_20_"))
-				    level
-				    (let ((suffix (org-odt--read-attribute headline :style-suffix)))
-				      (if (stringp suffix) suffix "")))))))
-	    (org-odt--get-derived-paragraph-style headline style))
-	  level
-	  (concat extra-targets anchored-title))
-	 contents))))))
+	(let* ((style (org-odt--read-attribute headline :style))
+	       (style (if (stringp style) style
+			(format "%s%d%s"
+				(let ((prefix (org-odt--read-attribute headline :style-prefix)))
+				  (if (stringp prefix) prefix "Heading_20_"))
+				level
+				(let ((suffix (org-odt--read-attribute headline :style-suffix)))
+				  (if (stringp suffix) suffix "")))))
+	       (text-h (format
+			"\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
+			(org-odt--get-derived-paragraph-style headline style)
+			level
+			(concat extra-targets anchored-title))))
+	  (concat text-h contents)))))))
 
 
 ;;;; Horizontal Rule
