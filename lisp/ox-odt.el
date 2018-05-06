@@ -2270,24 +2270,60 @@ holding contextual information."
        ;; Case 3. Standard headline.  Export it as a section.
        (t
 	(let* ((format-headline
-		(lambda (h hc)
+		(lambda (h hc info i)
 		  (let* ((level (org-export-get-relative-level h info))
 			 (style (let* ((style (org-odt--read-attribute h :style))
 				       (prefix (org-odt--read-attribute h :style-prefix))
-				       (suffix (org-odt--read-attribute h :style-suffix)))
+				       (suffix (org-odt--read-attribute h :style-suffix))
+				       (prefix-i (and i (org-odt--read-attribute i :style-prefix)))
+				       (suffix-i (and i (org-odt--read-attribute i :style-suffix))))
 				  (cond
 				   ((stringp style) style)
 				   ((stringp prefix)
 				    (concat prefix (number-to-string level) suffix))
 				   ((stringp suffix)
 				    (concat "Heading_20_" (number-to-string level) suffix))
+				   ((stringp prefix-i)
+				    (concat prefix-i (number-to-string level) suffix-i))
+				   ((stringp suffix-i)
+				    (concat "Heading_20_" (number-to-string level) suffix-i))
 				   (t (concat "Heading_20_" (number-to-string level)))))))
 		    (format
 		     "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
 		     (org-odt--get-derived-paragraph-style h style) level hc))))
-	       (headline-contents (concat extra-targets anchored-title)))
-	  (concat (funcall format-headline headline headline-contents)
-		  contents)))))))
+	       (headline-contents (concat extra-targets anchored-title))
+	       (immediate-list-style
+		(org-odt--read-attribute headline :list-style))
+	       (inherit-from
+		(let ((h headline) (inherit-from nil))
+		  (while (and (null inherit-from) h)
+		    (setq inherit-from (or (and (org-odt--read-attribute h :list-style) h)
+					   (cl-loop for el in (reverse (org-export-get-previous-element h info t))
+						    thereis (and (eq 'headline (org-element-type el))
+								 (org-odt--read-attribute el :list-style)
+								 el)))
+			  h (org-export-get-parent-headline h)))
+		  inherit-from))
+	       (inherited-list-style (and inherit-from (org-odt--read-attribute inherit-from :list-style)))
+	       (text-h (funcall format-headline headline headline-contents info inherit-from)))
+	  (if (or (null inherited-list-style) (string= inherited-list-style ""))
+	      (concat text-h contents)
+	    (concat
+	     (format "<text:list xml:id=\"%s\" %s text:style-name=\"%s\"><text:list-item>%s</text:list-item></text:list>"
+		     (org-export-get-reference headline info)
+		     (if immediate-list-style ""
+		       (let ((prev-headline-or-parent
+			      (or (cl-loop for el in (reverse (org-export-get-previous-element headline info t))
+					   thereis (and (eq 'headline (org-element-type el)) el))
+				  (org-export-get-parent-headline headline))))
+			 (cl-assert prev-headline-or-parent)
+			 (format "text:continue-list=\"%s\""
+				 (org-export-get-reference prev-headline-or-parent info))))
+		     inherited-list-style
+		     (dotimes (_i (- (org-export-get-relative-level headline info) 1) text-h)
+		       (setq text-h (format "<text:list><text:list-item>%s</text:list-item></text:list>"
+					    text-h))))
+	     contents))))))))
 
 
 ;;;; Horizontal Rule
