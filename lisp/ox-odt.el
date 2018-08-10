@@ -562,7 +562,28 @@ below for details).  To use these transformers install the
 LibreOffice extension, \"OrgModeUtilities.oxt\" found under
 \"./contrib/odt/\" subdirectory of this repository.
 
-I. Update All
+I. Reload
+---------
+
+  This macro is the equivalent to running Menu-> File-> Reload.
+
+  During document production, modify-export-check cycle is a rule
+  rather than an exception.  When an exported document is opened
+  in LibreOffice for *the first time*, LibreOffice displays the
+  intended contents.  However, when there is a subsequent edit,
+  and the document is exported and opened in LibreOffice,
+  LibreOffice continues to display the old content, overlooking
+  the new changes on the disk.  Given this behaviour, on every
+  export-and-open, the user has to manually do a `File -> Reload'
+  to view the new changes.  This macro takes care of this manual
+  step.
+
+  You most definitely would want the exported document go through
+  this macro first.  So, keep this macro enabled and have it
+  first in the transformer pipeline.
+
+
+II. Update All
 -------------
 
   This transformer, a LibreOffice macro, fills out
@@ -581,7 +602,7 @@ I. Update All
   This macro is the equivalent to running Menu-> Tools-> Update->
   Update All.
 
-II. Update All and Break Links
+III. Update All and Break Links
 ------------------------------
 
   This transformer, a LibreOffice macro, does what \"Update All\"
@@ -592,7 +613,7 @@ II. Update All and Break Links
   Update All, followed by Menu->Edit->Links->[Select All]->Break
   Link from within LibreOffice GUI.
 
-III. Optimize Column Width of all Tables
+IV. Optimize Column Width of all Tables
 ---------------------------------------
 
   This transformer, a LibreOffice macro, optimizes the column width
@@ -616,7 +637,10 @@ interpreted as below:
 	  :value-type (cons :tag "Shell Command" (string :tag "Executable")
 			    (repeat (string :tag "Argument")))
 	  :options
-	  (("Update All"
+	  (("Reload"
+	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
+			   "macro:///OrgMode.Utilities.Reload(%I)")))
+	   ("Update All"
 	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
 			   "macro:///OrgMode.Utilities.UpdateAll(%I)")))
 	   ("Update All and Break Links"
