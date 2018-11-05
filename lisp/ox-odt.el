@@ -5031,8 +5031,10 @@ exported file."
 	 l1-list
 	 ;; Build replacement table.
 	 (apply 'org-element-adopt-elements
-		(list 'table (list :type 'org :attr_odt
-				   (org-element-property :attr_odt l1-list)))
+		(list 'table (list :type 'org
+				   :attr_odt (org-element-property :attr_odt l1-list)
+				   :caption (org-element-property :caption l1-list)
+				   :name (org-element-property :name l1-list)))
 		(delq nil
 		      (apply 'append
 			     (org-element-map l1-list 'item
