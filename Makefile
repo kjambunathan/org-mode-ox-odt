@@ -95,3 +95,4 @@ help helpall::
 	@echo ""
 
  include mk/targets.mk	# toplevel make machinery
+ include mk/odtpkg.mk	# toplevel make machinery
