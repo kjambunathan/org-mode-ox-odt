@@ -18,6 +18,7 @@ MIN_ORG_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(MIN_ORG_
 
 ODT_PKG_NAME		= ox-odt
 ODT_PKG_TAG		= $(ORGVERSION).$(shell git log --format=oneline release_9.1.14.. | wc -l)
+ODT_PKG_TAG_L		= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(ODT_PKG_TAG)"))')
 ODT_PKG_DOC		= "OpenDocument Text Exporter for Org Mode"
 
 ODT_PKG_REQ		= (org \"$(MIN_ORG_VERSION)\")
@@ -46,5 +47,5 @@ odtpkg:
 	  -cf $(SERVROOT)/elpa/$(ODTDIR).tar \
 	  $(foreach dist, $(ODTELPA), $(ODTDIR)/$(dist))
 	-@$(RM) $(ODTDIR) $(ODT_PKG_NAME)-pkg.el
-	echo "(1 ($(ODT_PKG_NAME) . [($(ODT_PKG_TAG)) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))" \
+	echo "(1 ($(ODT_PKG_NAME) . [($(ODT_PKG_TAG_L)) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))" \
 		> $(SERVROOT)/elpa/archive-contents
