@@ -47,5 +47,5 @@ odtpkg:
 	  -cf $(SERVROOT)/elpa/$(ODTDIR).tar \
 	  $(foreach dist, $(ODTELPA), $(ODTDIR)/$(dist))
 	-@$(RM) $(ODTDIR) $(ODT_PKG_NAME)-pkg.el
-	echo "(1 ($(ODT_PKG_NAME) . [($(ODT_PKG_TAG_L)) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))" \
+	echo "(1 ($(ODT_PKG_NAME) . [$(ODT_PKG_TAG_L) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))" \
 		> $(SERVROOT)/elpa/archive-contents
