@@ -26,11 +26,13 @@ ODT_PKG_REQ_L		= (org $(MIN_ORG_VERSION_L))
 
 ODTDIR			=$(ODT_PKG_NAME)-$(ODT_PKG_TAG)
 
-ODTELPA			= lisp/ox-odt.el			\
-				 contrib/lisp/ox-jabref.el	\
-				 etc/styles/			\
-				 etc/schema/			\
-				 $(ODT_PKG_NAME)-pkg.el
+ODTELPA			= lisp/ox-odt.el				\
+				etc/styles/				\
+				etc/schema/				\
+				contrib/odt/OrgModeUtilities.oxt	\
+				contrib/lisp/ox-jabref.el		\
+				contrib/odt/JabRefChicagoForOrgmode	\
+				$(ODT_PKG_NAME)-pkg.el
 
 odtpkg: 
 	@$(MAKE) GITVERSION=$(GITVERSION:release_%=%)-elpa version autoloads
@@ -42,10 +44,13 @@ odtpkg:
 	echo ";; Local Variables:"						>> $(ODT_PKG_NAME)-pkg.el
 	echo ";; no-byte-compile: t"						>> $(ODT_PKG_NAME)-pkg.el
 	echo ";; End:"								>> $(ODT_PKG_NAME)-pkg.el
-	tar --exclude=Makefile \
-	  --transform='s:\(contrib/lisp\|lisp\|doc\)/::' \
-	  -cf $(SERVROOT)/elpa/$(ODTDIR).tar \
+	tar	--exclude=Makefile									\
+		--transform='s|lisp||'									\
+		--transform='s|contrib/lisp||'								\
+		--transform='s|contrib/odt/JabRefChicagoForOrgmode|jabref/|'				\
+		--transform='s|contrib/odt/|libreoffice/|'						\
+		-cf $(SERVROOT)/elpa/$(ODTDIR).tar							\
 	  $(foreach dist, $(ODTELPA), $(ODTDIR)/$(dist))
 	-@$(RM) $(ODTDIR) $(ODT_PKG_NAME)-pkg.el
-	echo "(1 ($(ODT_PKG_NAME) . [$(ODT_PKG_TAG_L) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))" \
+	echo "(1 ($(ODT_PKG_NAME) . [$(ODT_PKG_TAG_L) ($(ODT_PKG_REQ_L)) \"$(ODT_PKG_DOC)\" tar]))"	\
 		> $(SERVROOT)/elpa/archive-contents
