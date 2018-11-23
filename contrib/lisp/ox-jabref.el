@@ -1,8 +1,8 @@
 ;;; ox-jabref.el --- JabRef Citation Processor for Orgmode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015 Vaidheeswaran C <vaidheeswaran.chinnaraju at gmail dot com>
+;; Copyright (C) 2015-2018 Jambunathan K <kjambunathan at gmail dot com>
 
-;; Author: Vaidheeswaran C <vaidheeswaran.chinnaraju at gmail dot com>
+;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: http://orgmode.org
 ;; Version: 8.3.6
@@ -39,7 +39,7 @@
 ;;
 ;;    This module is tested with version JabRef-2.9.2.jar.
 ;;
-;; 2. Install the JabRef plugin [[http://repo.or.cz/w/JabRefChicagoForOrgmode.git/blob_plain/HEAD:/net.sf.jabref.export.Chicago.ODF(English)-1.2.jar][Chicago Export filters for Org-mode]].
+;; 2. Install the JabRef plugin [[https://github.com/kjambunathan/JabRefChicagoForOrgmode/blob/master/net.sf.jabref.export.Chicago.ODF(English)-1.2.jar][Chicago Export filters for Org-mode]].
 ;;
 ;; 3. Enable JabRef support
 ;;
@@ -88,8 +88,8 @@
 ;;
 ;; 1. `org-jabref-citation-styles'
 ;;
-;;    To create annnotated bibliographies, replace "chicago.ODF.biblio"
-;;    with "chicago.ODF.abstract" or "chicago.ODF.note".
+;;    To create annnotated bibliographies, replace "Chicago.ODF.biblio"
+;;    with "Chicago.ODF.abstract" or "Chicago.ODF.note".
 ;;
 ;;    To order bibliography entry by the order in which they are cited,
 ;;    set `:order-by-jabref' to t.
@@ -113,9 +113,9 @@
 
 (defvar org-jabref-formats
   '("Numeric"
-    "chicago.ODF.biblio" "chicago.ODF.abstract" "chicago.ODF.note"
-    "chicago.ODF.text" "chicago.ODF.footend" "chicago.ODF.footend.short"
-    "chicago.ODF.reference")
+    "Chicago.ODF.biblio" "Chicago.ODF.abstract" "Chicago.ODF.note"
+    "Chicago.ODF.text" "Chicago.ODF.footend" "Chicago.ODF.footend.short"
+    "Chicago.ODF.reference")
   "Export formats avaiable from JabRef and used by this module.
 Use
 
@@ -285,18 +285,18 @@ to see all available export formats.")
       :in-text
       (:jabref-format "Numeric" :formatter "Simple")
       :bibliography
-      (:jabref-format "chicago.ODF.reference" :formatter "Bibliography (Numbered)"))
+      (:jabref-format "Chicago.ODF.reference" :formatter "Bibliography (Numbered)"))
      ("Chicago (full-note)"
       :in-text
-      (:jabref-format ("chicago.ODF.footend" .
-		       "chicago.ODF.footend.short") :formatter "Footnote")
+      (:jabref-format ("Chicago.ODF.footend" .
+		       "Chicago.ODF.footend.short") :formatter "Footnote")
       :bibliography
-      (:jabref-format "chicago.ODF.biblio" :formatter "Bibliography"))
+      (:jabref-format "Chicago.ODF.biblio" :formatter "Bibliography"))
      ("Chicago (author-date)"
       :in-text
-      (:jabref-format "chicago.ODF.text" :formatter "Simple (but strip braces)")
+      (:jabref-format "Chicago.ODF.text" :formatter "Simple (but strip braces)")
       :bibliography
-      (:jabref-format "chicago.ODF.reference" :formatter "Bibliography"))))
+      (:jabref-format "Chicago.ODF.reference" :formatter "Bibliography"))))
   "Citation styles for various backends.
 Each element in this list is of the form:
 
@@ -314,8 +314,8 @@ JabRef.
 A typical value for this variable could be:
 
   '((\"odt\"
-     (\"default\" :in-text \"chicago.ODF.text\"
-      :bibliography \"chicago.ODF.reference\"))
+     (\"default\" :in-text \"Chicago.ODF.text\"
+      :bibliography \"Chicago.ODF.reference\"))
     (\"html\"
      (\"default\" :bibliography \"html\")
      (\"simple\" :bibliography \"simplehtml\")))
@@ -574,7 +574,7 @@ Throw an error if a key in CITE-KEYS does not occur in BIB-FILE."
 				  (match-beginning 0))))
 		  (push (cons cite-key (buffer-substring-no-properties begin end))
 			result-alist)))
-	    (error (user-error "Pls. upgrade your chicago.ODF plugin")))
+	    (error (user-error "Pls. upgrade your Chicago.ODF plugin")))
 	  (setq result-alist (nreverse result-alist)))))))
 
 (defun org-jabref-do-export-bib-file (bib-file export-format &optional _dummy)
