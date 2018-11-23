@@ -380,18 +380,26 @@ For a list of export formats registered with JabRef use:
   (mapcar
    (lambda (backend)
      (cons backend
-	   (let* ((stock-backend (assoc-default backend org-jabref--stock-backends))
-		  ;; Copy over the stock backend.
-		  (enhanced-backend (copy-tree stock-backend t)))
+	   (let* ((enhanced-backend
+		   ;; Copy over the stock backend.
+		   (let ((stock-backend (assoc-default backend org-jabref--stock-backends)))
+		     (org-export-create-backend
+		      :name (copy-tree (org-export-backend-name stock-backend))
+		      :parent (copy-tree (org-export-backend-parent stock-backend))
+		      :transcoders (copy-tree (org-export-backend-transcoders stock-backend))
+		      :options (copy-tree (org-export-backend-options stock-backend))
+		      :filters (copy-tree (org-export-backend-filters stock-backend))
+		      :blocks (copy-tree (org-export-backend-blocks stock-backend))
+		      :menu (copy-tree (org-export-backend-menu stock-backend))))))
 	     ;; Override default citation transcoders with our own.
 	     (setf (org-export-backend-transcoders enhanced-backend)
 		   (append
 		    '((keyword . org-jabref-keyword)
 		      (citation . org-jabref-citation))
-		    (org-export-backend-transcoders stock-backend)))
+		    (org-export-backend-transcoders enhanced-backend)))
 	     ;; Override default export options with our own.
 	     (setf (org-export-backend-options enhanced-backend)
-		   (append (org-export-backend-options stock-backend)
+		   (append (org-export-backend-options enhanced-backend)
 			   '((:jabref-citation-style
 			      "ODT_JABREF_CITATION_STYLE" nil
 			      ;; For the default value, use *all*
