@@ -1,1 +1,11 @@
-(1 (ox-odt . [(9 1 14 149) ((org (9 1 14))) "OpenDocument Text Exporter for Org Mode" tar]))
+(1
+ (ox-jabref .
+	    [(9 1 14 151)
+	     ((ox-odt
+	       (9 1 14 151)))
+	     "JabRef Citation Processor for Orgmode" tar])
+ (ox-odt .
+	 [(9 1 14 151)
+	  ((org
+	    (9 1 14)))
+	  "OpenDocument Text Exporter for Org Mode" tar]))
