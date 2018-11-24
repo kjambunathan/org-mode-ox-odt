@@ -299,10 +299,9 @@ Don't modify it, set `org-element-affiliated-keywords' instead.")
 	  (remq 'citation-reference (remq 'table-cell org-element-all-objects)))
 	 (standard-set-no-line-break (remq 'line-break standard-set))
 	 (minimal-set '(bold code entity italic latex-fragment strike-through
-			     subscript superscript underline superscript
-			     verbatim)))
+			     subscript superscript underline verbatim)))
     `((bold ,@standard-set)
-      (citation reference)
+      (citation citation-reference)
       (citation-reference ,@(cons 'line-break minimal-set))
       (footnote-reference ,@standard-set)
       (headline ,@standard-set-no-line-break)
@@ -312,9 +311,8 @@ Don't modify it, set `org-element-affiliated-keywords' instead.")
       (keyword ,@(remq 'footnote-reference standard-set))
       ;; Ignore all links in a link description.  Also ignore
       ;; radio-targets and line breaks.
-      (link bold code entity export-snippet inline-babel-call inline-src-block
-	    italic latex-fragment macro statistics-cookie strike-through
-	    subscript superscript underline verbatim)
+      (link export-snippet inline-babel-call inline-src-block macro
+	    statistics-cookie ,@minimal-set)
       (paragraph ,@standard-set)
       ;; Remove any variable object from radio target as it would
       ;; prevent it from being properly recognized.
@@ -325,9 +323,8 @@ Don't modify it, set `org-element-affiliated-keywords' instead.")
       ;; Ignore inline babel call and inline source block as formulas
       ;; are possible.  Also ignore line breaks and statistics
       ;; cookies.
-      (table-cell bold code entity export-snippet footnote-reference italic
-		  latex-fragment link macro radio-target strike-through
-		  subscript superscript target timestamp underline verbatim)
+      (table-cell export-snippet footnote-reference link macro radio-target
+		  target timestamp ,@minimal-set)
       (table-row table-cell)
       (underline ,@standard-set)
       (verse-block ,@standard-set)))
@@ -4526,7 +4523,8 @@ looked after.  This function assumes that the buffer is narrowed
 to an appropriate container (e.g., a paragraph)."
   (cond
    ((memq 'table-cell restriction) (org-element-table-cell-parser))
-   ((memq 'reference restriction) (org-element-citation-reference-parser))
+   ((memq 'citation-reference restriction)
+    (org-element-citation-reference-parser))
    (t
     (let* ((start (point))
 	   (limit
