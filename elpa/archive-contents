@@ -2,13 +2,8 @@
  (JabrefExportChicagoODF .
 			 [(1 2 0)
 			  nil "Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat" tar nil])
- (ox-jabref .
-	    [(9 1 14 151)
-	     ((ox-odt
-	       (9 1 14 151)))
-	     "JabRef Citation Processor for Orgmode" tar])
  (ox-odt .
-	 [(9 1 14 154)
+	 [(9 1 14 155)
 	  ((org
 	    (9 1 14))
 	   (JabrefExportChicagoODF
