@@ -1,6 +1,6 @@
 include mk/server.mk		# for version
 
-.PHONY:	version odtpkg
+.PHONY:	version odtpkg jabrefpkg
 
 help helpall helpserver::
 	$(info )
@@ -11,77 +11,93 @@ help helpall helpserver::
 helpserver::
 	@echo ""
 
-SERVROOT		= .
+SERVROOT			= ./elpa
 
-MIN_ORG_VERSION		= $(ORGVERSION)
-MIN_ORG_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(MIN_ORG_VERSION)"))')
+ORG_GIT_DIR			= .
+JABREF_GIT_DIR		= ./contrib/odt/JabRefChicagoForOrgmode
 
-ODT_PKG_NAME		= ox-odt
-ODT_PKG_TAG		= $(ORGVERSION).$(shell git log --format=oneline release_$(ORGVERSION).. | wc -l)
-ODT_PKG_TAG_L		= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(ODT_PKG_TAG)"))')
-ODT_PKG_DOC		= "OpenDocument Text Exporter for Org Mode"
+JABREF_VERSION0		= $(shell git --git-dir=$(JABREF_GIT_DIR)/.git describe --abbrev=0)
+JABREF_VERSION		= $(JABREF_VERSION0).$(shell git --git-dir=$(JABREF_GIT_DIR)/.git log --format=oneline $(JABREF_VERSION0).. | wc -l)
+JABREF_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(JABREF_VERSION)"))')
 
-ODT_PKG_REQ		= (org \"$(MIN_ORG_VERSION)\")
-ODT_PKG_REQ_L		= (org $(MIN_ORG_VERSION_L))
+
 
-ODTDIR			= $(ODT_PKG_NAME)-$(ODT_PKG_TAG)
-
-ODTELPA			= lisp/ox-odt.el				\
-				 etc/styles/				\
-				 etc/schema/				\
-				 contrib/odt/OrgModeUtilities.oxt	\
-				 $(ODT_PKG_NAME)-pkg.el
-
-ODTDESC			= (quote ($(ODT_PKG_NAME) . [$(ODT_PKG_TAG_L) ($(ODT_PKG_REQ_L)) $(ODT_PKG_DOC) tar]))
-
-odtpkg: 
+pkg:
 	@$(MAKE) GITVERSION=$(GITVERSION:release_%=%)-elpa version autoloads
-	-@$(RM) $(ODTDIR) $(ORGTAR) $(ORGZIP)
-	-@$(RM) $(SERVROOT)/elpa/$(ODT_PKG_NAME)-*.tar
-	ln -s . $(ODTDIR)
-	echo "(define-package \"$(ODT_PKG_NAME)\""				>  $(ODT_PKG_NAME)-pkg.el
-	echo "  \"$(ODT_PKG_TAG)\" \"$(ODT_PKG_DOC)\" '($(ODT_PKG_REQ)))"	>> $(ODT_PKG_NAME)-pkg.el
-	echo ";; Local Variables:"						>> $(ODT_PKG_NAME)-pkg.el
-	echo ";; no-byte-compile: t"						>> $(ODT_PKG_NAME)-pkg.el
-	echo ";; End:"								>> $(ODT_PKG_NAME)-pkg.el
-	tar	--exclude=Makefile						\
-		--transform='s|lisp/||'						\
-		--transform='s|contrib/odt/|libreoffice/|'			\
-		-cf $(SERVROOT)/elpa/$(ODTDIR).tar				\
-	  $(foreach dist, $(ODTELPA), $(ODTDIR)/$(dist))
-	-@$(RM) $(ODTDIR) $(ODT_PKG_NAME)-pkg.el
-	$(BATCH) -l mk/odtpkg.el --eval '(odtpkg-update-archive-contents $(ODTDESC))'
+	-@$(RM) $(ELPA_PKG_DIR) $(ELPA_PKG_DIR).tar $(ELPA_PKG_NAME)-pkg.el
+	-@$(RM) $(SERVROOT)/$(ELPA_PKG_NAME)-*.tar
+	ln -s . $(ELPA_PKG_DIR)
+	echo "(define-package \"$(ELPA_PKG_NAME)\""								> $(ELPA_PKG_NAME)-pkg.el
+	echo " \"$(ELPA_PKG_VERSION)\" \"$(ELPA_PKG_DOC)\" '($(ELPA_PKG_REQ)))" >> $(ELPA_PKG_NAME)-pkg.el
+	echo ";; Local Variables:"												>> $(ELPA_PKG_NAME)-pkg.el
+	echo ";; tab-width: 4"													>> $(ELPA_PKG_NAME)-pkg.el
+	echo ";; End:"															>> $(ELPA_PKG_NAME)-pkg.el
+	echo ";; no-byte-compile: t"											>> $(ELPA_PKG_NAME)-pkg.el
+	echo ";; End:"															>> $(ELPA_PKG_NAME)-pkg.el
+	tar $(ELPA_PKG_TAR_ARGS) -cf $(ELPA_PKG_DIR).tar $(foreach file, $(ELPA_PKG_FILES), $(ELPA_PKG_DIR)/$(file))
+	$(BATCH) -l package-x --eval '(let ((package-archive-upload-base "$(SERVROOT)")) (with-demoted-errors (package-upload-file "$(ELPA_PKG_DIR).tar")))'
+	-@$(RM) $(ELPA_PKG_DIR) $(ELPA_PKG_DIR).tar $(ELPA_PKG_NAME)-pkg.el
 
-JABREF_PKG_NAME		= ox-jabref
-JABREF_PKG_TAG		= $(ORGVERSION).$(shell git log --format=oneline release_$(ORGVERSION).. | wc -l)
-JABREF_PKG_TAG_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(JABREF_PKG_TAG)"))')
-JABREF_PKG_DOC		= "JabRef Citation Processor for Orgmode"
+
 
-JABREF_PKG_REQ		= (org \"$(ODT_PKG_TAG)\")
-JABREF_PKG_REQ_L	= (ox-odt $(ODT_PKG_TAG_L))
+odtpkg: ELPA_PKG_NAME				= ox-odt
+odtpkg: ELPA_PKG_GIT_DIR			= $(ORG_GIT_DIR)
 
-JABREFDIR		= $(JABREF_PKG_NAME)-$(JABREF_PKG_TAG)
+odtpkg: ELPA_PKG_VERSION0			= $(ORGVERSION)
+odtpkg: ELPA_PKG_VERSION			= $(ELPA_PKG_VERSION0).$(shell git --git-dir=$(ELPA_PKG_GIT_DIR)/.git \
+										log --format=oneline release_$(ELPA_PKG_VERSION0).. | wc -l)
 
-JABREFELPA		= contrib/lisp/ox-jabref.el			\
-				contrib/odt/JabRefChicagoForOrgmode/	\
-				$(JABREF_PKG_NAME)-pkg.el
+odtpkg: ELPA_PKG_VERSION0_L			= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(ELPA_PKG_VERSION0)"))')
+odtpkg: ELPA_PKG_VERSION_L			= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(ELPA_PKG_VERSION)"))')
 
-JABREFDESC		= (quote ($(JABREF_PKG_NAME) . [$(JABREF_PKG_TAG_L) ($(JABREF_PKG_REQ_L)) $(JABREF_PKG_DOC) tar]))
+odtpkg: ELPA_PKG_DOC				= "OpenDocument Text Exporter for Org Mode"
 
-jabrefpkg: 
-	@$(MAKE) GITVERSION=$(GITVERSION:release_%=%)-elpa version autoloads
-	-@$(RM) $(JABREFDIR) $(ORGTAR) $(ORGZIP)
-	-@$(RM) $(SERVROOT)/elpa/$(JABREF_PKG_NAME)-*.tar
-	ln -s . $(JABREFDIR)
-	echo "(define-package \"$(JABREF_PKG_NAME)\""					>  $(JABREF_PKG_NAME)-pkg.el
-	echo "  \"$(JABREF_PKG_TAG)\" \"$(JABREF_PKG_DOC)\" '($(JABREF_PKG_REQ)))"	>> $(JABREF_PKG_NAME)-pkg.el
-	echo ";; Local Variables:"							>> $(JABREF_PKG_NAME)-pkg.el
-	echo ";; no-byte-compile: t"							>> $(JABREF_PKG_NAME)-pkg.el
-	echo ";; End:"									>> $(JABREF_PKG_NAME)-pkg.el
-	tar	--exclude=Makefile						\
-		--transform='s|contrib/lisp/||'					\
-		--transform='s|contrib/odt/JabRefChicagoForOrgmode|jabref|'	\
-		-cf $(SERVROOT)/elpa/$(JABREFDIR).tar				\
-	  $(foreach dist, $(JABREFELPA), $(JABREFDIR)/$(dist))
-	-@$(RM) $(JABREFDIR) $(JABREF_PKG_NAME)-pkg.el
-	$(BATCH) --eval '(setq debug-on-error t)' -l mk/odtpkg.el --eval '(odtpkg-update-archive-contents $(JABREFDESC))'
+odtpkg: ELPA_PKG_REQ				= (org \"$(ELPA_PKG_VERSION0)\") (JabrefExportChicagoODF \"$(JABREF_VERSION)\")
+odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L)) (JabrefExportChicagoODF $(JABREF_VERSION_L))
+
+odtpkg: ELPA_PKG_DIR				= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
+
+odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el								\
+										etc/styles/									\
+										etc/schema/									\
+										contrib/lisp/ox-jabref.el					\
+										contrib/odt/OrgModeUtilities.oxt			\
+										$(ELPA_PKG_NAME)-pkg.el
+
+odtpkg: ELPA_PKG_TAR_ARGS			= --exclude=Makefile							\
+										--transform='s|contrib/lisp/||'				\
+										--transform='s|lisp/||'						\
+										--transform='s|contrib/odt/|libreoffice/|'
+
+odtpkg: ELPA_PKG_DESC				= (quote ($(ELPA_PKG_NAME) . [$(ELPA_PKG_VERSION_L) ($(ELPA_PKG_REQ_L)) $(ELPA_PKG_DOC) tar]))
+
+
+
+jabrefpkg: ELPA_PKG_NAME		= JabrefExportChicagoODF
+jabrefpkg: ELPA_PKG_GIT_DIR		= $(JABREF_GIT_DIR)
+
+jabrefpkg: ELPA_PKG_VERSION0	= $(shell git --git-dir=$(ELPA_PKG_GIT_DIR)/.git describe --abbrev=0)
+jabrefpkg: ELPA_PKG_VERSION		= $(ELPA_PKG_VERSION0).$(shell git --git-dir=$(ELPA_PKG_GIT_DIR)/.git \
+									log --format=oneline $(ELPA_PKG_VERSION0).. | wc -l)
+jabrefpkg: ELPA_PKG_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(ELPA_PKG_VERSION)"))')
+
+jabrefpkg: ELPA_PKG_REQ			= ""
+jabrefpkg: ELPA_PKG_REQ_L		= ()
+
+jabrefpkg: ELPA_PKG_DOC			= "Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat"
+
+jabrefpkg: ELPA_PKG_DESC		= (quote ($(ELPA_PKG_NAME) . [$(ELPA_PKG_VERSION_L) ($(ELPA_PKG_REQ_L)) $(ELPA_PKG_DOC) tar]))
+
+jabrefpkg: ELPA_PKG_DIR			= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
+jabrefpkg: ELPA_PKG_FILES		= contrib/odt/JabRefChicagoForOrgmode/* $(ELPA_PKG_NAME)-pkg.el
+jabrefpkg: ELPA_PKG_TAR_ARGS	= --exclude=*.jar											\
+									--exclude=*.xml											\
+									--transform='s|contrib/odt/JabRefChicagoForOrgmode/||'	\
+
+
+
+odtpkg jabrefpkg: pkg
+
+# Local Variables:
+# tab-width: 4
+# End:
