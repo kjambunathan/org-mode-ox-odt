@@ -204,3 +204,60 @@ bf7b8c1aed5f6e4904da89dfe7b9301803d7018e * lisp/ox-odt.el (org-odt-headline): Ex
 51b8dd673960e621ea9c2f77229c71de967b9eae * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
 417081c96e7a28e581c69885123c8a0f132be5b8 * lisp/ox-odt.el: Allow caption and name in list-tables
 82f3c3a1924149b2d8942e5330ddfb7736f65610 lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
+
+* Features that are exclusive to this branch
+
+#+BEGIN_EXAMPLE
+kjambunathan@debian:~/src/org-mode-ox-odt$ git describe
+release_9.1.14-157-gf8c51feb6
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+kjambunathan@debian:~/src/org-mode-ox-odt$ git log --reverse --format=oneline my-common-ancestor.. -- lisp/ox-odt.el >> notes/README.org
+#+END_EXAMPLE
+
+be9840d204e37939b354c2361e1a6cbee2bd474a ox-odt: Support for typesetting Description lists as in LaTeX
+92f0ee559d166cb9539f17134373f50cd332cab3 ox-odt.el: Support for pagebreaks, custom paragraph styles.
+6fc6c7468473a7e03f18cbd9fe53cb902c9770ef ox-odt.el: Specify cell widths using `:widths' attribute
+271212243d8923297c494588c9ef5a7c1c7fdb8d ox-odt.el: Support hrule and table attributes in list tables
+d0fe9e23b53dae59e643d6f27d69f7b1f3c17d77 ox-odt.el: Support for page nos. etc as part of xref-es
+1bf39dfd76f8cd29b04495fe698d6b3dab126311 Use a "OrgPageBreakDefault" as default PAGEBREAK style
+b2a15b5c383624e1a2f77f57ceae95d43190b586 ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
+99008bbb89f5e3908ea78a6eacee7710cc461168 Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
+19723fd47abef8272477e91e17489ca7f3842825 ox-odt.el (org-odt-special-block): Preserve case
+4b8ffd3c20b671bae50b8728b3ca74bc283a4308 ox-odt.el: Remove some export options associated to variables
+0a7ced81c391e20c857d8b5ce8eb912bd54e5965 ox-odt.el: Use options instead of hard-coded variables
+ee2d0e43aeebe647b61a7bb9315630c0eeac8ebd ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
+5b1989cba2acb4f4dfbae0ac841331e19de35c37 ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
+11dbb5a3581c95a0b99b30e36963a6ef0b76b36c ox-odt.el: Support `:with-title'
+b577fdd5f2aa38506d2c06314b6841b26cb52986 ox-odt.el: Enumerate footnotes based on body text
+d84859213045a552e12e519c7ed01522d903db88 ox-odt.el: Use scope param in org-export-footnote-* calls
+96b4bbb568a473844b8ed1d6180c5eb38af7f157 ox-odt.el (org-odt-link): Fix custom link handling
+905d6ba8034bc5b1b2fa052d2197e0edce8d4896 ox-odt.el: Add support for JabRef
+ea8415d73f545671abee66ee6c7e14dd1cd55981 * lisp/ox-odt.el: Remove `:export-block' from backend definition
+24574bbac348ae97b3c0539c75ba7ea4e72f3dd6 lisp/ox-odt.el: Improve list tables
+850a66178d104339336cab725bf5755ea66659c8 lisp/ox-odt.el: Support \cite{} fragments
+9eea0f138ec591312da3ed57d3761c92d0bb19a2 lisp/ox-odt.el: Generate table of figures, listings and tables.
+d471baa13415eceb5bed29ad52a48a28cf8ae4b6 lisp/ox-odt.el: Support document transformation using LibreOffice macros
+364281914f0a41e8f0fca8ba4194ac01b47b9f58 * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
+9148fd363b387c2ba212c2c750b056a4a8c6996c lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
+5c243da2d8b297be68c863177b738564df790fe8 lisp/ox-odt.el: Support column width and sizing of list tables
+dd10d04f2cdfdb0e27155c239a3ac094bb0f2e88 lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
+851b588dd80b5d59caa6ea9972cf2e6a54eb3620 lisp/ox-odt.el: In list tables, ignore col alignment cookies
+c397ae4f69e2ba2fefd0c4284cdf97c8d834b873 lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
+39b6bc6fa6607b13f9d00e611d04b97bf2369e70 Introduce keywords BIB_FILE and ODT_JABREF_CITATION_STYLE
+58755fa15ddfeb8d985c916ba8bcb9609085e4c3 lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
+1ea275f423493af4d66b1c5c622de9c9d0a00425 lisp/ox-odt.el: Support OpenOffice sections
+2fe725dfb1986ce0812f5e9957939c7874930f98 lisp/ox-odt.el: Transclude ODT links
+01e3274d5a2e328c824bb9b45ff42e37b893d38f lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
+3b6a2df254135a69acdbe5662aa55dd6a9ad4cc6 lisp/ox-odt.el: Allow customization of headline styles
+283c4683c74410553a257ca17e4d14a9a730f140 lisp/ox-odt.el: Improve support for pagebreaks
+c049488021621286b835af833ac0be551d9e4e7f lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
+bece81cb3b31beed1441fc5c1bb9cdd641b11c1f * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
+dd0f812d99718cc8191b7cb5625461b82a9fb596 * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
+f95fa831a89aba237d03406c4be7e72049a42775 * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
+b5475e18adcb28a1d2420a0b9acecdad34baae68 ox-odt: Rationalize paragraph style names used within tables
+1093b829b91083a07692305d15941ead3c9911bc * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template.  The paragraphs within the cells get styled *not* based on the template, but by "default" rules.
+d791a043724f7d724d15692118777ef1fc7f4b93 * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+bf7b8c1aed5f6e4904da89dfe7b9301803d7018e * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
+51b8dd673960e621ea9c2f77229c71de967b9eae * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
