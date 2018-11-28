@@ -11,7 +11,7 @@ help helpall helpserver::
 helpserver::
 	@echo ""
 
-SERVROOT			= ./elpa
+SERVROOT			= ../kjambunathan.github.io/elpa
 
 ORG_GIT_DIR			= .
 JABREF_GIT_DIR		= ./contrib/odt/JabRefChicagoForOrgmode
