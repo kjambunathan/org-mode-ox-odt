@@ -635,23 +635,26 @@ interpreted as below:
 %I input file name as a URL."
   :group 'org-export-odt
   :type
-  '(alist :tag "Transformers"
-	  :key-type (string :tag "Remarks")
-	  :value-type (cons :tag "Shell Command" (string :tag "Executable")
-			    (repeat (string :tag "Argument")))
-	  :options
-	  (("Reload"
-	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
-			   "macro:///OrgMode.Utilities.Reload(%I)")))
-	   ("Update All"
-	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
-			   "macro:///OrgMode.Utilities.UpdateAll(%I)")))
-	   ("Update All and Break Links"
-	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
-			   "macro:///OrgMode.Utilities.UpdateAll(%I, 1)")))
-	   ("Optimize Column Width of all Tables"
-	    (const :value ("soffice" "--norestore" "--invisible" "--headless"
-			   "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)"))))))
+  '(choice
+    (const :tag "None" nil)
+    (repeat :tag "Transformers"
+	    (choice :tag "Transformer"
+		    (const :tag "Reload"
+			   ("Reload" "soffice" "--norestore" "--invisible" "--headless"
+			    "macro:///OrgMode.Utilities.Reload(%I)"))
+		    (const :tag "Update All"
+			   ("Update All" "soffice" "--norestore" "--invisible" "--headless"
+			    "macro:///OrgMode.Utilities.UpdateAll(%I)"))
+		    (const :tag "Update All and Break Links"
+			   ("Update All and Break Links" "soffice" "--norestore" "--invisible" "--headless"
+			    "macro:///OrgMode.Utilities.UpdateAll(%I, 1)"))
+		    (const :tag "Optimize Column Width of all Tables"
+			   ("Optimize Column Width of all Tables" "soffice" "--norestore" "--invisible" "--headless"
+			    "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)"))
+		    (cons :tag "Other"
+			  (string :tag "Name")
+			  (cons :tag "Command"
+				(string :tag "Executable") (repeat :tag "Arguments " (string :tag "Argument"))))))))
 
 ;;;; Document conversion
 
