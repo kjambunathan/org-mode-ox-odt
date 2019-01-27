@@ -57,20 +57,20 @@ odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L)) (JabrefExportChicagoODF
 
 odtpkg: ELPA_PKG_DIR				= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
 
-odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el									\
-										etc/styles/										\
-										etc/schema/										\
-										contrib/lisp/ox-jabref.el						\
-										contrib/odt/OrgModeUtilities.oxt				\
-										testing/examples/odt/							\
+odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el											\
+										etc/styles/												\
+										etc/schema/												\
+										contrib/lisp/ox-jabref.el								\
+										contrib/odt/LibreOffice/OrgModeUtilities.oxt			\
+										testing/examples/odt/									\
 										$(ELPA_PKG_NAME)-pkg.el
 
-odtpkg: ELPA_PKG_TAR_ARGS			= --exclude=test-new.odt							\
-										--exclude=subdocument2.*						\
-										--transform='s|contrib/lisp/||'					\
-										--transform='s|lisp/||'							\
-										--transform='s|contrib/odt/|libreoffice/|'		\
-										--transform='s|testing/examples/odt/|samples/|'	\
+odtpkg: ELPA_PKG_TAR_ARGS			= --exclude=test-new.odt									\
+										--exclude=subdocument2.*								\
+										--transform='s|contrib/lisp/||'							\
+										--transform='s|lisp/||'									\
+										--transform='s|contrib/odt/LibreOffice|LibreOffice/|'	\
+										--transform='s|testing/examples/odt|samples|'			\
 
 odtpkg: ELPA_PKG_DESC				= (quote ($(ELPA_PKG_NAME) . [$(ELPA_PKG_VERSION_L) ($(ELPA_PKG_REQ_L)) $(ELPA_PKG_DOC) tar]))
 
