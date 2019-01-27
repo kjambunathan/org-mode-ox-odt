@@ -20,11 +20,6 @@ Sub UpdateAll(Optional inFileURL, Optional removeFileLinks)
       inDoc = StarDesktop.loadComponentFromURL(inFileURL, "_blank", 0, oProps())
    End If
 
-   ' Update All Indices
-   dispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
-
-   dispatcher.executeDispatch(inDoc.CurrentController.Frame, ".uno:UpdateAll", "", 0, Array())
-
    ' Neither ".uno:UpdateAll" nor ".uno:UpdateAllLinks" seem to update
    ' links.  So use this instead.
    inDoc.UpdateLinks()
@@ -44,7 +39,20 @@ Sub UpdateAll(Optional inFileURL, Optional removeFileLinks)
          section = inDoc.getTextSections().getByName(sSectionNames(i))
          section.setPropertyValue("FileLink",sectionFileLink)
       Next
-   End If
+  End If
+
+  ' Update All Indices
+
+  ' dispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+  ' dispatcher.executeDispatch(inDoc.CurrentController.Frame, ".uno:UpdateAll", "", 0, Array())
+
+  Dim oIndexes                  ' See https://docs.libreoffice.org/sw/html/classSwXDocumentIndexes.html
+  Dim oIndex                    ' See https://docs.libreoffice.org/sw/html/classSwXDocumentIndex.html
+  oIndexes = inDoc.getDocumentIndexes()
+  For i = 0 To oIndexes.getCount() - 1
+      oIndex = oIndexes.getByIndex(i) '
+      oIndex.update()
+  Next
 
    If (inDoc.isModified() AND inDoc.hasLocation() AND (Not inDoc.isReadOnly())) Then
       inDoc.store()
