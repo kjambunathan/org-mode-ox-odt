@@ -73,6 +73,10 @@
 ;; `org-element-update-syntax' builds proper syntax regexps according
 ;; to current setup.
 
+(defconst org-element--citation-key-re
+  "@[_[:alpha:]]\\(?:[-[:alnum:]_:.#$%&+?<>~/]*[_[:alnum:]]\\)?"
+  "Regexp matching a citation key.")
+
 (defvar org-element-paragraph-separate nil
   "Regexp to separate paragraphs in an Org buffer.
 In the case of lines starting with \"#\" and \":\", this regexp
@@ -138,17 +142,23 @@ specially in `org-element--object-lex'.")
 				      (nth 2 org-emphasis-regexp-components)))
 		      ;; Plain links.
 		      (concat "\\<" link-types ":")
-		      ;; Objects starting with "[": regular link,
+		      ;; Objects starting with "[": citations,
 		      ;; footnote reference, statistics cookie,
-		      ;; timestamp (inactive).
-		      (concat "\\[\\(?:"
-			      "fn:" "\\|"
-			      "\\[" "\\|"
-			      "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}" "\\|"
-			      "[0-9]*\\(?:%\\|/[0-9]*\\)\\]"
-			      "\\)")
-		      ;; Objects starting with "@": export snippets.
-		      "@@"
+		      ;; timestamp (inactive) and regular link.
+		      (format "\\[\\(?:%s\\)"
+			      (mapconcat
+			       #'identity
+			       (list "cite:"
+				     "(cite):"
+				     "@[_A-Za-z][A-Za-z0-9:.#$%&-+?<>~/]*\\]"
+				     "fn:"
+				     "\\(?:[0-9]\\|\\(?:%\\|/[0-9]*\\)\\]\\)"
+				     "\\[")
+			       "\\|"))
+		      ;; Objects starting with "@": citations and
+		      ;; export snippets.
+		      (format "@\\(?:@\\|%s\\)"
+			      (substring org-element--citation-key-re 1))
 		      ;; Objects starting with "{": macro.
 		      "{{{"
 		      ;; Objects starting with "<" : timestamp
@@ -190,15 +200,15 @@ specially in `org-element--object-lex'.")
   "List of recursive element types aka Greater Elements.")
 
 (defconst org-element-all-objects
-  '(bold code entity export-snippet footnote-reference inline-babel-call
-	 inline-src-block italic line-break latex-fragment link macro
-	 radio-target statistics-cookie strike-through subscript superscript
-	 table-cell target timestamp underline verbatim)
+  '(bold citation citation-reference code entity export-snippet
+	 footnote-reference inline-babel-call inline-src-block italic line-break
+	 latex-fragment link macro radio-target statistics-cookie strike-through
+	 subscript superscript table-cell target timestamp underline verbatim)
   "Complete list of object types.")
 
 (defconst org-element-recursive-objects
-  '(bold footnote-reference italic link subscript radio-target strike-through
-	 superscript table-cell underline)
+  '(bold citation footnote-reference italic link subscript radio-target
+	 strike-through superscript table-cell underline)
   "List of recursive object types.")
 
 (defconst org-element-object-containers
@@ -285,9 +295,14 @@ match group 2.
 Don't modify it, set `org-element-affiliated-keywords' instead.")
 
 (defconst org-element-object-restrictions
-  (let* ((standard-set (remq 'table-cell org-element-all-objects))
-	 (standard-set-no-line-break (remq 'line-break standard-set)))
+  (let* ((standard-set
+	  (remq 'citation-reference (remq 'table-cell org-element-all-objects)))
+	 (standard-set-no-line-break (remq 'line-break standard-set))
+	 (minimal-set '(bold code entity italic latex-fragment strike-through
+			     subscript superscript underline verbatim)))
     `((bold ,@standard-set)
+      (citation citation-reference)
+      (citation-reference ,@(cons 'line-break minimal-set))
       (footnote-reference ,@standard-set)
       (headline ,@standard-set-no-line-break)
       (inlinetask ,@standard-set-no-line-break)
@@ -296,23 +311,20 @@ Don't modify it, set `org-element-affiliated-keywords' instead.")
       (keyword ,@(remq 'footnote-reference standard-set))
       ;; Ignore all links in a link description.  Also ignore
       ;; radio-targets and line breaks.
-      (link bold code entity export-snippet inline-babel-call inline-src-block
-	    italic latex-fragment macro statistics-cookie strike-through
-	    subscript superscript underline verbatim)
+      (link export-snippet inline-babel-call inline-src-block macro
+	    statistics-cookie ,@minimal-set)
       (paragraph ,@standard-set)
       ;; Remove any variable object from radio target as it would
       ;; prevent it from being properly recognized.
-      (radio-target bold code entity italic latex-fragment strike-through
-		    subscript superscript underline superscript)
+      (radio-target ,@minimal-set)
       (strike-through ,@standard-set)
       (subscript ,@standard-set)
       (superscript ,@standard-set)
       ;; Ignore inline babel call and inline source block as formulas
       ;; are possible.  Also ignore line breaks and statistics
       ;; cookies.
-      (table-cell bold code entity export-snippet footnote-reference italic
-		  latex-fragment link macro radio-target strike-through
-		  subscript superscript target timestamp underline verbatim)
+      (table-cell export-snippet footnote-reference link macro radio-target
+		  target timestamp ,@minimal-set)
       (table-row table-cell)
       (underline ,@standard-set)
       (verse-block ,@standard-set)))
@@ -331,9 +343,11 @@ This alist also applies to secondary string.  For example, an
 still has an entry since one of its properties (`:title') does.")
 
 (defconst org-element-secondary-value-alist
-  '((headline :title)
+  '((citation :prefix :suffix)
+    (headline :title)
     (inlinetask :title)
-    (item :tag))
+    (item :tag)
+    (citation-reference :prefix :suffix))
   "Alist between element types and locations of secondary values.")
 
 (defconst org-element--pair-round-table
@@ -2718,6 +2732,160 @@ CONTENTS is the contents of the object."
   (format "*%s*" contents))
 
 
+;;;; Citation
+
+(defun org-element-citation-parser ()
+  "Parse citation object at point, if any.
+
+When at a citation object, return a list whose car is `citation'
+and cdr is a plist with `:parenthetical', `:prefix', `:suffix',
+`:begin', `:end', `:contents-begin', `:contents-end' and
+`:post-blank' keywords.  Otherwise, return nil.
+
+Assume point is at the beginning of the citation."
+  (let ((match (match-string 0)))
+    (cond
+     ((string-prefix-p "@" match)
+      (and (or (bolp) (memq (char-before) '(?\s ?\t)))
+	   (list 'citation
+		 (save-excursion
+		   (list :begin (point)
+			 :contents-begin (point)
+			 :contents-end (goto-char (match-end 0))
+			 :post-blank (skip-chars-forward " \t")
+			 :end (point))))))
+     ((string-prefix-p "[@" match)
+      (list 'citation
+	    (save-excursion
+	      (list :parenthetical t
+		    :begin (point)
+		    :contents-begin (1+ (point))
+		    :contents-end (1- (match-end 0))
+		    :post-blank (progn (goto-char (match-end 0))
+				       (skip-chars-forward " \t"))
+		    :end (point)))))
+     (t
+      (let ((begin (point))
+	    ;; Ignore blanks between cite type and prefix or key.
+	    (start (save-excursion (search-forward ":")
+				   (skip-chars-forward " \r\t\n")
+				   (point)))
+	    (closing (with-syntax-table org-element--pair-square-table
+		       (ignore-errors (scan-lists (point) 1 0)))))
+	(save-excursion
+	  (when (and closing
+		     (re-search-forward org-element--citation-key-re closing t))
+	    ;; Find prefix, if any.
+	    (let ((first-key-end (match-end 0))
+		  (cite
+		   (list 'citation
+			 (save-excursion
+			   (list :parenthetical (string-prefix-p "[(" match)
+				 :begin begin
+				 :post-blank (progn
+					       (goto-char closing)
+					       (skip-chars-forward " \t"))
+				 :end (point)))))
+		  ;; Prefix and suffix can contain the same set of
+		  ;; objects as citation references.
+		  (data (org-element-restriction 'citation-reference)))
+	      ;; `:contents-begin' depends on the presence of
+	      ;; a non-empty common prefix.
+	      (if (not (search-backward ";" start t))
+		  (org-element-put-property cite :contents-begin start)
+		(when (< start (point))
+		  (save-excursion
+		    (skip-chars-backward " \r\t\n")
+		    (org-element-put-property
+		     cite :prefix
+		     (mapcar
+		      (lambda (o) (org-element-put-property o :parent cite))
+		      (org-element--parse-objects start (point) nil data)))))
+		(forward-char)
+		(skip-chars-forward " \r\t\n")
+		(org-element-put-property cite :contents-begin (point)))
+	      ;; `:contents-end' depends on the presence of a non-empty
+	      ;; common suffix.
+	      (goto-char (1- closing))
+	      (skip-chars-backward " \r\t\n")
+	      (let ((end (point)))
+		(if (or (not (search-backward ";" first-key-end t))
+			(re-search-forward org-element--citation-key-re end t))
+		    (org-element-put-property cite :contents-end end)
+		  (when (< (1+ (point)) end)
+		    (save-excursion
+		      (forward-char)
+		      (skip-chars-forward " \r\t\n")
+		      (org-element-put-property
+		       cite :suffix
+		       (mapcar
+			(lambda (o) (org-element-put-property o :parent cite))
+			(org-element--parse-objects (point) end nil data)))))
+		  (org-element-put-property cite :contents-end (point))))
+	      cite))))))))
+
+(defun org-element-citation-interpreter (citation contents)
+  "Interpret CITATION object as Org syntax.
+CONTENTS is the contents of the object, as a string."
+  (concat "["
+	  (if (org-element-property :parenthetical citation) "(cite):" "cite:")
+	  (let ((prefix (org-element-property :prefix citation)))
+	    (and prefix (concat (org-element-interpret-data prefix) " ; ")))
+	  ;; Remove trailing semi-column.
+	  (substring contents 0 -1)
+	  (let ((suffix (org-element-property :suffix citation)))
+	    (and suffix (concat " ; " (org-element-interpret-data suffix))))
+	  "]"))
+
+
+;;;; Citation Reference
+
+(defun org-element-citation-reference-parser ()
+  "Parse citation reference object at point, if any.
+
+When at a reference, return a list whose car is
+`citation-reference', and cdr is a plist with `:key', `:prefix',
+`:suffix', `:begin', `:end' and `:post-blank'. keywords.
+
+Assume point is at the beginning of the reference."
+  (save-excursion
+    (let ((begin (point)))
+      (re-search-forward org-element--citation-key-re)
+      (let ((key-start (match-beginning 0))
+	    (key-end (match-end 0))
+	    (restriction (org-element-restriction 'citation-reference))
+	    (reference
+	     (list 'citation-reference
+		   (list :key (substring-no-properties (match-string 0) 1)
+			 :begin begin
+			 :end (re-search-forward "[ \t]*\\(?:;[ \t]*\\|$\\)")
+			 :post-blank 0))))
+	(goto-char (match-beginning 0))
+	(when (< begin key-start)
+	  (org-element-put-property
+	   reference :prefix
+	   (mapcar
+	    (lambda (o) (org-element-put-property o :parent reference))
+	    (org-element--parse-objects begin key-start nil restriction))))
+	(when (< key-end (point))
+	  (org-element-put-property
+	   reference :suffix
+	   (mapcar
+	    (lambda (o) (org-element-put-property o :parent reference))
+	    (org-element--parse-objects key-end (point) nil restriction))))
+	reference))))
+
+(defun org-element-citation-reference-interpreter (citation-reference _)
+  "Interpret CITATION-REFERENCE object as Org syntax.
+CONTENTS is nil."
+  (let ((key (org-element-property :key citation-reference))
+	(prefix (org-element-interpret-data
+		 (org-element-property :prefix citation-reference)))
+	(suffix (org-element-interpret-data
+		 (org-element-property :suffix citation-reference))))
+    (format "%s@%s%s;" prefix key suffix)))
+
+
 ;;;; Code
 
 (defun org-element-code-parser ()
@@ -4367,7 +4535,11 @@ Elements are accumulated into ACC."
 RESTRICTION is a list of object types, as symbols, that should be
 looked after.  This function assumes that the buffer is narrowed
 to an appropriate container (e.g., a paragraph)."
-  (if (memq 'table-cell restriction) (org-element-table-cell-parser)
+  (cond
+   ((memq 'table-cell restriction) (org-element-table-cell-parser))
+   ((memq 'citation-reference restriction)
+    (org-element-citation-reference-parser))
+   (t
     (let* ((start (point))
 	   (limit
 	    ;; Object regexp sometimes needs to have a peek at
@@ -4423,8 +4595,12 @@ to an appropriate container (e.g., a paragraph)."
 			       (org-element-verbatim-parser)))
 		      (?+ (and (memq 'strike-through restriction)
 			       (org-element-strike-through-parser)))
-		      (?@ (and (memq 'export-snippet restriction)
-			       (org-element-export-snippet-parser)))
+		      (?@
+		       (if (eq (aref result 1) ?@)
+			   (and (memq 'export-snippet restriction)
+				(org-element-export-snippet-parser))
+			 (and (memq 'citation restriction)
+			      (org-element-citation-parser))))
 		      (?{ (and (memq 'macro restriction)
 			       (org-element-macro-parser)))
 		      (?$ (and (memq 'latex-fragment restriction)
@@ -4448,23 +4624,29 @@ to an appropriate container (e.g., a paragraph)."
 			     (and (memq 'latex-fragment restriction)
 				  (org-element-latex-fragment-parser)))))
 		      (?\[
-		       (if (eq (aref result 1) ?\[)
-			   (and (memq 'link restriction)
-				(org-element-link-parser))
-			 (or (and (memq 'footnote-reference restriction)
-				  (org-element-footnote-reference-parser))
-			     (and (memq 'timestamp restriction)
-				  (org-element-timestamp-parser))
-			     (and (memq 'statistics-cookie restriction)
-				  (org-element-statistics-cookie-parser)))))
+		       (cl-case (aref result 1)
+			 (?\[ (and (memq 'link restriction)
+				   (org-element-link-parser)))
+			 ((?@ ?c ?\() (and (memq 'citation restriction)
+					   (org-element-citation-parser)))
+			 (?f (and (memq 'footnote-reference restriction)
+				  (org-element-footnote-reference-parser)))
+			 ((?% ?/) (and (memq 'statistics-cookie restriction)
+				       (org-element-statistics-cookie-parser)))
+			 (t (or (and (memq 'footnote-reference restriction)
+				     (org-element-footnote-reference-parser))
+				(and (memq 'timestamp restriction)
+				     (org-element-timestamp-parser))
+				(and (memq 'statistics-cookie restriction)
+				     (org-element-statistics-cookie-parser))))))
 		      ;; This is probably a plain link.
 		      (_ (and (memq 'link restriction)
 			      (org-element-link-parser)))))))
 	    (or (eobp) (forward-char))))
 	(cond (found)
 	      (limit (forward-char -1)
-		     (org-element-link-parser)) ;radio link
-	      (t nil))))))
+		     (org-element-link-parser))	;radio link
+	      (t nil)))))))
 
 (defun org-element--parse-objects (beg end acc restriction &optional parent)
   "Parse objects between BEG and END and return recursive structure.
