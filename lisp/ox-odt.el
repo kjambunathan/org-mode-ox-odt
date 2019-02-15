@@ -1,13 +1,13 @@
 ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2018 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2010-2019 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://github.com/kjambunathan/org-mode-ox-odt
 
-;; Package-Requires: ((org "9.1.14"))
+;; Package-Requires: ((org "9.2.1"))
 
 ;; This file is NOT part of GNU Emacs.
 
