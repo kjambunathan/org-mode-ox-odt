@@ -1,12 +1,12 @@
 ;;; ox-jabref.el --- JabRef Citation Processor for Orgmode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2018 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2015-2019 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://github.com/kjambunathan/org-mode-ox-odt
-;; Package-Requires: ((ox-odt "9.1.14") JabrefExportChicagoODF)
+;; Package-Requires: ((ox-odt "9.2.1") JabrefExportChicagoODF)
 
 ;; This file is NOT part of GNU Emacs.
 

@@ -1200,13 +1200,16 @@ Citations and Bibliography are supported using ox-jabref.el
 Here I cite a Master Thesis \cite{geer} and few books
 \cite{aristotle:anima,aristotle:physics}.  Cite a
 collection. \cite{britannica} Here I re-cite an earlier book
-\cite{aristotle:anima}.
+\cite{aristotle:anima}. Here I cite a non-existent key
+[cite:@nonexistent].
 
 *** Cite using ~citation~ object
 
 Here I cite a book [cite:@wilde] and an article [cite:@moore].  Cite
 the article once more [cite:@moore].  Here I re-cite an earlier
-article with prefix and suffix [cite:See @moore Pg. 2].
+article with prefix and suffix [cite:See @moore Pg. 2].  Here I cite
+a non-existent key [cite:@nonexistent]. Here I cite aristotle
+\cite{aristotle:anima} again.
 
 # Here I cite a book \cite{wilde} and an article \cite{moore}.  Cite
 # the article once more \cite{moore}.  
