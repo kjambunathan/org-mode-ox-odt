@@ -3915,19 +3915,16 @@ and prefix with \"OrgSrc\".  For example,
                                            (hfy-face-or-def-to-name fn) "-")
                               "")))
 	 (color-val (cdr (assoc "color" css-list)))
-	 (background-color-val (cdr (assoc "background" css-list)))
-	 (style (and org-odt-create-custom-styles-for-srcblocks
-		     (cond
-		      ((eq fn 'default)
-		       (format org-odt-src-block-paragraph-format
-			       background-color-val color-val))
-		      (t
-		       (format
-			"
+	 (background-color-val (cdr (assoc "background" css-list))))
+    (cons style-name
+	  (when org-odt-create-custom-styles-for-srcblocks
+	    (if (eq fn 'default)
+		(format org-odt-src-block-paragraph-format background-color-val color-val)
+	      (format
+	       "
 <style:style style:name=\"%s\" style:family=\"text\">
-  <style:text-properties fo:color=\"%s\"/>
- </style:style>" style-name color-val))))))
-    (cons style-name style)))
+  <style:text-properties fo:background-color=\"%s\" fo:color=\"%s\" />
+ </style:style>" style-name background-color-val color-val))))))
 
 (defun org-odt-htmlfontify-string (line)
   (let* ((hfy-html-quote-regex "\\([<\"&> 	]\\)")
