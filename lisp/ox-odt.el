@@ -2568,12 +2568,14 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 ;; handle verbatim
 ;; provide descriptions
 
-(defun org-odt-latex-fragment (latex-fragment _contents _info)
+(defun org-odt-latex-fragment (latex-fragment _contents info)
   "Transcode a LATEX-FRAGMENT object from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
-  (let* ((latex-frag (org-element-property :value latex-fragment)))
-    (format "<text:span text:style-name=\"%s\">%s</text:span>"
-	    "OrgCode" (org-odt--encode-plain-text latex-frag t))))
+  (let* ((latex-frag (org-element-property :value latex-fragment))
+	 (citation? (org-element-property :replaced-by latex-fragment)))
+    (if citation? (org-export-data citation? info)
+      (format "<text:span text:style-name=\"%s\">%s</text:span>"
+	      "OrgCode" (org-odt--encode-plain-text latex-frag t)))))
 
 
 ;;;; Line Break
@@ -4647,23 +4649,34 @@ being the first element that references CITE-KEY.  The list is
 sorted in reverse order of appearance of CITE-KEYs in the
 exported file."
   (org-element-map tree 'latex-fragment
-      (lambda (latex-*)
-	(let* ((latex-frag (org-element-property :value latex-*)))
-	  (when (string-match "\\\\cite{\\(.*?\\)}" latex-frag)
-	    ;; LaTeX fragment matches \cite{...}
-	    (let* ((value (match-string 1 latex-frag))
-		   (cite-keys (split-string value ",")))
-	      ;; Replace LaTeX fragment with it's equivalent `citation' object.
-	      (let* ((citation (apply 'org-element-adopt-elements
-				      (list 'citation (list :parenthetical nil))
-				      (mapcar (lambda (cite-key)
-						(list 'citation-reference
-						      (list :key cite-key)))
-					      cite-keys))))
-		;; Note down the original cite fragment.
-		(org-element-put-property citation :replaces latex-*)
-		(org-element-set-element latex-* citation))))))
-      info nil nil '--with-affiliated)
+    (lambda (latex-*)
+      (let* ((latex-frag (org-element-property :value latex-*)))
+	(when (string-match "\\\\cite{\\(.*?\\)}" latex-frag)
+	  ;; LaTeX fragment matches \cite{...}
+	  (let* ((value (match-string 1 latex-frag))
+		 (cite-keys (split-string value ",")))
+	    (let* (;; Translate the LaTeX fragment to a new `citation'
+		   ;; object.
+		   (citation (apply 'org-element-adopt-elements
+				    (list 'citation (list :parenthetical nil))
+				    (mapcar (lambda (cite-key)
+					      (list 'citation-reference
+						    (list :key
+					    cite-key)))
+					    cite-keys))))
+	      ;; Yes. Stash a copy of the original LaTeX fragment in
+	      ;; to the new `citation' object.
+	      (org-element-put-property citation :replaces (copy-sequence latex-*))	      
+	      ;; Does the Org parser support native `citation' and
+	      ;; `citation-reference'objects?
+	      (if (not (memq 'citation org-element-all-objects))
+		  ;; No. Stash the new `citation' object in to the
+		  ;; LaTeX fragment.
+		  (org-element-put-property latex-* :replaced-by citation)
+		;; Replace the original LaTeX fragment with the
+		;; `citation' object.
+		(org-element-set-element latex-* citation)))))))
+    info nil nil '--with-affiliated)
   tree)
 
 (defun org-odt--collect-cite-keys (tree _backend info)
@@ -4675,17 +4688,20 @@ form (CITE-KEY . CITATION), with CITATION
 being the first element that references CITE-KEY.  The list is
 sorted in reverse order of appearance of CITE-KEYs in the
 exported file."
-  (let ((citations-alist nil))
-    (org-element-map tree 'citation
-      (lambda (citation)
-	(let ((cite-keys (org-element-map citation 'citation-reference
-			   (lambda (citation-reference)
-			     (org-element-property :key citation-reference)))))
-	  (mapc (lambda (cite-key)
-		  (setq cite-key (org-trim cite-key))
-		  (unless (assoc cite-key citations-alist)
-		    (push (cons cite-key citation) citations-alist)))
-		cite-keys)))
+  (let (citations-alist)
+    (org-element-map tree '(citation 'latex-fragment)
+      (lambda (el)
+	(let* ((citation (cl-case (org-element-type el)
+			   (citation el)
+			   (latex-fragment (org-element-property :replaced-by el))
+			   (t nil)))  
+	       (cite-keys (org-element-map citation 'citation-reference
+			    (lambda (citation-reference)
+			      (org-element-property :key citation-reference)))))
+	  (dolist (cite-key cite-keys)
+	    (setq cite-key (org-trim cite-key))
+	    (unless (assoc cite-key citations-alist)
+	      (push (cons cite-key citation) citations-alist)))))
       info nil nil '--with-affiliated)
     ;; Modify INFO by side-effects.
     (nconc info (list :citations-alist citations-alist)))
