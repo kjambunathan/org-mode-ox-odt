@@ -7,11 +7,11 @@ endif
 
 all:		$(ORG_MAKE_DOC)
 
-info:		org
+info:		org org-odt-old
 
-html:		org.html
+html:		org.html org-odt-old.html
 
-pdf:		org.pdf orgguide.pdf
+pdf:		org.pdf orgguide.pdf org-odt-old.pdf
 
 card:		orgcard.pdf orgcard_letter.pdf orgguide.pdf
 
