@@ -108,10 +108,14 @@
 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
   :options-alist
   '((:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
-    (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
-    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
+    ;; Keywords that affect styles.xml
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
+    (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil nil newline)
+    (:odt-master-styles "ODT_MASTER_STYLES" nil nil newline)
+    ;; Keywords that affect content.xml
+    (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
+    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)    
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
@@ -1752,10 +1756,26 @@ original parsed data.  INFO is a plist holding export options."
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
 
-    ;; FIXME: Who is opening an empty styles.xml before this point?
+    ;; Update styles.xml
     (with-current-buffer
 	(find-file-noselect (concat org-odt-zip-dir "styles.xml") t)
       (revert-buffer t t)
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:master-styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write master styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:automatic-styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write automatic styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))      
 
       ;; Position the cursor.
       (goto-char (point-min))

@@ -7,11 +7,11 @@ endif
 
 all:		$(ORG_MAKE_DOC)
 
-info:		org
+info:		org org-odt-old org-odt
 
-html:		org.html
+html:		org.html org-odt-old.html org-odt.html
 
-pdf:		org.pdf orgguide.pdf
+pdf:		org.pdf orgguide.pdf org-odt-old.pdf org-odt.pdf
 
 card:		orgcard.pdf orgcard_letter.pdf orgguide.pdf
 
@@ -27,11 +27,11 @@ guide::		orgguide.texi org-version.inc
 	../mk/guidesplit.pl $@/*
 endif
 
-org.texi:	org-manual.org
+%.texi:	%-manual.org
 	$(BATCH) \
 	  --eval '(add-to-list '"'"'load-path "../lisp")' \
 	  --eval '(load "../mk/org-fixup.el")' \
-	  --eval '(org-make-manuals)'
+	  --eval '(org-make-manuals (list "$<"))'
 
 org-version.inc:	org.texi
 	@echo "org-version: $(ORGVERSION) ($(GITVERSION))"

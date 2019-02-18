@@ -1201,7 +1201,7 @@ Here I cite a Master Thesis \cite{geer} and few books
 \cite{aristotle:anima,aristotle:physics}.  Cite a
 collection. \cite{britannica} Here I re-cite an earlier book
 \cite{aristotle:anima}. Here I cite a non-existent key
-[cite:@nonexistent].
+\cite{nonexistent}.
 
 *** Cite using ~citation~ object
 
