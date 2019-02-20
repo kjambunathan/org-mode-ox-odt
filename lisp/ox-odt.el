@@ -110,12 +110,13 @@
   '((:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Keywords that affect styles.xml
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+    (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
     (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil nil newline)
     (:odt-master-styles "ODT_MASTER_STYLES" nil nil newline)
     ;; Keywords that affect content.xml
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
-    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)    
+    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
@@ -1718,6 +1719,17 @@ original parsed data.  INFO is a plist holding export options."
     ;; Add meta.xml in to manifest.
     (org-odt-create-manifest-file-entry "text/xml" "meta.xml"))
 
+  ;; Some styles.xml elements (like
+  ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
+  ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
+  ;; Copy over these image files to the exported file.
+  (dolist (path (plist-get info :odt-extra-images))
+    (let* ((input-dir (file-name-directory (plist-get info :input-file)))
+	   (full-path (if (file-name-absolute-p path) path
+			(expand-file-name path input-dir)))
+	   (target-path (file-relative-name path input-dir)))
+      (org-odt--copy-image-file full-path target-path)))
+
   ;; Update styles file.
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
   ;; Write styles file.
@@ -1775,7 +1787,7 @@ original parsed data.  INFO is a plist holding export options."
 	(goto-char (match-beginning 0)))
 
       ;; Write automatic styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))      
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
 
       ;; Position the cursor.
       (goto-char (point-min))
@@ -2797,22 +2809,23 @@ SHORT-CAPTION are strings."
 
 ;;;; Links :: Inline Images
 
-(defun org-odt--copy-image-file (path)
+(defun org-odt--copy-image-file (full-path &optional target-file)
   "Returns the internal name of the file"
-  (let* ((image-type (file-name-extension path))
+  (let* ((image-type (file-name-extension full-path))
 	 (media-type (format "image/%s" image-type))
-	 (target-dir "Images/")
 	 (target-file
-	  (format "%s%04d.%s" target-dir
-		  (cl-incf org-odt-embedded-images-count) image-type)))
+	  (or target-file
+	      (concat "Images/"
+		      (format "%04d.%s" (cl-incf org-odt-embedded-images-count) image-type)))))
     (message "Embedding %s as %s..."
-	     (substring-no-properties path) target-file)
+	     (substring-no-properties full-path) target-file)
 
-    (when (= 1 org-odt-embedded-images-count)
-      (make-directory (concat org-odt-zip-dir target-dir))
-      (org-odt-create-manifest-file-entry "" target-dir))
+    (let* ((target-dir (file-name-directory target-file)))
+      (unless (file-exists-p (concat org-odt-zip-dir target-dir))
+	(make-directory (concat org-odt-zip-dir target-dir))
+	(org-odt-create-manifest-file-entry "" target-dir)))
 
-    (copy-file path (concat org-odt-zip-dir target-file) 'overwrite)
+    (copy-file full-path (concat org-odt-zip-dir target-file) 'overwrite)
     (org-odt-create-manifest-file-entry media-type target-file)
     target-file))
 
@@ -4686,7 +4699,7 @@ exported file."
 					    cite-keys))))
 	      ;; Yes. Stash a copy of the original LaTeX fragment in
 	      ;; to the new `citation' object.
-	      (org-element-put-property citation :replaces (copy-sequence latex-*))	      
+	      (org-element-put-property citation :replaces (copy-sequence latex-*))
 	      ;; Does the Org parser support native `citation' and
 	      ;; `citation-reference'objects?
 	      (if (not (memq 'citation org-element-all-objects))
@@ -4714,7 +4727,7 @@ exported file."
 	(let* ((citation (cl-case (org-element-type el)
 			   (citation el)
 			   (latex-fragment (org-element-property :replaced-by el))
-			   (t nil)))  
+			   (t nil)))
 	       (cite-keys (org-element-map citation 'citation-reference
 			    (lambda (citation-reference)
 			      (org-element-property :key citation-reference)))))
