@@ -169,11 +169,6 @@
 Use this to infer values of `org-odt-styles-dir' and
 `org-odt-schema-dir'.")
 
-(defvar org-odt-data-dir nil
-  "Data directory for ODT exporter.
-Use this to infer values of `org-odt-styles-dir' and
-`org-odt-schema-dir'.")
-
 (defconst org-odt-special-string-regexps
   '(("\\\\-" . "&#x00ad;\\1")		; shy
     ("---\\([^-]\\)" . "&#x2014;\\1")	; mdash
@@ -182,57 +177,30 @@ Use this to infer values of `org-odt-styles-dir' and
   "Regular expressions for special string conversion.")
 
 (defconst org-odt-schema-dir-list
-  (list
-   (and org-odt-data-dir
-	(expand-file-name "./schema/" org-odt-data-dir)) ; bail out
-   (eval-when-compile
-     (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
-	  (expand-file-name "./schema/" org-odt-data-dir)))
-   (expand-file-name "../etc/schema/" org-odt-lib-dir) ; git
-   (expand-file-name "./etc/schema/" org-odt-lib-dir)  ; elpa
-   )
+  (list (expand-file-name "../etc/schema/" org-odt-lib-dir) ; git
+	(expand-file-name "./etc/schema/" org-odt-lib-dir)  ; elpa
+	)
   "List of directories to search for OpenDocument schema files.
-Use this list to set the default value of
-`org-odt-schema-dir'.  The entries in this list are
-populated heuristically based on the values of `org-odt-lib-dir'
-and `org-odt-data-dir'.")
+Use this list to set the default value of `org-odt-schema-dir'.
+Directories in this list are determined based on the value of
+`org-odt-lib-dir'.")
 
 (defconst org-odt-styles-dir-list
   (list
-   (and org-odt-data-dir
-	(expand-file-name "./styles/" org-odt-data-dir)) ; bail out
-   (eval-when-compile
-     (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
-	  (expand-file-name "./styles/" org-odt-data-dir)))
    (expand-file-name "../etc/styles/" org-odt-lib-dir) ; git
    (expand-file-name "./etc/styles/" org-odt-lib-dir)  ; elpa
    (expand-file-name "./org/" data-directory)	       ; system
    )
   "List of directories to search for OpenDocument styles files.
-See `org-odt-styles-dir'.  The entries in this list are populated
-heuristically based on the values of `org-odt-lib-dir' and
-`org-odt-data-dir'.")
+See `org-odt-styles-dir'.  Directories in this list are
+determined based on the value of `org-odt-lib-dir'.")
 
 (defconst org-odt-styles-dir
-  (let* ((styles-dir
-	  (catch 'styles-dir
-	    (message "Debug (ox-odt): Searching for OpenDocument styles files...")
-	    (dolist (styles-dir org-odt-styles-dir-list)
-	      (when styles-dir
-		(message "Debug (ox-odt): Trying %s..." styles-dir)
-		(when (and (file-readable-p
-			    (expand-file-name
-			     "OrgOdtContentTemplate.xml" styles-dir))
-			   (file-readable-p
-			    (expand-file-name
-			     "OrgOdtStyles.xml" styles-dir)))
-		  (message "Debug (ox-odt): Using styles under %s"
-			   styles-dir)
-		  (throw 'styles-dir styles-dir))))
-	    nil)))
-    (unless styles-dir
-      (error "Error (ox-odt): Cannot find factory styles files, aborting"))
-    styles-dir)
+  (cl-loop for styles-dir in org-odt-styles-dir-list
+	   when (cl-every (lambda (file-name)
+			    (file-readable-p (expand-file-name file-name styles-dir)))
+			  '("OrgOdtContentTemplate.xml" "OrgOdtStyles.xml"))
+	   return styles-dir)
   "Directory that holds auxiliary XML files used by the ODT exporter.
 
 This directory contains the following XML files -
@@ -421,26 +389,12 @@ visually."
 
 (require 'rng-loc)
 (defcustom org-odt-schema-dir
-  (let* ((schema-dir
-	  (catch 'schema-dir
-	    (message "Debug (ox-odt): Searching for OpenDocument schema files...")
-	    (dolist (schema-dir org-odt-schema-dir-list)
-	      (when schema-dir
-		(message "Debug (ox-odt): Trying %s..." schema-dir)
-		(when (and (file-expand-wildcards
-			    (expand-file-name "od-manifest-schema*.rnc"
-					      schema-dir))
-			   (file-expand-wildcards
-			    (expand-file-name "od-schema*.rnc"
-					      schema-dir))
-			   (file-readable-p
-			    (expand-file-name "schemas.xml" schema-dir)))
-		  (message "Debug (ox-odt): Using schema files under %s"
-			   schema-dir)
-		  (throw 'schema-dir schema-dir))))
-	    (message "Debug (ox-odt): No OpenDocument schema files installed")
-	    nil)))
-    schema-dir)
+  (cl-loop for schema-dir in org-odt-schema-dir-list
+	   when (cl-every
+		 (lambda (file-name-*)
+		   (file-expand-wildcards (expand-file-name file-name-* schema-dir)))
+		 '("od-manifest-schema*.rnc" "od-schema*.rnc" "schemas.xml"))
+	   return schema-dir)
   "Directory that contains OpenDocument schema files.
 
 This directory contains:
@@ -464,23 +418,18 @@ with GNU ELPA tar or standard Emacs distribution."
   :group 'org-export-odt
   :version "24.1"
   :set
-  (lambda (var value)
+  (lambda (var schema-dir)
     "Set `org-odt-schema-dir'.
 Also add it to `rng-schema-locating-files'."
-    (let ((schema-dir value))
-      (set var
-	   (if (and
-		(file-expand-wildcards
-		 (expand-file-name "od-manifest-schema*.rnc" schema-dir))
-		(file-expand-wildcards
-		 (expand-file-name "od-schema*.rnc" schema-dir))
-		(file-readable-p
-		 (expand-file-name "schemas.xml" schema-dir)))
-	       schema-dir
-	     (when value
-	       (message "Error (ox-odt): %s has no OpenDocument schema files"
-			value))
-	     nil)))
+    (if (not schema-dir)
+	(set var schema-dir)
+      (if (cl-every
+	   (lambda (file-name-*)
+	     (file-expand-wildcards (expand-file-name file-name-* schema-dir)))
+	   '("od-manifest-schema*.rnc" "od-schema*.rnc" "schemas.xml"))
+	  (set var schema-dir)
+	(message "ox-odt: %s has no OpenDocument schema files, value ignored" schema-dir)))
+
     (when org-odt-schema-dir
       (eval-after-load 'rng-loc
 	'(add-to-list 'rng-schema-locating-files
@@ -1726,7 +1675,7 @@ original parsed data.  INFO is a plist holding export options."
 					    org-odt-styles-dir)))
 	 (styles-file-type (file-name-extension styles-file))
 	 (extra-images (plist-get info :odt-extra-images)))
-    (message "Debug (ox-odt): Styles file is %s" styles-file)
+    (message "ox-odt: Styles file is %s" styles-file)
     ;; Check the type of styles file.
     (pcase styles-file-type
       ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
@@ -1845,7 +1794,7 @@ original parsed data.  INFO is a plist holding export options."
        (let* ((content-template-file (or (plist-get info :odt-content-template-file)
 					 (expand-file-name "OrgOdtContentTemplate.xml"
 							   org-odt-styles-dir))))
-	 (message "Debug (ox-odt): Content template file is %s" content-template-file)
+	 (message "ox-odt: Content template file is %s" content-template-file)
 	 content-template-file))
       ;; Write automatic styles.
       ;; - Position the cursor.
