@@ -1715,49 +1715,49 @@ original parsed data.  INFO is a plist holding export options."
     ;; Add meta.xml in to manifest.
     (org-odt-create-manifest-file-entry "text/xml" "meta.xml"))
 
-  ;; Some styles.xml elements (like
-  ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
-  ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
-  ;; Copy over these image files to the exported file.
-  (dolist (path (plist-get info :odt-extra-images))
-    (let* ((input-dir (file-name-directory (plist-get info :input-file)))
-	   (full-path (if (file-name-absolute-p path) path
-			(expand-file-name path input-dir)))
-	   (target-path (file-relative-name path input-dir)))
-      (org-odt--copy-image-file full-path target-path)))
-
   ;; Update styles file.
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
   ;; Write styles file.
   (let* ((styles-file (plist-get info :odt-styles-file))
-	 (styles-file (and (org-string-nw-p styles-file)
-			   (read (org-trim styles-file))))
 	 ;; Non-availability of styles.xml is not a critical
 	 ;; error. For now, throw an error.
 	 (styles-file (or styles-file
 			  (expand-file-name "OrgOdtStyles.xml"
-					    org-odt-styles-dir)
-			  (error "org-odt: Missing styles file?"))))
-    (cond
-     ((listp styles-file)
-      (let ((archive (nth 0 styles-file))
-	    (members (nth 1 styles-file)))
-	(org-odt--zip-extract archive members org-odt-zip-dir)
-	(dolist (member members)
-	  (when (org-file-image-p member)
-	    (let* ((image-type (file-name-extension member))
-		   (media-type (format "image/%s" image-type)))
-	      (org-odt-create-manifest-file-entry media-type member))))))
-     ((and (stringp styles-file) (file-exists-p styles-file))
-      (let ((styles-file-type (file-name-extension styles-file)))
-	(cond
-	 ((string= styles-file-type "xml")
-	  (copy-file styles-file (concat org-odt-zip-dir "styles.xml") t))
-	 ((member styles-file-type '("odt" "ott"))
-	  (org-odt--zip-extract styles-file "styles.xml" org-odt-zip-dir)))))
-     (t
-      (error "Invalid specification of styles.xml file: %S"
-	     (plist-get info :odt-styles-file))))
+					    org-odt-styles-dir)))
+	 (styles-file-type (file-name-extension styles-file))
+	 (extra-images (plist-get info :odt-extra-images)))
+    (message "Debug (ox-odt): Styles file is %s" styles-file)
+    ;; Check the type of styles file.
+    (pcase styles-file-type
+      ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
+      ;; styles.xml within the zip file becomes the styles.xml of the
+      ;; target file.  Extra images, if any, also comes from within
+      ;; this zip file.
+      ((or "odt" "ott")
+       (let ((archive styles-file)
+	     (members (cons "styles.xml" extra-images)))
+	 (org-odt--zip-extract archive members org-odt-zip-dir)
+	 (dolist (member members)
+	   (when (org-file-image-p member)
+	     (let* ((image-type (file-name-extension member))
+		    (media-type (format "image/%s" image-type)))
+	       (org-odt-create-manifest-file-entry media-type member))))))
+      ;; If it is of type `xml', then it becomes the styles.xml of the
+      ;; target file.  Extra images, if any, comes from the user's
+      ;; file system.
+      ("xml"
+       (copy-file styles-file (concat org-odt-zip-dir "styles.xml") t)
+       ;; Some styles.xml elements (like
+       ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
+       ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
+       ;; Copy over these image files to the exported file.
+       (dolist (path extra-images)
+	 (let* ((input-dir (file-name-directory (plist-get info :input-file)))
+		(full-path (if (file-name-absolute-p path) path
+			     (expand-file-name path input-dir)))
+		(target-path (file-relative-name path input-dir)))
+	   (org-odt--copy-image-file full-path target-path))))
+      (_ (error "Styles file is invalid: %s" styles-file)))
 
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
@@ -1842,12 +1842,11 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (or (let* ((content-template-file (plist-get info :odt-content-template-file))
-		  (content-template-file (when (org-string-nw-p content-template-file)
-					   (ignore-errors (read content-template-file)))))
-	     (when (stringp content-template-file) content-template-file))
-	   (expand-file-name "OrgOdtContentTemplate.xml"
-			     org-odt-styles-dir)))
+       (let* ((content-template-file (or (plist-get info :odt-content-template-file)
+					 (expand-file-name "OrgOdtContentTemplate.xml"
+							   org-odt-styles-dir))))
+	 (message "Debug (ox-odt): Content template file is %s" content-template-file)
+	 content-template-file))
       ;; Write automatic styles.
       ;; - Position the cursor.
       (goto-char (point-min))
