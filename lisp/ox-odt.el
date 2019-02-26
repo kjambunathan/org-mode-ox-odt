@@ -3643,9 +3643,19 @@ the plist used as a communication channel."
       (when (and (eq (org-element-type parent) 'item)
 		 (eq paragraph (car (org-element-contents parent))))
 	(setq contents (concat (org-odt--checkbox parent) contents)))
-      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	      (org-odt--get-derived-paragraph-style paragraph style)
-	      contents))))
+
+      (cond
+       ;; Is this paragraph part of a paragraph block?
+       ((and (eq (org-element-type parent) 'special-block)
+	     (string= "paragraph" (downcase (org-element-property :type parent))))
+	;; Yes.  If the paragraph is the last paragraph in the block,
+	;; return it's contents, otherwise append a space to it.
+	(if (eq paragraph (car (last (org-element-contents parent)))) contents
+	  (concat contents " ")))
+       (t
+	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		(org-odt--get-derived-paragraph-style paragraph style)
+		contents))))))
 
 
 ;;;; Plain List
@@ -3802,6 +3812,43 @@ holding contextual information."
   (let ((type (org-element-property :type special-block))
 	(attributes (org-export-read-attribute :attr_odt special-block)))
     (cond
+     ;; Paragraph.
+
+     ;; A paragraph block is a special block, where the enclosed
+     ;; paragraphs gets collapsed in to a single paragraph.
+     ;;
+     ;; For example, a block like this
+     ;;
+     ;; #+begin_paragraph 
+     ;;     I have apples, oranges and 
+     ;;
+     ;;     bananas.
+     ;; #+end_paragraph
+     ;;
+     ;; is typeset as if it were just a single paragraph like this.
+     ;;
+     ;;    I have apples, oranges and bananas.
+     ;;
+     ;; Paragraph blocks are most useful for creating multiple
+     ;; *captioned* images in a single paragraph.
+     ;;
+     ;; For example, to construct two side-by-side images (that are
+     ;; also captioned), do
+     ;;
+     ;; #+ATTR_ODT: :style "OrgCenter"
+     ;; #+begin_paragraph
+     ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
+     ;;     #+CAPTION: First Figure
+     ;;     [[./org-mode-unicorn.png]]
+     ;; 
+     ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
+     ;;     #+CAPTION: Second Figure
+     ;;     [[./org-mode-unicorn.png]]
+     ;; #+end_paragraph
+     ;;
+     ((string= type "paragraph")
+      ;; Enclose the contens in a paragraph and return it.
+      (org-odt-paragraph special-block contents info))
      ;; Annotation.
      ((string= type "annotation")
       (let* ((author (or (plist-get attributes :author)
