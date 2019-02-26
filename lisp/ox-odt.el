@@ -169,11 +169,6 @@
 Use this to infer values of `org-odt-styles-dir' and
 `org-odt-schema-dir'.")
 
-(defvar org-odt-data-dir nil
-  "Data directory for ODT exporter.
-Use this to infer values of `org-odt-styles-dir' and
-`org-odt-schema-dir'.")
-
 (defconst org-odt-special-string-regexps
   '(("\\\\-" . "&#x00ad;\\1")		; shy
     ("---\\([^-]\\)" . "&#x2014;\\1")	; mdash
@@ -182,58 +177,30 @@ Use this to infer values of `org-odt-styles-dir' and
   "Regular expressions for special string conversion.")
 
 (defconst org-odt-schema-dir-list
-  (list
-   (and org-odt-data-dir
-	(expand-file-name "./schema/" org-odt-data-dir)) ; bail out
-   (eval-when-compile
-     (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
-	  (expand-file-name "./schema/" org-odt-data-dir)))
-   (expand-file-name "../etc/schema/" org-odt-lib-dir) ; git
-   (expand-file-name "./etc/schema/" org-odt-lib-dir)  ; elpa
-   )
+  (list (expand-file-name "../etc/schema/" org-odt-lib-dir) ; git
+	(expand-file-name "./etc/schema/" org-odt-lib-dir)  ; elpa
+	)
   "List of directories to search for OpenDocument schema files.
-Use this list to set the default value of
-`org-odt-schema-dir'.  The entries in this list are
-populated heuristically based on the values of `org-odt-lib-dir'
-and `org-odt-data-dir'.")
+Use this list to set the default value of `org-odt-schema-dir'.
+Directories in this list are determined based on the value of
+`org-odt-lib-dir'.")
 
 (defconst org-odt-styles-dir-list
   (list
-   (and org-odt-data-dir
-	(expand-file-name "./styles/" org-odt-data-dir)) ; bail out
-   (eval-when-compile
-     (and (boundp 'org-odt-data-dir) org-odt-data-dir ; see make install
-	  (expand-file-name "./styles/" org-odt-data-dir)))
    (expand-file-name "../etc/styles/" org-odt-lib-dir) ; git
    (expand-file-name "./etc/styles/" org-odt-lib-dir)  ; elpa
    (expand-file-name "./org/" data-directory)	       ; system
    )
   "List of directories to search for OpenDocument styles files.
-See `org-odt-styles-dir'.  The entries in this list are populated
-heuristically based on the values of `org-odt-lib-dir' and
-`org-odt-data-dir'.")
+See `org-odt-styles-dir'.  Directories in this list are
+determined based on the value of `org-odt-lib-dir'.")
 
 (defconst org-odt-styles-dir
-  (let* ((styles-dir
-	  (catch 'styles-dir
-	    (message "Debug (ox-odt): Searching for OpenDocument styles files...")
-	    (mapc (lambda (styles-dir)
-		    (when styles-dir
-		      (message "Debug (ox-odt): Trying %s..." styles-dir)
-		      (when (and (file-readable-p
-				  (expand-file-name
-				   "OrgOdtContentTemplate.xml" styles-dir))
-				 (file-readable-p
-				  (expand-file-name
-				   "OrgOdtStyles.xml" styles-dir)))
-			(message "Debug (ox-odt): Using styles under %s"
-				 styles-dir)
-			(throw 'styles-dir styles-dir))))
-		  org-odt-styles-dir-list)
-	    nil)))
-    (unless styles-dir
-      (error "Error (ox-odt): Cannot find factory styles files, aborting"))
-    styles-dir)
+  (cl-loop for styles-dir in org-odt-styles-dir-list
+	   when (cl-every (lambda (file-name)
+			    (file-readable-p (expand-file-name file-name styles-dir)))
+			  '("OrgOdtContentTemplate.xml" "OrgOdtStyles.xml"))
+	   return styles-dir)
   "Directory that holds auxiliary XML files used by the ODT exporter.
 
 This directory contains the following XML files -
@@ -422,28 +389,12 @@ visually."
 
 (require 'rng-loc)
 (defcustom org-odt-schema-dir
-  (let* ((schema-dir
-	  (catch 'schema-dir
-	    (message "Debug (ox-odt): Searching for OpenDocument schema files...")
-	    (mapc
-	     (lambda (schema-dir)
-	       (when schema-dir
-		 (message "Debug (ox-odt): Trying %s..." schema-dir)
-		 (when (and (file-expand-wildcards
-			     (expand-file-name "od-manifest-schema*.rnc"
-					       schema-dir))
-			    (file-expand-wildcards
-			     (expand-file-name "od-schema*.rnc"
-					       schema-dir))
-			    (file-readable-p
-			     (expand-file-name "schemas.xml" schema-dir)))
-		   (message "Debug (ox-odt): Using schema files under %s"
-			    schema-dir)
-		   (throw 'schema-dir schema-dir))))
-	     org-odt-schema-dir-list)
-	    (message "Debug (ox-odt): No OpenDocument schema files installed")
-	    nil)))
-    schema-dir)
+  (cl-loop for schema-dir in org-odt-schema-dir-list
+	   when (cl-every
+		 (lambda (file-name-*)
+		   (file-expand-wildcards (expand-file-name file-name-* schema-dir)))
+		 '("od-manifest-schema*.rnc" "od-schema*.rnc" "schemas.xml"))
+	   return schema-dir)
   "Directory that contains OpenDocument schema files.
 
 This directory contains:
@@ -467,23 +418,18 @@ with GNU ELPA tar or standard Emacs distribution."
   :group 'org-export-odt
   :version "24.1"
   :set
-  (lambda (var value)
+  (lambda (var schema-dir)
     "Set `org-odt-schema-dir'.
 Also add it to `rng-schema-locating-files'."
-    (let ((schema-dir value))
-      (set var
-	   (if (and
-		(file-expand-wildcards
-		 (expand-file-name "od-manifest-schema*.rnc" schema-dir))
-		(file-expand-wildcards
-		 (expand-file-name "od-schema*.rnc" schema-dir))
-		(file-readable-p
-		 (expand-file-name "schemas.xml" schema-dir)))
-	       schema-dir
-	     (when value
-	       (message "Error (ox-odt): %s has no OpenDocument schema files"
-			value))
-	     nil)))
+    (if (not schema-dir)
+	(set var schema-dir)
+      (if (cl-every
+	   (lambda (file-name-*)
+	     (file-expand-wildcards (expand-file-name file-name-* schema-dir)))
+	   '("od-manifest-schema*.rnc" "od-schema*.rnc" "schemas.xml"))
+	  (set var schema-dir)
+	(message "ox-odt: %s has no OpenDocument schema files, value ignored" schema-dir)))
+
     (when org-odt-schema-dir
       (eval-after-load 'rng-loc
 	'(add-to-list 'rng-schema-locating-files
@@ -1336,29 +1282,28 @@ See `org-odt--build-date-styles' for implementation details."
 
 (defun org-odt--zip-extract (archive members target)
   (when (atom members) (setq members (list members)))
-  (mapc (lambda (member)
-	  (require 'arc-mode)
-	  (let* ((--quote-file-name
-		  ;; This is shamelessly stolen from `archive-zip-extract'.
-		  (lambda (name)
-		    (if (or (not (memq system-type '(windows-nt ms-dos)))
-			    (and (boundp 'w32-quote-process-args)
-				 (null w32-quote-process-args)))
-			(shell-quote-argument name)
-		      name)))
-		 (target (funcall --quote-file-name target))
-		 (archive (expand-file-name archive))
-		 (archive-zip-extract
-		  (list "unzip" "-qq" "-o" "-d" target))
-		 exit-code command-output)
-	    (setq command-output
-		  (with-temp-buffer
-		    (setq exit-code (archive-zip-extract archive member))
-		    (buffer-string)))
-	    (unless (zerop exit-code)
-	      (message command-output)
-	      (error "Extraction failed"))))
-	members))
+  (dolist (member members)
+    (require 'arc-mode)
+    (let* ((--quote-file-name
+	    ;; This is shamelessly stolen from `archive-zip-extract'.
+	    (lambda (name)
+	      (if (or (not (memq system-type '(windows-nt ms-dos)))
+		      (and (boundp 'w32-quote-process-args)
+			   (null w32-quote-process-args)))
+		  (shell-quote-argument name)
+		name)))
+	   (target (funcall --quote-file-name target))
+	   (archive (expand-file-name archive))
+	   (archive-zip-extract
+	    (list "unzip" "-qq" "-o" "-d" target))
+	   exit-code command-output)
+      (setq command-output
+	    (with-temp-buffer
+	      (setq exit-code (archive-zip-extract archive member))
+	      (buffer-string)))
+      (unless (zerop exit-code)
+	(message command-output)
+	(error "Extraction failed")))))
 
 
 ;;;; Library wrappers :: Ox
@@ -1408,7 +1353,7 @@ See `org-odt--build-date-styles' for implementation details."
 ;;;; Textbox
 
 (defun org-odt--textbox (text width height style &optional
-				extra anchor-type)
+			      extra anchor-type)
   (org-odt--frame
    (format "\n<draw:text-box %s>%s\n</draw:text-box>"
 	   (concat (format " fo:min-height=\"%0.2fcm\"" (or height .2))
@@ -1537,8 +1482,8 @@ See `org-odt--build-date-styles' for implementation details."
 				   style entry)))
 		       headlines "\n")))
 	(if (> parent-level 1) toc-text
-	    (concat (org-odt-begin-toc title depth parent-level) toc-text
-		    (org-odt-end-toc)))))))
+	  (concat (org-odt-begin-toc title depth parent-level) toc-text
+		  (org-odt-end-toc)))))))
 
 
 ;;;; Document styles
@@ -1719,51 +1664,49 @@ original parsed data.  INFO is a plist holding export options."
     ;; Add meta.xml in to manifest.
     (org-odt-create-manifest-file-entry "text/xml" "meta.xml"))
 
-  ;; Some styles.xml elements (like
-  ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
-  ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
-  ;; Copy over these image files to the exported file.
-  (dolist (path (plist-get info :odt-extra-images))
-    (let* ((input-dir (file-name-directory (plist-get info :input-file)))
-	   (full-path (if (file-name-absolute-p path) path
-			(expand-file-name path input-dir)))
-	   (target-path (file-relative-name path input-dir)))
-      (org-odt--copy-image-file full-path target-path)))
-
   ;; Update styles file.
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
   ;; Write styles file.
   (let* ((styles-file (plist-get info :odt-styles-file))
-	 (styles-file (and (org-string-nw-p styles-file)
-			   (read (org-trim styles-file))))
 	 ;; Non-availability of styles.xml is not a critical
 	 ;; error. For now, throw an error.
 	 (styles-file (or styles-file
 			  (expand-file-name "OrgOdtStyles.xml"
-					    org-odt-styles-dir)
-			  (error "org-odt: Missing styles file?"))))
-    (cond
-     ((listp styles-file)
-      (let ((archive (nth 0 styles-file))
-	    (members (nth 1 styles-file)))
-	(org-odt--zip-extract archive members org-odt-zip-dir)
-	(mapc
-	 (lambda (member)
+					    org-odt-styles-dir)))
+	 (styles-file-type (file-name-extension styles-file))
+	 (extra-images (plist-get info :odt-extra-images)))
+    (message "ox-odt: Styles file is %s" styles-file)
+    ;; Check the type of styles file.
+    (pcase styles-file-type
+      ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
+      ;; styles.xml within the zip file becomes the styles.xml of the
+      ;; target file.  Extra images, if any, also comes from within
+      ;; this zip file.
+      ((or "odt" "ott")
+       (let ((archive styles-file)
+	     (members (cons "styles.xml" extra-images)))
+	 (org-odt--zip-extract archive members org-odt-zip-dir)
+	 (dolist (member members)
 	   (when (org-file-image-p member)
 	     (let* ((image-type (file-name-extension member))
 		    (media-type (format "image/%s" image-type)))
-	       (org-odt-create-manifest-file-entry media-type member))))
-	 members)))
-     ((and (stringp styles-file) (file-exists-p styles-file))
-      (let ((styles-file-type (file-name-extension styles-file)))
-	(cond
-	 ((string= styles-file-type "xml")
-	  (copy-file styles-file (concat org-odt-zip-dir "styles.xml") t))
-	 ((member styles-file-type '("odt" "ott"))
-	  (org-odt--zip-extract styles-file "styles.xml" org-odt-zip-dir)))))
-     (t
-      (error "Invalid specification of styles.xml file: %S"
-	     (plist-get info :odt-styles-file))))
+	       (org-odt-create-manifest-file-entry media-type member))))))
+      ;; If it is of type `xml', then it becomes the styles.xml of the
+      ;; target file.  Extra images, if any, comes from the user's
+      ;; file system.
+      ("xml"
+       (copy-file styles-file (concat org-odt-zip-dir "styles.xml") t)
+       ;; Some styles.xml elements (like
+       ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
+       ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
+       ;; Copy over these image files to the exported file.
+       (dolist (path extra-images)
+	 (let* ((input-dir (file-name-directory (plist-get info :input-file)))
+		(full-path (if (file-name-absolute-p path) path
+			     (expand-file-name path input-dir)))
+		(target-path (file-relative-name path input-dir)))
+	   (org-odt--copy-image-file full-path target-path))))
+      (_ (error "Styles file is invalid: %s" styles-file)))
 
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
@@ -1848,12 +1791,11 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (or (let* ((content-template-file (plist-get info :odt-content-template-file))
-		  (content-template-file (when (org-string-nw-p content-template-file)
-					   (ignore-errors (read content-template-file)))))
-	     (when (stringp content-template-file) content-template-file))
-	   (expand-file-name "OrgOdtContentTemplate.xml"
-			     org-odt-styles-dir)))
+       (let* ((content-template-file (or (plist-get info :odt-content-template-file)
+					 (expand-file-name "OrgOdtContentTemplate.xml"
+							   org-odt-styles-dir))))
+	 (message "ox-odt: Content template file is %s" content-template-file)
+	 content-template-file))
       ;; Write automatic styles.
       ;; - Position the cursor.
       (goto-char (point-min))
@@ -2409,8 +2351,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 This is used to choose a separator for constructs like \\verb."
   (let ((ll "~,./?;':\"|!@#%^&-_=+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ<>()[]{}"))
     (cl-loop for c across ll
-	  when (not (string-match (regexp-quote (char-to-string c)) s))
-	  return (char-to-string c))))
+	     when (not (string-match (regexp-quote (char-to-string c)) s))
+	     return (char-to-string c))))
 
 (defun org-odt-inline-src-block (inline-src-block _contents _info)
   "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
@@ -2487,7 +2429,7 @@ contextual information."
 		       (function
 			(lambda (element _info)
 			  (cl-loop for el in (org-element-contents element)
-				thereis (eq (org-element-type el) 'table))))))
+				   thereis (eq (org-element-type el) 'table))))))
 		 (cond
 		  ((funcall --element-has-a-table-p item info)
 		   "</text:list-header>")
@@ -2628,10 +2570,10 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	  (function
 	   (lambda (element n info)
 	     (cl-loop for x in (org-element-lineage element)
-		   thereis (and (eq (org-element-type x) 'headline)
-				(<= (org-export-get-relative-level x info) n)
-				(org-export-numbered-headline-p x info)
-				x)))))
+		      thereis (and (eq (org-element-type x) 'headline)
+				   (<= (org-export-get-relative-level x info) n)
+				   (org-export-numbered-headline-p x info)
+				   x)))))
 	 (--enumerate
 	  (function
 	   (lambda (element scope info &optional predicate)
@@ -2955,7 +2897,7 @@ used as a communication channel."
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces))))
     (org-odt--render-image/formula entity href width height
-				     captions user-frame-params title desc)))
+				   captions user-frame-params title desc)))
 
 
 ;;;; Links :: Math formula
@@ -2996,7 +2938,7 @@ used as a communication channel."
     (cond
      ((eq embed-as 'character)
       (org-odt--render-image/formula "InlineFormula" href width height
-				       nil nil title desc))
+				     nil nil title desc))
      (t
       (let* ((equation (org-odt--render-image/formula
 			"CaptionedDisplayFormula" href width height
@@ -3026,7 +2968,7 @@ used as a communication channel."
        ;; Case 2: OpenDocument formula.
        ((string= ext "odf")
 	(org-odt--zip-extract src-file "content.xml"
-				(concat org-odt-zip-dir target-dir)))
+			      (concat org-odt-zip-dir target-dir)))
        (t (error "%s is not a formula file" src-file))))
     ;; Enter the formula file in to manifest.
     (org-odt-create-manifest-file-entry "text/xml" target-file)
@@ -3035,8 +2977,8 @@ used as a communication channel."
 ;;;; Targets
 
 (defun org-odt--render-image/formula (cfg-key href width height &optional
-						captions user-frame-params
-						&rest title-and-desc)
+					      captions user-frame-params
+					      &rest title-and-desc)
   (let* ((frame-cfg-alist
 	  ;; Each element of this alist is of the form (CFG-HANDLE
 	  ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
@@ -3101,8 +3043,8 @@ used as a communication channel."
 				    (cl-assert (= (length default) 3))
 				    (cl-assert (= (length user) 3))
 				    (cl-loop for u in user
-					  for d in default
-					  collect (or u d)))))))
+					     for d in default
+					     collect (or u d)))))))
     (cond
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
@@ -3245,8 +3187,8 @@ used as a communication channel."
 	  (org-odt--read-attribute (org-export-get-parent link) :transclude)))))
 
 (defun org-odt--standalone-link-p (element _info &optional
-					     paragraph-predicate
-					     link-predicate)
+					   paragraph-predicate
+					   link-predicate)
   "Test if ELEMENT is a standalone link for the purpose ODT export.
 INFO is a plist holding contextual information.
 
@@ -3271,15 +3213,15 @@ Return nil, otherwise."
 		(funcall paragraph-predicate p))
 	(let ((contents (org-element-contents p)))
 	  (cl-loop for x in contents
-		with inline-image-count = 0
-		always (cl-case (org-element-type x)
-			 (plain-text
-			  (not (org-string-nw-p x)))
-			 (link
-			  (and (or (not link-predicate)
-				   (funcall link-predicate x))
-			       (= (cl-incf inline-image-count) 1)))
-			 (t nil))))))))
+		   with inline-image-count = 0
+		   always (cl-case (org-element-type x)
+			    (plain-text
+			     (not (org-string-nw-p x)))
+			    (link
+			     (and (or (not link-predicate)
+				      (funcall link-predicate x))
+				  (= (cl-incf inline-image-count) 1)))
+			    (t nil))))))))
 
 (defun org-odt-link--infer-description (destination info)
   ;; DESTINATION is a HEADLINE, a "<<target>>" or an element (like
@@ -3323,30 +3265,30 @@ Return nil, otherwise."
      (let* ( ;; Locate top-level list.
 	    (top-level-list
 	     (cl-loop for x on data
-		   when (eq (org-element-type (car x)) 'plain-list)
-		   return x))
+		      when (eq (org-element-type (car x)) 'plain-list)
+		      return x))
 	    ;; Get list item nos.
 	    (item-numbers
 	     (cl-loop for (plain-list item . rest) on top-level-list by #'cddr
-		   until (not (eq (org-element-type plain-list) 'plain-list))
-		   collect (when (eq (org-element-property :type
-							   plain-list)
-				     'ordered)
-			     (1+ (length (org-export-get-previous-element
-					  item info t))))))
+		      until (not (eq (org-element-type plain-list) 'plain-list))
+		      collect (when (eq (org-element-property :type
+							      plain-list)
+					'ordered)
+				(1+ (length (org-export-get-previous-element
+					     item info t))))))
 	    ;; Locate top-most listified headline.
 	    (listified-headlines
 	     (cl-loop for x on data
-		   when (and (eq (org-element-type (car x)) 'headline)
-			     (org-export-low-level-p (car x) info))
-		   return x))
+		      when (and (eq (org-element-type (car x)) 'headline)
+				(org-export-low-level-p (car x) info))
+		      return x))
 	    ;; Get listified headline numbers.
 	    (listified-headline-nos
 	     (cl-loop for el in listified-headlines
-		   when (eq (org-element-type el) 'headline)
-		   collect (when (org-export-numbered-headline-p el info)
-			     (1+ (length (org-export-get-previous-element
-					  el info t)))))))
+		      when (eq (org-element-type el) 'headline)
+		      collect (when (org-export-numbered-headline-p el info)
+				(1+ (length (org-export-get-previous-element
+					     el info t)))))))
        ;; Combine item numbers from both the listified headlines and
        ;; regular list items.
 
@@ -3363,10 +3305,10 @@ Return nil, otherwise."
      ;; in the hierarchy?  If yes, use the chapter/section number as
      ;; description.
      (let ((headline (cl-loop for el in (cons destination genealogy)
-			   when (and (eq (org-element-type el) 'headline)
-				     (not (org-export-low-level-p el info))
-				     (org-export-numbered-headline-p el info))
-			   return el)))
+			      when (and (eq (org-element-type el) 'headline)
+					(not (org-export-low-level-p el info))
+					(org-export-numbered-headline-p el info))
+			      return el)))
        ;; We found one.
        (when headline
 	 (format "<text:bookmark-ref text:reference-format=\"chapter\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
@@ -3376,9 +3318,9 @@ Return nil, otherwise."
      ;; Case 4: Is the target part of any headline.  If yes, use the
      ;; chapter/section's title description.
      (let ((headline (cl-loop for el in (cons destination genealogy)
-			   when (and (eq (org-element-type el) 'headline)
-				     (not (org-export-low-level-p el info)))
-			   return el)))
+			      when (and (eq (org-element-type el) 'headline)
+					(not (org-export-low-level-p el info)))
+			      return el)))
        ;; We found one.
        (when headline
 	 (format "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
@@ -3428,10 +3370,10 @@ INFO is a plist holding contextual information.  See
 	     (style (when (and (eq (org-element-type grandparent) 'special-block)
 			       (string= (org-element-property :type grandparent) "section"))
 		      (org-odt--read-attribute grandparent :style))))
-	      (org-odt-format-section
-	       (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
-		       path)
-	       (or style "OrgSection"))))
+	(org-odt-format-section
+	 (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
+		 path)
+	 (or style "OrgSection"))))
      ;; Image file.
      ((and (not desc) (org-export-inline-image-p
 		       link (plist-get info :odt-inline-image-rules)))
@@ -3701,9 +3643,19 @@ the plist used as a communication channel."
       (when (and (eq (org-element-type parent) 'item)
 		 (eq paragraph (car (org-element-contents parent))))
 	(setq contents (concat (org-odt--checkbox parent) contents)))
-      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	      (org-odt--get-derived-paragraph-style paragraph style)
-	      contents))))
+
+      (cond
+       ;; Is this paragraph part of a paragraph block?
+       ((and (eq (org-element-type parent) 'special-block)
+	     (string= "paragraph" (downcase (org-element-property :type parent))))
+	;; Yes.  If the paragraph is the last paragraph in the block,
+	;; return it's contents, otherwise append a space to it.
+	(if (eq paragraph (car (last (org-element-contents parent)))) contents
+	  (concat contents " ")))
+       (t
+	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		(org-odt--get-derived-paragraph-style paragraph style)
+		contents))))))
 
 
 ;;;; Plain List
@@ -3747,10 +3699,8 @@ contextual information."
    line))
 
 (defun org-odt--encode-plain-text (text &optional no-whitespace-filling)
-  (mapc
-   (lambda (pair)
-     (setq text (replace-regexp-in-string (car pair) (cdr pair) text t t)))
-   '(("&" . "&amp;") ("<" . "&lt;") (">" . "&gt;")))
+  (dolist (pair '(("&" . "&amp;") ("<" . "&lt;") (">" . "&gt;")))
+    (setq text (replace-regexp-in-string (car pair) (cdr pair) text t t)))
   (if no-whitespace-filling text
     (org-odt--encode-tabs-and-spaces text)))
 
@@ -3767,11 +3717,8 @@ contextual information."
       (setq output (org-export-activate-smart-quotes output :utf-8 info text)))
     ;; Convert special strings.
     (when (plist-get info :with-special-strings)
-      (mapc
-       (lambda (pair)
-	 (setq output
-	       (replace-regexp-in-string (car pair) (cdr pair) output t nil)))
-       org-odt-special-string-regexps))
+      (dolist (pair org-odt-special-string-regexps)
+	(setq output (replace-regexp-in-string (car pair) (cdr pair) output t nil))))
     ;; Handle break preservation if required.
     (when (plist-get info :preserve-breaks)
       (setq output (replace-regexp-in-string
@@ -3865,6 +3812,43 @@ holding contextual information."
   (let ((type (org-element-property :type special-block))
 	(attributes (org-export-read-attribute :attr_odt special-block)))
     (cond
+     ;; Paragraph.
+
+     ;; A paragraph block is a special block, where the enclosed
+     ;; paragraphs gets collapsed in to a single paragraph.
+     ;;
+     ;; For example, a block like this
+     ;;
+     ;; #+begin_paragraph 
+     ;;     I have apples, oranges and 
+     ;;
+     ;;     bananas.
+     ;; #+end_paragraph
+     ;;
+     ;; is typeset as if it were just a single paragraph like this.
+     ;;
+     ;;    I have apples, oranges and bananas.
+     ;;
+     ;; Paragraph blocks are most useful for creating multiple
+     ;; *captioned* images in a single paragraph.
+     ;;
+     ;; For example, to construct two side-by-side images (that are
+     ;; also captioned), do
+     ;;
+     ;; #+ATTR_ODT: :style "OrgCenter"
+     ;; #+begin_paragraph
+     ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
+     ;;     #+CAPTION: First Figure
+     ;;     [[./org-mode-unicorn.png]]
+     ;; 
+     ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
+     ;;     #+CAPTION: Second Figure
+     ;;     [[./org-mode-unicorn.png]]
+     ;; #+end_paragraph
+     ;;
+     ((string= type "paragraph")
+      ;; Enclose the contens in a paragraph and return it.
+      (org-odt-paragraph special-block contents info))
      ;; Annotation.
      ((string= type "annotation")
       (let* ((author (or (plist-get attributes :author)
@@ -4429,7 +4413,7 @@ pertaining to indentation here."
 	  (function
 	   (lambda (element info)
 	     (cl-loop for el in (org-export-get-previous-element element info t)
-		   thereis (eq (org-element-type el) 'table)))))
+		      thereis (eq (org-element-type el) 'table)))))
 	 (--walk-list-genealogy-and-collect-tags
 	  (function
 	   (lambda (table info)
@@ -4437,73 +4421,73 @@ pertaining to indentation here."
 		    (list-genealogy
 		     (when (eq (org-element-type (car genealogy)) 'item)
 		       (cl-loop for el in genealogy
-			     when (memq (org-element-type el)
-					'(item plain-list))
-			     collect el)))
+				when (memq (org-element-type el)
+					   '(item plain-list))
+				collect el)))
 		    (llh-genealogy
 		     (apply 'nconc
 			    (cl-loop for el in genealogy
-				  when (and (eq (org-element-type el) 'headline)
-					    (org-export-low-level-p el info))
-				  collect
-				  (list el
-					(assq 'headline
-					      (org-element-contents
-					       (org-export-get-parent el)))))))
+				     when (and (eq (org-element-type el) 'headline)
+					       (org-export-low-level-p el info))
+				     collect
+				     (list el
+					   (assq 'headline
+						 (org-element-contents
+						  (org-export-get-parent el)))))))
 		    parent-list)
 	       (nconc
 		;; Handle list genealogy.
 		(cl-loop for el in list-genealogy collect
-		      (cl-case (org-element-type el)
-			(plain-list
-			 (setq parent-list el)
-			 (cons "</text:list>"
-			       (format "\n<text:list text:style-name=\"%s\" %s>"
-				       (cl-case (org-element-property :type el)
-					 (ordered "OrgNumberedList")
-					 (unordered "OrgBulletedList")
-					 (descriptive-1 "OrgDescriptionList")
-					 (descriptive-2 "OrgDescriptionList"))
-				       "text:continue-numbering=\"true\"")))
-			(item
-			 (cond
-			  ((not parent-list)
-			   (if (funcall --element-preceded-by-table-p table info)
-			       '("</text:list-header>" . "<text:list-header>")
-			     '("</text:list-item>" . "<text:list-header>")))
-			  ((funcall --element-preceded-by-table-p
-				    parent-list info)
-			   '("</text:list-header>" . "<text:list-header>"))
-			  (t '("</text:list-item>" . "<text:list-item>"))))))
+			 (cl-case (org-element-type el)
+			   (plain-list
+			    (setq parent-list el)
+			    (cons "</text:list>"
+				  (format "\n<text:list text:style-name=\"%s\" %s>"
+					  (cl-case (org-element-property :type el)
+					    (ordered "OrgNumberedList")
+					    (unordered "OrgBulletedList")
+					    (descriptive-1 "OrgDescriptionList")
+					    (descriptive-2 "OrgDescriptionList"))
+					  "text:continue-numbering=\"true\"")))
+			   (item
+			    (cond
+			     ((not parent-list)
+			      (if (funcall --element-preceded-by-table-p table info)
+				  '("</text:list-header>" . "<text:list-header>")
+				'("</text:list-item>" . "<text:list-header>")))
+			     ((funcall --element-preceded-by-table-p
+				       parent-list info)
+			      '("</text:list-header>" . "<text:list-header>"))
+			     (t '("</text:list-item>" . "<text:list-item>"))))))
 		;; Handle low-level headlines.
 		(cl-loop for el in llh-genealogy
-		      with step = 'item collect
-		      (cl-case step
-			(plain-list
-			 (setq step 'item) ; Flip-flop
-			 (setq parent-list el)
-			 (cons "</text:list>"
-			       (format "\n<text:list text:style-name=\"%s\" %s>"
-				       (if (org-export-numbered-headline-p
-					    el info)
-					   "OrgNumberedList"
-					 "OrgBulletedList")
-				       "text:continue-numbering=\"true\"")))
-			(item
-			 (setq step 'plain-list) ; Flip-flop
-			 (cond
-			  ((not parent-list)
-			   (if (funcall --element-preceded-by-table-p table info)
-			       '("</text:list-header>" . "<text:list-header>")
-			     '("</text:list-item>" . "<text:list-header>")))
-			  ((let ((section? (org-export-get-previous-element
-					    parent-list info)))
-			     (and section?
-				  (eq (org-element-type section?) 'section)
-				  (assq 'table (org-element-contents section?))))
-			   '("</text:list-header>" . "<text:list-header>"))
-			  (t
-			   '("</text:list-item>" . "<text:list-item>")))))))))))
+			 with step = 'item collect
+			 (cl-case step
+			   (plain-list
+			    (setq step 'item) ; Flip-flop
+			    (setq parent-list el)
+			    (cons "</text:list>"
+				  (format "\n<text:list text:style-name=\"%s\" %s>"
+					  (if (org-export-numbered-headline-p
+					       el info)
+					      "OrgNumberedList"
+					    "OrgBulletedList")
+					  "text:continue-numbering=\"true\"")))
+			   (item
+			    (setq step 'plain-list) ; Flip-flop
+			    (cond
+			     ((not parent-list)
+			      (if (funcall --element-preceded-by-table-p table info)
+				  '("</text:list-header>" . "<text:list-header>")
+				'("</text:list-item>" . "<text:list-header>")))
+			     ((let ((section? (org-export-get-previous-element
+					       parent-list info)))
+				(and section?
+				     (eq (org-element-type section?) 'section)
+				     (assq 'table (org-element-contents section?))))
+			      '("</text:list-header>" . "<text:list-header>"))
+			     (t
+			      '("</text:list-item>" . "<text:list-item>")))))))))))
 	 (close-open-tags (funcall --walk-list-genealogy-and-collect-tags
 				   table info)))
     ;; OpenDocument schema does not permit table to occur within a
@@ -4624,7 +4608,7 @@ channel."
 	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgDiaryTimestamp"
 		 (org-odt-plain-text (org-timestamp-translate timestamp)
-				       info)))))))
+				     info)))))))
 
 
 ;;;; Underline
@@ -4695,7 +4679,7 @@ exported file."
 				    (mapcar (lambda (cite-key)
 					      (list 'citation-reference
 						    (list :key
-					    cite-key)))
+							  cite-key)))
 					    cite-keys))))
 	      ;; Yes. Stash a copy of the original LaTeX fragment in
 	      ;; to the new `citation' object.
@@ -4822,13 +4806,13 @@ exported file."
 			  ;; the enclosing paragraph.
 			  (latex-environment
 			   (org-element-adopt-elements
-			    (list 'paragraph
-				  (list :style "OrgFormula"
-					:name (org-element-property :name
-								    latex-*)
-					:caption (org-element-property :caption
-								       latex-*)))
-			    link))
+			       (list 'paragraph
+				     (list :style "OrgFormula"
+					   :name (org-element-property :name
+								       latex-*)
+					   :caption (org-element-property :caption
+									  latex-*)))
+			     link))
 			  ;; Case 2: LaTeX fragment.
 			  ;; No special action.
 			  (latex-fragment link))))
@@ -4909,16 +4893,16 @@ exported file."
 		(mapcar
 		 (lambda (item)
 		   (org-element-adopt-elements
-		    (list 'item (list :checkbox (org-element-property
-						 :checkbox item)))
-		    (list 'paragraph nil
-			  (list 'bold (list :style "OrgDescriptionTerm")
-				(or (org-element-property :tag item) "(no term)")))
-		    (org-element-adopt-elements
-		     (list 'plain-list (list :type 'descriptive-2))
-		     (apply 'org-element-adopt-elements
-			    (list 'item nil)
-			    (org-element-contents item)))))
+		       (list 'item (list :checkbox (org-element-property
+						    :checkbox item)))
+		     (list 'paragraph nil
+			   (list 'bold (list :style "OrgDescriptionTerm")
+				 (or (org-element-property :tag item) "(no term)")))
+		     (org-element-adopt-elements
+			 (list 'plain-list (list :type 'descriptive-2))
+		       (apply 'org-element-adopt-elements
+			      (list 'item nil)
+			      (org-element-contents item)))))
 		 (org-element-contents el)))))
       nil)
     info)
@@ -4977,17 +4961,17 @@ exported file."
 			  (leading-paragraph (car item-contents))
 			  (item-contents (cdr item-contents)))
 		     (org-element-adopt-elements
-		      (list 'item (list :checkbox (org-element-property :checkbox item)))
-		      (apply 'org-element-adopt-elements
-			     (list 'paragraph (list :style "OrgDescriptionDefinition"))
-			     (list 'bold (list :style "OrgDescriptionTerm" :post-blank 1)
-				   (or (org-element-property :tag item) "(no term)"))
-			     (org-element-contents leading-paragraph))
-		      (org-element-adopt-elements
-		       (list 'plain-list (list :type 'descriptive-2))
+			 (list 'item (list :checkbox (org-element-property :checkbox item)))
 		       (apply 'org-element-adopt-elements
-			      (list 'item nil)
-			      item-contents)))))
+			      (list 'paragraph (list :style "OrgDescriptionDefinition"))
+			      (list 'bold (list :style "OrgDescriptionTerm" :post-blank 1)
+				    (or (org-element-property :tag item) "(no term)"))
+			      (org-element-contents leading-paragraph))
+		       (org-element-adopt-elements
+			   (list 'plain-list (list :type 'descriptive-2))
+			 (apply 'org-element-adopt-elements
+				(list 'item nil)
+				item-contents)))))
 		 (org-element-contents el)))))
       nil)
     info)
@@ -5120,7 +5104,7 @@ exported file."
 							leading-text)
 					  ;; Yes. Splice a rule in to the table.
 					  (org-element-adopt-elements
-					   (list 'table-row (list :type 'rule))))
+					      (list 'table-row (list :type 'rule))))
 					 ;; Is the leading text of the Level-1 a special row?
 					 ((string-match "\\`|" leading-text)
 					  ;; Yes. Splice that special row in to the table.
@@ -5187,15 +5171,13 @@ exported file."
       (insert
        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
      <manifest:manifest xmlns:manifest=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\" manifest:version=\"1.2\">\n")
-      (mapc
-       (lambda (file-entry)
-	 (let* ((version (nth 2 file-entry))
-		(extra (if (not version) ""
-			 (format " manifest:version=\"%s\"" version))))
-	   (insert
-	    (format org-odt-manifest-file-entry-tag
-		    (nth 0 file-entry) (nth 1 file-entry) extra))))
-       org-odt-manifest-file-entries)
+      (dolist (file-entry org-odt-manifest-file-entries)
+	(let* ((version (nth 2 file-entry))
+	       (extra (if (not version) ""
+			(format " manifest:version=\"%s\"" version))))
+	  (insert
+	   (format org-odt-manifest-file-entry-tag
+		   (nth 0 file-entry) (nth 1 file-entry) extra))))
       (insert "\n</manifest:manifest>"))))
 
 (defmacro org-odt--export-wrap (out-file &rest body)
@@ -5210,20 +5192,19 @@ exported file."
 	  ;; Initialize temporary workarea.  All files that end up in
 	  ;; the exported document get parked/created here.
 	  (org-odt-zip-dir (file-name-as-directory
-			      (make-temp-file (format "%s-" out-file-type) t)))
+			    (make-temp-file (format "%s-" out-file-type) t)))
 	  (org-odt-manifest-file-entries nil)
 	  (--cleanup-xml-buffers
 	   (function
 	    (lambda nil
 	      ;; Kill all XML buffers.
-	      (mapc (lambda (file)
-		      (let ((buf (find-buffer-visiting
-				  (concat org-odt-zip-dir file))))
-			(when buf
-			  (with-current-buffer buf
-			    (set-buffer-modified-p nil)
-			    (kill-buffer buf)))))
-		    org-odt-xml-files)
+	      (dolist (file org-odt-xml-files)
+		(let ((buf (find-buffer-visiting
+			    (concat org-odt-zip-dir file))))
+		  (when buf
+		    (with-current-buffer buf
+		      (set-buffer-modified-p nil)
+		      (kill-buffer buf)))))
 	      ;; Delete temporary directory and also other embedded
 	      ;; files that get copied there.
 	      (delete-directory org-odt-zip-dir t)))))
@@ -5250,16 +5231,15 @@ exported file."
 	   ;; Write out the manifest entries before zipping
 	   (org-odt-write-manifest-file)
 	   ;; Save all XML files.
-	   (mapc (lambda (file)
-		   (let ((buf (find-buffer-visiting
-			       (concat org-odt-zip-dir file))))
-		     (when buf
-		       (with-current-buffer buf
-			 ;; Prettify output if needed.
-			 (when org-odt-prettify-xml
-			   (indent-region (point-min) (point-max)))
-			 (save-buffer 0)))))
-		 org-odt-xml-files)
+	   (dolist (file org-odt-xml-files)
+	     (let ((buf (find-buffer-visiting
+			 (concat org-odt-zip-dir file))))
+	       (when buf
+		 (with-current-buffer buf
+		   ;; Prettify output if needed.
+		   (when org-odt-prettify-xml
+		     (indent-region (point-min) (point-max)))
+		   (save-buffer 0)))))
 	   ;; Run zip.
 	   (let* ((target --out-file)
 		  (target-name (file-name-nondirectory target))
@@ -5277,19 +5257,17 @@ exported file."
 	       ;; directory.
 	       (with-current-buffer
 		   (find-file-noselect (concat org-odt-zip-dir "content.xml") t)
-		 (mapc
-		  (lambda (cmd)
-		    (message "Running %s" (mapconcat 'identity cmd " "))
-		    (setq err-string
-			  (with-output-to-string
-			    (setq exitcode
-				  (apply 'call-process (car cmd)
-					 nil standard-output nil (cdr cmd)))))
-		    (or (zerop exitcode)
-			(error (concat "Unable to create OpenDocument file."
-				       "  Zip failed with error (%s)")
-			       err-string)))
-		  cmds)))
+		 (dolist (cmd cmds)
+		   (message "Running %s" (mapconcat 'identity cmd " "))
+		   (setq err-string
+			 (with-output-to-string
+			   (setq exitcode
+				 (apply 'call-process (car cmd)
+					nil standard-output nil (cdr cmd)))))
+		   (or (zerop exitcode)
+		       (error (concat "Unable to create OpenDocument file."
+				      "  Zip failed with error (%s)")
+			      err-string)))))
 	     ;; Move the zip file from temporary work directory to
 	     ;; user-mandated location.
 	     (rename-file (concat org-odt-zip-dir target-name) target)
@@ -5336,8 +5314,8 @@ MathML source to kill ring depending on the value of
 					(buffer-substring (region-beginning)
 							  (region-end))))
 			(cl-loop for e in org-latex-regexps
-			      thereis (when (string-match (nth 1 e) frag)
-					(match-string (nth 2 e) frag)))))
+				 thereis (when (string-match (nth 1 e) frag)
+					   (match-string (nth 2 e) frag)))))
 	(read-string "LaTeX Fragment: " frag nil frag))
      ,(let ((odf-filename (expand-file-name
 			   (concat
@@ -5508,7 +5486,7 @@ of `org-odt-export-as-odf'."
   (require 'browse-url)
   (let* ((in-file (expand-file-name (or in-file buffer-file-name)))
 	 (_dummy (or (file-readable-p in-file)
-		    (error "Cannot read %s" in-file)))
+		     (error "Cannot read %s" in-file)))
 	 (in-fmt (file-name-extension in-file))
 	 (out-fmt (or out-fmt (error "Output format unspecified")))
 	 (how (or (org-odt-reachable-p in-fmt out-fmt)
@@ -5609,12 +5587,10 @@ using `org-open-file'."
 
 ;;; Library Initializations
 
-(mapc
- (lambda (desc)
-   ;; Let Emacs open all OpenDocument files in archive mode
-   (add-to-list 'auto-mode-alist
-		(cons (concat  "\\." (car desc) "\\'") 'archive-mode)))
- org-odt-file-extensions)
+(dolist (extn org-odt-file-extensions)
+  ;; Let Emacs open all OpenDocument files in archive mode
+  (add-to-list 'auto-mode-alist
+	       (cons (concat  "\\." (car extn) "\\'") 'archive-mode)))
 
 (provide 'ox-odt)
 
