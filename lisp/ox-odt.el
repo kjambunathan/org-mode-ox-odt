@@ -36,10 +36,6 @@
 (require 'ox)
 (require 'org-compat)
 
-;;; Workarounds
-
-(defalias 'org-export-solidify-link-text 'identity) ; FIXME
-
 ;;; Define Back-End
 
 (org-export-define-backend 'odt
@@ -2194,8 +2190,7 @@ INFO is a plist holding contextual information."
 		(org-element-property :title headline) backend info))
 	 (tags (and (plist-get info :with-tags)
 		    (org-export-get-tags headline info)))
-	 (headline-label (concat "sec-" (mapconcat 'number-to-string
-						   headline-number "-")))
+	 (headline-label (org-export-get-reference headline info))
 	 (format-function
 	  (if (functionp format-function) format-function
 	    (cl-function
@@ -2220,19 +2215,15 @@ holding contextual information."
 	   ;; Get level relative to current parsed data.
 	   ;; (level (org-export-get-relative-level headline info))
 	   ;; Get canonical label for the headline.
-	   (id (concat "sec-" (mapconcat 'number-to-string
-					 (org-export-get-headline-number
-					  headline info) "-")))
+	   (id (org-export-get-reference headline info))
 	   ;; Get user-specified labels for the headline.
 	   (extra-ids (list (org-element-property :CUSTOM_ID headline)
 			    (org-element-property :ID headline)))
 	   ;; Extra targets.
 	   (extra-targets
 	    (mapconcat (lambda (x)
-			 (when x
-			   (let ((x (if (org-uuidgen-p x) (concat "ID-" x) x)))
-			     (org-odt--target
-			      "" (org-export-solidify-link-text x)))))
+			 (when x (org-odt--target
+				  "" (if (org-uuidgen-p x) (concat "ID-" x) x))))
 		       extra-ids ""))
 	   ;; Title.
 	   (anchored-title (org-odt--target full-text id)))
@@ -2615,7 +2606,7 @@ SHORT-CAPTION are strings."
 	    (link (org-export-get-parent-element element))
 	    (t element)))
 	 ;; Get label and caption.
-	 (label (org-element-property :name caption-from))
+	 (label (org-export-get-reference caption-from info))
 	 (caption (org-export-get-caption caption-from))
 	 (short-caption (org-export-get-caption caption-from t))
 	 ;; Transcode captions.
@@ -2661,7 +2652,7 @@ SHORT-CAPTION are strings."
 				   org-element-all-objects))))
 	     (when short-caption
 	       (org-export-data-with-backend short-caption backend info))))))
-    (when (or label caption)
+    (when (org-odt--enumerable-p caption-from info)
       (let* ((default-category
 	       (cl-case (org-element-type element)
 		 (table :TABLE:)
@@ -2689,9 +2680,6 @@ SHORT-CAPTION are strings."
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
-	      ;; Assign an internal label, if user has not provided one
-	      (setq label (org-export-solidify-link-text
-			   (or label (format  "%s-%s" default-category seqno))))
 	      (cons
 	       (concat
 		;; Sneak in a bookmark.  The bookmark is used when the
@@ -2721,7 +2709,6 @@ SHORT-CAPTION are strings."
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-assert label)
-	     (setq label (org-export-solidify-link-text label))
 	     (let* ((xref-format
 		     (plist-get
 		      (assoc-default default-category
@@ -3233,12 +3220,8 @@ Return nil, otherwise."
   (let* ((genealogy (org-element-lineage destination))
 	 (data (reverse genealogy))
 	 (label (cl-case (org-element-type destination)
-		  (headline
-		   (format "sec-%s" (mapconcat 'number-to-string
-					       (org-export-get-headline-number
-						destination info) "-")))
-		  (target
-		   (org-element-property :value destination))
+		  ((headline target)
+		   (org-export-get-reference destination info))
 		  (t (org-element-property :name destination)))))
     (or
      ;; Case 1: Does the user want the cross-references to be typeset
@@ -3249,8 +3232,7 @@ Return nil, otherwise."
      ;; example, in case of LibreOffice, the field values can be
      ;; synchronized by running Tools->Update->Fields/Update All on
      ;; the exported document.
-     (org-odt--xref-target :TARGET: "[PLS. UPDATE FIELDS]"
-			   (org-export-solidify-link-text label))
+     (org-odt--xref-target :TARGET: "[PLS. UPDATE FIELDS]" label)
      ;; Case 2: Is target an item of a numbered list?  If yes, use the
      ;; item's number as description.  The target need not necessarily
      ;; be part of a proper numbered list, it can also be part of a
@@ -3291,7 +3273,7 @@ Return nil, otherwise."
        (let ((item-numbers (append listified-headline-nos item-numbers)))
 	 (when (and item-numbers (not (memq nil item-numbers)))
 	   (format "<text:bookmark-ref text:reference-format=\"number-all-superior\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
-		   (org-export-solidify-link-text label)
+		   label
 		   (mapconcat (lambda (n) (if (not n) " "
 					    (concat (number-to-string n) ".")))
 			      item-numbers "")))))
@@ -3306,7 +3288,7 @@ Return nil, otherwise."
        ;; We found one.
        (when headline
 	 (format "<text:bookmark-ref text:reference-format=\"chapter\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
-		 (org-export-solidify-link-text label)
+		 label
 		 (mapconcat 'number-to-string (org-export-get-headline-number
 					       headline info) "."))))
      ;; Case 4: Is the target part of any headline.  If yes, use the
@@ -3318,7 +3300,7 @@ Return nil, otherwise."
        ;; We found one.
        (when headline
 	 (format "<text:bookmark-ref text:reference-format=\"text\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
-		 (org-export-solidify-link-text label)
+		 label
 		 (let ((title (org-element-property :title headline)))
 		   (org-export-data title info)))))
      ;; Case 5: The target is part of a document that is outside of
@@ -3328,7 +3310,7 @@ Return nil, otherwise."
      ;; must not generate any content text.  So, it makes sense to
      ;; insist that the user provide an explicit description.)
      (format "<text:bookmark-ref text:reference-format=\"number-all-superior\" text:ref-name=\"%s\">%s</text:bookmark-ref>"
-	     (org-export-solidify-link-text label) "[PLS. UPDATE FIELDS]"))))
+	     label "[PLS. UPDATE FIELDS]"))))
 
 (defun org-odt-link (link desc info)
   "Transcode a LINK object from Org to ODT.
@@ -3382,8 +3364,7 @@ INFO is a plist holding contextual information.  See
       (let ((destination (org-export-resolve-radio-link link info)))
 	(if (not destination) desc
 	  (let ((desc (org-export-data (org-element-contents destination) info))
-		(href (org-export-solidify-link-text
-		       (org-element-property :value destination))))
+		(href (org-export-get-reference destination info)))
 	    (or
 	     ;; Case 1: Honour user's customization.
 	     (org-odt--xref-target :TARGET: "[PLS. UPDATE FIELDS]" href)
@@ -3410,23 +3391,17 @@ INFO is a plist holding contextual information.  See
 	   ;; If there's a description, create a hyperlink.
 	   ;; Otherwise, try to provide a meaningful description.
 	   (if (not desc) (org-odt-link--infer-description destination info)
-	     (let* ((headline-no
-		     (org-export-get-headline-number destination info))
-		    (label
-		     (format "sec-%s"
-			     (mapconcat 'number-to-string headline-no "-"))))
-	       (format
-		"<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
-		label desc))))
+	     (format
+	      "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
+	      (org-export-get-reference destination info) desc)))
 	  ;; Case 3: Fuzzy link points to a target.
 	  (target
 	   ;; If there's a description, create a hyperlink.
 	   ;; Otherwise, try to provide a meaningful description.
 	   (if (not desc) (org-odt-link--infer-description destination info)
-	     (let ((label (org-element-property :value destination)))
-	       (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
-		       (org-export-solidify-link-text label)
-		       desc))))
+	     (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
+		     (org-export-get-reference destination info)
+		     desc)))
 	  ;; Case 4: Fuzzy link points to some element (e.g., an
 	  ;; inline image, a math formula or a table).
 	  (otherwise
@@ -3441,11 +3416,9 @@ INFO is a plist holding contextual information.  See
 		   ((not desc) label-reference)
 		   ;; LINK has description.  Insert a hyperlink with
 		   ;; user-provided description.
-		   (t
-		    (let ((label (org-element-property :name destination)))
-		      (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
-			      (org-export-solidify-link-text label)
-			      desc)))))))))
+		   (t (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
+			      (org-export-get-reference destination info)
+			      desc))))))))
      ;; Coderef: replace link with the reference name or the
      ;; equivalent line number.
      ((string= type "coderef")
@@ -3788,13 +3761,11 @@ holding contextual information."
 
 ;;;; Radio Target
 
-(defun org-odt-radio-target (radio-target text _info)
+(defun org-odt-radio-target (radio-target text info)
   "Transcode a RADIO-TARGET object from Org to ODT.
 TEXT is the text of the target.  INFO is a plist holding
 contextual information."
-  (org-odt--target
-   text (org-export-solidify-link-text
-	 (org-element-property :value radio-target))))
+  (org-odt--target text (org-export-get-reference radio-target info)))
 
 
 ;;;; Special Block
@@ -4547,12 +4518,11 @@ pertaining to indentation here."
 
 ;;;; Target
 
-(defun org-odt-target (target _contents _info)
+(defun org-odt-target (target _contents info)
   "Transcode a TARGET object from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual
 information."
-  (let ((value (org-element-property :value target)))
-    (org-odt--target "" (org-export-solidify-link-text value))))
+  (org-odt--target "" (org-export-get-reference target info)))
 
 
 ;;;; Timestamp
