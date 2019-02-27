@@ -2092,17 +2092,16 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   "Transcode a FOOTNOTE-REFERENCE element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (let ((--format-footnote-reference
-	 (function
-	  (lambda (n)
-	    (setq n (format "%d" n))
-	    (let ((note-class "footnote")
-		  (ref-format "text")
-		  (ref-name (concat "fn" n)))
-	      (format
-	       "<text:span text:style-name=\"%s\">%s</text:span>"
-	       "OrgSuperscript"
-	       (format "<text:note-ref text:note-class=\"%s\" text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:note-ref>"
-		       note-class ref-format ref-name n)))))))
+	 (lambda (n)
+	   (setq n (format "%d" n))
+	   (let ((note-class "footnote")
+		 (ref-format "text")
+		 (ref-name (concat "fn" n)))
+	     (format
+	      "<text:span text:style-name=\"%s\">%s</text:span>"
+	      "OrgSuperscript"
+	      (format "<text:note-ref text:note-class=\"%s\" text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:note-ref>"
+		      note-class ref-format ref-name n))))))
     (concat
      ;; Insert separator between two footnotes in a row.
      (let ((prev (org-export-get-previous-element footnote-reference info)))
@@ -2426,10 +2425,9 @@ contextual information."
        (format "\n<text:list-item>\n%s\n%s"
 	       contents
 	       (let* ((--element-has-a-table-p
-		       (function
-			(lambda (element _info)
-			  (cl-loop for el in (org-element-contents element)
-				   thereis (eq (org-element-type el) 'table))))))
+		       (lambda (element _info)
+			 (cl-loop for el in (org-element-contents element)
+				  thereis (eq (org-element-type el) 'table)))))
 		 (cond
 		  ((funcall --element-has-a-table-p item info)
 		   "</text:list-header>")
@@ -2567,25 +2565,23 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 (defun org-odt--enumerate (element info &optional predicate n)
   (when predicate (cl-assert (funcall predicate element info)))
   (let* ((--numbered-parent-headline-at-<=-n
-	  (function
-	   (lambda (element n info)
-	     (cl-loop for x in (org-element-lineage element)
-		      thereis (and (eq (org-element-type x) 'headline)
-				   (<= (org-export-get-relative-level x info) n)
-				   (org-export-numbered-headline-p x info)
-				   x)))))
+	  (lambda (element n info)
+	    (cl-loop for x in (org-element-lineage element)
+		     thereis (and (eq (org-element-type x) 'headline)
+				  (<= (org-export-get-relative-level x info) n)
+				  (org-export-numbered-headline-p x info)
+				  x))))
 	 (--enumerate
-	  (function
-	   (lambda (element scope info &optional predicate)
-	     (let ((counter 0))
-	       (org-element-map (or scope (plist-get info :parse-tree))
-		   (org-element-type element)
-		 (lambda (el)
-		   (and (or (not predicate) (funcall predicate el info))
-			(cl-incf counter)
-			(eq element el)
-			counter))
-		 info 'first-match)))))
+	  (lambda (element scope info &optional predicate)
+	    (let ((counter 0))
+	      (org-element-map (or scope (plist-get info :parse-tree))
+		  (org-element-type element)
+		(lambda (el)
+		  (and (or (not predicate) (funcall predicate el info))
+		       (cl-incf counter)
+		       (eq element el)
+		       counter))
+		info 'first-match))))
 	 (scope (funcall --numbered-parent-headline-at-<=-n
 			 element (or n (string-to-number (plist-get info :odt-display-outline-level)))
 			 info))
@@ -2774,16 +2770,15 @@ SHORT-CAPTION are strings."
 (defun org-odt--image-size (file info &optional user-width
 				 user-height scale dpi embed-as)
   (let* ((--pixels-to-cms
-	  (function (lambda (pixels dpi)
-		      (let ((cms-per-inch 2.54)
-			    (inches (/ pixels dpi)))
-			(* cms-per-inch inches)))))
+	  (lambda (pixels dpi)
+	    (let ((cms-per-inch 2.54)
+		  (inches (/ pixels dpi)))
+	      (* cms-per-inch inches))))
 	 (--size-in-cms
-	  (function
-	   (lambda (size-in-pixels dpi)
-	     (and size-in-pixels
-		  (cons (funcall --pixels-to-cms (car size-in-pixels) dpi)
-			(funcall --pixels-to-cms (cdr size-in-pixels) dpi))))))
+	  (lambda (size-in-pixels dpi)
+	    (and size-in-pixels
+		 (cons (funcall --pixels-to-cms (car size-in-pixels) dpi)
+		       (funcall --pixels-to-cms (cdr size-in-pixels) dpi)))))
 	 (dpi (or dpi (plist-get info :odt-pixels-per-inch)))
 	 (anchor-type (or embed-as "paragraph"))
 	 (user-width (and (not scale) user-width))
@@ -3036,15 +3031,14 @@ used as a communication channel."
 	 (outer (nth 2 frame-cfg))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
 	 (user user-frame-params)
-	 (--merge-frame-params (function
-				(lambda (default user)
-				  "Merge default and user frame params."
-				  (if (not user) default
-				    (cl-assert (= (length default) 3))
-				    (cl-assert (= (length user) 3))
-				    (cl-loop for u in user
-					     for d in default
-					     collect (or u d)))))))
+	 (--merge-frame-params (lambda (default user)
+				 "Merge default and user frame params."
+				 (if (not user) default
+				   (cl-assert (= (length default) 3))
+				   (cl-assert (= (length user) 3))
+				   (cl-loop for u in user
+					    for d in default
+					    collect (or u d))))))
     (cond
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
@@ -3819,8 +3813,8 @@ holding contextual information."
      ;;
      ;; For example, a block like this
      ;;
-     ;; #+begin_paragraph 
-     ;;     I have apples, oranges and 
+     ;; #+begin_paragraph
+     ;;     I have apples, oranges and
      ;;
      ;;     bananas.
      ;; #+end_paragraph
@@ -3840,7 +3834,7 @@ holding contextual information."
      ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
      ;;     #+CAPTION: First Figure
      ;;     [[./org-mode-unicorn.png]]
-     ;; 
+     ;;
      ;;     #+ATTR_ODT: :width 5 :anchor "as-char"
      ;;     #+CAPTION: Second Figure
      ;;     [[./org-mode-unicorn.png]]
@@ -4369,19 +4363,18 @@ contextual information."
 	    (attributes (org-export-read-attribute :attr_odt table))
 	    (custom-table-style (nth 1 (org-odt-table-style-spec table info)))
 	    (table-column-specs
-	     (function
-	      (lambda (table info)
-		(let* ((table-style (or custom-table-style "OrgTable"))
-		       (column-style (format "%sColumn" table-style)))
-		  (mapconcat
-		   (lambda (width)
-		     (setq width (1+ width))
-		     (let ((s (format
-			       "\n<table:table-column table:style-name=\"%s\"/>"
-			       column-style))
-			   out)
-		       (dotimes (_i width out) (setq out (concat s out)))))
-		   (org-odt--table-cell-widths table info) "\n"))))))
+	     (lambda (table info)
+	       (let* ((table-style (or custom-table-style "OrgTable"))
+		      (column-style (format "%sColumn" table-style)))
+		 (mapconcat
+		  (lambda (width)
+		    (setq width (1+ width))
+		    (let ((s (format
+			      "\n<table:table-column table:style-name=\"%s\"/>"
+			      column-style))
+			  out)
+		      (dotimes (_i width out) (setq out (concat s out)))))
+		  (org-odt--table-cell-widths table info) "\n")))))
        (concat
 	;; caption.
 	(when caption
@@ -4410,84 +4403,82 @@ contextual information.
 Use `org-odt--table' to typeset the table.  Handle details
 pertaining to indentation here."
   (let* ((--element-preceded-by-table-p
-	  (function
-	   (lambda (element info)
-	     (cl-loop for el in (org-export-get-previous-element element info t)
-		      thereis (eq (org-element-type el) 'table)))))
+	  (lambda (element info)
+	    (cl-loop for el in (org-export-get-previous-element element info t)
+		     thereis (eq (org-element-type el) 'table))))
 	 (--walk-list-genealogy-and-collect-tags
-	  (function
-	   (lambda (table info)
-	     (let* ((genealogy (org-element-lineage table))
-		    (list-genealogy
-		     (when (eq (org-element-type (car genealogy)) 'item)
-		       (cl-loop for el in genealogy
-				when (memq (org-element-type el)
-					   '(item plain-list))
-				collect el)))
-		    (llh-genealogy
-		     (apply 'nconc
-			    (cl-loop for el in genealogy
-				     when (and (eq (org-element-type el) 'headline)
-					       (org-export-low-level-p el info))
-				     collect
-				     (list el
-					   (assq 'headline
-						 (org-element-contents
-						  (org-export-get-parent el)))))))
-		    parent-list)
-	       (nconc
-		;; Handle list genealogy.
-		(cl-loop for el in list-genealogy collect
-			 (cl-case (org-element-type el)
-			   (plain-list
-			    (setq parent-list el)
-			    (cons "</text:list>"
-				  (format "\n<text:list text:style-name=\"%s\" %s>"
-					  (cl-case (org-element-property :type el)
-					    (ordered "OrgNumberedList")
-					    (unordered "OrgBulletedList")
-					    (descriptive-1 "OrgDescriptionList")
-					    (descriptive-2 "OrgDescriptionList"))
-					  "text:continue-numbering=\"true\"")))
-			   (item
-			    (cond
-			     ((not parent-list)
-			      (if (funcall --element-preceded-by-table-p table info)
-				  '("</text:list-header>" . "<text:list-header>")
-				'("</text:list-item>" . "<text:list-header>")))
-			     ((funcall --element-preceded-by-table-p
-				       parent-list info)
-			      '("</text:list-header>" . "<text:list-header>"))
-			     (t '("</text:list-item>" . "<text:list-item>"))))))
-		;; Handle low-level headlines.
-		(cl-loop for el in llh-genealogy
-			 with step = 'item collect
-			 (cl-case step
-			   (plain-list
-			    (setq step 'item) ; Flip-flop
-			    (setq parent-list el)
-			    (cons "</text:list>"
-				  (format "\n<text:list text:style-name=\"%s\" %s>"
-					  (if (org-export-numbered-headline-p
-					       el info)
-					      "OrgNumberedList"
-					    "OrgBulletedList")
-					  "text:continue-numbering=\"true\"")))
-			   (item
-			    (setq step 'plain-list) ; Flip-flop
-			    (cond
-			     ((not parent-list)
-			      (if (funcall --element-preceded-by-table-p table info)
-				  '("</text:list-header>" . "<text:list-header>")
-				'("</text:list-item>" . "<text:list-header>")))
-			     ((let ((section? (org-export-get-previous-element
-					       parent-list info)))
-				(and section?
-				     (eq (org-element-type section?) 'section)
-				     (assq 'table (org-element-contents section?))))
-			      '("</text:list-header>" . "<text:list-header>"))
-			     (t
-			      '("</text:list-item>" . "<text:list-item>")))))))))))
+	  (lambda (table info)
+	    (let* ((genealogy (org-element-lineage table))
+		   (list-genealogy
+		    (when (eq (org-element-type (car genealogy)) 'item)
+		      (cl-loop for el in genealogy
+			       when (memq (org-element-type el)
+					  '(item plain-list))
+			       collect el)))
+		   (llh-genealogy
+		    (apply 'nconc
+			   (cl-loop for el in genealogy
+				    when (and (eq (org-element-type el) 'headline)
+					      (org-export-low-level-p el info))
+				    collect
+				    (list el
+					  (assq 'headline
+						(org-element-contents
+						 (org-export-get-parent el)))))))
+		   parent-list)
+	      (nconc
+	       ;; Handle list genealogy.
+	       (cl-loop for el in list-genealogy collect
+			(cl-case (org-element-type el)
+			  (plain-list
+			   (setq parent-list el)
+			   (cons "</text:list>"
+				 (format "\n<text:list text:style-name=\"%s\" %s>"
+					 (cl-case (org-element-property :type el)
+					   (ordered "OrgNumberedList")
+					   (unordered "OrgBulletedList")
+					   (descriptive-1 "OrgDescriptionList")
+					   (descriptive-2 "OrgDescriptionList"))
+					 "text:continue-numbering=\"true\"")))
+			  (item
+			   (cond
+			    ((not parent-list)
+			     (if (funcall --element-preceded-by-table-p table info)
+				 '("</text:list-header>" . "<text:list-header>")
+			       '("</text:list-item>" . "<text:list-header>")))
+			    ((funcall --element-preceded-by-table-p
+				      parent-list info)
+			     '("</text:list-header>" . "<text:list-header>"))
+			    (t '("</text:list-item>" . "<text:list-item>"))))))
+	       ;; Handle low-level headlines.
+	       (cl-loop for el in llh-genealogy
+			with step = 'item collect
+			(cl-case step
+			  (plain-list
+			   (setq step 'item) ; Flip-flop
+			   (setq parent-list el)
+			   (cons "</text:list>"
+				 (format "\n<text:list text:style-name=\"%s\" %s>"
+					 (if (org-export-numbered-headline-p
+					      el info)
+					     "OrgNumberedList"
+					   "OrgBulletedList")
+					 "text:continue-numbering=\"true\"")))
+			  (item
+			   (setq step 'plain-list) ; Flip-flop
+			   (cond
+			    ((not parent-list)
+			     (if (funcall --element-preceded-by-table-p table info)
+				 '("</text:list-header>" . "<text:list-header>")
+			       '("</text:list-item>" . "<text:list-header>")))
+			    ((let ((section? (org-export-get-previous-element
+					      parent-list info)))
+			       (and section?
+				    (eq (org-element-type section?) 'section)
+				    (assq 'table (org-element-contents section?))))
+			     '("</text:list-header>" . "<text:list-header>"))
+			    (t
+			     '("</text:list-item>" . "<text:list-item>"))))))))))
 	 (close-open-tags (funcall --walk-list-genealogy-and-collect-tags
 				   table info)))
     ;; OpenDocument schema does not permit table to occur within a
@@ -5195,19 +5186,18 @@ exported file."
 			    (make-temp-file (format "%s-" out-file-type) t)))
 	  (org-odt-manifest-file-entries nil)
 	  (--cleanup-xml-buffers
-	   (function
-	    (lambda nil
-	      ;; Kill all XML buffers.
-	      (dolist (file org-odt-xml-files)
-		(let ((buf (find-buffer-visiting
-			    (concat org-odt-zip-dir file))))
-		  (when buf
-		    (with-current-buffer buf
-		      (set-buffer-modified-p nil)
-		      (kill-buffer buf)))))
-	      ;; Delete temporary directory and also other embedded
-	      ;; files that get copied there.
-	      (delete-directory org-odt-zip-dir t)))))
+	   (lambda nil
+	     ;; Kill all XML buffers.
+	     (dolist (file org-odt-xml-files)
+	       (let ((buf (find-buffer-visiting
+			   (concat org-odt-zip-dir file))))
+		 (when buf
+		   (with-current-buffer buf
+		     (set-buffer-modified-p nil)
+		     (kill-buffer buf)))))
+	     ;; Delete temporary directory and also other embedded
+	     ;; files that get copied there.
+	     (delete-directory org-odt-zip-dir t))))
      (condition-case err
 	 (progn
 	   (unless (executable-find "zip")
