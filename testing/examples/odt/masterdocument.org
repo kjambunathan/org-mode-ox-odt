@@ -708,6 +708,7 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
 **** Target with CUSTOMID
      :PROPERTIES:
      :CUSTOM_ID: aabbccddeeff
+     :ID:       eda9d30b-d844-4689-bf4c-663cbfa86ab5
      :END:
 
 **** Target with ID
@@ -717,7 +718,7 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
 
 **** Dedicated Target Style1
 
-#+TARGET: Dedicated Target
+<<Dedicated Target>>
 **** Dedicated Target Style2
 
      There is a dedicated target at the end of this sentence -
@@ -734,15 +735,17 @@ $f \mapsto \frac{1}{\sqrt{2 \pi}}
 
      This is a link to [[#aabbccddeeff][Target with CUSTOMID]]. This is nodesc link to [[#aabbccddeeff]].
 
-**** COMMENT Reference to ID links
-     This is an ID link - [[id:bc5e1097-7644-4d33-a930-bfd075d4665f][Target with ID]].
+**** Reference to ID links
+     This is an ID link -
+     [[id:bc5e1097-7644-4d33-a930-bfd075d4665f][Target with ID]].
+     Another ID link - [[id:eda9d30b-d844-4689-bf4c-663cbfa86ab5]]
 
-**** COMMENT References to Dedicated Target
+**** References to Dedicated Target
 
      There is a link to nodesc [[Dedicated Target]] here. There is a link
      to [[Dedicated%20Target][Jump to Dedicated Target]] here.
 
-#     There is a link to [[Dedicated%20Target1][Dedicated Target1]] here.
+    There is a link to [[Dedicated%20Target1][Dedicated Target1]] here.
 
 **** References to Radioed Links
 
