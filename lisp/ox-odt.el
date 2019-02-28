@@ -2673,7 +2673,7 @@ SHORT-CAPTION are strings."
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
-	      (cons
+	      (list
 	       (concat
 		;; Sneak in a bookmark.  The bookmark is used when the
 		;; labeled element is referenced with a link that
@@ -2698,7 +2698,10 @@ SHORT-CAPTION are strings."
 				 (caption (or caption ""))
 				 (otherwise %)))
 			     caption-format "")))
-	       short-caption))
+	       short-caption
+	       (plist-get (assoc-default default-category
+					 org-odt-caption-and-xref-settings)
+			  :caption-position)))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-assert label)
@@ -2857,7 +2860,7 @@ used as a communication channel."
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p "paragraph" "as-char"))
 	 (captions (org-odt-format-label element info 'definition))
-	 (caption (car captions)) (_short-caption (cdr captions))
+	 (caption (nth 0 captions))
 	 (entity (concat (and caption "Captioned") embed-as "Image"))
 	 ;; Check if this link was created by LaTeX-to-PNG converter.
 	 (replaces (org-element-property
@@ -2895,7 +2898,6 @@ used as a communication channel."
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p 'paragraph 'character))
 	 (captions (org-odt-format-label element info 'definition))
-	 (_caption (car captions)) (_short-caption (cdr captions))
 	 ;; Check if this link was created by LaTeX-to-MathML
 	 ;; converter.
 	 (replaces (org-element-property
@@ -2993,7 +2995,7 @@ used as a communication channel."
 	     ("OrgInlineImage" nil "as-char"))
 	    ("CaptionedParagraphImage"
 	     ("OrgCaptionedImage"
-	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
+	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "as-char")
 	     ("OrgImageCaptionFrame" nil "paragraph"))
 	    ("CaptionedPageImage"
 	     ("OrgCaptionedImage"
@@ -3002,9 +3004,10 @@ used as a communication channel."
 	    ("InlineFormula" ("OrgInlineFormula" nil "as-char"))
 	    ("DisplayFormula" ("OrgDisplayFormula" nil "as-char"))
 	    ("CaptionedDisplayFormula"
-	     ("OrgCaptionedFormula" nil "paragraph")
+	     ("OrgCaptionedFormula" nil "as-char")
 	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
-	 (caption (car captions)) (short-caption (cdr captions))
+	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
+	 (caption-position (nth 2 captions))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
 	 (inner (nth 1 frame-cfg))
@@ -3043,14 +3046,15 @@ used as a communication channel."
 			     (when short-caption
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
-      (apply 'org-odt--textbox
-	     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		     "Illustration"
-		     (concat
-		      (apply 'org-odt--frame href width height
-			     (append inner title-and-desc))
-		      caption))
-	     width height outer)))))
+      (let ((text (apply 'org-odt--frame href width height
+			 (append inner title-and-desc))))
+	(apply 'org-odt--textbox
+	       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		       "Illustration"
+		       (cl-case caption-position
+			 (above (concat caption "<text:line-break/>" text))
+			 (below (concat text "<text:line-break/>" caption))))
+	       width height outer))))))
 
 (defun org-odt--enumerable-p (element _info)
   ;; Element should have a caption or label.
@@ -3990,18 +3994,23 @@ CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
   (let* ((_lang (org-element-property :language src-block))
 	 (captions (org-odt-format-label src-block info 'definition))
-	 (caption (car captions)) (_short-caption (cdr captions)))
-    (concat
-     (and caption
-	  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		  "Listing" caption))
-     (let ((--src-block (org-odt-format-code src-block info)))
-       ;; Is `:textbox' property non-nil?
-       (if (not (org-odt--read-attribute src-block :textbox)) --src-block
-	 ;; Yes.  Enclose it in a Text Box.
-	 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		 "Text_20_body"
-		 (org-odt--textbox --src-block nil nil nil)))))))
+	 (caption (nth 0 captions))
+	 (caption-position (nth 2 captions))
+	 (text (let ((--src-block (org-odt-format-code src-block info)))
+		 ;; Is `:textbox' property non-nil?
+		 (if (not (org-odt--read-attribute src-block :textbox)) --src-block
+		   ;; Yes.  Enclose it in a Text Box.
+		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			   "Text_20_body"
+			   (org-odt--textbox --src-block nil nil nil))))))
+    (cl-case caption-position
+      (above
+       (concat (and caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+				    "Listing" caption))
+	       text))
+      (below
+       (concat text (and caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+					 "Listing" caption)))))))
 
 
 ;;;; Statistics Cookie
@@ -4323,7 +4332,8 @@ contextual information."
     ;; Case 2: Native Org tables.
     (otherwise
      (let* ((captions (org-odt-format-label table info 'definition))
-	    (caption (car captions)) (short-caption (cdr captions))
+	    (caption (nth 0 captions)) (short-caption (nth 1 captions))
+	    (caption-position (nth 2 captions))
 	    (attributes (org-export-read-attribute :attr_odt table))
 	    (custom-table-style (nth 1 (org-odt-table-style-spec table info)))
 	    (table-column-specs
@@ -4338,26 +4348,30 @@ contextual information."
 			      column-style))
 			  out)
 		      (dotimes (_i width out) (setq out (concat s out)))))
-		  (org-odt--table-cell-widths table info) "\n")))))
-       (concat
-	;; caption.
-	(when caption
-	  (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		  "Table" caption))
-	;; begin table.
-	(let* ((automatic-name
-		(org-odt-add-automatic-style "Table" attributes)))
-	  (format
-	   "\n<table:table table:style-name=\"%s\"%s>"
-	   (or custom-table-style (cdr automatic-name) "OrgTable")
-	   (concat (when short-caption
-		     (format " table:name=\"%s\"" short-caption)))))
-	;; column specification.
-	(funcall table-column-specs table info)
-	;; actual contents.
-	"\n" contents
-	;; end table.
-	"</table:table>")))))
+		  (org-odt--table-cell-widths table info) "\n"))))
+	    (text (concat
+		   ;; begin table.
+		   (let* ((automatic-name
+			   (org-odt-add-automatic-style "Table" attributes)))
+		     (format
+		      "\n<table:table table:style-name=\"%s\"%s>"
+		      (or custom-table-style (cdr automatic-name) "OrgTable")
+		      (concat (when short-caption
+				(format " table:name=\"%s\"" short-caption)))))
+		   ;; column specification.
+		   (funcall table-column-specs table info)
+		   ;; actual contents.
+		   "\n" contents
+		   ;; end table.
+		   "</table:table>")))
+       (cl-case caption-position
+	 (above
+	  (concat (when caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+					"Table" caption))
+		  text))
+	 (below
+	  (concat text (when caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+					     "Table" caption)))))))))
 
 (defun org-odt-table (table contents info)
   "Transcode a TABLE element from Org to ODT.
