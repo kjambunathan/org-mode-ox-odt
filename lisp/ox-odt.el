@@ -2553,30 +2553,24 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
 ;;;; Links :: Label references
 
-(defun org-odt--enumerate (element info &optional predicate n)
-  (when predicate (cl-assert (funcall predicate element info)))
-  (let* ((--numbered-parent-headline-at-<=-n
-	  (lambda (element n info)
-	    (cl-loop for x in (org-element-lineage element)
-		     thereis (and (eq (org-element-type x) 'headline)
-				  (<= (org-export-get-relative-level x info) n)
-				  (org-export-numbered-headline-p x info)
-				  x))))
-	 (--enumerate
-	  (lambda (element scope info &optional predicate)
-	    (let ((counter 0))
-	      (org-element-map (or scope (plist-get info :parse-tree))
-		  (org-element-type element)
-		(lambda (el)
-		  (and (or (not predicate) (funcall predicate el info))
-		       (cl-incf counter)
-		       (eq element el)
-		       counter))
-		info 'first-match))))
-	 (scope (funcall --numbered-parent-headline-at-<=-n
-			 element (or n (string-to-number (plist-get info :odt-display-outline-level)))
-			 info))
-	 (ordinal (funcall --enumerate element scope info predicate))
+(defun org-odt--enumerate (element info &optional n)
+  (let* ((category (or (org-odt--element-category element info)
+		       (error "Refusing to enumerate the uncategorizable element: %S" element)))
+	 (n (or n (string-to-number (plist-get info :odt-display-outline-level))))
+	 (scope (cl-loop for x in (org-element-lineage element)
+			 thereis (and (eq (org-element-type x) 'headline)
+				      (<= (org-export-get-relative-level x info) n)
+				      (org-export-numbered-headline-p x info)
+				      x)))
+	 (ordinal (let ((counter 0))
+		    (org-element-map (or scope (plist-get info :parse-tree))
+			(org-element-type element)
+		      (lambda (el)
+			(and (eq category (org-odt--element-category el info))
+			     (cl-incf counter)
+			     (eq element el)
+			     counter))
+		      info 'first-match)))
 	 (tag
 	  (concat
 	   ;; Section number.
@@ -2588,6 +2582,19 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	   ;; Ordinal.
 	   (number-to-string ordinal))))
     tag))
+
+(defun org-odt--element-category (element info)
+  (cl-case (org-element-type element)
+    (table :TABLE:)
+    (src-block :LISTING:)
+    ((link paragraph)
+     (cond
+      ((org-odt--enumerable-latex-image-p element info)
+       :DVIPNG-IMAGE:)
+      ((org-odt--enumerable-image-p element info)
+       :FIGURE:)
+      ((org-odt--enumerable-formula-p element info)
+       :MATH-FORMULA:)))))
 
 (defun org-odt-format-label (element info op &optional format-prop)
   "Return a label for ELEMENT.
@@ -2653,28 +2660,14 @@ SHORT-CAPTION are strings."
 	     (when short-caption
 	       (org-export-data-with-backend short-caption backend info))))))
     (when (org-odt--enumerable-p caption-from info)
-      (let* ((default-category
-	       (cl-case (org-element-type element)
-		 (table :TABLE:)
-		 (src-block :LISTING:)
-		 ((link paragraph)
-		  (cond
-		   ((org-odt--enumerable-latex-image-p element info)
-		    :DVIPNG-IMAGE:)
-		   ((org-odt--enumerable-image-p element info)
-		    :FIGURE:)
-		   ((org-odt--enumerable-formula-p element info)
-		    :MATH-FORMULA:)
-		   (t (error "Don't know how to format label for link: %S"
-			     element))))
-		 (t (error "Don't know how to format label for element type: %s"
-			   (org-element-type element)))))
+      (let* ((default-category (org-odt--element-category element info))
 	     seqno)
 	(cl-assert default-category)
 	(cl-destructuring-bind (counter category predicate)
 	    (assoc-default default-category org-odt-category-map-alist)
+	  (cl-assert predicate)
 	  ;; Compute sequence number of the element.
-	  (setq seqno (org-odt--enumerate element info predicate))
+	  (setq seqno (org-odt--enumerate element info))
 	  ;; Localize category string.
 	  (setq category (org-export-translate category :utf-8 info))
 	  (cl-case op
