@@ -319,7 +319,7 @@ CAPTION-STYLE-NAME is the paragraph style used for typesetting
 the captions.
 
 ENUMERATOR-PREDICATE is used for assigning a sequence number to
-the entity.  See `org-odt--enumerate'.")
+the entity.  See `org-odt-format-label'.")
 
 (defvar org-odt-toc-templates
   (mapcar (lambda (value)
@@ -2563,36 +2563,6 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
 ;;;; Links :: Label references
 
-(defun org-odt--enumerate (element info &optional n)
-  (let* ((category (or (org-odt--element-category element info)
-		       (error "Refusing to enumerate the uncategorizable element: %S" element)))
-	 (n (or n (string-to-number (plist-get info :odt-display-outline-level))))
-	 (scope (cl-loop for x in (org-element-lineage element)
-			 thereis (and (eq (org-element-type x) 'headline)
-				      (<= (org-export-get-relative-level x info) n)
-				      (org-export-numbered-headline-p x info)
-				      x)))
-	 (ordinal (let ((counter 0))
-		    (org-element-map (or scope (plist-get info :parse-tree))
-			(org-element-type element)
-		      (lambda (el)
-			(and (eq category (org-odt--element-category el info))
-			     (cl-incf counter)
-			     (eq element el)
-			     counter))
-		      info 'first-match)))
-	 (tag
-	  (concat
-	   ;; Section number.
-	   (and scope
-		(mapconcat 'number-to-string
-			   (org-export-get-headline-number scope info) "."))
-	   ;; Separator.
-	   (and scope ".")
-	   ;; Ordinal.
-	   (number-to-string ordinal))))
-    tag))
-
 (defun org-odt--element-category (element info)
   (cl-case (org-element-type element)
     (table :TABLE:)
@@ -2670,14 +2640,38 @@ SHORT-CAPTION are strings."
 	     (when short-caption
 	       (org-export-data-with-backend short-caption backend info))))))
     (when (org-odt--enumerable-p caption-from info)
-      (let* ((category (org-odt--element-category element info))
-	     seqno)
-	(cl-assert category)
+      (let* ((category (or (org-odt--element-category element info)
+			   (error "Refusing to enumerate the uncategorizable element: %S"
+				  element)))
+	     ;; Compute sequence number of the element.
+	     (scope (cl-loop for x in (org-element-lineage element)
+			     with n = (string-to-number
+				       (plist-get info :odt-display-outline-level))
+			     thereis (and (eq (org-element-type x) 'headline)
+					  (<= (org-export-get-relative-level x info) n)
+					  (org-export-numbered-headline-p x info)
+					  x)))
+	     (ordinal (let ((counter 0))
+			(org-element-map (or scope (plist-get info :parse-tree))
+			    (org-element-type element)
+			  (lambda (el)
+			    (and (eq category (org-odt--element-category el info))
+				 (cl-incf counter)
+				 (eq element el)
+				 counter))
+			  info 'first-match)))
+	     (seqno (concat
+		     ;; Section number.
+		     (and scope
+			  (mapconcat 'number-to-string
+				     (org-export-get-headline-number scope info) "."))
+		     ;; Separator.
+		     (and scope ".")
+		     ;; Ordinal.
+		     (number-to-string ordinal))))
 	(cl-destructuring-bind (variable entity-name caption-style-name predicate)
 	    (assoc-default category org-odt-category-map-alist)
 	  (cl-assert predicate)
-	  ;; Compute sequence number of the element.
-	  (setq seqno (org-odt--enumerate element info))
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
