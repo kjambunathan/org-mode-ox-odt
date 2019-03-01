@@ -295,16 +295,16 @@ according to the default face identified by the `htmlfontify'.")
   "Limiting dimensions for an embedded image.")
 
 (defvar org-odt-category-map-alist
-  '((:TABLE:        "Table"        "Table"    org-odt--enumerable-p            )
-    (:FIGURE:       "Illustration" "Figure"   org-odt--enumerable-image-p      )
-    (:MATH-FORMULA: "Text"         "Equation" org-odt--enumerable-formula-p    )
-    (:DVIPNG-IMAGE: "Equation"     "Equation" org-odt--enumerable-latex-image-p)
-    (:LISTING:      "Listing"      "Listing"  org-odt--enumerable-p            ))
+  '((:TABLE:        "Table"        "Table"    "Table"		org-odt--enumerable-p            )
+    (:FIGURE:       "Illustration" "Figure"   "Illustration"	org-odt--enumerable-image-p      )
+    (:MATH-FORMULA: "Text"         "Equation" "Illustration"	org-odt--enumerable-formula-p    )
+    (:DVIPNG-IMAGE: "Equation"     "Equation" "Illustration"	org-odt--enumerable-latex-image-p)
+    (:LISTING:      "Listing"      "Listing"  "Listing"		org-odt--enumerable-p            ))
   "Map a CATEGORY-HANDLE to OD-VARIABLE and LABEL-STYLE.
 
 This is a list where each entry is of the form:
 
-  (CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME ENUMERATOR-PREDICATE)
+  (CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
 
 CATEGORY_HANDLE identifies the captionable entity in question.
 
@@ -315,12 +315,15 @@ the entity.  These counters are declared within
 
 CATEGORY-NAME is used for qualifying captions on export.
 
+CAPTION-STYLE-NAME is the paragraph style used for typesetting
+the captions.
+
 ENUMERATOR-PREDICATE is used for assigning a sequence number to
 the entity.  See `org-odt--enumerate'.")
 
 (defvar org-odt-toc-templates
   (mapcar (lambda (value)
-	    (cl-destructuring-bind (counter category _predicate)
+	    (cl-destructuring-bind (counter category _caption-style-name _predicate)
 		(assoc-default (assoc-default value '(("figures" . :FIGURE:)
 						      ("listings" . :LISTING:)
 						      ("tables" . :TABLE:)))
@@ -2663,41 +2666,43 @@ SHORT-CAPTION are strings."
       (let* ((default-category (org-odt--element-category element info))
 	     seqno)
 	(cl-assert default-category)
-	(cl-destructuring-bind (counter category predicate)
+	(cl-destructuring-bind (counter category caption-style-name predicate)
 	    (assoc-default default-category org-odt-category-map-alist)
 	  (cl-assert predicate)
 	  ;; Compute sequence number of the element.
 	  (setq seqno (org-odt--enumerate element info))
-	  ;; Localize category string.
-	  (setq category (org-export-translate category :utf-8 info))
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
 	      (list
-	       (concat
-		;; Sneak in a bookmark.  The bookmark is used when the
-		;; labeled element is referenced with a link that
-		;; provides its own description.
-		(org-odt--target "" label)
-		;; Label definition: Typically formatted as below:
-		;;     CATEGORY SEQ-NO: LONG CAPTION
-		;; with translation for correct punctuation.
-		(let* ((caption-format
-			(plist-get
-			 (assoc-default default-category
-					org-odt-caption-and-xref-settings)
-			 (or format-prop :caption-format))))
-		  (mapconcat (lambda (%)
-			       (cl-case %
-				 (category
-				  (org-export-translate category :utf-8 info))
-				 (counter
-				  (format
-				   "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-				   label counter counter seqno))
-				 (caption (or caption ""))
-				 (otherwise %)))
-			     caption-format "")))
+	       (format
+		"\n<text:p text:style-name=\"%s\">%s</text:p>"
+		caption-style-name
+		(concat
+		 ;; Sneak in a bookmark.  The bookmark is used when the
+		 ;; labeled element is referenced with a link that
+		 ;; provides its own description.
+		 (org-odt--target "" label)
+		 ;; Label definition: Typically formatted as below:
+		 ;;     CATEGORY SEQ-NO: LONG CAPTION
+		 ;; with translation for correct punctuation.
+		 (let* ((caption-format
+			 (plist-get
+			  (assoc-default default-category
+					 org-odt-caption-and-xref-settings)
+			  (or format-prop :caption-format))))
+		   (mapconcat (lambda (%)
+				(cl-case %
+				  (category
+				   ;; Localize category string
+				   (org-export-translate category :utf-8 info))
+				  (counter
+				   (format
+				    "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
+				    label counter counter seqno))
+				  (caption (or caption ""))
+				  (otherwise %)))
+			      caption-format ""))))
 	       short-caption
 	       (plist-get (assoc-default default-category
 					 org-odt-caption-and-xref-settings)
@@ -3049,14 +3054,11 @@ used as a communication channel."
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			  "Text_20_body"
 			  (apply 'org-odt--frame href width height
-				 (append inner title-and-desc))))
-	    (caption-text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-				  "Illustration"
-				  caption)))
+				 (append inner title-and-desc)))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
-			 (above (concat caption-text text))
-			 (below (concat text caption-text)))
+		 (above (concat caption text))
+		 (t (concat text caption)))
 	       width height outer))))))
 
 (defun org-odt--enumerable-p (element _info)
@@ -4007,13 +4009,8 @@ contextual information."
 			   "Text_20_body"
 			   (org-odt--textbox --src-block nil nil nil))))))
     (cl-case caption-position
-      (above
-       (concat (and caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-				    "Listing" caption))
-	       text))
-      (below
-       (concat text (and caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-					 "Listing" caption)))))))
+      (above (concat caption text))
+      (t (concat text caption)))))
 
 
 ;;;; Statistics Cookie
@@ -4368,13 +4365,8 @@ contextual information."
 		   ;; end table.
 		   "</table:table>")))
        (cl-case caption-position
-	 (above
-	  (concat (when caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-					"Table" caption))
-		  text))
-	 (below
-	  (concat text (when caption (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-					     "Table" caption)))))))))
+	 (above (concat caption text))
+	 (t (concat text caption)))))))
 
 (defun org-odt-table (table contents info)
   "Transcode a TABLE element from Org to ODT.
