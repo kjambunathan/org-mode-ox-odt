@@ -3046,14 +3046,17 @@ used as a communication channel."
 			     (when short-caption
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
-      (let ((text (apply 'org-odt--frame href width height
-			 (append inner title-and-desc))))
+      (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			  "Text_20_body"
+			  (apply 'org-odt--frame href width height
+				 (append inner title-and-desc))))
+	    (caption-text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+				  "Illustration"
+				  caption)))
 	(apply 'org-odt--textbox
-	       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		       "Illustration"
-		       (cl-case caption-position
-			 (above (concat caption "<text:line-break/>" text))
-			 (below (concat text "<text:line-break/>" caption))))
+	       (cl-case caption-position
+			 (above (concat caption-text text))
+			 (below (concat text caption-text)))
 	       width height outer))))))
 
 (defun org-odt--enumerable-p (element _info)
