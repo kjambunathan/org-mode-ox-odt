@@ -2675,34 +2675,37 @@ SHORT-CAPTION are strings."
 	    ;; Case 1: Handle Label definition.
 	    (definition
 	      (list
-	       (format
-		"\n<text:p text:style-name=\"%s\">%s</text:p>"
-		caption-style-name
-		(concat
-		 ;; Sneak in a bookmark.  The bookmark is used when the
-		 ;; labeled element is referenced with a link that
-		 ;; provides its own description.
-		 (org-odt--target "" label)
-		 ;; Label definition: Typically formatted as below:
-		 ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
-		 ;; with translation for correct punctuation.
-		 (let* ((caption-format
-			 (plist-get
-			  (assoc-default category
-					 org-odt-caption-and-xref-settings)
-			  (or format-prop :caption-format))))
-		   (mapconcat (lambda (%)
-				(cl-case %
-				  (category
-				   ;; Localize entity name.
-				   (org-export-translate entity-name :utf-8 info))
-				  (counter
-				   (format
-				    "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-				    label variable variable seqno))
-				  (caption (or caption ""))
-				  (otherwise %)))
-			      caption-format ""))))
+	       (let ((caption-text
+		      (concat
+		       ;; Sneak in a bookmark.  The bookmark is used when the
+		       ;; labeled element is referenced with a link that
+		       ;; provides its own description.
+		       (org-odt--target "" label)
+		       ;; Label definition: Typically formatted as below:
+		       ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
+		       ;; with translation for correct punctuation.
+		       (let* ((caption-format
+			       (plist-get
+				(assoc-default category
+					       org-odt-caption-and-xref-settings)
+				(or format-prop :caption-format))))
+			 (mapconcat (lambda (%)
+				      (cl-case %
+					(category
+					 ;; Localize entity name.
+					 (org-export-translate entity-name :utf-8 info))
+					(counter
+					 (format
+					  "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
+					  label variable variable seqno))
+					(caption (or caption ""))
+					(otherwise %)))
+				    caption-format "")))))
+		 (cl-case (or format-prop :caption-format)
+		   (:caption-format
+		    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			    caption-style-name caption-text))
+		   (t caption-text)))
 	       short-caption
 	       (plist-get (assoc-default category
 					 org-odt-caption-and-xref-settings)
