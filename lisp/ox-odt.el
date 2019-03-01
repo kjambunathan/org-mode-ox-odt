@@ -304,16 +304,16 @@ according to the default face identified by the `htmlfontify'.")
 
 This is a list where each entry is of the form:
 
-  (CATEGORY-HANDLE OD-VARIABLE CATEGORY-NAME CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
+  (CATEGORY-HANDLE OD-VARIABLE ENTITY-NAME CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
 
-CATEGORY_HANDLE identifies the captionable entity in question.
+CATEGORY-HANDLE identifies the captionable entity in question.
 
 OD-VARIABLE is the OpenDocument sequence counter associated with
 the entity.  These counters are declared within
 \"<text:sequence-decls>...</text:sequence-decls>\" block of
 `org-odt-content-template-file'.
 
-CATEGORY-NAME is used for qualifying captions on export.
+ENTITY-NAME is used for qualifying captions on export.
 
 CAPTION-STYLE-NAME is the paragraph style used for typesetting
 the captions.
@@ -323,13 +323,13 @@ the entity.  See `org-odt--enumerate'.")
 
 (defvar org-odt-toc-templates
   (mapcar (lambda (value)
-	    (cl-destructuring-bind (counter category _caption-style-name _predicate)
+	    (cl-destructuring-bind (counter entity-name _caption-style-name _predicate)
 		(assoc-default (assoc-default value '(("figures" . :FIGURE:)
 						      ("listings" . :LISTING:)
 						      ("tables" . :TABLE:)))
 			       org-odt-category-map-alist)
 	      (let ((caption-sequence-format "text")
-		    (index-title (format "List of %ss" category)))
+		    (index-title (format "List of %ss" entity-name)))
 		(cons
 		 value
 		 (format
@@ -2663,11 +2663,11 @@ SHORT-CAPTION are strings."
 	     (when short-caption
 	       (org-export-data-with-backend short-caption backend info))))))
     (when (org-odt--enumerable-p caption-from info)
-      (let* ((default-category (org-odt--element-category element info))
+      (let* ((category (org-odt--element-category element info))
 	     seqno)
-	(cl-assert default-category)
-	(cl-destructuring-bind (counter category caption-style-name predicate)
-	    (assoc-default default-category org-odt-category-map-alist)
+	(cl-assert category)
+	(cl-destructuring-bind (variable entity-name caption-style-name predicate)
+	    (assoc-default category org-odt-category-map-alist)
 	  (cl-assert predicate)
 	  ;; Compute sequence number of the element.
 	  (setq seqno (org-odt--enumerate element info))
@@ -2684,27 +2684,27 @@ SHORT-CAPTION are strings."
 		 ;; provides its own description.
 		 (org-odt--target "" label)
 		 ;; Label definition: Typically formatted as below:
-		 ;;     CATEGORY SEQ-NO: LONG CAPTION
+		 ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
 		 ;; with translation for correct punctuation.
 		 (let* ((caption-format
 			 (plist-get
-			  (assoc-default default-category
+			  (assoc-default category
 					 org-odt-caption-and-xref-settings)
 			  (or format-prop :caption-format))))
 		   (mapconcat (lambda (%)
 				(cl-case %
 				  (category
-				   ;; Localize category string
-				   (org-export-translate category :utf-8 info))
+				   ;; Localize entity name.
+				   (org-export-translate entity-name :utf-8 info))
 				  (counter
 				   (format
 				    "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-				    label counter counter seqno))
+				    label variable variable seqno))
 				  (caption (or caption ""))
 				  (otherwise %)))
 			      caption-format ""))))
 	       short-caption
-	       (plist-get (assoc-default default-category
+	       (plist-get (assoc-default category
 					 org-odt-caption-and-xref-settings)
 			  :caption-position)))
 	    ;; Case 2: Handle Label reference.
@@ -2712,16 +2712,16 @@ SHORT-CAPTION are strings."
 	     (cl-assert label)
 	     (let* ((xref-format
 		     (plist-get
-		      (assoc-default default-category
+		      (assoc-default category
 				     org-odt-caption-and-xref-settings)
 		      (or format-prop :xref-format)))
 		    (standard-value-p
 		     (let ((standard-value
 			    (eval (car (get 'org-odt-caption-and-xref-settings
 					    'standard-value)))))
-		       (equal (assoc-default default-category
+		       (equal (assoc-default category
 					     org-odt-caption-and-xref-settings)
-			      (assoc-default default-category standard-value))))
+			      (assoc-default category standard-value))))
 		    (value (if standard-value-p seqno "[PLS. UPDATE FIELDS]")))
 	       (mapconcat (lambda (%)
 			    (cond
