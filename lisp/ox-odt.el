@@ -1666,12 +1666,14 @@ original parsed data.  INFO is a plist holding export options."
   ;; Update styles file.
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
   ;; Write styles file.
-  (let* ((styles-file (plist-get info :odt-styles-file))
-	 ;; Non-availability of styles.xml is not a critical
-	 ;; error. For now, throw an error.
-	 (styles-file (or styles-file
-			  (expand-file-name "OrgOdtStyles.xml"
-					    org-odt-styles-dir)))
+  (let* ((styles-file
+	  (let ((file (plist-get info :odt-styles-file)))
+	    (cond
+	     ((or (not file) (string= file ""))
+	      (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir))
+	     ((file-name-absolute-p file) file)
+	     (t (expand-file-name
+		 file (file-name-directory (plist-get info :input-file)))))))
 	 (styles-file-type (file-name-extension styles-file))
 	 (extra-images (plist-get info :odt-extra-images)))
     (message "ox-odt: Styles file is %s" styles-file)
@@ -1790,9 +1792,14 @@ original parsed data.  INFO is a plist holding export options."
 	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
     (with-temp-buffer
       (insert-file-contents
-       (let* ((content-template-file (or (plist-get info :odt-content-template-file)
-					 (expand-file-name "OrgOdtContentTemplate.xml"
-							   org-odt-styles-dir))))
+       (let ((content-template-file
+	      (let ((file (plist-get info :odt-content-template-file)))
+		(cond
+		 ((or (not file) (string= file ""))
+		  (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir))
+		 ((file-name-absolute-p file) file)
+		 (t (expand-file-name
+		     file (file-name-directory (plist-get info :input-file))))))))
 	 (message "ox-odt: Content template file is %s" content-template-file)
 	 content-template-file))
       ;; Write automatic styles.
