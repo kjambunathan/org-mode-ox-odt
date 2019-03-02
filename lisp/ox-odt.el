@@ -294,46 +294,51 @@ according to the default face identified by the `htmlfontify'.")
 (defvar org-odt-max-image-size '(17.0 . 20.0)
   "Limiting dimensions for an embedded image.")
 
-(defvar org-odt-category-map-alist
-  '((:TABLE:        "Table"        "Table"    "Table"		org-odt--enumerable-p            )
-    (:FIGURE:       "Illustration" "Figure"   "Illustration"	org-odt--enumerable-image-p      )
-    (:MATH-FORMULA: "Text"         "Equation" "Illustration"	org-odt--enumerable-formula-p    )
-    (:DVIPNG-IMAGE: "Equation"     "Equation" "Illustration"	org-odt--enumerable-latex-image-p)
-    (:LISTING:      "Listing"      "Listing"  "Listing"		org-odt--enumerable-p            ))
-  "Map a CATEGORY-HANDLE to OD-VARIABLE and LABEL-STYLE.
+(defvar org-odt-caption-and-numbering-settings
+  '((:TABLE:        :variable "Table"        :entity-name "Table"    :caption-style "Table"		:predicate org-odt--enumerable-p            )
+    (:FIGURE:       :variable "Illustration" :entity-name "Figure"   :caption-style "Illustration"	:predicate org-odt--enumerable-image-p      )
+    (:MATH-FORMULA: :variable "Text"         :entity-name "Equation" :caption-style "Illustration"	:predicate org-odt--enumerable-formula-p    )
+    (:DVIPNG-IMAGE: :variable "Equation"     :entity-name "Equation" :caption-style "Illustration"	:predicate org-odt--enumerable-latex-image-p)
+    (:LISTING:      :variable "Listing"      :entity-name "Listing"  :caption-style "Listing"		:predicate org-odt--enumerable-p            ))
+  "Map a CATEGORY-HANDLE to CATEGORY-PROPS.
 
-This is a list where each entry is of the form:
+This is an alist where each entry is of the form:
 
-  (CATEGORY-HANDLE OD-VARIABLE ENTITY-NAME CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
+  (CATEGORY . CATEGORY-PROPS)
 
-CATEGORY-HANDLE identifies the captionable entity in question.
+CATEGORY, a symbol, identifies the type of a captionable entity.
 
-OD-VARIABLE is the OpenDocument sequence counter associated with
-the entity.  These counters are declared within
-\"<text:sequence-decls>...</text:sequence-decls>\" block of
-`org-odt-content-template-file'.
+CATEGORY-PROPS, a plist, controls how the captions of type
+CATEGORY are enumerated and typeset.
 
-ENTITY-NAME is used for qualifying captions on export.
+CATEGORY-PROPS allows following properties:
 
-CAPTION-STYLE-NAME is the paragraph style used for typesetting
-the captions.
+  - `:variable' :: a string. This is the OpenDocument sequence
+       counter associated with the entity.  This counter
+       corresponds to the counters declared within
+       \"<text:sequence-decls>...</text:sequence-decls>\" block
+       of `org-odt-content-template-file'.
 
-ENUMERATOR-PREDICATE is used for assigning a sequence number to
-the entity.  See `org-odt-format-label'.")
+  - `:entity-name' :: a string.  This qualifies captions on
+       export.
+
+  - `:caption-style' :: a string.  This is the paragraph style
+       used for typesetting the captions.
+
+  - `:predicate' :: a boolean function.  This checks if a given
+       element allows captions, and is of type CATEGORY.
+
+See `org-odt-format-label'.")
 
 (defvar org-odt-toc-templates
-  (mapcar (lambda (value)
-	    (cl-destructuring-bind (counter entity-name _caption-style-name _predicate)
-		(assoc-default (assoc-default value '(("figures" . :FIGURE:)
-						      ("listings" . :LISTING:)
-						      ("tables" . :TABLE:)))
-			       org-odt-category-map-alist)
-	      (let ((caption-sequence-format "text")
-		    (index-title (format "List of %ss" entity-name)))
-		(cons
-		 value
-		 (format
-		  "
+  (cl-loop for (category . category-props) in org-odt-caption-and-numbering-settings
+	   when (memq category '(:FIGURE: :LISTING: :TABLE:)) collect
+	   (let ((caption-sequence-format "text")
+		 (index-title (format "List of %ss" (plist-get category-props :entity-name))))
+	     (cons
+	      (downcase (concat (plist-get category-props :entity-name) "s"))
+	      (format
+	       "
    <text:illustration-index text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Org Index1\">
     <text:illustration-index-source text:caption-sequence-name=\"%s\" text:caption-sequence-format=\"%s\">
      <text:index-title-template text:style-name=\"Org_20_Index_20_Heading\">%s</text:index-title-template>
@@ -352,8 +357,10 @@ the entity.  See `org-odt-format-label'.")
     </text:index-body>
    </text:illustration-index>
 "
-		  counter caption-sequence-format index-title index-title)))))
-	  '("figures" "listings" "tables")))
+	       (plist-get category-props :variable)
+	       caption-sequence-format
+	       index-title
+	       index-title)))))
 
 (defvar org-odt-manifest-file-entries nil)
 (defvar hfy-user-sheet-assoc)
@@ -1876,14 +1883,11 @@ original parsed data.  INFO is a plist holding export options."
       ;; Update sequence decls according to user preference.
       (insert
        (format
-	"\n<text:sequence-decls>\n%s\n</text:sequence-decls>"
-	(mapconcat
-	 (lambda (x)
-	   (format
-	    "<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-	    (string-to-number (plist-get info :odt-display-outline-level))
-	    (nth 1 x)))
-	 org-odt-category-map-alist "\n")))
+	"\n<text:sequence-decls>%s\n</text:sequence-decls>"
+	(cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings concat
+		 (format "\n<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
+			 (string-to-number (plist-get info :odt-display-outline-level))
+			 (plist-get category-props :variable)))))
       ;; Position the cursor to document body.
       (goto-char (point-min))
       (re-search-forward "</office:text>" nil nil)
@@ -2669,9 +2673,7 @@ SHORT-CAPTION are strings."
 		     (and scope ".")
 		     ;; Ordinal.
 		     (number-to-string ordinal))))
-	(cl-destructuring-bind (variable entity-name caption-style-name predicate)
-	    (assoc-default category org-odt-category-map-alist)
-	  (cl-assert predicate)
+	(let* ((category-props (assoc-default category org-odt-caption-and-numbering-settings)))
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
@@ -2685,55 +2687,52 @@ SHORT-CAPTION are strings."
 		       ;; Label definition: Typically formatted as below:
 		       ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
 		       ;; with translation for correct punctuation.
-		       (let* ((caption-format
-			       (plist-get
-				(assoc-default category
-					       org-odt-caption-and-xref-settings)
-				(or format-prop :caption-format))))
-			 (mapconcat (lambda (%)
-				      (cl-case %
-					(category
-					 ;; Localize entity name.
-					 (org-export-translate entity-name :utf-8 info))
-					(counter
-					 (format
-					  "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-					  label variable variable seqno))
-					(caption (or caption ""))
-					(otherwise %)))
-				    caption-format "")))))
+		       (cl-loop for % in (plist-get
+					  (assoc-default category
+							 org-odt-caption-and-xref-settings)
+					  (or format-prop :caption-format))
+				concat
+				(pcase %
+				  ('category
+				   ;; Localize entity name.
+				   (org-export-translate (plist-get category-props :entity-name) :utf-8 info))
+				  ('counter
+				   (format
+				    "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
+				    label
+				    (plist-get category-props :variable)
+				    (plist-get category-props :variable)
+				    seqno))
+				  ('caption (or caption ""))
+				  (_ %))))))
 		 (cl-case (or format-prop :caption-format)
 		   (:caption-format
 		    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			    caption-style-name caption-text))
+			    (plist-get category-props :caption-style)
+			    caption-text))
 		   (t caption-text)))
 	       short-caption
-	       (plist-get (assoc-default category
-					 org-odt-caption-and-xref-settings)
+	       (plist-get (assoc-default category org-odt-caption-and-xref-settings)
 			  :caption-position)))
 	    ;; Case 2: Handle Label reference.
 	    (reference
-	     (cl-assert label)
-	     (let* ((xref-format
-		     (plist-get
-		      (assoc-default category
-				     org-odt-caption-and-xref-settings)
-		      (or format-prop :xref-format)))
-		    (standard-value-p
-		     (let ((standard-value
-			    (eval (car (get 'org-odt-caption-and-xref-settings
-					    'standard-value)))))
-		       (equal (assoc-default category
-					     org-odt-caption-and-xref-settings)
-			      (assoc-default category standard-value))))
-		    (value (if standard-value-p seqno "[PLS. UPDATE FIELDS]")))
-	       (mapconcat (lambda (%)
-			    (cond
-			     ((stringp %) %)
-			     ((symbolp %)
-			      (format "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
-				      % label value))))
-			  xref-format "")))
+	     (cl-loop for % in (plist-get
+				(assoc-default category org-odt-caption-and-xref-settings)
+				(or format-prop :xref-format))
+		      concat
+		      (pcase %
+			((pred stringp) %)
+			((pred symbolp)
+			 (format
+			  "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
+			  %
+			  label
+			  (if (equal (assoc-default category org-odt-caption-and-xref-settings)
+				     (assoc-default category
+						    (eval (car (get 'org-odt-caption-and-xref-settings
+								    'standard-value)))))
+			      seqno
+			    "[PLS. UPDATE FIELDS]"))))))
 	    (t (error "Unknown %S on label" op))))))))
 
 
