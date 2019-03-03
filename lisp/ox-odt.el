@@ -2587,55 +2587,56 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 ;;;; Links :: Label references
 
 (defun org-odt--element-category (element info)
-  (when-let ((category
-	      (cl-case (org-element-type element)
-		(table :TABLE:)
-		(src-block :LISTING:)
-		((link paragraph)
-		 (cond
-		  ((org-odt--enumerable-latex-image-p element info)
-		   :DVIPNG-IMAGE:)
-		  ((org-odt--enumerable-image-p element info)
-		   :FIGURE:)
-		  ((org-odt--enumerable-formula-p element info)
-		   :MATH-FORMULA:))))))
-    (let ((caption-from
-	   (cl-case (org-element-type element)
-	     (link (org-export-get-parent-element element))
-	     (t element))))
-      (or
-       ;; An element can forced to be of a certain category by the
-       ;; use of `:category' property.  For example, the following
-       ;; table will be captioned as if it is a figure.
-       ;;
-       ;; 	   #+NAME: table
-       ;; 	   #+CAPTION: A Table
-       ;; 	   #+ATTR_ODT: :category "figure"
-       ;; 	   | 1 | 2 |
-       ;; 	   | 3 | 4 |
-       ;;
-       ;; This property is particularly useful while typesetting
-       ;; side-by-side figures using a table like the one below.
-       ;;
-       ;; #+NAME: table
-       ;; #+CAPTION: Animals
-       ;; #+ATTR_ODT: :category "figure"
-       ;; #+ATTR_ODT: :list-table t
-       ;; -
-       ;;   -
-       ;;     #+NAME: dog
-       ;;     #+CAPTION: A Dog
-       ;;     [[./dog.png]]
-       ;;   -
-       ;;     #+NAME: goat
-       ;;     #+CAPTION: A Goat
-       ;;     [[./goat.png]]
-       ;;
-       ;; See `org-odt-category-attribute-to-category' for a list of
-       ;; allowed values of `:category'.
-       (assoc-default (org-odt--read-attribute caption-from :category)
-		      org-odt-category-attribute-to-category)
-       category))))
+  (let ((category
+	 (cl-case (org-element-type element)
+	   (table :TABLE:)
+	   (src-block :LISTING:)
+	   ((link paragraph)
+	    (cond
+	     ((org-odt--enumerable-latex-image-p element info)
+	      :DVIPNG-IMAGE:)
+	     ((org-odt--enumerable-image-p element info)
+	      :FIGURE:)
+	     ((org-odt--enumerable-formula-p element info)
+	      :MATH-FORMULA:))))))
+    (when category
+      (let ((caption-from
+	     (cl-case (org-element-type element)
+	       (link (org-export-get-parent-element element))
+	       (t element))))
+	(or
+	 ;; An element can forced to be of a certain category by the
+	 ;; use of `:category' property.  For example, the following
+	 ;; table will be captioned as if it is a figure.
+	 ;;
+	 ;; 	   #+NAME: table
+	 ;; 	   #+CAPTION: A Table
+	 ;; 	   #+ATTR_ODT: :category "figure"
+	 ;; 	   | 1 | 2 |
+	 ;; 	   | 3 | 4 |
+	 ;;
+	 ;; This property is particularly useful while typesetting
+	 ;; side-by-side figures using a table like the one below.
+	 ;;
+	 ;; #+NAME: table
+	 ;; #+CAPTION: Animals
+	 ;; #+ATTR_ODT: :category "figure"
+	 ;; #+ATTR_ODT: :list-table t
+	 ;; -
+	 ;;   -
+	 ;;     #+NAME: dog
+	 ;;     #+CAPTION: A Dog
+	 ;;     [[./dog.png]]
+	 ;;   -
+	 ;;     #+NAME: goat
+	 ;;     #+CAPTION: A Goat
+	 ;;     [[./goat.png]]
+	 ;;
+	 ;; See `org-odt-category-attribute-to-category' for a list of
+	 ;; allowed values of `:category'.
+	 (assoc-default (org-odt--read-attribute caption-from :category)
+			org-odt-category-attribute-to-category)
+	 category)))))
 
 (defun org-odt--get-captioned-parent (element info)
   (let ((caption-from
