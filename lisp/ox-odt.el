@@ -295,11 +295,12 @@ according to the default face identified by the `htmlfontify'.")
   "Limiting dimensions for an embedded image.")
 
 (defvar org-odt-caption-and-numbering-settings
-  '((:TABLE:        :variable "Table"        :entity-name "Table"    :caption-style "Table"		:predicate org-odt--enumerable-p            )
-    (:FIGURE:       :variable "Illustration" :entity-name "Figure"   :caption-style "Illustration"	:predicate org-odt--enumerable-image-p      )
-    (:MATH-FORMULA: :variable "Text"         :entity-name "Equation" :caption-style "Illustration"	:predicate org-odt--enumerable-formula-p    )
-    (:DVIPNG-IMAGE: :variable "Equation"     :entity-name "Equation" :caption-style "Illustration"	:predicate org-odt--enumerable-latex-image-p)
-    (:LISTING:      :variable "Listing"      :entity-name "Listing"  :caption-style "Listing"		:predicate org-odt--enumerable-p            ))
+  '((:TABLE:        :variable "Table"        :entity-name "Table"    :caption-style "Table"		:use-outline-levelp t	:seq-num-format "1")
+    (:FIGURE:       :variable "Illustration" :entity-name "Figure"   :caption-style "Illustration"	:use-outline-levelp t	:seq-num-format "1")
+    (:SUBENTITY:    :variable "SubEntity"    :entity-name ""         :caption-style "Illustration"	:use-outline-levelp nil	:seq-num-format "a")
+    (:MATH-FORMULA: :variable "Text"         :entity-name "Equation" :caption-style "Illustration"	:use-outline-levelp t	:seq-num-format "1")
+    (:DVIPNG-IMAGE: :variable "Equation"     :entity-name "Equation" :caption-style "Illustration"	:use-outline-levelp t	:seq-num-format "1")
+    (:LISTING:      :variable "Listing"      :entity-name "Listing"  :caption-style "Listing"		:use-outline-levelp t	:seq-num-format "1"))
   "Map a CATEGORY-HANDLE to CATEGORY-PROPS.
 
 This is an alist where each entry is of the form:
@@ -319,14 +320,20 @@ CATEGORY-PROPS allows following properties:
        \"<text:sequence-decls>...</text:sequence-decls>\" block
        of `org-odt-content-template-file'.
 
+  - `:use-outline-levelp' :: a boolean.  When t, the counter is
+       reset at headline level specified by
+       `ODT_DISPLAY_OUTLINE_LEVEL' or
+       `org-odt-display-outline-level'.
+
+  - `:seq-num-format' :: a string.  This specifies how the number
+       in captions is formatted.  Use \"1\" for numerals, \"a\"
+       for alphabets etc.
+
   - `:entity-name' :: a string.  This qualifies captions on
        export.
 
   - `:caption-style' :: a string.  This is the paragraph style
        used for typesetting the captions.
-
-  - `:predicate' :: a boolean function.  This checks if a given
-       element allows captions, and is of type CATEGORY.
 
 See `org-odt-format-label'.")
 
@@ -903,6 +910,10 @@ Images in ODT export' for more information."
 	      (category " " counter ": " caption)
 	      :xref-format
 	      (value))
+    (:SUBENTITY: :caption-position below :caption-format
+		 ("(" counter ") " caption)
+		 :xref-format
+		 (value))
     (:TABLE: :caption-position below :caption-format
 	     (category " " counter ": " caption)
 	     :xref-format
@@ -1886,7 +1897,9 @@ original parsed data.  INFO is a plist holding export options."
 	"\n<text:sequence-decls>%s\n</text:sequence-decls>"
 	(cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings concat
 		 (format "\n<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-			 (string-to-number (plist-get info :odt-display-outline-level))
+			 (if (plist-get category-props :use-outline-levelp)
+			     (string-to-number (plist-get info :odt-display-outline-level))
+			   0)
 			 (plist-get category-props :variable)))))
       ;; Position the cursor to document body.
       (goto-char (point-min))
@@ -2580,6 +2593,20 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       ((org-odt--enumerable-formula-p element info)
        :MATH-FORMULA:)))))
 
+(defun org-odt--get-captioned-parent (element info)
+  (let ((caption-from
+	 (cl-case (org-element-type element)
+	   (link (org-export-get-parent-element element))
+	   (t element))))
+    (cl-loop for parent in (org-element-lineage caption-from)
+	     when (org-odt--element-category parent info)
+	     return parent)))
+
+(defun org-odt--element-secondary-category (element info)
+  (let ((category (org-odt--element-category element info)))
+    (when category
+      (if (org-odt--get-captioned-parent element info) :SUBENTITY: category))))
+
 (defun org-odt-format-label (element info op &optional format-prop)
   "Return a label for ELEMENT.
 
@@ -2647,14 +2674,17 @@ SHORT-CAPTION are strings."
       (let* ((category (or (org-odt--element-category element info)
 			   (error "Refusing to enumerate the uncategorizable element: %S"
 				  element)))
+	     (captioned-parent (org-odt--get-captioned-parent element info))
+	     (secondary-category (if captioned-parent :SUBENTITY: category))
 	     ;; Compute sequence number of the element.
-	     (scope (cl-loop for x in (org-element-lineage element)
-			     with n = (string-to-number
-				       (plist-get info :odt-display-outline-level))
-			     thereis (and (eq (org-element-type x) 'headline)
-					  (<= (org-export-get-relative-level x info) n)
-					  (org-export-numbered-headline-p x info)
-					  x)))
+	     (scope (or captioned-parent
+			(cl-loop for x in (org-element-lineage element)
+				 with n = (string-to-number
+					   (plist-get info :odt-display-outline-level))
+				 thereis (and (eq (org-element-type x) 'headline)
+					      (<= (org-export-get-relative-level x info) n)
+					      (org-export-numbered-headline-p x info)
+					      x))))
 	     (ordinal (let ((counter 0))
 			(let* ((org-element-all-objects (remq 'table-cell org-element-all-objects))
 			       (org-element-all-elements (cons 'table-cell org-element-all-elements))
@@ -2663,7 +2693,7 @@ SHORT-CAPTION are strings."
 			  (org-element-map (or scope (plist-get info :parse-tree))
 			      '(link src-block table)
 			    (lambda (el)
-			      (and (eq category (org-odt--element-category el info))
+			      (and (eq secondary-category (org-odt--element-secondary-category el info))
 				   (cl-incf counter)
 				   (or (eq element el)
 				       (eq element (cl-case (org-element-type el)
@@ -2671,16 +2701,18 @@ SHORT-CAPTION are strings."
 						     (t el))))
 				   counter))
 			    info 'first-match))))
-	     (seqno (concat
-		     ;; Section number.
-		     (and scope
-			  (mapconcat 'number-to-string
-				     (org-export-get-headline-number scope info) "."))
-		     ;; Separator.
-		     (and scope ".")
-		     ;; Ordinal.
-		     (number-to-string ordinal))))
-	(let* ((category-props (assoc-default category org-odt-caption-and-numbering-settings)))
+	     (seqno (pcase secondary-category
+		      (':SUBENTITY: (number-to-string ordinal))
+		      (_ (concat
+			  ;; Section number.
+			  (and scope
+			       (mapconcat 'number-to-string
+					  (org-export-get-headline-number scope info) "."))
+			  ;; Separator.
+			  (and scope ".")
+			  ;; Ordinal.
+			  (number-to-string ordinal))))))
+	(let* ((category-props (assoc-default secondary-category org-odt-caption-and-numbering-settings)))
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
@@ -2695,7 +2727,7 @@ SHORT-CAPTION are strings."
 		       ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
 		       ;; with translation for correct punctuation.
 		       (cl-loop for % in (plist-get
-					  (assoc-default category
+					  (assoc-default secondary-category
 							 org-odt-caption-and-xref-settings)
 					  (or format-prop :caption-format))
 				concat
@@ -2704,12 +2736,20 @@ SHORT-CAPTION are strings."
 				   ;; Localize entity name.
 				   (org-export-translate (plist-get category-props :entity-name) :utf-8 info))
 				  ('counter
-				   (format
-				    "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"1\">%s</text:sequence>"
-				    label
-				    (plist-get category-props :variable)
-				    (plist-get category-props :variable)
-				    seqno))
+				   (if (and captioned-parent (= ordinal 1))
+				       (format
+					"<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
+					label
+					(plist-get category-props :variable)
+					(plist-get category-props :seq-num-format)
+					seqno)
+				     (format
+				      "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
+				      label
+				      (plist-get category-props :variable)
+				      (plist-get category-props :variable)
+				      (plist-get category-props :seq-num-format)
+				      seqno)))
 				  ('caption (or caption ""))
 				  (_ %))))))
 		 (cl-case (or format-prop :caption-format)
@@ -2719,12 +2759,12 @@ SHORT-CAPTION are strings."
 			    caption-text))
 		   (t caption-text)))
 	       short-caption
-	       (plist-get (assoc-default category org-odt-caption-and-xref-settings)
+	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
 			  :caption-position)))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-loop for % in (plist-get
-				(assoc-default category org-odt-caption-and-xref-settings)
+				(assoc-default secondary-category org-odt-caption-and-xref-settings)
 				(or format-prop :xref-format))
 		      concat
 		      (pcase %
@@ -2734,8 +2774,8 @@ SHORT-CAPTION are strings."
 			  "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
 			  %
 			  label
-			  (if (equal (assoc-default category org-odt-caption-and-xref-settings)
-				     (assoc-default category
+			  (if (equal (assoc-default secondary-category org-odt-caption-and-xref-settings)
+				     (assoc-default secondary-category
 						    (eval (car (get 'org-odt-caption-and-xref-settings
 								    'standard-value)))))
 			      seqno
