@@ -4,7 +4,7 @@ This is *a fork* of Org's ODT backend and adds many useful improvements to that 
 
 ## Installation
 
-Add `https://kjambunathan.github.io/elpa/` to `pacakage-archives`.  Once that is done, you can install the exporter`M-x list-packages`. 
+Add `https://kjambunathan.github.io/elpa/` to `package-archives`.  Once that is done, you can install the exporter`M-x list-packages`. 
 
 ```
 (custom-set-variables
