@@ -14,7 +14,7 @@ Add `https://kjambunathan.github.io/elpa/` to `pacakage-archives`.  Once that is
      ("ox-odt" . "https://kjambunathan.github.io/elpa/")))))
 ```
  
- In the Emacs `*Packages* menu, the entry for the ODT backend looks like
+ In the Emacs `*Packages*` menu, the entry for the ODT backend looks like
  
  
 ```
