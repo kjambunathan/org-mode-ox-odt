@@ -1,11 +1,12 @@
 # The Authoritative fork of Org mode's ODT exporter 
 
-This is *a fork* of Org's ODT backend and adds many useful improvements to that backend.  This fork is *authoritative* because it is maintained by the *original* author of that backend.
+This is *a fork* of Org's ODT backend and adds many useful improvements to that backend.  This fork is *authoritative* because it is maintained by the *original* author of that backend.  
 
 ## Installation
 
 Add `https://kjambunathan.github.io/elpa/` to `pacakage-archives`.  Once that is done, you can install the exporter`M-x list-packages`. 
 
+```
 (custom-set-variables
  '(package-archives
    (quote
