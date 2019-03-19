@@ -1,0 +1,36 @@
+# OASIS OpenDocument v1.0
+# OASIS Standard, 1 May 2005
+# Strict Relax-NG Schema
+# 
+# $Id$
+# 
+# © 2002-2005 OASIS Open
+# © 1999-2005 Sun Microsystems, Inc.
+
+include "OpenDocument-schema-v1.0-os.rnc" {
+  office-meta-content = office-meta-content-strict
+  style-page-layout-properties-content =
+    style-page-layout-properties-content-strict
+  style-header-footer-properties-content =
+    style-header-footer-properties-content-strict
+  style-drawing-page-properties-content =
+    style-drawing-page-properties-content-strict
+  style-text-properties-content = style-text-properties-content-strict
+  style-paragraph-properties-content =
+    style-paragraph-properties-content-strict
+  style-ruby-properties-content = style-ruby-properties-content-strict
+  style-section-properties-content =
+    style-section-properties-content-strict
+  style-list-level-properties-content =
+    style-list-level-properties-content-strict
+  style-table-properties-content = style-table-properties-content-strict
+  style-table-column-properties-content =
+    style-table-column-properties-content-strict
+  style-table-row-properties-content =
+    style-table-row-properties-content-strict
+  style-table-cell-properties-content =
+    style-table-cell-properties-content-strict
+  style-graphic-properties-content =
+    style-graphic-properties-content-strict
+  style-chart-properties-content = style-properties-content
+}

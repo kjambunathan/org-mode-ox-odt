@@ -1,0 +1,11 @@
+od-schema-1.0    = external "odf1.0/OpenDocument-schema-v1.0-os.rnc"
+od-schema-1.1    = external "odf1.1/OpenDocument-schema-v1.1.rnc"
+od-schema-1.2    = external "odf1.2/OpenDocument-v1.2-os-schema.rnc"
+od-schema-1.3    = external "odf1.3/OpenDocument-schema-v1.3.rnc"
+od-schema-1.3-lo = external "libreoffice/OpenDocument-schema-v1.3+libreoffice.rnc"
+
+start = od-schema-1.0
+        | od-schema-1.1
+        | od-schema-1.2
+        | od-schema-1.3
+        # | od-schema-1.3-lo

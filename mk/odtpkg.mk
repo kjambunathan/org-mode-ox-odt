@@ -23,6 +23,9 @@ JABREF_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(JABREF_VE
 
 
 pkg:
+	git clean -d -f
+	find . -name '*~' -delete
+	find . -name '*#*' -delete
 	@$(MAKE) GITVERSION=$(GITVERSION:release_%=%)-elpa version autoloads
 	-@$(RM) $(ELPA_PKG_DIR) $(ELPA_PKG_DIR).tar $(ELPA_PKG_NAME)-pkg.el
 	-@$(RM) $(SERVROOT)/$(ELPA_PKG_NAME)-*.tar
@@ -57,12 +60,30 @@ odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L)) (JabrefExportChicagoODF
 
 odtpkg: ELPA_PKG_DIR				= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
 
-odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el											\
-										etc/styles/												\
-										etc/schema/												\
-										contrib/lisp/ox-jabref.el								\
-										contrib/odt/LibreOffice/OrgModeUtilities.oxt			\
-										testing/examples/odt/									\
+odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el																\
+										etc/styles/																	\
+										etc/schema/odf1.0/OpenDocument-manifest-schema-v1.0-os.rnc					\
+										etc/schema/odf1.0/OpenDocument-schema-v1.0-os.rnc							\
+										etc/schema/odf1.0/OpenDocument-strict-schema-v1.0-os.rnc					\
+										etc/schema/odf1.1/OpenDocument-strict-schema-v1.1.rnc						\
+										etc/schema/odf1.1/OpenDocument-manifest-schema-v1.1.rnc						\
+										etc/schema/odf1.1/OpenDocument-schema-v1.1.rnc								\
+										etc/schema/odf1.2/OpenDocument-v1.2-os-manifest-schema.rnc					\
+										etc/schema/odf1.2/OpenDocument-v1.2-os-schema.rnc							\
+										etc/schema/odf1.2/OpenDocument-v1.2-os-dsig-schema.rnc						\
+										etc/schema/odf1.3/OpenDocument-schema-v1.3.rnc								\
+										etc/schema/odf1.3/OpenDocument-manifest-schema-v1.3.rnc						\
+										etc/schema/odf1.3/OpenDocument-dsig-schema-v1.3.rnc							\
+										etc/schema/libreoffice/OpenDocument-dsig-schema-v1.3+libreoffice.rnc		\
+										etc/schema/libreoffice/OpenDocument-schema-v1.3+libreoffice.rnc				\
+										etc/schema/libreoffice/OpenDocument-schema-v1.3.rnc							\
+										etc/schema/libreoffice/OpenDocument-manifest-schema-v1.3+libreoffice.rnc	\
+										etc/schema/od-manifest-schema.rnc											\
+										etc/schema/od-schema.rnc													\
+										etc/schema/schemas.xml														\
+										contrib/lisp/ox-jabref.el													\
+										contrib/odt/LibreOffice/OrgModeUtilities.oxt								\
+										testing/examples/odt/														\
 										$(ELPA_PKG_NAME)-pkg.el
 
 odtpkg: ELPA_PKG_TAR_ARGS			= --exclude=test-new.odt									\
