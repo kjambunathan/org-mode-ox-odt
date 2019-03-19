@@ -920,7 +920,8 @@ Images in ODT export' for more information."
 		 ("(" counter ") " caption)
 		 :xref-format
 		 (value))
-    (:TABLE: :caption-position below :caption-format
+    (:TABLE: :caption-position above
+	     :caption-format
 	     (category " " counter ": " caption)
 	     :xref-format
 	     (value)))
