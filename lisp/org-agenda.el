@@ -3026,19 +3026,18 @@ s   Search for keywords                 M   Like m, but only TODO entries
 					    (symbol-name type)
 					  "Lambda expression"))
 		      (t "???"))))
-	      (if org-agenda-menu-show-matcher
-		  (setq line
-			(concat line ": "
-				(cond
-				 ((stringp match)
-				  (setq match (copy-sequence match))
-				  (org-add-props match nil 'face 'org-warning))
-				 ((listp type)
-				  (format "set of %d commands" (length type))))))
-		(when (org-string-nw-p match)
-		  (add-text-properties
-		   0 (length line) (list 'help-echo
-					 (concat "Matcher: " match)) line)))
+	      (cond
+	       ((not (org-string-nw-p match)) nil)
+	       (org-agenda-menu-show-matcher
+		(setq line
+		      (concat line ": "
+			      (cond
+			       ((stringp match)
+				(propertize match 'face 'org-warning))
+			       ((listp type)
+				(format "set of %d commands" (length type)))))))
+	       (t
+		(org-add-props line nil 'help-echo (concat "Matcher: " match))))
 	      (push line lines)))
 	  (setq lines (nreverse lines))
 	  (when prefixes
@@ -3767,7 +3766,8 @@ FILTER-ALIST is an alist of filters we need to apply when
 	     (setq-local org-agenda-name name)))
       (setq buffer-read-only nil))))
 
-(defvar org-agenda-overriding-columns-format)  ; From org-colview.el
+(defvar org-overriding-columns-format)
+(defvar org-local-columns-format)
 (defun org-agenda-finalize ()
   "Finishing touch for the agenda buffer, called just before displaying it."
   (unless org-agenda-multi
@@ -3782,9 +3782,9 @@ FILTER-ALIST is an alist of filters we need to apply when
 	  (org-agenda-align-tags))
 	(unless org-agenda-with-colors
 	  (remove-text-properties (point-min) (point-max) '(face nil)))
-	(when (bound-and-true-p org-agenda-overriding-columns-format)
-	  (setq-local org-agenda-overriding-columns-format
-		      org-agenda-overriding-columns-format))
+	(when (bound-and-true-p org-overriding-columns-format)
+	  (setq-local org-local-columns-format
+		      org-overriding-columns-format))
 	(when org-agenda-view-columns-initially
 	  (org-agenda-columns))
 	(when org-agenda-fontify-priorities
@@ -4672,18 +4672,8 @@ for a keyword.  A numeric prefix directly selects the Nth keyword in
   (when (and (stringp arg) (not (string-match "\\S-" arg))) (setq arg nil))
   (let* ((today (org-today))
 	 (date (calendar-gregorian-from-absolute today))
-	 (kwds org-todo-keywords-for-agenda)
 	 (completion-ignore-case t)
-	 (org-select-this-todo-keyword
-	  (if (stringp arg) arg
-	    (and arg (integerp arg) (> arg 0)
-                 (nth (1- arg) kwds))))
-	 rtn rtnall files file pos)
-    (when (equal arg '(4))
-      (setq org-select-this-todo-keyword
-	    (completing-read "Keyword (or KWD1|K2D2|...): "
-			     (mapcar #'list kwds) nil nil)))
-    (and (equal 0 arg) (setq org-select-this-todo-keyword nil))
+         kwds org-select-this-todo-keyword rtn rtnall files file pos)
     (catch 'exit
       (when org-agenda-sticky
 	(setq org-agenda-buffer-name
@@ -4692,6 +4682,16 @@ for a keyword.  A numeric prefix directly selects the Nth keyword in
 			  org-select-this-todo-keyword)
 		(format "*Org Agenda(%s)*" (or org-keys "t")))))
       (org-agenda-prepare "TODO")
+      (setq kwds org-todo-keywords-for-agenda
+            org-select-this-todo-keyword (if (stringp arg) arg
+                                           (and (integerp arg)
+						(> arg 0)
+                                                (nth (1- arg) kwds))))
+      (when (equal arg '(4))
+        (setq org-select-this-todo-keyword
+              (completing-read "Keyword (or KWD1|K2D2|...): "
+                               (mapcar #'list kwds) nil nil)))
+      (and (equal 0 arg) (setq org-select-this-todo-keyword nil))
       (org-compile-prefix-format 'todo)
       (org-set-sorting-strategy 'todo)
       (setq org-agenda-redo-command
@@ -5879,12 +5879,12 @@ See also the user option `org-agenda-clock-consistency-checks'."
 	 ((> dt (* 60 maxtime))
 	  ;; a very long clocking chunk
 	  (setq issue (format "Clocking interval is very long: %s"
-			      (org-duration-from-minutes (floor (/ dt 60.))))
+			      (org-duration-from-minutes (floor dt 60)))
 		face (or (plist-get pl :long-face) face)))
 	 ((< dt (* 60 mintime))
 	  ;; a very short clocking chunk
 	  (setq issue (format "Clocking interval is very short: %s"
-			      (org-duration-from-minutes (floor (/ dt 60.))))
+			      (org-duration-from-minutes (floor dt 60)))
 		face (or (plist-get pl :short-face) face)))
 	 ((and (> tlend 0) (< ts tlend))
 	  ;; Two clock entries are overlapping
@@ -9022,7 +9022,7 @@ current line."
 				 (if (memq 'org-tag prop)
 				     prop
 				   (cons 'org-tag prop))))))
-	(setq l (- (match-end 1) (match-beginning 1))
+	(setq l (string-width (match-string 1))
 	      c (if (< org-agenda-tags-column 0)
 		    (- (abs org-agenda-tags-column) l)
 		  org-agenda-tags-column))

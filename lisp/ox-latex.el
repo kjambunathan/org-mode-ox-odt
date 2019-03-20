@@ -2500,8 +2500,10 @@ INFO is a plist holding contextual information.  See
 	 (path (org-latex--protect-text
 		(cond ((member type '("http" "https" "ftp" "mailto" "doi"))
 		       (concat type ":" raw-path))
-		      ((string= type "file") (org-export-file-uri raw-path))
-		      (t raw-path)))))
+		      ((string= type "file")
+		       (org-export-file-uri raw-path))
+		      (t
+		       raw-path)))))
     (cond
      ;; Link type is handled by a special function.
      ((org-export-custom-protocol-maybe link desc 'latex))

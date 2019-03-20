@@ -1569,22 +1569,21 @@ bullets between START and END."
   (let* (acc
 	 (set-assoc (lambda (cell) (push cell acc) cell))
 	 (change-bullet-maybe
-	  (function
-	   (lambda (item)
-	     (let ((new-bul-p
-		    (cdr (assoc
-			  ;; Normalize ordered bullets.
-			  (let ((bul (org-trim
-				      (org-list-get-bullet item struct))))
-			    (cond ((string-match "[A-Z]\\." bul) "A.")
-				  ((string-match "[A-Z])" bul) "A)")
-				  ((string-match "[a-z]\\." bul) "a.")
-				  ((string-match "[a-z])" bul) "a)")
-				  ((string-match "[0-9]\\." bul) "1.")
-				  ((string-match "[0-9])" bul) "1)")
-				  (t bul)))
-			  org-list-demote-modify-bullet))))
-	       (when new-bul-p (org-list-set-bullet item struct new-bul-p))))))
+	  (lambda (item)
+	    (let ((new-bul
+		   (cdr (assoc
+			 ;; Normalize ordered bullets.
+			 (let ((bul (org-list-get-bullet item struct))
+			       (case-fold-search nil))
+			   (cond ((string-match "[A-Z]\\." bul) "A.")
+				 ((string-match "[A-Z])" bul) "A)")
+				 ((string-match "[a-z]\\." bul) "a.")
+				 ((string-match "[a-z])" bul) "a)")
+				 ((string-match "[0-9]\\." bul) "1.")
+				 ((string-match "[0-9])" bul) "1)")
+				 (t (org-trim bul))))
+			 org-list-demote-modify-bullet))))
+	      (when new-bul (org-list-set-bullet item struct new-bul)))))
 	 (ind
 	  (lambda (cell)
 	    (let* ((item (car cell))
@@ -3185,7 +3184,7 @@ Point is left at list's end."
   (if (not (ignore-errors (goto-char (org-in-item-p))))
       (error "Not in a list")
     (let ((list (save-excursion (org-list-to-lisp t))))
-      (insert (org-list-to-subtree list)))))
+      (insert (org-list-to-subtree list) "\n"))))
 
 (defun org-list-to-generic (list params)
   "Convert a LIST parsed through `org-list-to-lisp' to a custom format.
