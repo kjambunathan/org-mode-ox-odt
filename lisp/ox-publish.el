@@ -793,13 +793,11 @@ Default for SITEMAP-FILENAME is `sitemap.org'."
 			   (not (string-lessp B A))))))
 		((or `anti-chronologically `chronologically)
 		 (let* ((adate (org-publish-find-date a project))
-			(bdate (org-publish-find-date b project))
-			(A (+ (ash (car adate) 16) (cadr adate)))
-			(B (+ (ash (car bdate) 16) (cadr bdate))))
+			(bdate (org-publish-find-date b project)))
 		   (setq retval
-			 (if (eq sort-files 'chronologically)
-			     (<= A B)
-			   (>= A B)))))
+			 (not (if (eq sort-files 'chronologically)
+				  (time-less-p bdate adate)
+				(time-less-p adate bdate))))))
 		(`nil nil)
 		(_ (user-error "Invalid sort value %s" sort-files)))
 	      ;; Directory-wise wins:
@@ -1173,7 +1171,7 @@ references with `org-export-get-reference'."
 	   (with-current-buffer (find-file-noselect file)
 	     (org-with-point-at 1
 	       (let ((org-link-search-must-match-exact-headline t))
-		 (org-link-search (org-link-unescape search) nil t))
+		 (org-link-search search nil t))
 	       (and (org-at-heading-p)
 		    (org-string-nw-p (org-entry-get (point) "CUSTOM_ID"))))))))
    ((not org-publish-cache)
@@ -1186,8 +1184,7 @@ references with `org-export-get-reference'."
     (let* ((filename (file-truename file))
 	   (crossrefs
 	    (org-publish-cache-get-file-property filename :crossrefs nil t))
-	   (cells
-	    (org-export-string-to-search-cell (org-link-unescape search))))
+	   (cells (org-export-string-to-search-cell search)))
       (or
        ;; Look for reference associated to search cells triggered by
        ;; LINK.  It can match when targeted file has been published
@@ -1314,8 +1311,9 @@ the file including them will be republished as well."
 	  (unless visiting (kill-buffer buf)))))
     (or (null pstamp)
 	(let ((ctime (org-publish-cache-ctime-of-src filename)))
-	  (or (< pstamp ctime)
-	      (cl-some (lambda (ct) (< ctime ct)) included-files-ctime))))))
+	  (or (time-less-p pstamp ctime)
+	      (cl-some (lambda (ct) (time-less-p ctime ct))
+		       included-files-ctime))))))
 
 (defun org-publish-cache-set-file-property
   (filename property value &optional project-name)
@@ -1365,8 +1363,8 @@ does not exist."
   (let ((attr (file-attributes
 	       (expand-file-name (or (file-symlink-p file) file)
 				 (file-name-directory file)))))
-    (if (not attr) (error "No such file: \"%s\"" file)
-      (floor (float-time (file-attribute-modification-time attr))))))
+    (if attr (file-attribute-modification-time attr)
+      (error "No such file: %S" file))))
 
 
 (provide 'ox-publish)

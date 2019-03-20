@@ -3216,7 +3216,7 @@ locally for the subtree through node properties."
 	    (org-entry-put
 	     node "EXPORT_OPTIONS" (mapconcat 'identity items " "))
 	  (while items
-	    (insert "#+OPTIONS:")
+	    (insert "#+options:")
 	    (let ((width 10))
 	      (while (and items
 			  (< (+ width (length (car items)) 1) fill-column))
@@ -3242,7 +3242,7 @@ locally for the subtree through node properties."
 	(if subtreep (org-entry-put node (concat "EXPORT_" (car key)) val)
 	  (insert
 	   (format "#+%s:%s\n"
-		   (car key)
+		   (downcase (car key))
 		   (if (org-string-nw-p val) (format " %s" val) ""))))))))
 
 (defun org-export-expand-include-keyword (&optional included dir footnotes)
@@ -3448,6 +3448,32 @@ Return a string of lines to be included in the format expected by
 		       (while (< (point) end) (cl-incf counter) (forward-line))
 		       counter))))))))
 
+(defun org-export--update-included-link (file-dir includer-dir)
+  "Update relative file name of link at point, if possible.
+
+FILE-DIR is the directory of the file being included.
+INCLUDER-DIR is the directory of the file where the inclusion is
+going to happen.
+
+Move point after the link."
+  (let* ((link (org-element-link-parser))
+	 (path (org-element-property :path link)))
+    (if (or (not (string= "file" (org-element-property :type link)))
+	    (file-remote-p path)
+	    (file-name-absolute-p path))
+	(goto-char (org-element-property :end link))
+      (let ((new-path (file-relative-name (expand-file-name path file-dir)
+					  includer-dir))
+	    (new-link (org-element-copy link))
+	    (contents (and (org-element-property :contents-begin link)
+			   (buffer-substring
+			    (org-element-property :contents-begin link)
+			    (org-element-property :contents-end link)))))
+	(org-element-put-property new-link :path new-path)
+	(delete-region (org-element-property :begin link)
+		       (org-element-property :end link))
+	(insert (org-element-link-interpreter new-link contents))))))
+
 (defun org-export--prepare-file-contents
     (file &optional lines ind minlevel id footnotes includer)
   "Prepare contents of FILE for inclusion and return it as a string.
@@ -3500,27 +3526,32 @@ is to happen."
 	  (goto-char (point-min))
 	  (unless (eq major-mode 'org-mode)
 	    (let ((org-inhibit-startup t)) (org-mode)))	;set regexps
-	  (while (re-search-forward org-any-link-re nil t)
-	    (let ((link (save-excursion (backward-char) (org-element-context))))
-	      (when (and (eq 'link (org-element-type link))
-			 (string= "file" (org-element-property :type link)))
-		(let ((old-path (org-element-property :path link)))
-		  (unless (or (file-remote-p old-path)
-			      (file-name-absolute-p old-path))
-		    (let ((new-path (file-relative-name
-				     (expand-file-name old-path file-dir)
-				     includer-dir)))
-		      (insert
-		       (let ((new (org-element-copy link)))
-			 (org-element-put-property new :path new-path)
-			 (when (org-element-property :contents-begin link)
-			   (org-element-adopt-elements new
-			     (buffer-substring
-			      (org-element-property :contents-begin link)
-			      (org-element-property :contents-end link))))
-			 (delete-region (org-element-property :begin link)
-					(org-element-property :end link))
-			 (org-element-interpret-data new))))))))))))
+	  (let ((regexp (concat org-plain-link-re "\\|" org-angle-link-re)))
+	    (while (re-search-forward org-any-link-re nil t)
+	      (let ((link (save-excursion
+			    (forward-char -1)
+			    (save-match-data (org-element-context)))))
+		(when (eq 'link (org-element-type link))
+		  ;; Look for file links within link's description.
+		  ;; Org doesn't support such construct, but
+		  ;; `org-export-insert-image-links' may activate
+		  ;; them.
+		  (let ((contents-begin
+			 (org-element-property :contents-begin link))
+			(begin (org-element-property :begin link)))
+		    (when contents-begin
+		      (save-excursion
+			(goto-char (org-element-property :contents-end link))
+			(while (re-search-backward regexp contents-begin t)
+			  (save-match-data
+			    (org-export--update-included-link
+			     file-dir includer-dir))
+			  (goto-char (match-beginning 0)))))
+		    ;; Update current link, if necessary.
+		    (when (string= "file" (org-element-property :type link))
+		      (goto-char begin)
+		      (org-export--update-included-link
+		       file-dir includer-dir))))))))))
     ;; Remove blank lines at beginning and end of contents.  The logic
     ;; behind that removal is that blank lines around include keyword
     ;; override blank lines in included file.
@@ -4164,7 +4195,7 @@ The function ignores links with an implicit type (e.g.,
       (let ((protocol (org-link-get-parameter type :export)))
 	(and (functionp protocol)
 	     (funcall protocol
-		      (org-link-unescape (org-element-property :path link))
+		      (org-element-property :path link)
 		      desc
 		      backend))))))
 
@@ -4348,7 +4379,7 @@ Return value can be an object or an element:
 Assume LINK type is \"fuzzy\".  White spaces are not
 significant."
   (let* ((search-cells (org-export-string-to-search-cell
-			(org-link-unescape (org-element-property :path link))))
+			(org-element-property :path link)))
 	 (link-cache (or (plist-get info :resolve-fuzzy-link-cache)
 			 (let ((table (make-hash-table :test #'eq)))
 			   (plist-put info :resolve-fuzzy-link-cache table)
