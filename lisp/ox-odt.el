@@ -1351,10 +1351,10 @@ See `org-odt--build-date-styles' for implementation details."
    ((not (and label (org-string-nw-p label))) text)
    ;; Bookmark pointing to a range of text.
    ((and text (not (string= text "")))
-    (concat (format "\n<text:bookmark-start text:name=\"%s\"/>" label) text
-	    (format "\n<text:bookmark-end text:name=\"%s\"/>" label)))
+    (concat (format "<text:bookmark-start text:name=\"%s\"/>" label) text
+	    (format "<text:bookmark-end text:name=\"%s\"/>" label)))
    ;; Bookmark at a location.
-   (t (format "\n<text:bookmark text:name=\"%s\"/>" label))))
+   (t (format "<text:bookmark text:name=\"%s\"/>" label))))
 
 (defun org-odt--xref-target (category text label)
   (let* ((xref-format (plist-get
@@ -2764,24 +2764,24 @@ SHORT-CAPTION are strings."
 	    (definition
 	      (list
 	       (let ((caption-text
-		      (concat
-		       ;; Sneak in a bookmark.  The bookmark is used when the
-		       ;; labeled element is referenced with a link that
-		       ;; provides its own description.
-		       (org-odt--target "" label)
-		       ;; Label definition: Typically formatted as below:
-		       ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
-		       ;; with translation for correct punctuation.
-		       (cl-loop for % in (plist-get
-					  (assoc-default secondary-category
-							 org-odt-caption-and-xref-settings)
-					  (or format-prop :caption-format))
-				concat
-				(pcase %
-				  ('category
-				   ;; Localize entity name.
-				   (org-export-translate (plist-get category-props :entity-name) :utf-8 info))
-				  ('counter
+		      ;; Label definition: Typically formatted as below:
+		      ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
+		      ;; with translation for correct punctuation.
+		      (cl-loop for % in (plist-get
+					 (assoc-default secondary-category
+							org-odt-caption-and-xref-settings)
+					 (or format-prop :caption-format))
+			       concat
+			       (pcase %
+				 ('category
+				  ;; Localize entity name.
+				  (org-export-translate (plist-get category-props :entity-name) :utf-8 info))
+				 ('counter
+				  (concat
+				   ;; Sneak in a bookmark.  The bookmark is used when the
+				   ;; labeled element is referenced with a link that
+				   ;; provides its own description.
+				   (org-odt--target "" label)
 				   (if (and captioned-parent (= ordinal 1))
 				       (format
 					"<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
@@ -2795,15 +2795,16 @@ SHORT-CAPTION are strings."
 				      (plist-get category-props :variable)
 				      (plist-get category-props :variable)
 				      (plist-get category-props :seq-num-format)
-				      seqno)))
-				  ('caption (or caption ""))
-				  (_ %))))))
-		 (cl-case (or format-prop :caption-format)
-		   (:caption-format
-		    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			    (plist-get category-props :caption-style)
-			    caption-text))
-		   (t caption-text)))
+				      seqno))))
+				 ('caption (or caption ""))
+				 (_ %)))))
+		 (unless (string= caption-text "")
+		   (cl-case (or format-prop :caption-format)
+		     (:caption-format
+		      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			      (plist-get category-props :caption-style)
+			      caption-text))
+		     (t caption-text))))
 	       short-caption
 	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
 			  :caption-position)))
@@ -4885,7 +4886,7 @@ exported file."
 						  (list :value latex-frag)))
 		  ;; Replace now.
 		  (org-element-set-element latex-* replacement))))))
-	info)))
+	info nil nil t)))
   tree)
 
 
