@@ -131,6 +131,8 @@
     (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
+    (:odt-embedded-formulas-count nil nil 0)
+    (:odt-embedded-images-count nil nil 0)
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)))
 
@@ -275,8 +277,6 @@ except that the foreground and background colors are set
 according to the default face identified by the `htmlfontify'.")
 
 (defvar hfy-optimizations)
-(defvar org-odt-embedded-formulas-count 0)
-(defvar org-odt-embedded-images-count 0)
 (defvar org-odt-image-size-probe-method
   (append (and (executable-find "identify") '(imagemagick)) ; See Bug#10675
 	  '(emacs fixed))
@@ -2832,14 +2832,10 @@ SHORT-CAPTION are strings."
 
 ;;;; Links :: Inline Images
 
-(defun org-odt--copy-image-file (full-path &optional target-file)
+(defun org-odt--copy-image-file (full-path target-file)
   "Returns the internal name of the file"
   (let* ((image-type (file-name-extension full-path))
-	 (media-type (format "image/%s" image-type))
-	 (target-file
-	  (or target-file
-	      (concat "Images/"
-		      (format "%04d.%s" (cl-incf org-odt-embedded-images-count) image-type)))))
+	 (media-type (format "image/%s" image-type)))
     (message "Embedding %s as %s..."
 	     (substring-no-properties full-path) target-file)
 
@@ -2931,7 +2927,12 @@ used as a communication channel."
 						(plist-get info :input-file)))))
 	 (href (format
 		"\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
-		(org-odt--copy-image-file src-expanded)))
+		(org-odt--copy-image-file src-expanded
+					  (format "Images/%04d.%s"
+						  (let ((count (1+ (plist-get info :odt-embedded-images-count))))
+						    (prog1 count
+						       (plist-put info :odt-embedded-images-count count)))
+						  (file-name-extension src-expanded)))))
 	 ;; Extract attributes from #+ATTR_ODT line.
 	 (attr-from (cl-case (org-element-type element)
 		      (link (org-export-get-parent-element element))
@@ -2996,7 +2997,12 @@ used as a communication channel."
 	  (format
 	   "\n<draw:object %s xlink:href=\"%s\" xlink:type=\"simple\"/>"
 	   " xlink:show=\"embed\" xlink:actuate=\"onLoad\""
-	   (file-name-directory (org-odt--copy-formula-file src-expanded))))
+	   (file-name-directory (org-odt--copy-formula-file
+				 src-expanded
+				 (format "Formula-%04d/"
+					 (let ((count (1+ (plist-get info :odt-embedded-formulas-count))))
+					   (prog1 count
+					     (plist-put info :odt-embedded-formulas-count count))))))))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p 'paragraph 'character))
 	 (captions (org-odt-format-label element info 'definition))
@@ -3026,11 +3032,9 @@ used as a communication channel."
 	      (car (org-odt-format-label element info 'definition :label-format))))
 	(concat equation "<text:tab/>" label))))))
 
-(defun org-odt--copy-formula-file (src-file)
+(defun org-odt--copy-formula-file (src-file target-dir)
   "Returns the internal name of the file"
-  (let* ((target-dir (format "Formula-%04d/"
-			     (cl-incf org-odt-embedded-formulas-count)))
-	 (target-file (concat target-dir "content.xml")))
+  (let* ((target-file (concat target-dir "content.xml")))
     ;; Create a directory for holding formula file.  Also enter it in
     ;; to manifest.
     (make-directory (concat org-odt-zip-dir target-dir))
@@ -5461,9 +5465,7 @@ Return output file's name."
 	  `(expand-file-name
 	    (org-odt--export-wrap
 	     ,outfile
-	     (let* ((org-odt-embedded-images-count 0)
-		    (org-odt-embedded-formulas-count 0)
-		    (org-odt-automatic-styles nil)
+	     (let* ((org-odt-automatic-styles nil)
 		    (org-odt-object-counters nil)
 		    ;; Let `htmlfontify' know that we are interested in
 		    ;; collecting styles.
@@ -5483,9 +5485,7 @@ Return output file's name."
 		   (insert output)))))))
       (org-odt--export-wrap
        outfile
-       (let* ((org-odt-embedded-images-count 0)
-	      (org-odt-embedded-formulas-count 0)
-	      (org-odt-automatic-styles nil)
+       (let* ((org-odt-automatic-styles nil)
 	      (org-odt-object-counters nil)
 	      ;; Let `htmlfontify' know that we are interested in collecting
 	      ;; styles.
