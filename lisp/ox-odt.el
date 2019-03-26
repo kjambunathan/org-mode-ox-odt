@@ -1280,14 +1280,12 @@ See `org-odt--build-date-styles' for implementation details."
 
 (defun org-odt--frame (text width height style &optional extra
 			    anchor-type &rest title-and-desc)
-  (let* ((frame-name (car (org-odt-add-automatic-style "Frame")))
-	 (frame-attrs
+  (let* ((frame-attrs
 	  (concat
 	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
 	   (if height (format " svg:height=\"%0.2fcm\"" height) "")
 	   extra
-	   (format " text:anchor-type=\"%s\"" (or anchor-type "paragraph"))
-	   (format " draw:name=\"%s\"" frame-name))))
+	   (format " text:anchor-type=\"%s\"" (or anchor-type "paragraph")))))
     (format
      "\n<draw:frame draw:style-name=\"%s\"%s>\n%s\n</draw:frame>"
      style frame-attrs
