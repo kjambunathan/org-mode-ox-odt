@@ -3453,14 +3453,11 @@ INFO is a plist holding contextual information.  See
      ((org-export-custom-protocol-maybe link desc 'odt))
      ;; Link to a transcluded ODT file.
      ((org-odt--transclude-link-p link info)
-      (let* ((grandparent (org-export-get-parent (org-export-get-parent link)))
-	     (style (when (and (eq (org-element-type grandparent) 'special-block)
-			       (string= (org-element-property :type grandparent) "section"))
-		      (org-odt--read-attribute grandparent :style))))
-	(org-odt-format-section
-	 (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
-		 path)
-	 (or style "OrgSection"))))
+      (org-odt-text:section
+       link
+       (format "\n<text:section-source xlink:href=\"%s\" xlink:type=\"simple\" text:filter-name=\"writer8\"/>"
+	       path)
+       info))
      ;; Image file.
      ((and (not desc) (org-export-inline-image-p
 		       link (plist-get info :odt-inline-image-rules)))
@@ -3856,13 +3853,22 @@ holding contextual information."
 
 ;;;; Section
 
-(defun org-odt-format-section (text style &optional name)
-  (let ((default-name (car (org-odt-add-automatic-style "Section"))))
-    (format "\n<text:section text:style-name=\"%s\" %s>\n%s\n</text:section>"
-	    style
-	    (format "text:name=\"%s\"" (or name default-name))
-	    text)))
-
+(defun org-odt-text:section (element contents info &optional indentation-level)
+  (format "\n<text:section %s text:style-name=\"%s\">\n%s\n</text:section>"
+	  (format "text:name=\"%s\"" (org-odt--name-object info 'section))
+	  (cl-case (org-element-type element)
+	    (link
+	     (or (let ((grandparent (org-export-get-parent (org-export-get-parent element))))
+		   (when (and (eq (org-element-type grandparent) 'special-block)
+			      (string= (org-element-property :type grandparent) "section"))
+		     (org-odt--read-attribute grandparent :style)))
+		 "OrgSection"))
+	    (special-block
+	     (or (org-odt--read-attribute element :style) "OrgSection"))
+	    (table (format "OrgIndentedSection-Level-%d" indentation-level))
+	    (_ (error "Cannot determine section style for object type `%s'"
+		      (org-element-type element))))
+	  contents))
 
 (defun org-odt-section (_section contents _info) ; FIXME
   "Transcode a SECTION element from Org to ODT.
@@ -3950,8 +3956,7 @@ holding contextual information."
 	;;  This section encloses a transcluded link.  `org-odt-link'
 	;;  took care of all the formalities.  Nothing more to do.
 	contents)
-       (t (org-odt-format-section contents (or (org-odt--read-attribute special-block :style)
-					       "OrgSection")))))
+       (t (org-odt-text:section special-block contents info))))
      ;; Textbox.
      ((string= type "textbox")
       ;; Textboxes an be used for centering tables etc horizontally
@@ -4618,11 +4623,11 @@ pertaining to indentation here."
 	    ;; Discontinue the list.
 	    (mapconcat 'car close-open-tags "\n")
 	    ;; Put the table in an indented section.
-	    (let* ((table (org-odt--table table contents info))
+	    (let* ((contents-1 (org-odt--table table contents info))
 		   (level (/ (length (mapcar 'car close-open-tags)) 2)))
-	      (when table
-		(if (zerop level) table
-		  (org-odt-format-section table (format "OrgIndentedSection-Level-%d" level)))))
+	      (when contents-1
+		(if (zerop level) contents-1
+		  (org-odt-text:section table contents-1 info level))))
 	    ;; Continue the list.
 	    (mapconcat 'cdr (nreverse close-open-tags) "\n"))))
 
