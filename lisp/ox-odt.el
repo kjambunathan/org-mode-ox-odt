@@ -131,8 +131,7 @@
     (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
-    (:odt-embedded-formulas-count nil nil 0)
-    (:odt-embedded-images-count nil nil 0)
+    (:odt-object-counters nil nil nil)
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)))
 
@@ -1509,6 +1508,21 @@ See `org-odt--build-date-styles' for implementation details."
 
 
 ;;;; Document styles
+
+(defun org-odt--count-object (info object)
+  (cl-assert (symbolp object))
+  (let* ((counters (plist-get info :odt-object-counters))
+	 (seqno (1+ (or (plist-get counters object) 0))))
+    (plist-put info :odt-object-counters
+	       (plist-put counters object seqno))
+    seqno))
+
+(defun org-odt--name-object (info object)
+  (cl-assert (and (symbolp object)
+		  (not (keywordp object))))
+  (format "%s%d"
+	  (capitalize (symbol-name object))
+	  (org-odt--count-object info object)))
 
 (defun org-odt-add-automatic-style (object-type &optional object-props)
   "Create an automatic style of type OBJECT-TYPE with param OBJECT-PROPS.
@@ -2927,9 +2941,7 @@ used as a communication channel."
 		"\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
 		(org-odt--copy-image-file src-expanded
 					  (format "Images/%04d.%s"
-						  (let ((count (1+ (plist-get info :odt-embedded-images-count))))
-						    (prog1 count
-						       (plist-put info :odt-embedded-images-count count)))
+						  (org-odt--count-object info :images)
 						  (file-name-extension src-expanded)))))
 	 ;; Extract attributes from #+ATTR_ODT line.
 	 (attr-from (cl-case (org-element-type element)
@@ -2998,9 +3010,7 @@ used as a communication channel."
 	   (file-name-directory (org-odt--copy-formula-file
 				 src-expanded
 				 (format "Formula-%04d/"
-					 (let ((count (1+ (plist-get info :odt-embedded-formulas-count))))
-					   (prog1 count
-					     (plist-put info :odt-embedded-formulas-count count))))))))
+					 (org-odt--count-object info :formulas))))))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p 'paragraph 'character))
 	 (captions (org-odt-format-label element info 'definition))
