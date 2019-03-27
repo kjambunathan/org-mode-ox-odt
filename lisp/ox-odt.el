@@ -131,6 +131,8 @@
     (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
+    ;; Running counters for various objects.  Use this to generate
+    ;; automatic names and style-names for those objects.
     (:odt-object-counters nil nil nil)
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)))
@@ -240,28 +242,6 @@ standard Emacs.")
 </style:style>
 "
   "Template for auto-generated Table styles.")
-
-(defvar org-odt-automatic-styles '()
-  "Registry of automatic styles for various OBJECT-TYPEs.
-The variable has the following form:
-((OBJECT-TYPE-A
-  ((OBJECT-NAME-A.1 OBJECT-PROPS-A.1)
-   (OBJECT-NAME-A.2 OBJECT-PROPS-A.2) ...))
- (OBJECT-TYPE-B
-  ((OBJECT-NAME-B.1 OBJECT-PROPS-B.1)
-   (OBJECT-NAME-B.2 OBJECT-PROPS-B.2) ...))
- ...).
-
-OBJECT-TYPEs could be \"Section\", \"Table\", \"Figure\" etc.
-OBJECT-PROPS is (typically) a plist created by passing
-\"#+ATTR_ODT: \" option to `org-odt-parse-block-attributes'.
-
-Use `org-odt-add-automatic-style' to add update this variable.'")
-
-(defvar org-odt-object-counters nil
-  "Running counters for various OBJECT-TYPEs.
-Use this to generate automatic names and style-names. See
-`org-odt-add-automatic-style'.")
 
 (defvar org-odt-src-block-paragraph-format
   "<style:style style:name=\"OrgSrcBlock\" style:family=\"paragraph\" style:parent-style-name=\"Preformatted_20_Text\">
@@ -1524,30 +1504,6 @@ See `org-odt--build-date-styles' for implementation details."
 	  (capitalize (symbol-name object))
 	  (org-odt--count-object info object)))
 
-(defun org-odt-add-automatic-style (object-type &optional object-props)
-  "Create an automatic style of type OBJECT-TYPE with param OBJECT-PROPS.
-OBJECT-PROPS is (typically) a plist created by passing
-\"#+ATTR_ODT: \" option of the object in question to
-`org-odt-parse-block-attributes'.
-
-Use `org-odt-object-counters' to generate an automatic
-OBJECT-NAME and STYLE-NAME.  If OBJECT-PROPS is non-nil, add a
-new entry in `org-odt-automatic-styles'.  Return (OBJECT-NAME
-. STYLE-NAME)."
-  (cl-assert (stringp object-type))
-  (let* ((object (intern object-type))
-	 (seqvar object)
-	 (seqno (1+ (or (plist-get org-odt-object-counters seqvar) 0)))
-	 (object-name (format "%s%d" object-type seqno)) style-name)
-    (setq org-odt-object-counters
-	  (plist-put org-odt-object-counters seqvar seqno))
-    (when object-props
-      (setq style-name (format "Org%s" object-name))
-      (setq org-odt-automatic-styles
-	    (plist-put org-odt-automatic-styles object
-		       (append (list (list style-name object-props))
-			       (plist-get org-odt-automatic-styles object)))))
-    (cons object-name style-name)))
 
 ;;;; Checkbox
 
@@ -1845,33 +1801,11 @@ original parsed data.  INFO is a plist holding export options."
       (re-search-forward "  </office:automatic-styles>" nil t)
       (goto-char (match-beginning 0))
 
-      ;; - Dump automatic styles specified with "#+ODT_AUTOMATIC_STYLES: ...".
+      ;; - Dump these automatic styles:
+      ;;   1. styles specified with "#+ODT_AUTOMATIC_STYLES: ..."
+      ;;   2. paragraph styles that request pagebreaks
+      ;;   3. table styles that specify `:rel-width'
       (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
-
-      ;; - Dump automatic paragraph styles that request pagebreaks.
-      (cl-loop for (style-name props) in
-	       (plist-get org-odt-automatic-styles 'Paragraph) do
-	       (let* ((master-page-name (plist-get props :page-style))
-		      (pagebreak-after-p (string= (plist-get props :page-break) "after"))
-		      (page-number (plist-get props :page-number)))
-		 (insert (format org-odt-page-break-style-format
-				 style-name
-				 (plist-get props :parent-style-name)
-				 (or master-page-name "")
-				 (concat
-				  " style:writing-mode=\"page\""
-				  (if pagebreak-after-p " fo:break-after=\"page\""
-				    " fo:break-before=\"page\"")
-				  (when (numberp page-number)
-				    (unless master-page-name
-				      (user-error "You have specified `:page-number', but not `:page-style'."))
-				    (format " style:page-number=\"%d\"" page-number)))))))
-      ;; - Dump automatic table styles.
-      (cl-loop for (style-name props) in
-	       (plist-get org-odt-automatic-styles 'Table) do
-	       (when (setq props (or (let ((value (plist-get props :rel-width)))
-				       (and value (ignore-errors (read value)))) 96))
-		 (insert (format org-odt-table-style-format style-name props))))
 
       ;; - Dump automatic styles for paragraphs within a table.  See
       ;;   `org-odt-table-cell--get-paragraph-styles'.
@@ -2330,7 +2264,7 @@ holding contextual information."
 				   (t (concat "Heading_20_" (number-to-string level)))))))
 		    (format
 		     "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
-		     (org-odt--get-derived-paragraph-style h style) level hc))))
+		     (org-odt--get-derived-paragraph-style h info style) level hc))))
 	       (headline-contents (concat extra-targets anchored-title))
 	       (immediate-list-style
 		(org-odt--read-attribute headline :list-style))
@@ -3604,15 +3538,33 @@ information."
 ;;    * B23
 ;; 3. N3
 
-(defun org-odt--get-derived-paragraph-style (paragraph parent-style)
-  (let* ((attributes (org-odt--read-attribute paragraph)))
-    (cond
-     ((or (plist-get attributes :page-style)
-	  (plist-get attributes :page-break)
-	  (plist-get attributes :page-number))
-      (cdr (org-odt-add-automatic-style
-	    "Paragraph" (nconc attributes (list :parent-style-name parent-style)))))
-     (t parent-style))))
+(defun org-odt--get-derived-paragraph-style (paragraph info parent-style)
+  (let* ((props (nconc (list :parent-style-name parent-style)
+		       (org-odt--read-attribute paragraph))))
+    (if (not (or (plist-get props :page-style)
+		 (plist-get props :page-break)
+		 (plist-get props :page-number)))
+	parent-style
+      (let* ((style-name (format "Org%s" (org-odt--name-object info 'paragraph))))
+	(plist-put info :odt-automatic-styles
+		   (concat (plist-get info :odt-automatic-styles)
+			   (let* ((master-page-name (plist-get props :page-style))
+				  (pagebreak-after-p (string= (plist-get props :page-break) "after"))
+				  (page-number (plist-get props :page-number)))
+			     (format org-odt-page-break-style-format
+				     style-name
+				     (plist-get props :parent-style-name)
+				     (or master-page-name "")
+				     (concat
+				      " style:writing-mode=\"page\""
+				      (if pagebreak-after-p " fo:break-after=\"page\""
+					" fo:break-before=\"page\"")
+				      (when (numberp page-number)
+					(unless master-page-name
+					  (user-error "You have specified `:page-number', but not `:page-style'."))
+					(format " style:page-number=\"%d\"" page-number)))))))
+
+	style-name))))
 
 (defun org-odt-paragraph (paragraph contents info)
   "Transcode a PARAGRAPH element from Org to ODT.
@@ -3729,7 +3681,7 @@ the plist used as a communication channel."
 	  (concat contents " ")))
        (t
 	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		(org-odt--get-derived-paragraph-style paragraph style)
+		(org-odt--get-derived-paragraph-style paragraph info style)
 		contents))))))
 
 
@@ -4448,7 +4400,6 @@ contextual information."
      (let* ((captions (org-odt-format-label table info 'definition))
 	    (caption (nth 0 captions)) (short-caption (nth 1 captions))
 	    (caption-position (nth 2 captions))
-	    (attributes (org-export-read-attribute :attr_odt table))
 	    (custom-table-style (nth 1 (org-odt-table-style-spec table info)))
 	    (table-column-specs
 	     (lambda (table info)
@@ -4465,13 +4416,25 @@ contextual information."
 		  (org-odt--table-cell-widths table info) "\n"))))
 	    (text (concat
 		   ;; begin table.
-		   (let* ((automatic-name
-			   (org-odt-add-automatic-style "Table" attributes)))
-		     (format
-		      "\n<table:table table:style-name=\"%s\"%s>"
-		      (or custom-table-style (cdr automatic-name) "OrgTable")
-		      (concat (when short-caption
-				(format " table:name=\"%s\"" short-caption)))))
+		   (format
+		    "\n<table:table table:style-name=\"%s\"%s>"
+		    (or custom-table-style
+			(let* ((props (org-export-read-attribute :attr_odt table))
+			       style-name)
+			  (when props
+			    (setq style-name (format "Org%s" (org-odt--name-object info 'table)))
+			    (plist-put info :odt-automatic-styles
+				       (concat (plist-get info :odt-automatic-styles)
+					       (format org-odt-table-style-format
+						       style-name
+						       (or (let ((value (plist-get props :rel-width)))
+							     (and value (ignore-errors (read value))))
+							   96)))))
+			  style-name)
+			"OrgTable")
+		    (concat (when short-caption
+			      (format " table:name=\"%s\"" short-caption))))
+
 		   ;; column specification.
 		   (funcall table-column-specs table info)
 		   ;; actual contents.
@@ -5478,9 +5441,7 @@ Return output file's name."
 	  `(expand-file-name
 	    (org-odt--export-wrap
 	     ,outfile
-	     (let* ((org-odt-automatic-styles nil)
-		    (org-odt-object-counters nil)
-		    ;; Let `htmlfontify' know that we are interested in
+	     (let* (;; Let `htmlfontify' know that we are interested in
 		    ;; collecting styles.
 		    (hfy-user-sheet-assoc nil))
 	       ;; Initialize content.xml and kick-off the export
@@ -5498,9 +5459,7 @@ Return output file's name."
 		   (insert output)))))))
       (org-odt--export-wrap
        outfile
-       (let* ((org-odt-automatic-styles nil)
-	      (org-odt-object-counters nil)
-	      ;; Let `htmlfontify' know that we are interested in collecting
+       (let* (;; Let `htmlfontify' know that we are interested in collecting
 	      ;; styles.
 	      (hfy-user-sheet-assoc nil))
 	 ;; Initialize content.xml and kick-off the export process.
