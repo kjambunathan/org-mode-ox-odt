@@ -216,19 +216,29 @@ standard Emacs.")
 (defconst org-odt-manifest-file-entry-tag
   "\n<manifest:file-entry manifest:media-type=\"%s\" manifest:full-path=\"%s\"%s/>")
 
-(defconst org-odt-file-extensions
-  '(("odt" . "OpenDocument Text")
-    ("ott" . "OpenDocument Text Template")
-    ("odm" . "OpenDocument Master Document")
-    ("ods" . "OpenDocument Spreadsheet")
-    ("ots" . "OpenDocument Spreadsheet Template")
-    ("odg" . "OpenDocument Drawing (Graphics)")
-    ("otg" . "OpenDocument Drawing Template")
-    ("odp" . "OpenDocument Presentation")
-    ("otp" . "OpenDocument Presentation Template")
-    ("odi" . "OpenDocument Image")
-    ("odf" . "OpenDocument Formula")
-    ("odc" . "OpenDocument Chart")))
+(defconst org-odt-file-extensions-alist
+  '(("odt" "application/vnd.oasis.opendocument.text"                  "Text document")
+    ("ott" "application/vnd.oasis.opendocument.text-template"         "Text document used as template")
+    ("odg" "application/vnd.oasis.opendocument.graphics"              "Graphics document (Drawing)")
+    ("otg" "application/vnd.oasis.opendocument.graphics-template"     "Drawing document used as template")
+    ("odp" "application/vnd.oasis.opendocument.presentation"          "Presentation document")
+    ("otp" "application/vnd.oasis.opendocument.presentation-template" "Presentation document used as template")
+    ("ods" "application/vnd.oasis.opendocument.spreadsheet"           "Spreadsheet document")
+    ("ots" "application/vnd.oasis.opendocument.spreadsheet-template"  "Spreadsheet document used as template")
+    ("odc" "application/vnd.oasis.opendocument.chart"                 "Chart document")
+    ("otc" "application/vnd.oasis.opendocument.chart-template"        "Chart document used as template")
+    ("odi" "application/vnd.oasis.opendocument.image"                 "Image document")
+    ("oti" "application/vnd.oasis.opendocument.image-template"        "Image document used as template")
+    ("odf" "application/vnd.oasis.opendocument.formula"               "Formula document")
+    ("otf" "application/vnd.oasis.opendocument.formula-template"      "Formula document used as template")
+    ("odm" "application/vnd.oasis.opendocument.text-master"           "Global Text document.")
+    ("oth" "application/vnd.oasis.opendocument.text-web"              "Text document used as template for HTML documents")
+    ("odb" "application/vnd.oasis.opendocument.base"                  "Database front end document"))
+  "Map a OpenDocument file extension, to it's mimetype and description.")
+
+(defconst org-odt-supported-file-types
+  '("odt" "odf" "odm")
+  "List of OpenDocument file extensions that this backend can generate.")
 
 (defconst org-odt-page-break-style-format "
 <style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\" style:master-page-name=\"%s\">
@@ -5258,13 +5268,9 @@ exported file."
 	   ;; Create a manifest entry for content.xml.
 	   (org-odt-create-manifest-file-entry "text/xml" "content.xml")
 	   ;; Write mimetype file
-	   (let* ((mimetypes
-		   '(("odt" . "application/vnd.oasis.opendocument.text")
-		     ("odf" .  "application/vnd.oasis.opendocument.formula")
-		     ("odm" . "application/vnd.oasis.opendocument.text-master")))
-		  (mimetype (cdr (assoc-string out-file-type mimetypes t))))
-	     (unless mimetype
-	       (error "Unknown OpenDocument backend %S" out-file-type))
+	   (let* ((mimetype (nth 1 (assoc-string out-file-type org-odt-file-extensions-alist))))
+	     (unless (member out-file-type org-odt-supported-file-types)
+	       (error "Don't know how to generate OpenDocument file of type  `%s'" out-file-type))
 	     (write-region mimetype nil (concat org-odt-zip-dir "mimetype"))
 	     (org-odt-create-manifest-file-entry mimetype "/" "1.2"))
 	   ;; Write out the manifest entries before zipping
@@ -5618,10 +5624,10 @@ using `org-open-file'."
 
 ;;; Library Initializations
 
-(dolist (extn org-odt-file-extensions)
-  ;; Let Emacs open all OpenDocument files in archive mode
-  (add-to-list 'auto-mode-alist
-	       (cons (concat  "\\." (car extn) "\\'") 'archive-mode)))
+(cl-loop for (extn . rest) in org-odt-file-extensions-alist do
+	 ;; Let Emacs open all OpenDocument files in archive mode
+	 (add-to-list 'auto-mode-alist
+		      (cons (concat  "\\." extn "\\'") 'archive-mode)))
 
 (provide 'ox-odt)
 
