@@ -94,7 +94,10 @@
 		       org-odt--collect-cite-keys
 		       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
-		       org-odt--translate-list-tables)))
+		       org-odt--translate-list-tables))
+		   (:filter-final-output
+		    . (org-odt-write-mimetype-file
+		       org-odt-write-manifest-file)))
   :menu-entry
   '(?o "Export to ODT"
        ((?o "As ODT file" org-odt-export-to-odt)
@@ -131,11 +134,13 @@
     (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
+    ;; Redefine regular option.
+    (:with-latex nil "tex" org-odt-with-latex)
+    ;; Variables that are used per-session of export.
     ;; Running counters for various objects.  Use this to generate
     ;; automatic names and style-names for those objects.
     (:odt-object-counters nil nil nil)
-    ;; Redefine regular option.
-    (:with-latex nil "tex" org-odt-with-latex)))
+    (:odt-manifest-file-entries nil nil nil)))
 
 
 ;;; Dependencies
@@ -364,7 +369,6 @@ See `org-odt-format-label'.")
 	       index-title
 	       index-title)))))
 
-(defvar org-odt-manifest-file-entries nil)
 (defvar hfy-user-sheet-assoc)
 
 (defvar org-odt-zip-dir nil
@@ -1664,7 +1668,7 @@ original parsed data.  INFO is a plist holding export options."
       "  </office:meta>\n" "</office:document-meta>")
      nil (concat org-odt-zip-dir "meta.xml"))
     ;; Add meta.xml in to manifest.
-    (org-odt-create-manifest-file-entry "text/xml" "meta.xml"))
+    (org-odt-create-manifest-file-entry info "text/xml" "meta.xml"))
 
   ;; Update styles file.
   ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
@@ -1694,7 +1698,7 @@ original parsed data.  INFO is a plist holding export options."
 	   (when (org-file-image-p member)
 	     (let* ((image-type (file-name-extension member))
 		    (media-type (format "image/%s" image-type)))
-	       (org-odt-create-manifest-file-entry media-type member))))))
+	       (org-odt-create-manifest-file-entry info media-type member))))))
       ;; If it is of type `xml', then it becomes the styles.xml of the
       ;; target file.  Extra images, if any, comes from the user's
       ;; file system.
@@ -1709,11 +1713,11 @@ original parsed data.  INFO is a plist holding export options."
 		(full-path (if (file-name-absolute-p path) path
 			     (expand-file-name path input-dir)))
 		(target-path (file-relative-name path input-dir)))
-	   (org-odt--copy-image-file full-path target-path))))
+	   (org-odt--copy-image-file info full-path target-path))))
       (_ (error "Styles file is invalid: %s" styles-file)))
 
     ;; create a manifest entry for styles.xml
-    (org-odt-create-manifest-file-entry "text/xml" "styles.xml")
+    (org-odt-create-manifest-file-entry info "text/xml" "styles.xml")
 
     ;; Update styles.xml
     (with-current-buffer
@@ -1923,6 +1927,12 @@ original parsed data.  INFO is a plist holding export options."
 	(when depth (insert (or (org-odt-toc depth info) ""))))
       ;; Contents.
       (insert contents)
+      ;; Write content.xml.
+      (let ((coding-system-for-write 'utf-8))
+	(write-file (concat org-odt-zip-dir "content.xml")))
+      ;; Create a manifest entry for content.xml.
+      (org-odt-create-manifest-file-entry info "text/xml" "content.xml")
+
       ;; Return contents.
       (buffer-substring-no-properties (point-min) (point-max)))))
 
@@ -2788,7 +2798,7 @@ SHORT-CAPTION are strings."
 
 ;;;; Links :: Inline Images
 
-(defun org-odt--copy-image-file (full-path target-file)
+(defun org-odt--copy-image-file (info full-path target-file)
   "Returns the internal name of the file"
   (let* ((image-type (file-name-extension full-path))
 	 (media-type (format "image/%s" image-type)))
@@ -2798,10 +2808,10 @@ SHORT-CAPTION are strings."
     (let* ((target-dir (file-name-directory target-file)))
       (unless (file-exists-p (concat org-odt-zip-dir target-dir))
 	(make-directory (concat org-odt-zip-dir target-dir))
-	(org-odt-create-manifest-file-entry "" target-dir)))
+	(org-odt-create-manifest-file-entry info "" target-dir)))
 
     (copy-file full-path (concat org-odt-zip-dir target-file) 'overwrite)
-    (org-odt-create-manifest-file-entry media-type target-file)
+    (org-odt-create-manifest-file-entry info media-type target-file)
     target-file))
 
 (defun org-odt--image-size (file info &optional user-width
@@ -2883,7 +2893,8 @@ used as a communication channel."
 						(plist-get info :input-file)))))
 	 (href (format
 		"\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
-		(org-odt--copy-image-file src-expanded
+		(org-odt--copy-image-file info
+					  src-expanded
 					  (format "Images/%04d.%s"
 						  (org-odt--count-object info :images)
 						  (file-name-extension src-expanded)))))
@@ -2952,6 +2963,7 @@ used as a communication channel."
 	   "\n<draw:object %s xlink:href=\"%s\" xlink:type=\"simple\"/>"
 	   " xlink:show=\"embed\" xlink:actuate=\"onLoad\""
 	   (file-name-directory (org-odt--copy-formula-file
+				 info
 				 src-expanded
 				 (format "Formula-%04d/"
 					 (org-odt--count-object info :formulas))))))
@@ -2984,13 +2996,14 @@ used as a communication channel."
 	      (car (org-odt-format-label element info 'definition :label-format))))
 	(concat equation "<text:tab/>" label))))))
 
-(defun org-odt--copy-formula-file (src-file target-dir)
+(defun org-odt--copy-formula-file (info src-file target-dir)
   "Returns the internal name of the file"
   (let* ((target-file (concat target-dir "content.xml")))
     ;; Create a directory for holding formula file.  Also enter it in
     ;; to manifest.
     (make-directory (concat org-odt-zip-dir target-dir))
     (org-odt-create-manifest-file-entry
+     info
      "application/vnd.oasis.opendocument.formula" target-dir "1.2")
     ;; Copy over the formula file from user directory to zip
     ;; directory.
@@ -3006,7 +3019,7 @@ used as a communication channel."
 			      (concat org-odt-zip-dir target-dir)))
        (t (error "%s is not a formula file" src-file))))
     ;; Enter the formula file in to manifest.
-    (org-odt-create-manifest-file-entry "text/xml" target-file)
+    (org-odt-create-manifest-file-entry info "text/xml" target-file)
     target-file))
 
 ;;;; Targets
@@ -5209,26 +5222,41 @@ exported file."
 
 ;;; Interactive functions
 
-(defun org-odt-create-manifest-file-entry (&rest args)
-  (push args org-odt-manifest-file-entries))
+(defun org-odt-create-manifest-file-entry (info &rest args)
+  (plist-put info :odt-manifest-file-entries
+	     (cons args (plist-get info :odt-manifest-file-entries))))
 
-(defun org-odt-write-manifest-file ()
-  (make-directory (concat org-odt-zip-dir "META-INF"))
-  (let ((manifest-file (concat org-odt-zip-dir "META-INF/manifest.xml")))
-    (with-current-buffer
-	(let ((nxml-auto-insert-xml-declaration-flag nil))
-	  (find-file-noselect manifest-file t))
+(defun org-odt-write-manifest-file (contents _backend info)
+  (prog1 contents
+    (make-directory (concat org-odt-zip-dir "META-INF"))
+    (with-temp-buffer
       (insert
        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
      <manifest:manifest xmlns:manifest=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\" manifest:version=\"1.2\">\n")
-      (dolist (file-entry org-odt-manifest-file-entries)
+      (dolist (file-entry (plist-get info :odt-manifest-file-entries))
 	(let* ((version (nth 2 file-entry))
 	       (extra (if (not version) ""
 			(format " manifest:version=\"%s\"" version))))
 	  (insert
 	   (format org-odt-manifest-file-entry-tag
 		   (nth 0 file-entry) (nth 1 file-entry) extra))))
-      (insert "\n</manifest:manifest>"))))
+      (insert "\n</manifest:manifest>")
+
+      (let ((coding-system-for-write 'utf-8))
+	(write-file (concat org-odt-zip-dir "META-INF/manifest.xml"))))))
+
+(defun org-odt-write-mimetype-file (contents _backend info)
+  (prog1 contents
+    (let* ((mimetype
+	    (let ((ext (plist-get info :odt-file-extension)))
+	      (unless (member ext org-odt-supported-file-types)
+		(setq ext "odt"))
+	      (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
+      (with-temp-buffer
+	(insert mimetype)
+	(let ((coding-system-for-write 'utf-8))
+	  (write-file (concat org-odt-zip-dir "mimetype"))))
+      (org-odt-create-manifest-file-entry info mimetype "/" "1.2"))))
 
 (defmacro org-odt--export-wrap (out-file &rest body)
   `(let* ((--out-file ,out-file)
@@ -5243,7 +5271,6 @@ exported file."
 	  ;; the exported document get parked/created here.
 	  (org-odt-zip-dir (file-name-as-directory
 			    (make-temp-file (format "%s-" out-file-type) t)))
-	  (org-odt-manifest-file-entries nil)
 	  (--cleanup-xml-buffers
 	   (lambda nil
 	     ;; Kill all XML buffers.
@@ -5265,16 +5292,6 @@ exported file."
 	   ;; Do export.  This creates a bunch of xml files ready to be
 	   ;; saved and zipped.
 	   (progn ,@body)
-	   ;; Create a manifest entry for content.xml.
-	   (org-odt-create-manifest-file-entry "text/xml" "content.xml")
-	   ;; Write mimetype file
-	   (let* ((mimetype (nth 1 (assoc-string out-file-type org-odt-file-extensions-alist))))
-	     (unless (member out-file-type org-odt-supported-file-types)
-	       (error "Don't know how to generate OpenDocument file of type  `%s'" out-file-type))
-	     (write-region mimetype nil (concat org-odt-zip-dir "mimetype"))
-	     (org-odt-create-manifest-file-entry mimetype "/" "1.2"))
-	   ;; Write out the manifest entries before zipping
-	   (org-odt-write-manifest-file)
 	   ;; Save all XML files.
 	   (dolist (file org-odt-xml-files)
 	     (let ((buf (find-buffer-visiting
@@ -5379,19 +5396,21 @@ MathML source to kill ring depending on the value of
 		       (file-name-directory buffer-file-name)))))
     (org-odt--export-wrap
      filename
-     (let* ((buffer (progn
-		      (require 'nxml-mode)
-		      (let ((nxml-auto-insert-xml-declaration-flag nil))
-			(find-file-noselect (concat org-odt-zip-dir
-						    "content.xml") t)))))
-       (set-buffer buffer)
-       (set-buffer-file-coding-system coding-system-for-write)
-       (let ((mathml (org-create-math-formula latex-frag)))
-	 (unless mathml (error "No Math formula created"))
-	 (insert mathml)
-	 ;; Add MathML to kill ring, if needed.
-	 (when (org-export--copy-to-kill-ring-p)
-	   (org-kill-new (buffer-string))))))))
+     (let* ((info (list :odt-file-extension "odf"
+			:odt-manifest-file-entries nil)))
+       (with-temp-buffer
+	 (let ((mathml (org-create-math-formula latex-frag)))
+	   (unless mathml (error "No Math formula created"))
+	   (insert mathml)
+	   ;; Add MathML to kill ring, if needed.
+	   (when (org-export--copy-to-kill-ring-p)
+	     (org-kill-new (buffer-string))))
+         (let ((coding-system-for-write 'utf-8))
+	   (write-file (concat org-odt-zip-dir "content.xml")))
+	 (org-odt-create-manifest-file-entry info "text/xml" "content.xml"))
+
+       (org-odt-write-mimetype-file nil nil info)
+       (org-odt-write-manifest-file nil nil info)))))
 
 ;;;###autoload
 (defun org-odt-export-as-odf-and-open ()
@@ -5450,32 +5469,13 @@ Return output file's name."
 	     (let* (;; Let `htmlfontify' know that we are interested in
 		    ;; collecting styles.
 		    (hfy-user-sheet-assoc nil))
-	       ;; Initialize content.xml and kick-off the export
-	       ;; process.
-	       (let ((out-buf
-		      (progn
-			(require 'nxml-mode)
-			(let ((nxml-auto-insert-xml-declaration-flag nil))
-			  (find-file-noselect
-			   (concat org-odt-zip-dir "content.xml") t))))
-		     (output (org-export-as
-			      'odt ,subtreep ,visible-only nil ,ext-plist)))
-		 (with-current-buffer out-buf
-		   (erase-buffer)
-		   (insert output)))))))
+	       (org-export-as 'odt ,subtreep ,visible-only nil ,ext-plist)))))
       (org-odt--export-wrap
        outfile
        (let* (;; Let `htmlfontify' know that we are interested in collecting
 	      ;; styles.
 	      (hfy-user-sheet-assoc nil))
-	 ;; Initialize content.xml and kick-off the export process.
-	 (let ((output (org-export-as 'odt subtreep visible-only nil ext-plist))
-	       (out-buf (progn
-			  (require 'nxml-mode)
-			  (let ((nxml-auto-insert-xml-declaration-flag nil))
-			    (find-file-noselect
-			     (concat org-odt-zip-dir "content.xml") t)))))
-	   (with-current-buffer out-buf (erase-buffer) (insert output))))))))
+	 (org-export-as 'odt subtreep visible-only nil ext-plist))))))
 
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
