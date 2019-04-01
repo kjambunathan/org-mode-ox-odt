@@ -34,6 +34,7 @@
   (require 'table nil 'noerror))
 (require 'format-spec)
 (require 'ox)
+(require 'ox-ascii)
 (require 'org-compat)
 
 ;;; Define Back-End
@@ -56,6 +57,7 @@
     (horizontal-rule . org-odt-horizontal-rule)
     (inline-src-block . org-odt-inline-src-block)
     (inlinetask . org-odt-inlinetask)
+    (inner-template . org-odt-inner-template)
     (italic . org-odt-italic)
     (item . org-odt-item)
     (keyword . org-odt-keyword)
@@ -94,10 +96,7 @@
 		       org-odt--collect-cite-keys
 		       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
-		       org-odt--translate-list-tables))
-		   (:filter-final-output
-		    . (org-odt-write-mimetype-file
-		       org-odt-write-manifest-file)))
+		       org-odt--translate-list-tables)))
   :menu-entry
   '(?o "Export to ODT"
        ((?o "As ODT file" org-odt-export-to-odt)
@@ -106,7 +105,13 @@
 	      (if a (org-odt-export-to-odt t s v)
 		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
   :options-alist
-  '((:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
+  '((:description "DESCRIPTION" nil nil parse)
+    (:keywords "KEYWORDS" nil nil parse)
+    (:subtitle "SUBTITLE" nil nil parse)
+    ;; Redefine regular option.
+    (:with-latex nil "tex" org-odt-with-latex)
+    ;; ODT-specific keywords
+    (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Keywords that affect styles.xml
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
@@ -134,13 +139,14 @@
     (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
-    ;; Redefine regular option.
-    (:with-latex nil "tex" org-odt-with-latex)
     ;; Variables that are used per-session of export.
     ;; Running counters for various objects.  Use this to generate
     ;; automatic names and style-names for those objects.
     (:odt-object-counters nil nil nil)
-    (:odt-manifest-file-entries nil nil nil)))
+    (:odt-manifest-file-entries nil nil nil)
+    ;; Initialize temporary workarea.  All files that end up in the
+    ;; exported document are created here.
+    (:odt-zip-dir nil nil (file-name-as-directory (make-temp-file "odt-" t)))))
 
 
 ;;; Dependencies
@@ -370,9 +376,6 @@ See `org-odt-format-label'.")
 	       index-title)))))
 
 (defvar hfy-user-sheet-assoc)
-
-(defvar org-odt-zip-dir nil
-  "Temporary work directory for OpenDocument exporter.")
 
 
 
@@ -684,7 +687,10 @@ from `org-odt-convert-processes'."
     ("Presentation"
      ("odp" "otp" "ppt" "pptx")
      (("pdf" "pdf") ("swf" "swf") ("odp" "odp") ("otp" "otp") ("ppt" "ppt")
-      ("pptx" "pptx") ("odg" "odg"))))
+      ("pptx" "pptx") ("odg" "odg")))
+    ("Formula"
+     ("odf" "mml")
+     (("pdf" "pdf") ("mml" "mml") ("odf" "odf"))))
   "Specify input and output formats of `org-odt-convert-process'.
 More correctly, specify the set of input and output formats that
 the user is actually interested in.
@@ -1533,6 +1539,8 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;; Template
 
+;;;; Template Helpers
+
 (defun org-odt--build-date-styles (fmt style)
   ;; In LibreOffice 3.4.6, there doesn't seem to be a convenient way
   ;; to modify the date fields.  A date could be modified by
@@ -1618,177 +1626,21 @@ See `org-odt--build-date-styles' for implementation details."
 		      " number:format-source=\"fixed\"")
 	      output ))))
 
-(defun org-odt-template (contents info)
-  "Return complete document string after ODT conversion.
-CONTENTS is the transcoded contents string.  RAW-DATA is the
-original parsed data.  INFO is a plist holding export options."
-  ;; Write meta file.
-  (let ((title (org-export-data (plist-get info :title) info))
-	(author (let ((author (plist-get info :author)))
-		  (if (not author) "" (org-export-data author info))))
-	(_email (plist-get info :email))
-	(keywords (plist-get info :keywords))
-	(description (plist-get info :description)))
-    (write-region
-     (concat
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-     <office:document-meta
-         xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"
-         xmlns:xlink=\"http://www.w3.org/1999/xlink\"
-         xmlns:dc=\"http://purl.org/dc/elements/1.1/\"
-         xmlns:meta=\"urn:oasis:names:tc:opendocument:xmlns:meta:1.0\"
-         xmlns:ooo=\"http://openoffice.org/2004/office\"
-         office:version=\"1.2\">
-       <office:meta>\n"
-      (format "<dc:creator>%s</dc:creator>\n" author)
-      (format "<meta:initial-creator>%s</meta:initial-creator>\n" author)
-      ;; Date, if required.
-      (when (plist-get info :with-date)
-	;; Check if DATE is specified as an Org-timestamp.  If yes,
-	;; include it as meta information.  Otherwise, just use
-	;; today's date.
-	(let* ((date (let ((date (plist-get info :date)))
-		       (and (not (cdr date))
-			    (eq (org-element-type (car date)) 'timestamp)
-			    (car date)))))
-	  (let ((iso-date (org-odt--format-timestamp date nil 'iso-date)))
-	    (concat
-	     (format "<dc:date>%s</dc:date>\n" iso-date)
-	     (format "<meta:creation-date>%s</meta:creation-date>\n"
-		     iso-date)))))
-      (format "<meta:generator>%s</meta:generator>\n"
-	      (let ((creator-info (plist-get info :with-creator)))
-		(if (or (not creator-info) (eq creator-info 'comment)) ""
-		  (plist-get info :creator))))
-      (format "<meta:keyword>%s</meta:keyword>\n" keywords)
-      (format "<dc:subject>%s</dc:subject>\n" description)
-      (when (org-string-nw-p title)
-	(format "<dc:title>%s</dc:title>\n" title))
-      "\n"
-      "  </office:meta>\n" "</office:document-meta>")
-     nil (concat org-odt-zip-dir "meta.xml"))
-    ;; Add meta.xml in to manifest.
-    (org-odt-create-manifest-file-entry info "text/xml" "meta.xml"))
+(defun org-odt-create-manifest-file-entry (info &rest args)
+  (plist-put info :odt-manifest-file-entries
+	     (cons args (plist-get info :odt-manifest-file-entries))))
 
-  ;; Update styles file.
-  ;; Copy styles.xml.  Also dump htmlfontify styles, if there is any.
-  ;; Write styles file.
-  (let* ((styles-file
-	  (let ((file (plist-get info :odt-styles-file)))
-	    (cond
-	     ((or (not file) (string= file ""))
-	      (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir))
-	     ((file-name-absolute-p file) file)
-	     (t (expand-file-name
-		 file (file-name-directory (plist-get info :input-file)))))))
-	 (styles-file-type (file-name-extension styles-file))
-	 (extra-images (plist-get info :odt-extra-images)))
-    (message "ox-odt: Styles file is %s" styles-file)
-    ;; Check the type of styles file.
-    (pcase styles-file-type
-      ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
-      ;; styles.xml within the zip file becomes the styles.xml of the
-      ;; target file.  Extra images, if any, also comes from within
-      ;; this zip file.
-      ((or "odt" "ott")
-       (let ((archive styles-file)
-	     (members (cons "styles.xml" extra-images)))
-	 (org-odt--zip-extract archive members org-odt-zip-dir)
-	 (dolist (member members)
-	   (when (org-file-image-p member)
-	     (let* ((image-type (file-name-extension member))
-		    (media-type (format "image/%s" image-type)))
-	       (org-odt-create-manifest-file-entry info media-type member))))))
-      ;; If it is of type `xml', then it becomes the styles.xml of the
-      ;; target file.  Extra images, if any, comes from the user's
-      ;; file system.
-      ("xml"
-       (copy-file styles-file (concat org-odt-zip-dir "styles.xml") t)
-       ;; Some styles.xml elements (like
-       ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
-       ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
-       ;; Copy over these image files to the exported file.
-       (dolist (path extra-images)
-	 (let* ((input-dir (file-name-directory (plist-get info :input-file)))
-		(full-path (if (file-name-absolute-p path) path
-			     (expand-file-name path input-dir)))
-		(target-path (file-relative-name path input-dir)))
-	   (org-odt--copy-image-file info full-path target-path))))
-      (_ (error "Styles file is invalid: %s" styles-file)))
+;;;; Inner Template
 
-    ;; create a manifest entry for styles.xml
-    (org-odt-create-manifest-file-entry info "text/xml" "styles.xml")
+(defun org-odt-inner-template (contents _info)
+  "Return body of document string after ODT conversion.
+CONTENTS is the transcoded contents string.  INFO is a plist
+holding export options."
+  contents)
 
-    ;; Update styles.xml
-    (with-current-buffer
-	(find-file-noselect (concat org-odt-zip-dir "styles.xml") t)
-      (revert-buffer t t)
+;;;; Write content.xml
 
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:master-styles>" nil t)
-	(goto-char (match-beginning 0)))
-
-      ;; Write master styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:automatic-styles>" nil t)
-	(goto-char (match-beginning 0)))
-
-      ;; Write automatic styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0)))
-
-      ;; Write extra styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
-
-      ;; Write custom styles for source blocks
-      ;; Save STYLES used for colorizing of source blocks.
-      ;; Update styles.xml with styles that were collected as part of
-      ;; `org-odt-hfy-face-to-css' callbacks.
-      (let ((styles (mapconcat (lambda (style) (format " %s\n" (cddr style)))
-			       hfy-user-sheet-assoc "")))
-	(when styles
-	  (goto-char (point-min))
-	  (when (re-search-forward "</office:styles>" nil t)
-	    (goto-char (match-beginning 0))
-	    (insert "\n<!-- Org Htmlfontify Styles -->\n" styles "\n"))))
-
-      ;; Update styles.xml - take care of outline numbering
-
-      ;; Don't make automatic backup of styles.xml file. This setting
-      ;; prevents the backed-up styles.xml file from being zipped in to
-      ;; odt file. This is more of a hackish fix. Better alternative
-      ;; would be to fix the zip command so that the output odt file
-      ;; includes only the needed files and excludes any auto-generated
-      ;; extra files like backups and auto-saves etc etc. Note that
-      ;; currently the zip command zips up the entire temp directory so
-      ;; that any auto-generated files created under the hood ends up in
-      ;; the resulting odt file.
-      (setq-local backup-inhibited t)
-
-      ;; Outline numbering is retained only upto LEVEL.
-      ;; To disable outline numbering pass a LEVEL of 0.
-
-      (goto-char (point-min))
-      (let ((regex
-	     "<text:outline-level-style\\([^>]*\\)text:level=\"\\([^\"]*\\)\"\\([^>]*\\)>")
-	    (replacement
-	     "<text:outline-level-style\\1text:level=\"\\2\" style:num-format=\"\">"))
-	(while (re-search-forward regex nil t)
-	  (unless (let ((sec-num (plist-get info :section-numbers))
-			(level (string-to-number (match-string 2))))
-		    (if (wholenump sec-num) (<= level sec-num) sec-num))
-	    (replace-match replacement t nil))))
-      (save-buffer 0)))
-  ;; Update content.xml.
-
+(defun org-odt-write-contents-file (contents _backend info)
   (let* ( ;; `org-display-custom-times' should be accessed right
 	 ;; within the context of the Org buffer.  So obtain its
 	 ;; value before moving on to temp-buffer context down below.
@@ -1929,12 +1781,355 @@ original parsed data.  INFO is a plist holding export options."
       (insert contents)
       ;; Write content.xml.
       (let ((coding-system-for-write 'utf-8))
-	(write-file (concat org-odt-zip-dir "content.xml")))
+	(write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
       ;; Create a manifest entry for content.xml.
       (org-odt-create-manifest-file-entry info "text/xml" "content.xml")
 
       ;; Return contents.
       (buffer-substring-no-properties (point-min) (point-max)))))
+
+;;;; Write styles.xml
+
+(defun org-odt-write-styles-file (_contents _backend info)
+  (let* ((styles-file
+	  (let ((file (plist-get info :odt-styles-file)))
+	    (cond
+	     ((or (not file) (string= file ""))
+	      (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir))
+	     ((file-name-absolute-p file) file)
+	     (t (expand-file-name
+		 file (file-name-directory (plist-get info :input-file)))))))
+	 (styles-file-type (file-name-extension styles-file))
+	 (extra-images (plist-get info :odt-extra-images)))
+    (message "ox-odt: Styles file is %s" styles-file)
+    ;; Check the type of styles file.
+    (pcase styles-file-type
+      ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
+      ;; styles.xml within the zip file becomes the styles.xml of the
+      ;; target file.  Extra images, if any, also comes from within
+      ;; this zip file.
+      ((or "odt" "ott")
+       (let ((archive styles-file)
+	     (members (cons "styles.xml" extra-images)))
+	 (org-odt--zip-extract archive members (plist-get info :odt-zip-dir))
+	 (dolist (member members)
+	   (when (org-file-image-p member)
+	     (let* ((image-type (file-name-extension member))
+		    (media-type (format "image/%s" image-type)))
+	       (org-odt-create-manifest-file-entry info media-type member))))))
+      ;; If it is of type `xml', then it becomes the styles.xml of the
+      ;; target file.  Extra images, if any, comes from the user's
+      ;; file system.
+      ("xml"
+       (copy-file styles-file (concat (plist-get info :odt-zip-dir) "styles.xml") t)
+       ;; Some styles.xml elements (like
+       ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
+       ;; Such images are specified with #+ODT_EXTRA_IMAGES: ... lines.
+       ;; Copy over these image files to the exported file.
+       (dolist (path extra-images)
+	 (let* ((input-dir (file-name-directory (plist-get info :input-file)))
+		(full-path (if (file-name-absolute-p path) path
+			     (expand-file-name path input-dir)))
+		(target-path (file-relative-name path input-dir)))
+	   (org-odt--copy-image-file info full-path target-path))))
+      (_ (error "Styles file is invalid: %s" styles-file)))
+
+    ;; create a manifest entry for styles.xml
+    (org-odt-create-manifest-file-entry info "text/xml" "styles.xml")
+
+    ;; Update styles.xml
+    (with-temp-buffer
+      (insert-file-contents (concat (plist-get info :odt-zip-dir) "styles.xml"))
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:master-styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write master styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:automatic-styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write automatic styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write extra styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
+
+      ;; Write custom styles for source blocks
+      ;; Save STYLES used for colorizing of source blocks.
+      ;; Update styles.xml with styles that were collected as part of
+      ;; `org-odt-hfy-face-to-css' callbacks.
+      (let ((styles (mapconcat (lambda (style) (format " %s\n" (cddr style)))
+			       hfy-user-sheet-assoc "")))
+	(when styles
+	  (goto-char (point-min))
+	  (when (re-search-forward "</office:styles>" nil t)
+	    (goto-char (match-beginning 0))
+	    (insert "\n<!-- Org Htmlfontify Styles -->\n" styles "\n"))))
+
+      ;; Update styles.xml - take care of outline numbering
+
+      ;; Don't make automatic backup of styles.xml file. This setting
+      ;; prevents the backed-up styles.xml file from being zipped in to
+      ;; odt file. This is more of a hackish fix. Better alternative
+      ;; would be to fix the zip command so that the output odt file
+      ;; includes only the needed files and excludes any auto-generated
+      ;; extra files like backups and auto-saves etc etc. Note that
+      ;; currently the zip command zips up the entire temp directory so
+      ;; that any auto-generated files created under the hood ends up in
+      ;; the resulting odt file.
+      (setq-local backup-inhibited t)
+
+      ;; Outline numbering is retained only upto LEVEL.
+      ;; To disable outline numbering pass a LEVEL of 0.
+
+      (goto-char (point-min))
+      (let ((regex
+	     "<text:outline-level-style\\([^>]*\\)text:level=\"\\([^\"]*\\)\"\\([^>]*\\)>")
+	    (replacement
+	     "<text:outline-level-style\\1text:level=\"\\2\" style:num-format=\"\">"))
+	(while (re-search-forward regex nil t)
+	  (unless (let ((sec-num (plist-get info :section-numbers))
+			(level (string-to-number (match-string 2))))
+		    (if (wholenump sec-num) (<= level sec-num) sec-num))
+	    (replace-match replacement t nil))))
+      ;; Write styles.xml
+      (let ((coding-system-for-write 'utf-8))
+	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
+
+
+;;;; Write meta.xml
+
+(defun org-odt-write-meta-file (_contents _backend info)
+  (let ((author (when (plist-get info :with-author)
+		  (let ((data (plist-get info :author)))
+		    (org-export-data-with-backend data 'ascii info))))
+	(creator (when (plist-get info :with-creator)
+		   (plist-get info :creator)))
+	(description (let ((data (plist-get info :description)))
+		       (org-export-data-with-backend data 'ascii info)))
+	(email (when (plist-get info :with-email)
+		 (plist-get info :email)))
+	(iso-date (when (plist-get info :with-date)
+		    (org-odt--format-timestamp
+		     (let ((date (plist-get info :date)))
+		       (when (and (cdr date))
+			 (eq (org-element-type (car date)) 'timestamp)
+			 (car date)))
+		     nil 'iso-date)))
+	(keywords (let ((data (plist-get info :keywords)))
+		    (org-export-data-with-backend data 'ascii info)))
+	(_subtitle (let ((data (plist-get info :subtitle)))
+		     (org-export-data-with-backend data 'ascii info)))
+	(title (when (plist-get info :with-title)
+		 (let ((data (plist-get info :title)))
+		   (org-export-data-with-backend data 'ascii info)))))
+    (with-temp-buffer
+      (insert
+       (concat
+	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+     <office:document-meta
+         xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"
+         xmlns:xlink=\"http://www.w3.org/1999/xlink\"
+         xmlns:dc=\"http://purl.org/dc/elements/1.1/\"
+         xmlns:meta=\"urn:oasis:names:tc:opendocument:xmlns:meta:1.0\"
+         xmlns:ooo=\"http://openoffice.org/2004/office\"
+         office:version=\"1.2\">
+       <office:meta>\n"
+	(concat
+	 ;; Order the items here by their XML element name.
+         (when (org-string-nw-p author)
+	   (format "<dc:creator>%s</dc:creator>\n" author))
+         (when (org-string-nw-p iso-date)
+	   (format "<dc:date>%s</dc:date>\n" iso-date))
+	 (when (org-string-nw-p description)
+	   (format "<dc:description>%s</dc:description>\n" description))
+	 (when (org-string-nw-p description)
+	   (format "<dc:subject>%s</dc:subject>\n" description))
+	 (when (org-string-nw-p title)
+	   (format "<dc:title>%s</dc:title>\n" title))
+	 (when (org-string-nw-p iso-date)
+	   (format "<meta:creation-date>%s</meta:creation-date>\n" iso-date))
+	 (when (org-string-nw-p creator)
+	   (format "<meta:generator>%s</meta:generator>\n" creator))
+	 (when (org-string-nw-p author)
+	   (format "<meta:initial-creator>%s</meta:initial-creator>\n" author))
+         (when (org-string-nw-p keywords)
+	   (format "<meta:keyword>%s</meta:keyword>\n" keywords))
+	 (when (org-string-nw-p email)
+	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email)))
+	"  </office:meta>\n" "</office:document-meta>"))
+
+      ;; Write meta.xml.
+      (let ((coding-system-for-write 'utf-8))
+	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
+
+    ;; Add meta.xml in to manifest.
+    (org-odt-create-manifest-file-entry info "text/xml" "meta.xml")))
+
+;;;; Write mimetype
+
+(defun org-odt-write-mimetype-file (_contents _backend info)
+  (let* ((mimetype
+	  (let ((ext (plist-get info :odt-file-extension)))
+	    (unless (member ext org-odt-supported-file-types)
+	      (setq ext "odt"))
+	    (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
+    (with-temp-buffer
+      (insert mimetype)
+      (let ((coding-system-for-write 'utf-8))
+	(write-file (concat (plist-get info :odt-zip-dir) "mimetype"))))
+    (org-odt-create-manifest-file-entry info mimetype "/" "1.2")))
+
+;;;; Write manifest.xml
+
+(defun org-odt-write-manifest-file (_contents _backend info)
+  (make-directory (concat (plist-get info :odt-zip-dir) "META-INF"))
+  (with-temp-buffer
+    (insert
+     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+     <manifest:manifest xmlns:manifest=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\" manifest:version=\"1.2\">\n")
+    (dolist (file-entry (plist-get info :odt-manifest-file-entries))
+      (let* ((version (nth 2 file-entry))
+	     (extra (if (not version) ""
+		      (format " manifest:version=\"%s\"" version))))
+	(insert
+	 (format org-odt-manifest-file-entry-tag
+		 (nth 0 file-entry) (nth 1 file-entry) extra))))
+    (insert "\n</manifest:manifest>")
+    ;; Write manifest.xml
+    (let ((coding-system-for-write 'utf-8))
+      (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
+
+;;;; Prettify XML files
+
+(defun org-odt-prettify-xml-files-maybe (_contents _backend info)
+  (when org-odt-prettify-xml
+    (dolist (file '("META-INF/manifest.xml" "content.xml" "meta.xml" "styles.xml"))
+      (setq file (concat (plist-get info :odt-zip-dir) file))
+      (when (file-readable-p file)
+	(with-temp-buffer
+	  (insert-file-contents file)
+	  ;; Prettify output if needed.
+	  (indent-region (point-min) (point-max))
+	  (let ((coding-system-for-write 'utf-8))
+	    (write-file file)))))))
+
+;;;; Zip XML files to OpenDocument format
+
+(defun org-odt-zip (_contents _backend info)
+  (unless (executable-find "zip")
+    ;; Not at all OSes ship with zip by default
+    (error "Executable \"zip\" needed for creating OpenDocument files"))
+
+  ;; Run zip.
+  (let* ((target (or (plist-get info :odt-out-file)
+		     (org-export-output-file-name
+		      (concat "." (or (let ((ext (plist-get info :odt-file-extension)))
+					(if (member ext org-odt-supported-file-types) ext "odt"))))
+		      (memq 'subtree (plist-get info :export-options)))))
+	 (target-name (file-name-nondirectory target))
+	 (cmds `(("zip" "-mX0" ,target-name "mimetype")
+		 ("zip" "-rmTq" ,target-name "."))))
+    ;; If a file with same name as the desired output file
+    ;; exists, remove it.
+    (when (file-exists-p target)
+      (delete-file target))
+    ;; Zip up the xml files.
+    (let ((coding-system-for-write 'no-conversion) exitcode err-string)
+      (message "Create OpenDocument file `%s'..." target)
+      ;; Switch temporarily to content.xml.  This way Zip
+      ;; process will inherit `org-odt-zip-dir' as the current
+      ;; directory.
+      (with-current-buffer
+	  (find-file-noselect (concat (plist-get info :odt-zip-dir) "content.xml") t)
+	(dolist (cmd cmds)
+	  (message "Running %s" (mapconcat 'identity cmd " "))
+	  (setq err-string
+		(with-output-to-string
+		  (setq exitcode
+			(apply 'call-process (car cmd)
+			       nil standard-output nil (cdr cmd)))))
+	  (or (zerop exitcode)
+	      (error (concat "Unable to create OpenDocument file."
+			     "  Zip failed with error (%s)")
+		     err-string)))))
+    ;; Move the zip file from temporary work directory to
+    ;; user-mandated location.
+    (rename-file (concat (plist-get info :odt-zip-dir) target-name) target)
+    (message "Created %s" (expand-file-name target))
+    ;; Cleanup work directory and work files.
+    (org-odt-cleanup-xml-buffers nil nil info)
+    target))
+
+;;;; Cleanup temp files
+
+(defun org-odt-cleanup-xml-buffers (target _backend info)
+  (prog1 target
+    ;; Kill all XML buffers.
+    (dolist (file '("META-INF/manifest.xml" "content.xml" "meta.xml" "styles.xml"))
+      (let ((buf (find-buffer-visiting
+		  (concat (plist-get info :odt-zip-dir) file))))
+	(when buf
+	  (with-current-buffer buf
+	    (set-buffer-modified-p nil)
+	    (kill-buffer buf)))))
+    ;; Delete temporary directory and also other embedded
+    ;; files that get copied there.
+    (delete-directory (plist-get info :odt-zip-dir) t)))
+
+;;;; Wrapper for File Transformation
+
+(defun org-odt--transform-target (target _backend _info)
+  (org-odt-transform target))
+
+;;;; Wrapper for File Conversion
+
+(defun org-odt--convert (target _backend _info)
+  (condition-case-unless-debug err
+      (org-odt-convert target org-odt-preferred-output-format)
+    (error (message (error-message-string err))
+	   target)))
+
+;;;; Outer Template
+
+(defun org-odt-template (contents info)
+  "Return complete document string after ODT conversion.
+CONTENTS is the transcoded contents string.  INFO is a plist
+holding export options."
+  (condition-case-unless-debug err
+      (cl-reduce (lambda (target f)
+		   (funcall f target nil info))
+		 '(org-odt--transform-target
+		   org-odt--convert)
+		 :initial-value
+		 (cl-reduce (lambda (contents f)
+			      (funcall f contents nil info))
+			    '(org-odt-write-contents-file
+			      org-odt-write-styles-file
+			      org-odt-write-meta-file
+			      org-odt-write-mimetype-file
+			      org-odt-write-manifest-file
+			      org-odt-prettify-xml-files-maybe
+			      org-odt-zip
+			      org-odt-cleanup-xml-buffers)
+			    :initial-value contents))
+
+    ((error)
+     ;; Cleanup work directory and work files.
+     (org-odt-cleanup-xml-buffers nil nil info)
+     (error "OpenDocument export failed with error: `%s'"
+	    (error-message-string err)))))
 
 
 
@@ -2806,11 +3001,11 @@ SHORT-CAPTION are strings."
 	     (substring-no-properties full-path) target-file)
 
     (let* ((target-dir (file-name-directory target-file)))
-      (unless (file-exists-p (concat org-odt-zip-dir target-dir))
-	(make-directory (concat org-odt-zip-dir target-dir))
+      (unless (file-exists-p (concat (plist-get info :odt-zip-dir) target-dir))
+	(make-directory (concat (plist-get info :odt-zip-dir) target-dir))
 	(org-odt-create-manifest-file-entry info "" target-dir)))
 
-    (copy-file full-path (concat org-odt-zip-dir target-file) 'overwrite)
+    (copy-file full-path (concat (plist-get info :odt-zip-dir) target-file) 'overwrite)
     (org-odt-create-manifest-file-entry info media-type target-file)
     target-file))
 
@@ -3001,7 +3196,7 @@ used as a communication channel."
   (let* ((target-file (concat target-dir "content.xml")))
     ;; Create a directory for holding formula file.  Also enter it in
     ;; to manifest.
-    (make-directory (concat org-odt-zip-dir target-dir))
+    (make-directory (concat (plist-get info :odt-zip-dir) target-dir))
     (org-odt-create-manifest-file-entry
      info
      "application/vnd.oasis.opendocument.formula" target-dir "1.2")
@@ -3012,11 +3207,11 @@ used as a communication channel."
       (cond
        ;; Case 1: Mathml.
        ((member ext '("mathml" "mml"))
-	(copy-file src-file (concat org-odt-zip-dir target-file) 'overwrite))
+	(copy-file src-file (concat (plist-get info :odt-zip-dir) target-file) 'overwrite))
        ;; Case 2: OpenDocument formula.
        ((string= ext "odf")
 	(org-odt--zip-extract src-file "content.xml"
-			      (concat org-odt-zip-dir target-dir)))
+			      (concat (plist-get info :odt-zip-dir) target-dir)))
        (t (error "%s is not a formula file" src-file))))
     ;; Enter the formula file in to manifest.
     (org-odt-create-manifest-file-entry info "text/xml" target-file)
@@ -4714,6 +4909,8 @@ contextual information."
 
 ;;; Filters
 
+;;;; Citations
+
 (defun org-odt--translate-cite-fragments (tree _backend info)
   "Translate all \\cite{} LaTeX fragments in TREE to `citation-reference'.
 Return the translated tree.
@@ -5222,143 +5419,6 @@ exported file."
 
 ;;; Interactive functions
 
-(defun org-odt-create-manifest-file-entry (info &rest args)
-  (plist-put info :odt-manifest-file-entries
-	     (cons args (plist-get info :odt-manifest-file-entries))))
-
-(defun org-odt-write-manifest-file (contents _backend info)
-  (prog1 contents
-    (make-directory (concat org-odt-zip-dir "META-INF"))
-    (with-temp-buffer
-      (insert
-       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-     <manifest:manifest xmlns:manifest=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\" manifest:version=\"1.2\">\n")
-      (dolist (file-entry (plist-get info :odt-manifest-file-entries))
-	(let* ((version (nth 2 file-entry))
-	       (extra (if (not version) ""
-			(format " manifest:version=\"%s\"" version))))
-	  (insert
-	   (format org-odt-manifest-file-entry-tag
-		   (nth 0 file-entry) (nth 1 file-entry) extra))))
-      (insert "\n</manifest:manifest>")
-
-      (let ((coding-system-for-write 'utf-8))
-	(write-file (concat org-odt-zip-dir "META-INF/manifest.xml"))))))
-
-(defun org-odt-write-mimetype-file (contents _backend info)
-  (prog1 contents
-    (let* ((mimetype
-	    (let ((ext (plist-get info :odt-file-extension)))
-	      (unless (member ext org-odt-supported-file-types)
-		(setq ext "odt"))
-	      (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
-      (with-temp-buffer
-	(insert mimetype)
-	(let ((coding-system-for-write 'utf-8))
-	  (write-file (concat org-odt-zip-dir "mimetype"))))
-      (org-odt-create-manifest-file-entry info mimetype "/" "1.2"))))
-
-(defmacro org-odt--export-wrap (out-file &rest body)
-  `(let* ((--out-file ,out-file)
-	  (out-file-type (file-name-extension --out-file))
-	  ;; XML files created by the exporter.
-	  (org-odt-xml-files '("META-INF/manifest.xml" "content.xml"
-			       "meta.xml" "styles.xml"))
-	  ;; Encode all the above XML files using utf-8.
-	  (coding-system-for-write 'utf-8)
-	  (save-buffer-coding-system 'utf-8)
-	  ;; Initialize temporary workarea.  All files that end up in
-	  ;; the exported document get parked/created here.
-	  (org-odt-zip-dir (file-name-as-directory
-			    (make-temp-file (format "%s-" out-file-type) t)))
-	  (--cleanup-xml-buffers
-	   (lambda nil
-	     ;; Kill all XML buffers.
-	     (dolist (file org-odt-xml-files)
-	       (let ((buf (find-buffer-visiting
-			   (concat org-odt-zip-dir file))))
-		 (when buf
-		   (with-current-buffer buf
-		     (set-buffer-modified-p nil)
-		     (kill-buffer buf)))))
-	     ;; Delete temporary directory and also other embedded
-	     ;; files that get copied there.
-	     (delete-directory org-odt-zip-dir t))))
-     (condition-case err
-	 (progn
-	   (unless (executable-find "zip")
-	     ;; Not at all OSes ship with zip by default
-	     (error "Executable \"zip\" needed for creating OpenDocument files"))
-	   ;; Do export.  This creates a bunch of xml files ready to be
-	   ;; saved and zipped.
-	   (progn ,@body)
-	   ;; Save all XML files.
-	   (dolist (file org-odt-xml-files)
-	     (let ((buf (find-buffer-visiting
-			 (concat org-odt-zip-dir file))))
-	       (when buf
-		 (with-current-buffer buf
-		   ;; Prettify output if needed.
-		   (when org-odt-prettify-xml
-		     (indent-region (point-min) (point-max)))
-		   (save-buffer 0)))))
-	   ;; Run zip.
-	   (let* ((target --out-file)
-		  (target-name (file-name-nondirectory target))
-		  (cmds `(("zip" "-mX0" ,target-name "mimetype")
-			  ("zip" "-rmTq" ,target-name "."))))
-	     ;; If a file with same name as the desired output file
-	     ;; exists, remove it.
-	     (when (file-exists-p target)
-	       (delete-file target))
-	     ;; Zip up the xml files.
-	     (let ((coding-system-for-write 'no-conversion) exitcode err-string)
-	       (message "Creating ODT file...")
-	       ;; Switch temporarily to content.xml.  This way Zip
-	       ;; process will inherit `org-odt-zip-dir' as the current
-	       ;; directory.
-	       (with-current-buffer
-		   (find-file-noselect (concat org-odt-zip-dir "content.xml") t)
-		 (dolist (cmd cmds)
-		   (message "Running %s" (mapconcat 'identity cmd " "))
-		   (setq err-string
-			 (with-output-to-string
-			   (setq exitcode
-				 (apply 'call-process (car cmd)
-					nil standard-output nil (cdr cmd)))))
-		   (or (zerop exitcode)
-		       (error (concat "Unable to create OpenDocument file."
-				      "  Zip failed with error (%s)")
-			      err-string)))))
-	     ;; Move the zip file from temporary work directory to
-	     ;; user-mandated location.
-	     (rename-file (concat org-odt-zip-dir target-name) target)
-	     (message "Created %s" (expand-file-name target))
-	     ;; Cleanup work directory and work files.
-	     (funcall --cleanup-xml-buffers)
-	     ;; Transform the exported document.
-	     (org-odt-transform target)
-	     ;; Open the OpenDocument file in archive-mode for
-	     ;; examination.
-	     (find-file-noselect target t)
-	     ;; Return exported file.
-	     (cond
-	      ;; Case 1: Conversion desired on exported file.  Run the
-	      ;; converter on the OpenDocument file.  Return the
-	      ;; converted file.
-	      (org-odt-preferred-output-format
-	       (or (org-odt-convert target org-odt-preferred-output-format)
-		   target))
-	      ;; Case 2: No further conversion.  Return exported
-	      ;; OpenDocument file.
-	      (t target))))
-       ((debug error)
-	;; Cleanup work directory and work files.
-	(funcall --cleanup-xml-buffers)
-	(message "OpenDocument export failed: %s"
-		 (error-message-string err))))))
-
-
 ;;;; Export to OpenDocument formula
 
 ;;;###autoload
@@ -5387,30 +5447,50 @@ MathML source to kill ring depending on the value of
 			   (file-name-directory buffer-file-name))))
 	(read-file-name "ODF filename: " nil odf-filename nil
 			(file-name-nondirectory odf-filename)))))
-  (let ((filename (or odf-file
-		      (expand-file-name
-		       (concat
-			(file-name-sans-extension
-			 (or (file-name-nondirectory buffer-file-name)))
-			"." "odf")
-		       (file-name-directory buffer-file-name)))))
-    (org-odt--export-wrap
-     filename
-     (let* ((info (list :odt-file-extension "odf"
-			:odt-manifest-file-entries nil)))
-       (with-temp-buffer
-	 (let ((mathml (org-create-math-formula latex-frag)))
-	   (unless mathml (error "No Math formula created"))
-	   (insert mathml)
-	   ;; Add MathML to kill ring, if needed.
-	   (when (org-export--copy-to-kill-ring-p)
-	     (org-kill-new (buffer-string))))
-         (let ((coding-system-for-write 'utf-8))
-	   (write-file (concat org-odt-zip-dir "content.xml")))
-	 (org-odt-create-manifest-file-entry info "text/xml" "content.xml"))
+  (let* ((filename (or odf-file
+		       (expand-file-name
+			(concat
+			 (file-name-sans-extension
+			  (or (file-name-nondirectory buffer-file-name)))
+			 "." "odf")
+			(file-name-directory buffer-file-name))))
+	 (info (list :odt-file-extension "odf"
+		     :odt-manifest-file-entries nil
+		     :odt-zip-dir (file-name-as-directory (make-temp-file "odt-" t))
+		     :odt-out-file filename)))
+    (condition-case-unless-debug err
+	(cl-reduce (lambda (target f)
+		     (funcall f target nil info))
+		   '(;; org-odt--transform-target
+		     org-odt--convert)
+		   :initial-value
+		   (cl-reduce (lambda (contents f)
+				(funcall f contents nil info))
+			      '(;; org-odt-write-contents-file
+				(lambda (contents _backend info)
+				  (with-temp-buffer
+				    (insert contents)
+				    ;; Add MathML to kill ring, if needed.
+				    (when (org-export--copy-to-kill-ring-p)
+				      (org-kill-new (buffer-string)))
 
-       (org-odt-write-mimetype-file nil nil info)
-       (org-odt-write-manifest-file nil nil info)))))
+				    (let ((coding-system-for-write 'utf-8))
+				      (write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
+				    (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
+				;; org-odt-write-styles-file
+				;; org-odt-write-meta-file
+				org-odt-write-mimetype-file
+				org-odt-write-manifest-file
+				org-odt-prettify-xml-files-maybe
+				org-odt-zip
+				org-odt-cleanup-xml-buffers)
+			      :initial-value (or (org-create-math-formula latex-frag)
+						 (error "No Math formula created"))))
+      ((error)
+       ;; Cleanup work directory and work files.
+       (org-odt-cleanup-xml-buffers nil nil info)
+       (error "OpenDocument export failed with error: `%s'"
+	      (error-message-string err))))))
 
 ;;;###autoload
 (defun org-odt-export-as-odf-and-open ()
@@ -5424,7 +5504,7 @@ formula file."
 ;;;; Export to OpenDocument Text
 
 ;;;###autoload
-(defun org-odt-export-to-odt (&optional async subtreep visible-only ext-plist)
+(defun org-odt-export-to-odt (&optional async subtreep visible-only body-only)
   "Export current buffer to a ODT file.
 
 With
@@ -5455,27 +5535,17 @@ file-local settings.
 
 Return output file's name."
   (interactive)
-  (let ((outfile (org-export-output-file-name
-		  (concat "." (or (let ((ext (plist-get
-					      (org-export-get-environment nil subtreep ext-plist)
-					      :odt-file-extension)))
-				    (unless (member ext '("odt" "odm")) "odt"))))
-		  subtreep)))
-    (if async
-	(org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
-	  `(expand-file-name
-	    (org-odt--export-wrap
-	     ,outfile
-	     (let* (;; Let `htmlfontify' know that we are interested in
-		    ;; collecting styles.
-		    (hfy-user-sheet-assoc nil))
-	       (org-export-as 'odt ,subtreep ,visible-only nil ,ext-plist)))))
-      (org-odt--export-wrap
-       outfile
-       (let* (;; Let `htmlfontify' know that we are interested in collecting
-	      ;; styles.
-	      (hfy-user-sheet-assoc nil))
-	 (org-export-as 'odt subtreep visible-only nil ext-plist))))))
+  (if async
+      (org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
+	`(expand-file-name
+	  (let* (;; Let `htmlfontify' know that we are interested in
+		 ;; collecting styles.
+		 (hfy-user-sheet-assoc nil))
+	    (org-export-as 'odt ,subtreep ,visible-only ,body-only))))
+    (let* (;; Let `htmlfontify' know that we are interested in collecting
+	   ;; styles.
+	   (hfy-user-sheet-assoc nil))
+      (org-export-as 'odt subtreep visible-only body-only))))
 
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
@@ -5485,11 +5555,10 @@ Return output file's name."
 IN-FILE is an OpenDocument Text document, usually created as part
 of `org-odt-export-as-odf'."
   (require 'browse-url)
-  (let* ((in-file (expand-file-name (or in-file buffer-file-name))))
+  (let* ((in-file (expand-file-name in-file)))
     (cl-loop for (purpose cmd . args) in org-odt-transform-processes
 	     with err-string
 	     with exit-code do
-
 	     (setq cmd (cons cmd
 			     (mapcar (lambda (arg)
 				       (format-spec arg `((?i . ,in-file)
@@ -5503,9 +5572,11 @@ of `org-odt-export-as-odf'."
 		     (setq exit-code
 			   (apply 'call-process (car cmd)
 				  nil standard-output nil (cdr cmd)))))
-	     (or (zerop exit-code)
-		 (error (format "Command failed with error (%s)"
-				err-string))))))
+	     (if (zerop exit-code)
+		 (message "Created transformed file `%s'" (expand-file-name in-file))
+	       (error (format "Command failed with error (%s)"
+			      err-string))))
+    in-file))
 
 ;;;; Convert between OpenDocument and other formats
 
@@ -5527,8 +5598,8 @@ of `org-odt-export-as-odf'."
 	 (in-fmt (file-name-extension in-file))
 	 (out-fmt (or out-fmt (error "Output format unspecified")))
 	 (how (or (org-odt-reachable-p in-fmt out-fmt)
-		  (error "Cannot convert from %s format to %s format?"
-			 in-fmt out-fmt)))
+		  (error "Don't know how to convert file `%s' from type `%s' to type `%s'"
+			 (file-name-nondirectory in-file) in-fmt out-fmt)))
 	 (convert-process (car how))
 	 (out-file (concat (file-name-sans-extension in-file) "."
 			   (nth 1 (or (cdr how) out-fmt))))
