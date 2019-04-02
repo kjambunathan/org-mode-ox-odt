@@ -2097,7 +2097,9 @@ holding export options."
 
 (defun org-odt--convert (target _backend _info)
   (condition-case-unless-debug err
-      (org-odt-convert target org-odt-preferred-output-format)
+      (if org-odt-preferred-output-format
+	  (org-odt-convert target org-odt-preferred-output-format)
+	target)
     (error (message (error-message-string err))
 	   target)))
 
