@@ -146,7 +146,8 @@
     (:odt-manifest-file-entries nil nil nil)
     ;; Initialize temporary workarea.  All files that end up in the
     ;; exported document are created here.
-    (:odt-zip-dir nil nil (file-name-as-directory (make-temp-file "odt-" t)))))
+    (:odt-zip-dir nil nil (file-name-as-directory (make-temp-file "odt-" t)))
+    (:odt-hfy-user-sheet-assoc nil nil nil)))
 
 
 ;;; Dependencies
@@ -1869,13 +1870,13 @@ holding export options."
       ;; Save STYLES used for colorizing of source blocks.
       ;; Update styles.xml with styles that were collected as part of
       ;; `org-odt-hfy-face-to-css' callbacks.
-      (let ((styles (mapconcat (lambda (style) (format " %s\n" (cddr style)))
-			       hfy-user-sheet-assoc "")))
-	(when styles
-	  (goto-char (point-min))
-	  (when (re-search-forward "</office:styles>" nil t)
-	    (goto-char (match-beginning 0))
-	    (insert "\n<!-- Org Htmlfontify Styles -->\n" styles "\n"))))
+      (goto-char (point-min))
+      (when (re-search-forward "</office:styles>" nil t)
+	(goto-char (match-beginning 0))
+	(insert "\n<!-- Org Htmlfontify Styles -->\n"
+		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
+			 concat (format " %s\n" (cddr style)))
+		"\n"))
 
       ;; Update styles.xml - take care of outline numbering
 
@@ -4231,7 +4232,13 @@ and prefix with \"OrgSrc\".  For example,
 		   (funcall lang-mode)
 		   (org-font-lock-ensure)
 		   (buffer-string))))
-	 (fontifier (if use-htmlfontify-p 'org-odt-htmlfontify-string
+	 (fontifier (if use-htmlfontify-p
+			(lambda (line)
+			  ;; Let `htmlfontify' know that we are interested in
+			  ;; collecting styles.
+			  (let ((hfy-user-sheet-assoc (plist-get info :odt-hfy-user-sheet-assoc)))
+			    (prog1 (org-odt-htmlfontify-string line)
+			      (plist-put info :odt-hfy-user-sheet-assoc hfy-user-sheet-assoc))))
 		      'org-odt--encode-plain-text))
 	 (par-style (if use-htmlfontify-p "OrgSrcBlock"
 		      "OrgFixedWidthBlock"))
@@ -5540,14 +5547,8 @@ Return output file's name."
   (if async
       (org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
 	`(expand-file-name
-	  (let* (;; Let `htmlfontify' know that we are interested in
-		 ;; collecting styles.
-		 (hfy-user-sheet-assoc nil))
-	    (org-export-as 'odt ,subtreep ,visible-only ,body-only))))
-    (let* (;; Let `htmlfontify' know that we are interested in collecting
-	   ;; styles.
-	   (hfy-user-sheet-assoc nil))
-      (org-export-as 'odt subtreep visible-only body-only))))
+	  (org-export-as 'odt ,subtreep ,visible-only ,body-only)))
+    (org-export-as 'odt subtreep visible-only body-only)))
 
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
