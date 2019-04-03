@@ -1780,6 +1780,10 @@ holding export options."
 	(when depth (insert (or (org-odt-toc depth info) ""))))
       ;; Contents.
       (insert contents)
+      ;; Prettify buffer contents, if needed.
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
       ;; Write content.xml.
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
@@ -1904,6 +1908,10 @@ holding export options."
 			(level (string-to-number (match-string 2))))
 		    (if (wholenump sec-num) (<= level sec-num) sec-num))
 	    (replace-match replacement t nil))))
+      ;; Prettify buffer contents, if needed
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
       ;; Write styles.xml
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
@@ -1970,7 +1978,10 @@ holding export options."
 	 (when (org-string-nw-p email)
 	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email)))
 	"  </office:meta>\n" "</office:document-meta>"))
-
+      ;; Prettify buffer contents, if needed
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
       ;; Write meta.xml.
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
@@ -2008,6 +2019,10 @@ holding export options."
 	 (format org-odt-manifest-file-entry-tag
 		 (nth 0 file-entry) (nth 1 file-entry) extra))))
     (insert "\n</manifest:manifest>")
+    ;; Prettify buffer contents, if needed
+    (when org-odt-prettify-xml
+      (nxml-mode)
+      (indent-region (point-min) (point-max)))
     ;; Write manifest.xml
     (let ((coding-system-for-write 'utf-8))
       (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
@@ -2123,7 +2138,7 @@ holding export options."
 			      org-odt-write-meta-file
 			      org-odt-write-mimetype-file
 			      org-odt-write-manifest-file
-			      org-odt-prettify-xml-files-maybe
+			      ;; org-odt-prettify-xml-files-maybe
 			      org-odt-zip
 			      org-odt-cleanup-xml-buffers)
 			    :initial-value contents))
@@ -5490,7 +5505,7 @@ MathML source to kill ring depending on the value of
 				;; org-odt-write-meta-file
 				org-odt-write-mimetype-file
 				org-odt-write-manifest-file
-				org-odt-prettify-xml-files-maybe
+				;; org-odt-prettify-xml-files-maybe
 				org-odt-zip
 				org-odt-cleanup-xml-buffers)
 			      :initial-value (or (org-create-math-formula latex-frag)
