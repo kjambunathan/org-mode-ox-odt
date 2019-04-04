@@ -4232,60 +4232,81 @@ and prefix with \"OrgSrc\".  For example,
     (with-no-warnings (htmlfontify-string line))))
 
 (defun org-odt-do-format-code
-    (code info &optional lang refs retain-labels num-start)
-  (let* ((lang (or (assoc-default lang org-src-lang-modes) lang))
-	 (lang-mode (and lang (intern (format "%s-mode" lang))))
-	 (code-lines (org-split-string code "\n"))
-	 (code-length (length code-lines))
-	 (use-htmlfontify-p (and (functionp lang-mode)
+    (code info &optional lang refs retain-labels number-lines num-start)
+  (let* ((code-length (length (org-split-string code "\n")))
+	 (lang-mode (let* ((lang (or (assoc-default lang org-src-lang-modes) lang))
+			   (mode (and lang (intern (format "%s-mode" lang)))))
+		      (when (and (functionp mode)
 				 (plist-get info :odt-fontify-srcblocks)
 				 (require 'htmlfontify nil t)
-				 (fboundp 'htmlfontify-string)))
-	 (code (if (not use-htmlfontify-p) code
-		 (with-temp-buffer
-		   (insert code)
-		   (funcall lang-mode)
-		   (org-font-lock-ensure)
-		   (buffer-string))))
-	 (fontifier (if use-htmlfontify-p
-			(lambda (line)
-			  ;; Let `htmlfontify' know that we are interested in
-			  ;; collecting styles.
-			  (let ((hfy-user-sheet-assoc (plist-get info :odt-hfy-user-sheet-assoc)))
-			    (prog1 (org-odt-htmlfontify-string line)
-			      (plist-put info :odt-hfy-user-sheet-assoc hfy-user-sheet-assoc))))
-		      'org-odt--encode-plain-text))
-	 (par-style (if use-htmlfontify-p "OrgSrcBlock"
-		      "OrgFixedWidthBlock"))
+				 (fboundp 'htmlfontify-string))
+			mode)))
 	 (i 0))
-    (cl-assert (= code-length (length (org-split-string code "\n"))))
-    (setq code
-	  (org-export-format-code
-	   code
-	   (lambda (loc line-num ref)
-	     (setq par-style
-		   (concat par-style (and (= (cl-incf i) code-length) "LastLine")))
-
-	     (setq loc (concat loc (and ref retain-labels (format " (%s)" ref))))
-	     (setq loc (funcall fontifier loc))
-	     (when ref
-	       (setq loc (org-odt--target loc (concat "coderef-" ref))))
-	     (cl-assert par-style)
-	     (setq loc (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			       par-style loc))
-	     (if (not line-num) loc
-	       (format "\n<text:list-item>%s\n</text:list-item>" loc)))
-	   num-start refs))
-    (cond
-     ((not num-start) code)
-     ((= num-start 0)
-      (format
-       "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>%s</text:list>"
-       " text:continue-numbering=\"false\"" code))
-     (t
-      (format
-       "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>%s</text:list>"
-       " text:continue-numbering=\"true\"" code)))))
+    (cl-reduce
+     (lambda (code f) (funcall f code))
+     (list
+      ;; Fontify code, if language is specified.
+      (lambda (code)
+	(or (when lang-mode
+	      (with-temp-buffer
+		(insert code)
+		(funcall lang-mode)
+		(org-font-lock-ensure)
+		(buffer-string)))
+	    code))
+      ;; Transcode code in OpenDocument format.
+      (lambda (code)
+	(org-export-format-code
+	 code
+	 (lambda (line _line-num ref)
+	   (cl-reduce
+	    (lambda (line f) (funcall f line))
+	    (list
+	     ;; Transcode a line, taking in to account any fontification.
+	     (lambda (line)
+	       (if lang-mode
+		   (let ((hfy-user-sheet-assoc (plist-get info :odt-hfy-user-sheet-assoc)))
+		     (prog1 (org-odt-htmlfontify-string line)
+		       (plist-put info :odt-hfy-user-sheet-assoc hfy-user-sheet-assoc)))
+		 (org-odt--encode-plain-text line)))
+	     ;; Append a label to the line, if the line has a label
+	     ;; and the user wants to retain it.
+	     (lambda (line)
+	       (concat line
+		       (and ref retain-labels (format "<text:tab/>(%s)" ref))))
+	     ;; Add a bookmark around the line, if the line has a label.
+	     (lambda (line)
+	       (or (when ref (org-odt--target line (concat "coderef-" ref))) line))
+	     ;; Typeset each line as a paragraph.  The last line has
+	     ;; it's own style.
+	     (lambda (line)
+	       (format "<text:p text:style-name=\"%s\">%s</text:p>"
+		       (concat (if lang-mode "OrgSrcBlock"
+				 "OrgFixedWidthBlock")
+			       (and (= (cl-incf i) code-length) "LastLine"))
+		       line)))
+	    :initial-value line))
+	 nil refs))
+      ;; Listify the lines of code, if code is numbered.
+      (lambda (code)
+	(or (when number-lines
+	      (let ((continued-p (eq (car number-lines) 'continued)))
+		(format
+    		 "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>\n%s\n</text:list>"
+    		 (format " text:continue-numbering=\"%s\""
+    			 (or (when (and continued-p (zerop num-start)) "true") "false"))
+    		 (let* ((locs (split-string code "\n"))
+    			(first-line (car locs))
+    			(rest (cdr locs)))
+    		   (concat
+    		    (format "\n<text:list-item%s>%s\n</text:list-item>"
+    			    (or (when (zerop num-start) "")
+    				(format " text:start-value=\"%d\"" (1+ num-start)))
+    			    first-line)
+    		    (cl-loop for loc in rest concat
+    			     (format "\n<text:list-item>%s\n</text:list-item>" loc)))))))
+	    code)))
+     :initial-value code)))
 
 (defun org-odt-format-code (element info)
   (let* ((lang (org-element-property :language element))
@@ -4296,10 +4317,11 @@ and prefix with \"OrgSrc\".  For example,
 	 ;; Does the src block contain labels?
 	 (retain-labels (org-element-property :retain-labels element))
 	 ;; Does it have line numbers?
-	 (num-start (cl-case (org-element-property :number-lines element)
-		      (continued (org-export-get-loc element info))
-		      (new 0))))
-    (org-odt-do-format-code code info lang refs retain-labels num-start)))
+	 (number-lines (org-element-property :number-lines element))
+	 ;; What number it starts from?
+	 (num-start (org-export-get-loc element info)))
+    (org-odt-do-format-code code info lang refs retain-labels
+			    number-lines num-start)))
 
 (defun org-odt-src-block (src-block _contents info)
   "Transcode a SRC-BLOCK element from Org to ODT.
