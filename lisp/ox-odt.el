@@ -5556,10 +5556,13 @@ formula file."
 
 ;;;; Export to OpenDocument Text
 
-;;;###autoload
-(defun org-odt-export-to-odt
-    (&optional async subtreep visible-only body-only ext-plist)
-  "Export current buffer to a ODT or a OpenDocument XML file.
+(defun org-odt-export-to-odt-backend
+    (backend &optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to BACKEND or a OpenDocument XML file.
+
+BACKEND, a symbol, must either be `odt' (referring to the
+OpenDocument backend) or another symbol referring to a registered
+back-end that derives from the OpenDocument backend.
 
 If narrowing is active in the current buffer, only export its
 narrowed part.
@@ -5586,9 +5589,7 @@ file-local settings.
 
 The function returns a file name in any one of the BACKEND
 format, `org-odt-preferred-output-format' or XML format."
-  (interactive)
-  (let* ((backend 'odt)
-	 (outfile (org-export-output-file-name
+  (let* ((outfile (org-export-output-file-name
 		   (concat "." (if body-only "xml" (symbol-name backend))) subtreep)))
     (if (not (file-writable-p outfile)) (error "Output file not writable")
       (let ((ext-plist (org-combine-plists `(:output-file ,outfile) ext-plist)))
@@ -5622,6 +5623,40 @@ format, `org-odt-preferred-output-format' or XML format."
 		(org-kill-new output))
 	      outfile)))))))
 
+;;;###autoload
+(defun org-odt-export-to-odt
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a ODT or a OpenDocument XML file.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
+  (interactive)
+  (let* ((backend 'odt))
+    (org-odt-export-to-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
 
@@ -5653,9 +5688,52 @@ of `org-odt-export-as-odf'."
 			      err-string))))
     in-file))
 
+(defun org-odt-export-as-odt-backend
+    (backend &optional async subtreep visible-only _body-only ext-plist)
+  "Export current buffer as a OpenDocument XML buffer.
+
+BACKEND, a symbol, must either be `odt' (referring to the
+OpenDocument backend) or another symbol referring to a registered
+back-end that derives from the OpenDocument backend.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting buffer should be accessible
+through the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+The optional argument BODY-ONLY is ignored.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+Export is done to a buffer named \"*Org BACKEND Export*\", which
+will be displayed when `org-export-show-temporary-export-buffer'
+is non-nil."
+  (let ((body-only t))
+    (org-export-to-buffer backend
+	(format "*Org %s Export*" (capitalize (symbol-name backend)))
+      async subtreep visible-only body-only ext-plist
+      (lambda ()
+	(nxml-mode)
+	(goto-char (point-min))
+	(when (re-search-forward "<!-- begin -->" nil t)
+	  (goto-char (match-beginning 0)))))))
+
 ;;;###autoload
 (defun org-odt-export-as-odt
-    (&optional async subtreep visible-only _body-only ext-plist)
+    (&optional async subtreep visible-only body-only ext-plist)
   "Export current buffer as a OpenDocument XML buffer.
 
 If narrowing is active in the current buffer, only export its
@@ -5684,14 +5762,9 @@ Export is done to a buffer named \"*Org ODT Export*\", which will
 be displayed when `org-export-show-temporary-export-buffer' is
 non-nil."
   (interactive)
-  (let ((body-only t))
-    (org-export-to-buffer 'odt "*Org ODT Export*"
-      async subtreep visible-only body-only ext-plist
-      (lambda ()
-	(nxml-mode)
-	(goto-char (point-min))
-	(when (re-search-forward "<!-- begin -->" nil t)
-	  (goto-char (match-beginning 0)))))))
+  (let ((backend 'odt))
+    (org-odt-export-as-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
 
 ;;;; Convert between OpenDocument and other formats
 
