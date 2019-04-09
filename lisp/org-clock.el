@@ -333,11 +333,12 @@ For more information, see `org-clocktable-write-default'."
   :version "24.1"
   :type 'alist)
 
-(defcustom org-clock-clocktable-default-properties '(:maxlevel 2 :scope file)
+(defcustom org-clock-clocktable-default-properties '(:maxlevel 2)
   "Default properties for new clocktables.
 These will be inserted into the BEGIN line, to make it easy for users to
 play with them."
   :group 'org-clocktable
+  :package-version '(Org . "9.2")
   :type 'plist)
 
 (defcustom org-clock-idle-time nil
@@ -1632,9 +1633,10 @@ to, overriding the existing value of `org-clock-out-switch-to-state'."
 						"\\>"))))
 		  (org-todo org-clock-out-switch-to-state))))))
 	  (force-mode-line-update)
-	  (message (concat "Clock stopped at %s after "
-			   (org-duration-from-minutes (+ (* 60 h) m)) "%s")
-		   te (if remove " => LINE REMOVED" ""))
+	  (message (if remove
+		       "Clock stopped at %s after %s => LINE REMOVED"
+		     "Clock stopped at %s after %s")
+		   te (org-duration-from-minutes (+ (* 60 h) m)))
 	  (run-hooks 'org-clock-out-hook)
 	  (unless (org-clocking-p)
 	    (setq org-clock-current-task nil)))))))
@@ -1933,13 +1935,14 @@ Use `\\[org-clock-remove-overlays]' to remove the subtree times."
 		    nil 'local))))
     (let* ((h (/ org-clock-file-total-minutes 60))
 	   (m (- org-clock-file-total-minutes (* 60 h))))
-      (message (concat (format "Total file time%s: "
-			       (cond (todayp " for today")
-				     (customp " (custom)")
-				     (t "")))
-		       (org-duration-from-minutes
-			org-clock-file-total-minutes)
-		       " (%d hours and %d minutes)")
+      (message (cond
+		(todayp
+		 "Total file time for today: %s (%d hours and %d minutes)")
+		(customp
+		 "Total file time (custom): %s (%d hours and %d minutes)")
+		(t
+		 "Total file time: %s (%d hours and %d minutes)"))
+	       (org-duration-from-minutes org-clock-file-total-minutes)
 	       h m))))
 
 (defvar-local org-clock-overlays nil)
@@ -2379,9 +2382,15 @@ the currently selected interval size."
 		    (`file-with-archives
 		     (and buffer-file-name
 			  (org-add-archive-files (list buffer-file-name))))
+		    ((or `nil `file `subtree `tree
+			 (and (pred symbolp)
+			      (guard (string-match "\\`tree\\([0-9]+\\)\\'"
+						   (symbol-name scope)))))
+		     (or (buffer-file-name (buffer-base-buffer))
+			 (current-buffer)))
 		    ((pred functionp) (funcall scope))
 		    ((pred consp) scope)
-		    (_ (or (buffer-file-name) (current-buffer)))))
+		    (_ (user-error "Unknown scope: %S" scope))))
 	   (block (plist-get params :block))
 	   (ts (plist-get params :tstart))
 	   (te (plist-get params :tend))
