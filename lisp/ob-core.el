@@ -2972,7 +2972,7 @@ If the table is trivial, then return it as a scalar."
 (defun org-babel-string-read (cell)
   "Strip nested \"s from around strings."
   (org-babel-read (or (and (stringp cell)
-                           (string-match "\\\"\\(.+\\)\\\"" cell)
+                           (string-match "\"\\(.+\\)\"" cell)
                            (match-string 1 cell))
                       cell) t))
 
@@ -3153,7 +3153,8 @@ after the babel API for OLD-type source blocks is fully defined.
 Callers of this function will probably want to add an entry to
 `org-src-lang-modes' as well."
   (dolist (fn '("execute" "expand-body" "prep-session"
-		"variable-assignments" "load-session"))
+		"variable-assignments" "load-session"
+		"edit-prep"))
     (let ((sym (intern-soft (concat "org-babel-" fn ":" old))))
       (when (and sym (fboundp sym))
 	(defalias (intern (concat "org-babel-" fn ":" new)) sym))))

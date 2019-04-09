@@ -7,7 +7,7 @@
 ;; Maintainer: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
-;; Version: 9.2.2
+;; Version: 9.2.3
 ;;
 ;; This file is part of GNU Emacs.
 ;;
@@ -10059,7 +10059,7 @@ This is still an experimental function, your mileage may vary."
    ((and (equal type "lisp") (string-match "^/" path))
     ;; Planner has a slash, we do not.
     (setq type "elisp" path (substring path 1)))
-   ((string-match "^//\\(.?*\\)/\\(<.*>\\)$" path)
+   ((string-match "^//\\(.*\\)/\\(<.*>\\)$" path)
     ;; A typical message link.  Planner has the id after the final slash,
     ;; we separate it with a hash mark
     (setq path (concat (match-string 1 path) "#"
@@ -11474,7 +11474,8 @@ prefix argument (`C-u C-u C-u C-c C-w')."
 	    (when (featurep 'org-inlinetask)
 	      (org-inlinetask-remove-END-maybe))
 	    (setq org-markers-to-move nil)
-	    (message (concat actionmsg " to \"%s\" in file %s: done") (car it) file)))))))
+	    (message "%s to \"%s\" in file %s: done" actionmsg
+		     (car it) file)))))))
 
 (defun org-refile-goto-last-stored ()
   "Go to the location where the last refile was stored."
@@ -12194,7 +12195,7 @@ When called through ELisp, arg is also interpreted in the following way:
 			     (run-hook-with-args-until-success
 			      'org-todo-get-default-hook org-state org-last-state)
 			     org-state))
-		 (next (if org-state (concat " " org-state " ") " "))
+		 (next (if (org-string-nw-p org-state) (concat " " org-state " ") " "))
 		 (change-plist (list :type 'todo-state-change :from this :to org-state
 				     :position startpos))
 		 dolog now-done-p)
@@ -20072,7 +20073,7 @@ this numeric value."
     (unless inc (setq inc 1))
     (let ((pos (point))
 	  (beg (skip-chars-backward "-+^/*0-9eE."))
-	  (end (skip-chars-forward "-+^/*0-9eE^.")) nap)
+	  (end (skip-chars-forward "-+^/*0-9eE.")) nap)
       (setq nap (buffer-substring-no-properties
 		 (+ pos beg) (+ pos beg end)))
       (delete-region (+ pos beg) (+ pos beg end))
@@ -21993,9 +21994,9 @@ assumed to be significant there."
 (defun org-fill-line-break-nobreak-p ()
   "Non-nil when a new line at point would create an Org line break."
   (save-excursion
-    (skip-chars-backward "[ \t]")
+    (skip-chars-backward " \t")
     (skip-chars-backward "\\\\")
-    (looking-at "\\\\\\\\\\($\\|[^\\\\]\\)")))
+    (looking-at "\\\\\\\\\\($\\|[^\\]\\)")))
 
 (defun org-fill-paragraph-with-timestamp-nobreak-p ()
   "Non-nil when a new line at point would split a timestamp."

@@ -2907,13 +2907,12 @@ Pressing `<' twice means to restrict to the current subtree or region
 	     (let* ((m (org-agenda-get-any-marker))
 		    (note (and m (org-entry-get m "THEFLAGGINGNOTE"))))
 	       (when note
-		 (message (concat
-			   "FLAGGING-NOTE ([?] for more info): "
-			   (org-add-props
-			       (replace-regexp-in-string
-				"\\\\n" "//"
-				(copy-sequence note))
-			       nil 'face 'org-warning)))))))
+		 (message "FLAGGING-NOTE ([?] for more info): %s"
+			  (org-add-props
+			   (replace-regexp-in-string
+			    "\\\\n" "//"
+			    (copy-sequence note))
+			   nil 'face 'org-warning))))))
 	 t t))
        ((equal org-keys "#") (call-interactively 'org-agenda-list-stuck-projects))
        ((equal org-keys "/") (call-interactively 'org-occur-in-agenda-files))
@@ -6990,7 +6989,8 @@ The optional argument TYPE tells the agenda type."
 				  "\\([ \t]*\\[[a-zA-Z0-9]\\]\\)? *") tb)
 	(setq tb (substring tb (match-end 0))))
       (setq tb (downcase tb)))
-    (cond ((not ta) +1)
+    (cond ((not (or ta tb)) nil)
+	  ((not ta) +1)
 	  ((not tb) -1)
 	  ((string-lessp ta tb) -1)
 	  ((string-lessp tb ta) +1))))
@@ -6999,7 +6999,8 @@ The optional argument TYPE tells the agenda type."
   "Compare the string values of the first tags of A and B."
   (let ((ta (car (last (get-text-property 1 'tags a))))
 	(tb (car (last (get-text-property 1 'tags b)))))
-    (cond ((not ta) +1)
+    (cond ((not (or ta tb)) nil)
+	  ((not ta) +1)
 	  ((not tb) -1)
 	  ((string-lessp ta tb) -1)
 	  ((string-lessp tb ta) +1))))
@@ -9478,7 +9479,7 @@ the resulting entry will not be shown.  When TEXT is empty, switch to
     (goto-char (point-min))
     (cl-case type
      (anniversary
-      (or (re-search-forward "^*[ \t]+Anniversaries" nil t)
+      (or (re-search-forward "^\\*[ \t]+Anniversaries" nil t)
 	  (progn
 	    (or (org-at-heading-p t)
 		(progn

@@ -102,8 +102,9 @@
        ((?o "As ODT file" org-odt-export-to-odt)
 	(?O "As ODT file and open"
 	    (lambda (a s v b)
-	      (if a (org-odt-export-to-odt t s v)
-		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
+	      (if a (org-odt-export-to-odt t s v b)
+		(org-open-file (org-odt-export-to-odt a s v b) 'system))))
+	(?x "As XML buffer" org-odt-export-as-odt)))
   :options-alist
   '((:description "DESCRIPTION" nil nil parse)
     (:keywords "KEYWORDS" nil nil parse)
@@ -146,7 +147,9 @@
     (:odt-manifest-file-entries nil nil nil)
     ;; Initialize temporary workarea.  All files that end up in the
     ;; exported document are created here.
-    (:odt-zip-dir nil nil (file-name-as-directory (make-temp-file "odt-" t)))))
+    (:odt-zip-dir nil nil (let ((dir (file-name-as-directory (make-temp-file "odt-" t))))
+			    (prog1 dir (message  "ODT Zip Dir is %s" dir))))
+    (:odt-hfy-user-sheet-assoc nil nil nil)))
 
 
 ;;; Dependencies
@@ -1632,15 +1635,10 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Inner Template
 
-(defun org-odt-inner-template (contents _info)
+(defun org-odt-inner-template (contents info)
   "Return body of document string after ODT conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
-  contents)
-
-;;;; Write content.xml
-
-(defun org-odt-write-contents-file (contents _backend info)
   (let* ( ;; `org-display-custom-times' should be accessed right
 	 ;; within the context of the Org buffer.  So obtain its
 	 ;; value before moving on to temp-buffer context down below.
@@ -1778,15 +1776,29 @@ holding export options."
 				    (plist-get info :headline-levels)))))
 	(when depth (insert (or (org-odt-toc depth info) ""))))
       ;; Contents.
-      (insert contents)
-      ;; Write content.xml.
-      (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
-      ;; Create a manifest entry for content.xml.
-      (org-odt-create-manifest-file-entry info "text/xml" "content.xml")
-
+      (insert "\n<!-- begin -->\n" contents "\n<!-- end -->\n")
+      ;; Prettify buffer contents, if needed.
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
+      ;; Cleanup, when export is body-only.
+      (when (memq 'body-only (plist-get info :export-options))
+	(org-odt-cleanup-xml-buffers nil nil info))
       ;; Return contents.
       (buffer-substring-no-properties (point-min) (point-max)))))
+
+;;;; Write content.xml
+
+(defun org-odt-write-contents-file (contents _backend info)
+  (with-temp-buffer
+    (insert contents)
+    ;; Write content.xml.
+    (let ((coding-system-for-write 'utf-8))
+      (write-file
+       (concat (plist-get info :odt-zip-dir) "content.xml")))
+    ;; Create a manifest entry for content.xml.
+    (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
+
 
 ;;;; Write styles.xml
 
@@ -1869,13 +1881,13 @@ holding export options."
       ;; Save STYLES used for colorizing of source blocks.
       ;; Update styles.xml with styles that were collected as part of
       ;; `org-odt-hfy-face-to-css' callbacks.
-      (let ((styles (mapconcat (lambda (style) (format " %s\n" (cddr style)))
-			       hfy-user-sheet-assoc "")))
-	(when styles
-	  (goto-char (point-min))
-	  (when (re-search-forward "</office:styles>" nil t)
-	    (goto-char (match-beginning 0))
-	    (insert "\n<!-- Org Htmlfontify Styles -->\n" styles "\n"))))
+      (goto-char (point-min))
+      (when (re-search-forward "</office:styles>" nil t)
+	(goto-char (match-beginning 0))
+	(insert "\n<!-- Org Htmlfontify Styles -->\n"
+		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
+			 concat (format " %s\n" (cddr style)))
+		"\n"))
 
       ;; Update styles.xml - take care of outline numbering
 
@@ -1903,6 +1915,10 @@ holding export options."
 			(level (string-to-number (match-string 2))))
 		    (if (wholenump sec-num) (<= level sec-num) sec-num))
 	    (replace-match replacement t nil))))
+      ;; Prettify buffer contents, if needed
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
       ;; Write styles.xml
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
@@ -1921,12 +1937,10 @@ holding export options."
 	(email (when (plist-get info :with-email)
 		 (plist-get info :email)))
 	(iso-date (when (plist-get info :with-date)
-		    (org-odt--format-timestamp
-		     (let ((date (plist-get info :date)))
-		       (when (and (cdr date))
-			 (eq (org-element-type (car date)) 'timestamp)
-			 (car date)))
-		     nil 'iso-date)))
+		    (let ((date (plist-get info :date)))
+		      (when (and (not (cdr date))
+				 (eq (org-element-type (car date)) 'timestamp))
+			(org-odt--format-timestamp (car date) nil 'iso-date)))))
 	(keywords (let ((data (plist-get info :keywords)))
 		    (org-export-data-with-backend data 'ascii info)))
 	(_subtitle (let ((data (plist-get info :subtitle)))
@@ -1969,7 +1983,10 @@ holding export options."
 	 (when (org-string-nw-p email)
 	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email)))
 	"  </office:meta>\n" "</office:document-meta>"))
-
+      ;; Prettify buffer contents, if needed
+      (when org-odt-prettify-xml
+	(nxml-mode)
+	(indent-region (point-min) (point-max)))
       ;; Write meta.xml.
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
@@ -2007,6 +2024,10 @@ holding export options."
 	 (format org-odt-manifest-file-entry-tag
 		 (nth 0 file-entry) (nth 1 file-entry) extra))))
     (insert "\n</manifest:manifest>")
+    ;; Prettify buffer contents, if needed
+    (when org-odt-prettify-xml
+      (nxml-mode)
+      (indent-region (point-min) (point-max)))
     ;; Write manifest.xml
     (let ((coding-system-for-write 'utf-8))
       (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
@@ -2097,7 +2118,9 @@ holding export options."
 
 (defun org-odt--convert (target _backend _info)
   (condition-case-unless-debug err
-      (org-odt-convert target org-odt-preferred-output-format)
+      (if org-odt-preferred-output-format
+	  (org-odt-convert target org-odt-preferred-output-format)
+	target)
     (error (message (error-message-string err))
 	   target)))
 
@@ -2120,7 +2143,7 @@ holding export options."
 			      org-odt-write-meta-file
 			      org-odt-write-mimetype-file
 			      org-odt-write-manifest-file
-			      org-odt-prettify-xml-files-maybe
+			      ;; org-odt-prettify-xml-files-maybe
 			      org-odt-zip
 			      org-odt-cleanup-xml-buffers)
 			    :initial-value contents))
@@ -4214,54 +4237,81 @@ and prefix with \"OrgSrc\".  For example,
     (with-no-warnings (htmlfontify-string line))))
 
 (defun org-odt-do-format-code
-    (code info &optional lang refs retain-labels num-start)
-  (let* ((lang (or (assoc-default lang org-src-lang-modes) lang))
-	 (lang-mode (and lang (intern (format "%s-mode" lang))))
-	 (code-lines (org-split-string code "\n"))
-	 (code-length (length code-lines))
-	 (use-htmlfontify-p (and (functionp lang-mode)
+    (code info &optional lang refs retain-labels number-lines num-start)
+  (let* ((code-length (length (org-split-string code "\n")))
+	 (lang-mode (let* ((lang (or (assoc-default lang org-src-lang-modes) lang))
+			   (mode (and lang (intern (format "%s-mode" lang)))))
+		      (when (and (functionp mode)
 				 (plist-get info :odt-fontify-srcblocks)
 				 (require 'htmlfontify nil t)
-				 (fboundp 'htmlfontify-string)))
-	 (code (if (not use-htmlfontify-p) code
-		 (with-temp-buffer
-		   (insert code)
-		   (funcall lang-mode)
-		   (org-font-lock-ensure)
-		   (buffer-string))))
-	 (fontifier (if use-htmlfontify-p 'org-odt-htmlfontify-string
-		      'org-odt--encode-plain-text))
-	 (par-style (if use-htmlfontify-p "OrgSrcBlock"
-		      "OrgFixedWidthBlock"))
+				 (fboundp 'htmlfontify-string))
+			mode)))
 	 (i 0))
-    (cl-assert (= code-length (length (org-split-string code "\n"))))
-    (setq code
-	  (org-export-format-code
-	   code
-	   (lambda (loc line-num ref)
-	     (setq par-style
-		   (concat par-style (and (= (cl-incf i) code-length) "LastLine")))
-
-	     (setq loc (concat loc (and ref retain-labels (format " (%s)" ref))))
-	     (setq loc (funcall fontifier loc))
-	     (when ref
-	       (setq loc (org-odt--target loc (concat "coderef-" ref))))
-	     (cl-assert par-style)
-	     (setq loc (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			       par-style loc))
-	     (if (not line-num) loc
-	       (format "\n<text:list-item>%s\n</text:list-item>" loc)))
-	   num-start refs))
-    (cond
-     ((not num-start) code)
-     ((= num-start 0)
-      (format
-       "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>%s</text:list>"
-       " text:continue-numbering=\"false\"" code))
-     (t
-      (format
-       "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>%s</text:list>"
-       " text:continue-numbering=\"true\"" code)))))
+    (cl-reduce
+     (lambda (code f) (funcall f code))
+     (list
+      ;; Fontify code, if language is specified.
+      (lambda (code)
+	(or (when lang-mode
+	      (with-temp-buffer
+		(insert code)
+		(funcall lang-mode)
+		(org-font-lock-ensure)
+		(buffer-string)))
+	    code))
+      ;; Transcode code in OpenDocument format.
+      (lambda (code)
+	(org-export-format-code
+	 code
+	 (lambda (line _line-num ref)
+	   (cl-reduce
+	    (lambda (line f) (funcall f line))
+	    (list
+	     ;; Transcode a line, taking in to account any fontification.
+	     (lambda (line)
+	       (if lang-mode
+		   (let ((hfy-user-sheet-assoc (plist-get info :odt-hfy-user-sheet-assoc)))
+		     (prog1 (org-odt-htmlfontify-string line)
+		       (plist-put info :odt-hfy-user-sheet-assoc hfy-user-sheet-assoc)))
+		 (org-odt--encode-plain-text line)))
+	     ;; Append a label to the line, if the line has a label
+	     ;; and the user wants to retain it.
+	     (lambda (line)
+	       (concat line
+		       (and ref retain-labels (format "<text:tab/>(%s)" ref))))
+	     ;; Add a bookmark around the line, if the line has a label.
+	     (lambda (line)
+	       (or (when ref (org-odt--target line (concat "coderef-" ref))) line))
+	     ;; Typeset each line as a paragraph.  The last line has
+	     ;; it's own style.
+	     (lambda (line)
+	       (format "<text:p text:style-name=\"%s\">%s</text:p>"
+		       (concat (if lang-mode "OrgSrcBlock"
+				 "OrgFixedWidthBlock")
+			       (and (= (cl-incf i) code-length) "LastLine"))
+		       line)))
+	    :initial-value line))
+	 nil refs))
+      ;; Listify the lines of code, if code is numbered.
+      (lambda (code)
+	(or (when number-lines
+	      (let ((continued-p (eq (car number-lines) 'continued)))
+		(format
+    		 "\n<text:list text:style-name=\"OrgSrcBlockNumberedLine\"%s>\n%s\n</text:list>"
+    		 (format " text:continue-numbering=\"%s\""
+    			 (or (when (and continued-p (zerop num-start)) "true") "false"))
+    		 (let* ((locs (split-string code "\n"))
+    			(first-line (car locs))
+    			(rest (cdr locs)))
+    		   (concat
+    		    (format "\n<text:list-item%s>%s\n</text:list-item>"
+    			    (or (when (zerop num-start) "")
+    				(format " text:start-value=\"%d\"" (1+ num-start)))
+    			    first-line)
+    		    (cl-loop for loc in rest concat
+    			     (format "\n<text:list-item>%s\n</text:list-item>" loc)))))))
+	    code)))
+     :initial-value code)))
 
 (defun org-odt-format-code (element info)
   (let* ((lang (org-element-property :language element))
@@ -4272,10 +4322,11 @@ and prefix with \"OrgSrc\".  For example,
 	 ;; Does the src block contain labels?
 	 (retain-labels (org-element-property :retain-labels element))
 	 ;; Does it have line numbers?
-	 (num-start (cl-case (org-element-property :number-lines element)
-		      (continued (org-export-get-loc element info))
-		      (new 0))))
-    (org-odt-do-format-code code info lang refs retain-labels num-start)))
+	 (number-lines (org-element-property :number-lines element))
+	 ;; What number it starts from?
+	 (num-start (org-export-get-loc element info)))
+    (org-odt-do-format-code code info lang refs retain-labels
+			    number-lines num-start)))
 
 (defun org-odt-src-block (src-block _contents info)
   "Transcode a SRC-BLOCK element from Org to ODT.
@@ -5481,7 +5532,7 @@ MathML source to kill ring depending on the value of
 				;; org-odt-write-meta-file
 				org-odt-write-mimetype-file
 				org-odt-write-manifest-file
-				org-odt-prettify-xml-files-maybe
+				;; org-odt-prettify-xml-files-maybe
 				org-odt-zip
 				org-odt-cleanup-xml-buffers)
 			      :initial-value (or (org-create-math-formula latex-frag)
@@ -5503,15 +5554,13 @@ formula file."
 
 ;;;; Export to OpenDocument Text
 
-;;;###autoload
-(defun org-odt-export-to-odt (&optional async subtreep visible-only body-only)
-  "Export current buffer to a ODT file.
+(defun org-odt-export-to-odt-backend
+    (backend &optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to BACKEND or a OpenDocument XML file.
 
-With
-
-    \"#+ODT_FILE_EXTENSION: odm\"
-
-export current buffer to a ODM file.
+BACKEND, a symbol, must either be `odt' (referring to the
+OpenDocument backend) or another symbol referring to a registered
+back-end that derives from the OpenDocument backend.
 
 If narrowing is active in the current buffer, only export its
 narrowed part.
@@ -5529,24 +5578,83 @@ first.
 When optional argument VISIBLE-ONLY is non-nil, don't export
 contents of hidden elements.
 
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
 EXT-PLIST, when provided, is a property list with external
 parameters overriding Org default settings, but still inferior to
 file-local settings.
 
-Return output file's name."
-  (interactive)
-  (if async
-      (org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
-	`(expand-file-name
-	  (let* (;; Let `htmlfontify' know that we are interested in
-		 ;; collecting styles.
-		 (hfy-user-sheet-assoc nil))
-	    (org-export-as 'odt ,subtreep ,visible-only ,body-only))))
-    (let* (;; Let `htmlfontify' know that we are interested in collecting
-	   ;; styles.
-	   (hfy-user-sheet-assoc nil))
-      (org-export-as 'odt subtreep visible-only body-only))))
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
+  (let* ((outfile (org-export-output-file-name
+		   (concat "." (if body-only "xml" (symbol-name backend))) subtreep)))
+    (if (not (file-writable-p outfile)) (error "Output file not writable")
+      (let ((ext-plist (org-combine-plists `(:output-file ,outfile) ext-plist)))
+	(if async
+            (org-export-async-start
+		`(lambda (outfile)
+		   (org-export-add-to-stack (expand-file-name outfile) ',backend))
+	      `(let ((output
+		      (org-export-as
+		       ',backend ,subtreep ,visible-only ,body-only
+		       ',ext-plist)))
+		 (if (not body-only)
+		     output
+		   (with-temp-buffer
+		     (insert output)
+		     (let ((coding-system-for-write 'utf-8))
+		       (write-file outfile)))
+		   (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
+		     (org-kill-new output))
+		   outfile)
+		 ,outfile))
+          (let ((output (org-export-as
+			 backend subtreep visible-only body-only ext-plist)))
+	    (if (not body-only)
+		output
+	      (with-temp-buffer
+		(insert output)
+		(let ((coding-system-for-write 'utf-8))
+		  (write-file outfile)))
+	      (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
+		(org-kill-new output))
+	      outfile)))))))
 
+;;;###autoload
+(defun org-odt-export-to-odt
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a ODT or a OpenDocument XML file.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
+  (interactive)
+  (let* ((backend 'odt))
+    (org-odt-export-to-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
 
@@ -5577,6 +5685,84 @@ of `org-odt-export-as-odf'."
 	       (error (format "Command failed with error (%s)"
 			      err-string))))
     in-file))
+
+(defun org-odt-export-as-odt-backend
+    (backend &optional async subtreep visible-only _body-only ext-plist)
+  "Export current buffer as a OpenDocument XML buffer.
+
+BACKEND, a symbol, must either be `odt' (referring to the
+OpenDocument backend) or another symbol referring to a registered
+back-end that derives from the OpenDocument backend.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting buffer should be accessible
+through the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+The optional argument BODY-ONLY is ignored.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+Export is done to a buffer named \"*Org BACKEND Export*\", which
+will be displayed when `org-export-show-temporary-export-buffer'
+is non-nil."
+  (let ((body-only t))
+    (org-export-to-buffer backend
+	(format "*Org %s Export*" (capitalize (symbol-name backend)))
+      async subtreep visible-only body-only ext-plist
+      (lambda ()
+	(nxml-mode)
+	(goto-char (point-min))
+	(when (re-search-forward "<!-- begin -->" nil t)
+	  (goto-char (match-beginning 0)))))))
+
+;;;###autoload
+(defun org-odt-export-as-odt
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer as a OpenDocument XML buffer.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting buffer should be accessible
+through the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+The optional argument BODY-ONLY is ignored.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+Export is done to a buffer named \"*Org ODT Export*\", which will
+be displayed when `org-export-show-temporary-export-buffer' is
+non-nil."
+  (interactive)
+  (let ((backend 'odt))
+    (org-odt-export-as-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
 
 ;;;; Convert between OpenDocument and other formats
 
