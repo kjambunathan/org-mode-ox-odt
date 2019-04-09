@@ -102,8 +102,9 @@
        ((?o "As ODT file" org-odt-export-to-odt)
 	(?O "As ODT file and open"
 	    (lambda (a s v b)
-	      (if a (org-odt-export-to-odt t s v)
-		(org-open-file (org-odt-export-to-odt nil s v) 'system))))))
+	      (if a (org-odt-export-to-odt t s v b)
+		(org-open-file (org-odt-export-to-odt a s v b) 'system))))
+	(?x "As XML buffer" org-odt-export-as-odt)))
   :options-alist
   '((:description "DESCRIPTION" nil nil parse)
     (:keywords "KEYWORDS" nil nil parse)
@@ -146,7 +147,8 @@
     (:odt-manifest-file-entries nil nil nil)
     ;; Initialize temporary workarea.  All files that end up in the
     ;; exported document are created here.
-    (:odt-zip-dir nil nil (file-name-as-directory (make-temp-file "odt-" t)))
+    (:odt-zip-dir nil nil (let ((dir (file-name-as-directory (make-temp-file "odt-" t))))
+			    (prog1 dir (message  "ODT Zip Dir is %s" dir))))
     (:odt-hfy-user-sheet-assoc nil nil nil)))
 
 
@@ -1633,15 +1635,10 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Inner Template
 
-(defun org-odt-inner-template (contents _info)
+(defun org-odt-inner-template (contents info)
   "Return body of document string after ODT conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
-  contents)
-
-;;;; Write content.xml
-
-(defun org-odt-write-contents-file (contents _backend info)
   (let* ( ;; `org-display-custom-times' should be accessed right
 	 ;; within the context of the Org buffer.  So obtain its
 	 ;; value before moving on to temp-buffer context down below.
@@ -1779,19 +1776,29 @@ holding export options."
 				    (plist-get info :headline-levels)))))
 	(when depth (insert (or (org-odt-toc depth info) ""))))
       ;; Contents.
-      (insert contents)
+      (insert "\n<!-- begin -->\n" contents "\n<!-- end -->\n")
       ;; Prettify buffer contents, if needed.
       (when org-odt-prettify-xml
 	(nxml-mode)
 	(indent-region (point-min) (point-max)))
-      ;; Write content.xml.
-      (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
-      ;; Create a manifest entry for content.xml.
-      (org-odt-create-manifest-file-entry info "text/xml" "content.xml")
-
+      ;; Cleanup, when export is body-only.
+      (when (memq 'body-only (plist-get info :export-options))
+	(org-odt-cleanup-xml-buffers nil nil info))
       ;; Return contents.
       (buffer-substring-no-properties (point-min) (point-max)))))
+
+;;;; Write content.xml
+
+(defun org-odt-write-contents-file (contents _backend info)
+  (with-temp-buffer
+    (insert contents)
+    ;; Write content.xml.
+    (let ((coding-system-for-write 'utf-8))
+      (write-file
+       (concat (plist-get info :odt-zip-dir) "content.xml")))
+    ;; Create a manifest entry for content.xml.
+    (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
+
 
 ;;;; Write styles.xml
 
@@ -5550,14 +5557,9 @@ formula file."
 ;;;; Export to OpenDocument Text
 
 ;;;###autoload
-(defun org-odt-export-to-odt (&optional async subtreep visible-only body-only)
-  "Export current buffer to a ODT file.
-
-With
-
-    \"#+ODT_FILE_EXTENSION: odm\"
-
-export current buffer to a ODM file.
+(defun org-odt-export-to-odt
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a ODT or a OpenDocument XML file.
 
 If narrowing is active in the current buffer, only export its
 narrowed part.
@@ -5575,17 +5577,50 @@ first.
 When optional argument VISIBLE-ONLY is non-nil, don't export
 contents of hidden elements.
 
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
 EXT-PLIST, when provided, is a property list with external
 parameters overriding Org default settings, but still inferior to
 file-local settings.
 
-Return output file's name."
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
   (interactive)
-  (if async
-      (org-export-async-start (lambda (f) (org-export-add-to-stack f 'odt))
-	`(expand-file-name
-	  (org-export-as 'odt ,subtreep ,visible-only ,body-only)))
-    (org-export-as 'odt subtreep visible-only body-only)))
+  (let* ((backend 'odt)
+	 (outfile (org-export-output-file-name
+		   (concat "." (if body-only "xml" (symbol-name backend))) subtreep)))
+    (if (not (file-writable-p outfile)) (error "Output file not writable")
+      (let ((ext-plist (org-combine-plists `(:output-file ,outfile) ext-plist)))
+	(if async
+            (org-export-async-start
+		`(lambda (outfile)
+		   (org-export-add-to-stack (expand-file-name outfile) ',backend))
+	      `(let ((output
+		      (org-export-as
+		       ',backend ,subtreep ,visible-only ,body-only
+		       ',ext-plist)))
+		 (if (not body-only)
+		     output
+		   (with-temp-buffer
+		     (insert output)
+		     (let ((coding-system-for-write 'utf-8))
+		       (write-file outfile)))
+		   (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
+		     (org-kill-new output))
+		   outfile)
+		 ,outfile))
+          (let ((output (org-export-as
+			 backend subtreep visible-only body-only ext-plist)))
+	    (if (not body-only)
+		output
+	      (with-temp-buffer
+		(insert output)
+		(let ((coding-system-for-write 'utf-8))
+		  (write-file outfile)))
+	      (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
+		(org-kill-new output))
+	      outfile)))))))
 
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
@@ -5617,6 +5652,46 @@ of `org-odt-export-as-odf'."
 	       (error (format "Command failed with error (%s)"
 			      err-string))))
     in-file))
+
+;;;###autoload
+(defun org-odt-export-as-odt
+    (&optional async subtreep visible-only _body-only ext-plist)
+  "Export current buffer as a OpenDocument XML buffer.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting buffer should be accessible
+through the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+The optional argument BODY-ONLY is ignored.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+Export is done to a buffer named \"*Org ODT Export*\", which will
+be displayed when `org-export-show-temporary-export-buffer' is
+non-nil."
+  (interactive)
+  (let ((body-only t))
+    (org-export-to-buffer 'odt "*Org ODT Export*"
+      async subtreep visible-only body-only ext-plist
+      (lambda ()
+	(nxml-mode)
+	(goto-char (point-min))
+	(when (re-search-forward "<!-- begin -->" nil t)
+	  (goto-char (match-beginning 0)))))))
 
 ;;;; Convert between OpenDocument and other formats
 
