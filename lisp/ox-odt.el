@@ -112,7 +112,6 @@
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)
     ;; ODT-specific keywords
-    (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Keywords that affect styles.xml
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
@@ -1998,7 +1997,7 @@ holding export options."
 
 (defun org-odt-write-mimetype-file (_contents _backend info)
   (let* ((mimetype
-	  (let ((ext (plist-get info :odt-file-extension)))
+	  (let ((ext (file-name-extension (plist-get info :output-file))))
 	    (unless (member ext org-odt-supported-file-types)
 	      (setq ext "odt"))
 	    (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
@@ -2049,16 +2048,12 @@ holding export options."
 ;;;; Zip XML files to OpenDocument format
 
 (defun org-odt-zip (_contents _backend info)
+  ;; Ensure that the program named zip is available
   (unless (executable-find "zip")
     ;; Not at all OSes ship with zip by default
     (error "Executable \"zip\" needed for creating OpenDocument files"))
-
   ;; Run zip.
-  (let* ((target (or (plist-get info :odt-out-file)
-		     (org-export-output-file-name
-		      (concat "." (or (let ((ext (plist-get info :odt-file-extension)))
-					(if (member ext org-odt-supported-file-types) ext "odt"))))
-		      (memq 'subtree (plist-get info :export-options)))))
+  (let* ((target (plist-get info :output-file))
 	 (target-name (file-name-nondirectory target))
 	 (cmds `(("zip" "-mX0" ,target-name "mimetype")
 		 ("zip" "-rmTq" ,target-name "."))))
@@ -5505,10 +5500,9 @@ MathML source to kill ring depending on the value of
 			  (or (file-name-nondirectory buffer-file-name)))
 			 "." "odf")
 			(file-name-directory buffer-file-name))))
-	 (info (list :odt-file-extension "odf"
-		     :odt-manifest-file-entries nil
+	 (info (list :odt-manifest-file-entries nil
 		     :odt-zip-dir (file-name-as-directory (make-temp-file "odt-" t))
-		     :odt-out-file filename)))
+		     :output-file filename)))
     (condition-case-unless-debug err
 	(cl-reduce (lambda (target f)
 		     (funcall f target nil info))
@@ -5655,6 +5649,54 @@ format, `org-odt-preferred-output-format' or XML format."
   (let* ((backend 'odt))
     (org-odt-export-to-odt-backend backend async subtreep
 				   visible-only body-only ext-plist)))
+
+
+;;;; Export to OpenDocument master
+
+(org-export-define-derived-backend 'odm 'odt
+  :menu-entry
+  '(?o "Export to ODT"
+       ((?m "As ODM file" org-odt-export-to-odm)
+	(?M "As ODM file and open"
+	    (lambda (a s v b)
+	      (if a (org-odt-export-to-odm t s v)
+		(org-open-file (org-odt-export-to-odm nil s v) 'system)))))))
+
+;;;###autoload
+(defun org-odt-export-to-odm
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a ODM or a OpenDocument XML file.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
+  (interactive)
+  (let* ((backend 'odm))
+    (org-odt-export-to-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
+
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
 
