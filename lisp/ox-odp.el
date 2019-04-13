@@ -97,120 +97,7 @@
 
 ;;; Hooks
 
-;;; User Configuration Variables
-
-(defgroup org-export-odp nil
-  "Options for exporting Org mode files to ODP."
-  :tag "Org Export ODP"
-  :group 'org-export)
-
-(defcustom org-odp-frame-level 1
-  "The level at which headlines become a page of presentation."
-  :group 'org-export-odp
-  :type 'integer)
-
-;;;; Document styles
-
-(defcustom org-odp-content-template-file nil
-  "Template file for \"content.xml\".
-The exporter embeds the exported content just before
-\"</office:text>\" element.
-
-If unspecified, the file named \"OrgOdtContentTemplate.xml\"
-under `org-odt-styles-dir' is used."
-  :type '(choice (const nil)
-		 (file))
-  :group 'org-export-odp)
-
-(defcustom org-odp-styles-file nil
-  "Default styles file for use with ODT export.
-Valid values are one of:
-1. nil
-2. path to a styles.xml file
-3. path to a *.odt or a *.ott file
-4. list of the form (ODT-OR-OTT-FILE (FILE-MEMBER-1 FILE-MEMBER-2
-...))
-
-In case of option 1, an in-built styles.xml is used. See
-`org-odt-styles-dir' for more information.
-
-In case of option 3, the specified file is unzipped and the
-styles.xml embedded therein is used.
-
-In case of option 4, the specified ODT-OR-OTT-FILE is unzipped
-and FILE-MEMBER-1, FILE-MEMBER-2 etc are copied in to the
-generated odt file.  Use relative path for specifying the
-FILE-MEMBERS.  styles.xml must be specified as one of the
-FILE-MEMBERS.
-
-Use options 1, 2 or 3 only if styles.xml alone suffices for
-achieving the desired formatting.  Use option 4, if the styles.xml
-references additional files like header and footer images for
-achieving the desired formatting.
-
-Use \"#+ODT_STYLES_FILE: ...\" directive to set this variable on
-a per-file basis.  For example,
-
-#+ODT_STYLES_FILE: \"/path/to/styles.xml\" or
-#+ODT_STYLES_FILE: (\"/path/to/file.ott\" (\"styles.xml\" \"image/hdr.png\"))."
-  :group 'org-export-odp
-  :version "24.1"
-  :type
-  '(choice
-    (const :tag "Factory settings" nil)
-    (file :must-match t :tag "styles.xml")
-    (file :must-match t :tag "ODT or OTT file")
-    (list :tag "ODT or OTT file + Members"
-	  (file :must-match t :tag "ODF Text or Text Template file")
-	  (cons :tag "Members"
-		(file :tag "	Member" "styles.xml")
-		(repeat (file :tag "Member"))))))
-
-;;;; Headline
-
-(defcustom org-odp-format-headline-function
-  'org-odp-format-headline-default-function
-  "Function to format headline text.
-
-This function will be called with 5 arguments:
-TODO      the todo keyword (string or nil).
-TODO-TYPE the type of todo (symbol: `todo', `done', nil)
-PRIORITY  the priority of the headline (integer or nil)
-TEXT      the main headline text (string).
-TAGS      the tags string, separated with colons (string or nil).
-
-The function result will be used as headline text."
-  :group 'org-export-odp
-  :type 'function)
-
-;;; Internal functions
-
-(defun org-odp--get-layouts ()
-  (cl-loop for (layout . rest) in org-odp-layout-properties collect layout))
-
-(defun org-odp--get-layouts-with-n-frames (n)
-  (cl-loop for (layout . rest) in org-odp-layout-properties
-	   when (= (length (plist-get rest :cellname-and-dims)) n)
-	   collect layout))
-
-(defun org-odt--get-dimensions-of-nth-cell (layout n)
-  (apply
-   'org-odt--format-size-and-position
-   (cdr (nth n (plist-get (cdr (assoc-string layout org-odp-layout-properties)) :cellname-and-dims )))))
-
-(defun org-odt--get-dimensions (layout cell)
-  (apply
-   'org-odt--format-size-and-position
-   (assoc-default cell
-		  (plist-get (cdr (assoc-string
-				   layout org-odp-layout-properties)) :cellname-and-dims ))))
-
-;; Frame size for Presentation Notes
-;; "svg:width=\"16.799cm\" svg:height=\"13.364cm\" svg:x=\"2.1cm\" svg:y=\"14.107cm\"
-
-(defun org-odt--format-size-and-position (width height x y)
-  (format "svg:width=\"%0.2fcm\" svg:height=\"%0.2fcm\" svg:x=\"%0.2fcm\" svg:y=\"%0.2fcm\""
-	  width height x y))
+;;; Internal Variables
 
 (defvar org-odp-layout-properties
   '(
@@ -464,6 +351,121 @@ The function result will be used as headline text."
       ("B3" . (8.113 4.356 9.92 8.456))
       ("C3" . (8.113 4.356 18.439 8.456))
       ))))
+
+;;; User Configuration Variables
+
+(defgroup org-export-odp nil
+  "Options for exporting Org mode files to ODP."
+  :tag "Org Export ODP"
+  :group 'org-export)
+
+(defcustom org-odp-frame-level 1
+  "The level at which headlines become a page of presentation."
+  :group 'org-export-odp
+  :type 'integer)
+
+;;;; Document styles
+
+(defcustom org-odp-content-template-file nil
+  "Template file for \"content.xml\".
+The exporter embeds the exported content just before
+\"</office:text>\" element.
+
+If unspecified, the file named \"OrgOdtContentTemplate.xml\"
+under `org-odt-styles-dir' is used."
+  :type '(choice (const nil)
+		 (file))
+  :group 'org-export-odp)
+
+(defcustom org-odp-styles-file nil
+  "Default styles file for use with ODT export.
+Valid values are one of:
+1. nil
+2. path to a styles.xml file
+3. path to a *.odt or a *.ott file
+4. list of the form (ODT-OR-OTT-FILE (FILE-MEMBER-1 FILE-MEMBER-2
+...))
+
+In case of option 1, an in-built styles.xml is used. See
+`org-odt-styles-dir' for more information.
+
+In case of option 3, the specified file is unzipped and the
+styles.xml embedded therein is used.
+
+In case of option 4, the specified ODT-OR-OTT-FILE is unzipped
+and FILE-MEMBER-1, FILE-MEMBER-2 etc are copied in to the
+generated odt file.  Use relative path for specifying the
+FILE-MEMBERS.  styles.xml must be specified as one of the
+FILE-MEMBERS.
+
+Use options 1, 2 or 3 only if styles.xml alone suffices for
+achieving the desired formatting.  Use option 4, if the styles.xml
+references additional files like header and footer images for
+achieving the desired formatting.
+
+Use \"#+ODT_STYLES_FILE: ...\" directive to set this variable on
+a per-file basis.  For example,
+
+#+ODT_STYLES_FILE: \"/path/to/styles.xml\" or
+#+ODT_STYLES_FILE: (\"/path/to/file.ott\" (\"styles.xml\" \"image/hdr.png\"))."
+  :group 'org-export-odp
+  :version "24.1"
+  :type
+  '(choice
+    (const :tag "Factory settings" nil)
+    (file :must-match t :tag "styles.xml")
+    (file :must-match t :tag "ODT or OTT file")
+    (list :tag "ODT or OTT file + Members"
+	  (file :must-match t :tag "ODF Text or Text Template file")
+	  (cons :tag "Members"
+		(file :tag "	Member" "styles.xml")
+		(repeat (file :tag "Member"))))))
+
+;;;; Headline
+
+(defcustom org-odp-format-headline-function
+  'org-odp-format-headline-default-function
+  "Function to format headline text.
+
+This function will be called with 5 arguments:
+TODO      the todo keyword (string or nil).
+TODO-TYPE the type of todo (symbol: `todo', `done', nil)
+PRIORITY  the priority of the headline (integer or nil)
+TEXT      the main headline text (string).
+TAGS      the tags string, separated with colons (string or nil).
+
+The function result will be used as headline text."
+  :group 'org-export-odp
+  :type 'function)
+
+;;; Internal functions
+
+(defun org-odp--get-layouts ()
+  (cl-loop for (layout . rest) in org-odp-layout-properties collect layout))
+
+(defun org-odp--get-layouts-with-n-frames (n)
+  (cl-loop for (layout . rest) in org-odp-layout-properties
+	   when (= (length (plist-get rest :cellname-and-dims)) n)
+	   collect layout))
+
+(defun org-odt--get-dimensions-of-nth-cell (layout n)
+  (apply
+   'org-odt--format-size-and-position
+   (cdr (nth n (plist-get (cdr (assoc-string layout org-odp-layout-properties)) :cellname-and-dims )))))
+
+(defun org-odt--get-dimensions (layout cell)
+  (apply
+   'org-odt--format-size-and-position
+   (assoc-default cell
+		  (plist-get (cdr (assoc-string
+				   layout org-odp-layout-properties)) :cellname-and-dims ))))
+
+;; Frame size for Presentation Notes
+;; "svg:width=\"16.799cm\" svg:height=\"13.364cm\" svg:x=\"2.1cm\" svg:y=\"14.107cm\"
+
+(defun org-odt--format-size-and-position (width height x y)
+  (format "svg:width=\"%0.2fcm\" svg:height=\"%0.2fcm\" svg:x=\"%0.2fcm\" svg:y=\"%0.2fcm\""
+	  width height x y))
 
 (defun org-odp--draw:page (contents &optional dont-close-page
 				    masterpage  style layout)
