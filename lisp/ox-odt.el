@@ -112,7 +112,6 @@
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)
     ;; ODT-specific keywords
-    (:odt-file-extension "ODT_FILE_EXTENSION" nil "odt | odm" t)
     ;; Keywords that affect styles.xml
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
@@ -1725,50 +1724,64 @@ holding export options."
 
       ;; Preamble - Title, Author, Date etc.
       (insert
-       (let* ((title (and (plist-get info :with-title)
-			  (org-export-data (plist-get info :title) info)))
-	      (author (and (plist-get info :with-author)
-			   (let ((auth (plist-get info :author)))
-			     (and auth (org-export-data auth info)))))
-	      (email (plist-get info :email))
-	      ;; Switch on or off above vars based on user settings
-	      (author (and (plist-get info :with-author) (or author email)))
-	      (email (and (plist-get info :with-email) email)))
+       (let* ((author (when (plist-get info :with-author)
+			(let ((data (plist-get info :author)))
+			  (org-odt--encode-plain-text
+			   (org-element-interpret-data data)))))
+	      (_creator (when (plist-get info :with-creator)
+			  (let ((data (plist-get info :creator)))
+			    (org-odt--encode-plain-text
+			     (org-element-interpret-data data)))))
+	      (_description (let ((data (plist-get info :description)))
+			      (org-odt--encode-plain-text
+			       (org-element-interpret-data data))))
+	      (email (when (plist-get info :with-email)
+		       (plist-get info :email)))
+	      (date (when (plist-get info :with-date)
+		      (let ((date (plist-get info :date)))
+			(when date
+			  (let ((timestamp
+				 (unless (cdr date)
+				   (when (eq (org-element-type (car date)) 'timestamp)
+				     (car date)))))
+			    (or (when (and (plist-get info :odt-use-date-fields)
+					   timestamp)
+				  (org-odt--format-timestamp timestamp)))
+			    (org-export-data (plist-get info :date) info))))))
+	      (_keywords (let ((data (plist-get info :keywords)))
+			   (org-odt--encode-plain-text
+			    (org-element-interpret-data data))))
+	      (subtitle (let ((data (plist-get info :subtitle)))
+			  (org-odt--encode-plain-text
+			   (org-element-interpret-data data))))
+	      (title (when (plist-get info :with-title)
+		       (let ((data (plist-get info :title)))
+			 (org-odt--encode-plain-text
+			  (org-element-interpret-data data))))))
 	 (concat
 	  ;; Title.
 	  (when (org-string-nw-p title)
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgTitle" (format "\n<text:title>%s</text:title>" title)))
-	  (cond
-	   ((and author (not email))
-	    ;; Author only.
+	  ;; Subtitle.
+	  (when (org-string-nw-p subtitle)
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgSubtitle"
-		    (format "<text:initial-creator>%s</text:initial-creator>" author)))
-	   ((and author email)
-	    ;; Author and E-mail.
-	    (format
-	     "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	     "OrgSubtitle"
-	     (format
-	      "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
-	      (concat "mailto:" email)
-	      (format "<text:initial-creator>%s</text:initial-creator>" author)))))
-	  ;; Date, if required.
-	  (when (plist-get info :with-date)
-	    (let* ((date (plist-get info :date))
-		   ;; Check if DATE is specified as a timestamp.
-		   (timestamp (and (not (cdr date))
-				   (eq (org-element-type (car date)) 'timestamp)
-				   (car date)))
-		   ;; Use DATE as subtitle.
-		   (subtitle
-		    (if (and (plist-get info :odt-use-date-fields) timestamp)
-			(org-odt--format-timestamp (car date))
-		      (org-export-data (plist-get info :date) info))))
-	      (when (org-string-nw-p subtitle)
-		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			"OrgSubtitle" subtitle)))))))
+		    (format "<text:user-defined text:name=\"Subtitle\">%s</text:user-defined>"
+			    subtitle)))
+	  ;; Author and E-mail.
+	  (when (org-string-nw-p author)
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgDocInfo"
+		    (let ((author (format "<text:initial-creator>%s</text:initial-creator>" author)))
+		      (or (when email
+			    (format "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
+				    email author))
+			  author))))
+	  ;; Date
+	  (when (org-string-nw-p date)
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgDocInfo" date)))))
       ;; Table of Contents
       (let* ((with-toc (plist-get info :with-toc))
 	     (depth (and with-toc (if (wholenump with-toc)
@@ -1929,11 +1942,15 @@ holding export options."
 (defun org-odt-write-meta-file (_contents _backend info)
   (let ((author (when (plist-get info :with-author)
 		  (let ((data (plist-get info :author)))
-		    (org-export-data-with-backend data 'ascii info))))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data)))))
 	(creator (when (plist-get info :with-creator)
-		   (plist-get info :creator)))
+		   (let ((data (plist-get info :creator)))
+		     (org-odt--encode-plain-text
+		      (org-element-interpret-data data)))))
 	(description (let ((data (plist-get info :description)))
-		       (org-export-data-with-backend data 'ascii info)))
+		       (org-odt--encode-plain-text
+			(org-element-interpret-data data))))
 	(email (when (plist-get info :with-email)
 		 (plist-get info :email)))
 	(iso-date (when (plist-get info :with-date)
@@ -1942,12 +1959,15 @@ holding export options."
 				 (eq (org-element-type (car date)) 'timestamp))
 			(org-odt--format-timestamp (car date) nil 'iso-date)))))
 	(keywords (let ((data (plist-get info :keywords)))
-		    (org-export-data-with-backend data 'ascii info)))
-	(_subtitle (let ((data (plist-get info :subtitle)))
-		     (org-export-data-with-backend data 'ascii info)))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data))))
+	(subtitle (let ((data (plist-get info :subtitle)))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data))))
 	(title (when (plist-get info :with-title)
 		 (let ((data (plist-get info :title)))
-		   (org-export-data-with-backend data 'ascii info)))))
+		   (org-odt--encode-plain-text
+		    (org-element-interpret-data data))))))
     (with-temp-buffer
       (insert
        (concat
@@ -1981,7 +2001,9 @@ holding export options."
          (when (org-string-nw-p keywords)
 	   (format "<meta:keyword>%s</meta:keyword>\n" keywords))
 	 (when (org-string-nw-p email)
-	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email)))
+	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email))
+	 (when (org-string-nw-p subtitle)
+	   (format "<meta:user-defined meta:name=\"Subtitle\">%s</meta:user-defined>\n" subtitle)))
 	"  </office:meta>\n" "</office:document-meta>"))
       ;; Prettify buffer contents, if needed
       (when org-odt-prettify-xml
@@ -1998,7 +2020,7 @@ holding export options."
 
 (defun org-odt-write-mimetype-file (_contents _backend info)
   (let* ((mimetype
-	  (let ((ext (plist-get info :odt-file-extension)))
+	  (let ((ext (file-name-extension (plist-get info :output-file))))
 	    (unless (member ext org-odt-supported-file-types)
 	      (setq ext "odt"))
 	    (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
@@ -2049,16 +2071,12 @@ holding export options."
 ;;;; Zip XML files to OpenDocument format
 
 (defun org-odt-zip (_contents _backend info)
+  ;; Ensure that the program named zip is available
   (unless (executable-find "zip")
     ;; Not at all OSes ship with zip by default
     (error "Executable \"zip\" needed for creating OpenDocument files"))
-
   ;; Run zip.
-  (let* ((target (or (plist-get info :odt-out-file)
-		     (org-export-output-file-name
-		      (concat "." (or (let ((ext (plist-get info :odt-file-extension)))
-					(if (member ext org-odt-supported-file-types) ext "odt"))))
-		      (memq 'subtree (plist-get info :export-options)))))
+  (let* ((target (plist-get info :output-file))
 	 (target-name (file-name-nondirectory target))
 	 (cmds `(("zip" "-mX0" ,target-name "mimetype")
 		 ("zip" "-rmTq" ,target-name "."))))
@@ -5505,10 +5523,9 @@ MathML source to kill ring depending on the value of
 			  (or (file-name-nondirectory buffer-file-name)))
 			 "." "odf")
 			(file-name-directory buffer-file-name))))
-	 (info (list :odt-file-extension "odf"
-		     :odt-manifest-file-entries nil
+	 (info (list :odt-manifest-file-entries nil
 		     :odt-zip-dir (file-name-as-directory (make-temp-file "odt-" t))
-		     :odt-out-file filename)))
+		     :output-file filename)))
     (condition-case-unless-debug err
 	(cl-reduce (lambda (target f)
 		     (funcall f target nil info))
@@ -5655,6 +5672,54 @@ format, `org-odt-preferred-output-format' or XML format."
   (let* ((backend 'odt))
     (org-odt-export-to-odt-backend backend async subtreep
 				   visible-only body-only ext-plist)))
+
+
+;;;; Export to OpenDocument master
+
+(org-export-define-derived-backend 'odm 'odt
+  :menu-entry
+  '(?o "Export to ODT"
+       ((?m "As ODM file" org-odt-export-to-odm)
+	(?M "As ODM file and open"
+	    (lambda (a s v b)
+	      (if a (org-odt-export-to-odm t s v)
+		(org-open-file (org-odt-export-to-odm nil s v) 'system)))))))
+
+;;;###autoload
+(defun org-odt-export-to-odm
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a ODM or a OpenDocument XML file.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+When optional argument BODY-ONLY is non-nil, write a OpenDocument
+XML file holding just the contents.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+The function returns a file name in any one of the BACKEND
+format, `org-odt-preferred-output-format' or XML format."
+  (interactive)
+  (let* ((backend 'odm))
+    (org-odt-export-to-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
+
 
 ;;;; Transform the exported OpenDocument file through 3rd-party converters
 

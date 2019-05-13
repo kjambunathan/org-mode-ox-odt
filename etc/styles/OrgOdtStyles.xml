@@ -165,7 +165,6 @@
    <style:text-properties fo:font-size="18pt" fo:font-weight="bold" style:font-size-asian="18pt" style:font-weight-asian="bold" style:font-size-complex="18pt" style:font-weight-complex="bold"/>
   </style:style>
   <style:style style:name="OrgTitle" style:family="paragraph" style:parent-style-name="Title">
-   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm"/>
    <style:text-properties fo:font-size="24pt"/>
   </style:style>
   <style:style style:name="Subtitle" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:class="chapter">
@@ -173,8 +172,11 @@
    <style:text-properties fo:font-size="14pt" fo:font-style="italic" style:font-size-asian="14pt" style:font-style-asian="italic" style:font-size-complex="14pt" style:font-style-complex="italic"/>
   </style:style>
   <style:style style:name="OrgSubtitle" style:family="paragraph" style:parent-style-name="Subtitle">
-   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm"/>
+   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.212cm"/>
    <style:text-properties fo:font-size="20pt"/>
+  </style:style>
+  <style:style style:name="OrgDocInfo" style:family="paragraph" style:parent-style-name="Heading">
+   <style:paragraph-properties fo:margin-top="0.21cm" fo:margin-bottom="0.21cm" fo:text-align="center" style:justify-single-word="false"/>
   </style:style>
   <style:style style:name="Text_20_body_20_indent" style:display-name="Text body indent" style:family="paragraph" style:parent-style-name="Text_20_body" style:class="text">
    <style:paragraph-properties fo:margin-left="0.499cm" fo:margin-right="0cm" fo:text-indent="0cm" style:auto-text-indent="false"/>
