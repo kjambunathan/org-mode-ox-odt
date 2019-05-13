@@ -1724,50 +1724,64 @@ holding export options."
 
       ;; Preamble - Title, Author, Date etc.
       (insert
-       (let* ((title (and (plist-get info :with-title)
-			  (org-export-data (plist-get info :title) info)))
-	      (author (and (plist-get info :with-author)
-			   (let ((auth (plist-get info :author)))
-			     (and auth (org-export-data auth info)))))
-	      (email (plist-get info :email))
-	      ;; Switch on or off above vars based on user settings
-	      (author (and (plist-get info :with-author) (or author email)))
-	      (email (and (plist-get info :with-email) email)))
+       (let* ((author (when (plist-get info :with-author)
+			(let ((data (plist-get info :author)))
+			  (org-odt--encode-plain-text
+			   (org-element-interpret-data data)))))
+	      (_creator (when (plist-get info :with-creator)
+			  (let ((data (plist-get info :creator)))
+			    (org-odt--encode-plain-text
+			     (org-element-interpret-data data)))))
+	      (_description (let ((data (plist-get info :description)))
+			      (org-odt--encode-plain-text
+			       (org-element-interpret-data data))))
+	      (email (when (plist-get info :with-email)
+		       (plist-get info :email)))
+	      (date (when (plist-get info :with-date)
+		      (let ((date (plist-get info :date)))
+			(when date
+			  (let ((timestamp
+				 (unless (cdr date)
+				   (when (eq (org-element-type (car date)) 'timestamp)
+				     (car date)))))
+			    (or (when (and (plist-get info :odt-use-date-fields)
+					   timestamp)
+				  (org-odt--format-timestamp timestamp)))
+			    (org-export-data (plist-get info :date) info))))))
+	      (_keywords (let ((data (plist-get info :keywords)))
+			   (org-odt--encode-plain-text
+			    (org-element-interpret-data data))))
+	      (subtitle (let ((data (plist-get info :subtitle)))
+			  (org-odt--encode-plain-text
+			   (org-element-interpret-data data))))
+	      (title (when (plist-get info :with-title)
+		       (let ((data (plist-get info :title)))
+			 (org-odt--encode-plain-text
+			  (org-element-interpret-data data))))))
 	 (concat
 	  ;; Title.
 	  (when (org-string-nw-p title)
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgTitle" (format "\n<text:title>%s</text:title>" title)))
-	  (cond
-	   ((and author (not email))
-	    ;; Author only.
+	  ;; Subtitle.
+	  (when (org-string-nw-p subtitle)
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgSubtitle"
-		    (format "<text:initial-creator>%s</text:initial-creator>" author)))
-	   ((and author email)
-	    ;; Author and E-mail.
-	    (format
-	     "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	     "OrgSubtitle"
-	     (format
-	      "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
-	      (concat "mailto:" email)
-	      (format "<text:initial-creator>%s</text:initial-creator>" author)))))
-	  ;; Date, if required.
-	  (when (plist-get info :with-date)
-	    (let* ((date (plist-get info :date))
-		   ;; Check if DATE is specified as a timestamp.
-		   (timestamp (and (not (cdr date))
-				   (eq (org-element-type (car date)) 'timestamp)
-				   (car date)))
-		   ;; Use DATE as subtitle.
-		   (subtitle
-		    (if (and (plist-get info :odt-use-date-fields) timestamp)
-			(org-odt--format-timestamp (car date))
-		      (org-export-data (plist-get info :date) info))))
-	      (when (org-string-nw-p subtitle)
-		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			"OrgSubtitle" subtitle)))))))
+		    (format "<text:user-defined text:name=\"Subtitle\">%s</text:user-defined>"
+			    subtitle)))
+	  ;; Author and E-mail.
+	  (when (org-string-nw-p author)
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgDocInfo"
+		    (let ((author (format "<text:initial-creator>%s</text:initial-creator>" author)))
+		      (or (when email
+			    (format "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
+				    email author))
+			  author))))
+	  ;; Date
+	  (when (org-string-nw-p date)
+	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		    "OrgDocInfo" date)))))
       ;; Table of Contents
       (let* ((with-toc (plist-get info :with-toc))
 	     (depth (and with-toc (if (wholenump with-toc)
@@ -1928,11 +1942,15 @@ holding export options."
 (defun org-odt-write-meta-file (_contents _backend info)
   (let ((author (when (plist-get info :with-author)
 		  (let ((data (plist-get info :author)))
-		    (org-export-data-with-backend data 'ascii info))))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data)))))
 	(creator (when (plist-get info :with-creator)
-		   (plist-get info :creator)))
+		   (let ((data (plist-get info :creator)))
+		     (org-odt--encode-plain-text
+		      (org-element-interpret-data data)))))
 	(description (let ((data (plist-get info :description)))
-		       (org-export-data-with-backend data 'ascii info)))
+		       (org-odt--encode-plain-text
+			(org-element-interpret-data data))))
 	(email (when (plist-get info :with-email)
 		 (plist-get info :email)))
 	(iso-date (when (plist-get info :with-date)
@@ -1941,12 +1959,15 @@ holding export options."
 				 (eq (org-element-type (car date)) 'timestamp))
 			(org-odt--format-timestamp (car date) nil 'iso-date)))))
 	(keywords (let ((data (plist-get info :keywords)))
-		    (org-export-data-with-backend data 'ascii info)))
-	(_subtitle (let ((data (plist-get info :subtitle)))
-		     (org-export-data-with-backend data 'ascii info)))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data))))
+	(subtitle (let ((data (plist-get info :subtitle)))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data))))
 	(title (when (plist-get info :with-title)
 		 (let ((data (plist-get info :title)))
-		   (org-export-data-with-backend data 'ascii info)))))
+		   (org-odt--encode-plain-text
+		    (org-element-interpret-data data))))))
     (with-temp-buffer
       (insert
        (concat
@@ -1980,7 +2001,9 @@ holding export options."
          (when (org-string-nw-p keywords)
 	   (format "<meta:keyword>%s</meta:keyword>\n" keywords))
 	 (when (org-string-nw-p email)
-	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email)))
+	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email))
+	 (when (org-string-nw-p subtitle)
+	   (format "<meta:user-defined meta:name=\"Subtitle\">%s</meta:user-defined>\n" subtitle)))
 	"  </office:meta>\n" "</office:document-meta>"))
       ;; Prettify buffer contents, if needed
       (when org-odt-prettify-xml
