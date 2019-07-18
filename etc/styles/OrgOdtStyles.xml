@@ -96,6 +96,13 @@
   <style:style style:name="Text_20_body" style:display-name="Text body" style:family="paragraph" style:parent-style-name="Standard" style:class="text">
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.212cm"/>
   </style:style>
+  <style:style style:name="Text_20_body_noindent" style:display-name="Text body no indent" style:family="paragraph" style:parent-style-name="Text_20_body" style:class="text">
+   <style:paragraph-properties fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0cm"
+                               fo:margin-bottom="0m"
+                               fo:text-indent="0cm"
+                               style:auto-text-indent="false">
+   </style:paragraph-properties>
+  </style:style>
   <style:style style:name="List" style:family="paragraph" style:parent-style-name="Text_20_body" style:class="list">
    <style:text-properties style:font-name-complex="Tahoma1"/>
   </style:style>
