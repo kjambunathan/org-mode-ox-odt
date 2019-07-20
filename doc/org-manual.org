@@ -604,28 +604,28 @@ invisible edits and process them.
 
 The following commands jump to other headlines in the buffer.
 
-- {{{kbd(C-c C-n)}}} (~outline-next-visible-heading~) ::
+- {{{kbd(C-c C-n)}}} (~org-next-visible-heading~) ::
 
      #+kindex: C-c C-n
-     #+findex: outline-next-visible-heading
+     #+findex: org-next-visible-heading
      Next heading.
 
-- {{{kbd(C-c C-p)}}} (~outline-previous-visible-heading~) ::
+- {{{kbd(C-c C-p)}}} (~org-previous-visible-heading~) ::
 
      #+kindex: C-c C-p
-     #+findex: outline-previous-visible-heading
+     #+findex: org-previous-visible-heading
      Previous heading.
 
-- {{{kbd(C-c C-f)}}} (~org-forward-same-level~) ::
+- {{{kbd(C-c C-f)}}} (~org-forward-heading-same-level~) ::
 
      #+kindex: C-c C-f
-     #+findex: org-forward-same-level
+     #+findex: org-forward-heading-same-level
      Next heading same level.
 
-- {{{kbd(C-c C-b)}}} (~org-backward-same-level~) ::
+- {{{kbd(C-c C-b)}}} (~org-backward-heading-same-level~) ::
 
      #+kindex: C-c C-b
-     #+findex: org-backward-same-level
+     #+findex: org-backward-heading-same-level
      Previous heading same level.
 
 - {{{kbd(C-c C-u)}}} (~outline-up-heading~) ::
@@ -3252,12 +3252,12 @@ current buffer:
      points to the target.  Otherwise it points to the current
      headline, which is also the description[fn:30].
 
-     #+vindex: org-link-to-org-use-id
+     #+vindex: org-id-link-to-org-use-id
      #+cindex: @samp{CUSTOM_ID}, property
      #+cindex: @samp{ID}, property
      If the headline has a =CUSTOM_ID= property, store a link to this
      custom ID.  In addition or alternatively, depending on the value
-     of ~org-link-to-org-use-id~, create and/or use a globally unique
+     of ~org-id-link-to-org-use-id~, create and/or use a globally unique
      =ID= property for the link[fn:31].  So using this command in Org
      buffers potentially creates two links: a human-readable link from
      the custom ID, and one that is globally unique and works even if
@@ -3494,7 +3494,7 @@ replacement text.  Here is an example:
         ("google"    . "http://www.google.com/search?q=")
         ("gmap"      . "http://maps.google.com/maps?q=%s")
         ("omap"      . "http://nominatim.openstreetmap.org/search?q=%s&polygon=1")
-        ("ads"       . "http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?author=%s&db_key=AST")))
+        ("ads"       . "https://ui.adsabs.harvard.edu/search/q=%20author%3A\"%s\"")))
 #+end_src
 
 If the replacement text contains the string =%s=, it is replaced with
@@ -6152,17 +6152,6 @@ schedule an item:[fn:67]
      remove the scheduling date from the entry.  Depending on the
      variable ~org-log-reschedule~, take a note when changing an
      existing scheduling time[fn:69].
-
-- {{{kbd(C-c C-x C-k)}}} (~org-mark-entry-for-agenda-action~) ::
-
-     #+kindex: C-c C-x C-k
-     #+kindex: k a
-     #+kindex: k s
-     #+findex: org-mark-entry-for-agenda-action
-     Mark the current entry for agenda action.  After you have marked
-     the entry like this, you can open the agenda or the calendar to
-     find an appropriate date.  With point on the selected date, press
-     {{{kbd(k s)}}} or {{{kbd(k d)}}} to schedule the marked item.
 
 - {{{kbd(C-c / d)}}} (~org-check-deadlines~) ::
 
@@ -21313,8 +21302,8 @@ information attached to them, like a time-stamp, a scheduled or
 a deadline string.  See ~org-agenda-entry-types~ on how to set what
 planning information is taken into account.
 
-[fn:104] For HTML you need to install Hrvoje Niksic's =htmlize.el=
-from [[https://github.com/hniksic/emacs-htmlize][Hrvoje Niksic's repository]].
+[fn:104] For HTML you need to install Hrvoje Nikšić's =htmlize.el=
+from [[https://github.com/hniksic/emacs-htmlize][Hrvoje Nikšić's repository]].
 
 [fn:105] To create PDF output, the Ghostscript ps2pdf utility must be
 installed on the system.  Selecting a PDF file also creates the
@@ -21487,7 +21476,7 @@ through ~word-wrap~.
 
 [fn:149] Also see the variable ~org-adapt-indentation~.
 
-[fn:150] Because =LEVEL=2= has 3 stars, =LEVEL=3= has 4 stars, and so
+[fn:150] Because =LEVEL=2= has 3 stars, =LEVEL=3= has 5 stars, and so
 on.
 
 [fn:151] For a server to host files, consider using a WebDAV server,
