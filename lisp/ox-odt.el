@@ -3354,7 +3354,7 @@ used as a communication channel."
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			  "Text_20_body"
+			  "Standard"
 			  (apply 'org-odt--frame href width height
 				 (append inner title-and-desc)))))
 	(apply 'org-odt--textbox
