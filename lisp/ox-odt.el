@@ -1882,14 +1882,6 @@ holding export options."
       ;; Write automatic styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
 
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0)))
-
-      ;; Write extra styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
-
       ;; Write custom styles for source blocks
       ;; Save STYLES used for colorizing of source blocks.
       ;; Update styles.xml with styles that were collected as part of
@@ -1901,6 +1893,14 @@ holding export options."
 		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
 			 concat (format " %s\n" (cddr style)))
 		"\n"))
+
+      ;; Position the cursor.
+      (goto-char (point-min))
+      (when (re-search-forward "</office:styles>" nil t)
+	(goto-char (match-beginning 0)))
+
+      ;; Write extra styles.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
 
       ;; Update styles.xml - take care of outline numbering
 
