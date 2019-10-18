@@ -122,8 +122,7 @@
 
 (require 'ox)
 (require 'ox-odt)
-(eval-when-compile
-  (require 'cl))
+(require 'cl-lib)
 
 ;;; Internal Variables
 
@@ -291,7 +290,7 @@ to see all available export formats.")
 (defvar org-jabref-citation-formatters--default
   (let ((formatter-names (mapcar 'car (assoc-default "odt" org-jabref-citation-formatters))))
       `(choice :tag "Formatter name"
-	   ,@(loop for formatter-name in formatter-names
+	   ,@(cl-loop for formatter-name in formatter-names
 		   collect `(const ,formatter-name))
 	   (string :tag "Other" ,(car formatter-names)))))
 
@@ -710,12 +709,12 @@ Return the XML representation as a string. Specifically,
 	    (setq bib-alist
 		  (cond
 		   (order-by-jabref
-		    (loop for bib-entry in bib-alist
+		    (cl-loop for bib-entry in bib-alist
 			  if (assoc-default (car bib-entry) citation-alist)
 			  collect bib-entry))
 		   (t
 		    (reverse
-		     (loop for citation-entry in citation-alist
+		     (cl-loop for citation-entry in citation-alist
 			   if (assoc (car citation-entry) bib-alist)
 			   collect it))))))
 	  (setcdr bibliography-cache bib-alist))
@@ -724,7 +723,7 @@ Return the XML representation as a string. Specifically,
 	(when (and (atom in-text-jabref-format)
 		   (string= in-text-jabref-format "Numeric"))
 	  (let* ((bib-alist (assoc-default bibliography-jabref-format citation-cache ))
-		 (cite-key-text-alist (loop for (cite-key . text) in bib-alist
+		 (cite-key-text-alist (cl-loop for (cite-key . text) in bib-alist
 					    with n = 0 collect
 					    (cons cite-key (number-to-string (incf n))))))
 	    (push (cons "Numeric" cite-key-text-alist)
