@@ -3160,10 +3160,8 @@ used as a communication channel."
 	 (user-frame-anchor
 	  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
 			     '(("as-char") ("paragraph") ("page")) t)))
-	 (user-frame-style
-	  (and user-frame-anchor (org-odt--read-attribute attr-from :style)))
-	 (user-frame-attrs
-	  (and user-frame-anchor (org-odt--read-attribute attr-from :attributes)))
+	 (user-frame-style nil)
+	 (user-frame-attrs nil)
 	 (user-frame-params
 	  (list user-frame-style user-frame-attrs user-frame-anchor))
 	 ;; (embed-as (or embed-as user-frame-anchor "paragraph"))
