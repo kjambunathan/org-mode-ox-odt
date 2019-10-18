@@ -3050,8 +3050,26 @@ SHORT-CAPTION are strings."
     (org-odt-create-manifest-file-entry info media-type target-file)
     target-file))
 
-(defun org-odt--image-size (file info &optional user-width
-				 user-height scale dpi embed-as)
+(defun org-odt--image-size (file info &optional user-widths
+				 user-heights scale dpi embed-as)
+  (cl-assert (consp user-widths))
+  (cl-assert (consp user-heights))
+  (let* ((user-width (car user-widths))
+	 (user-height (car user-heights))
+	 (size (org-odt---image-size file info user-width user-height scale dpi embed-as)))
+    (setcar user-widths (car size))
+    (setcar user-heights (cdr size))
+
+    (when (cdr user-widths)
+      (setcdr user-widths (max (car user-widths) (cdr user-widths))))
+
+    (when (cdr user-heights)
+      (setcdr user-heights (max (car user-heights) (cdr user-heights))))
+
+    (cons user-widths user-heights)))
+
+(defun org-odt---image-size (file info &optional user-width
+				  user-height scale dpi embed-as)
   (let* ((--pixels-to-cms
 	  (lambda (pixels dpi)
 	    (let ((cms-per-inch 2.54)
@@ -3142,25 +3160,33 @@ used as a communication channel."
 	 (user-frame-anchor
 	  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
 			     '(("as-char") ("paragraph") ("page")) t)))
-	 (user-frame-style
-	  (and user-frame-anchor (org-odt--read-attribute attr-from :style)))
-	 (user-frame-attrs
-	  (and user-frame-anchor (org-odt--read-attribute attr-from :attributes)))
+	 (user-frame-style nil)
+	 (user-frame-attrs nil)
 	 (user-frame-params
 	  (list user-frame-style user-frame-attrs user-frame-anchor))
 	 ;; (embed-as (or embed-as user-frame-anchor "paragraph"))
 	 ;;
-	 ;; Handle `:width', `:height' and `:scale' properties.  Read
-	 ;; them as numbers since we need them for computations.
-	 (size (org-odt--image-size
-		src-expanded info
-		(org-odt--read-attribute attr-from :width)
-		(org-odt--read-attribute attr-from :height)
-		(org-odt--read-attribute attr-from :scale)
-		nil			; embed-as
-		"paragraph"		; FIXME
-		))
-	 (width (car size)) (height (cdr size))
+	 ;; Handle `:width', `:height' and `:scale' properties.
+	 (size
+	  (let ((--user-dim
+		 (lambda (x)
+		   (pcase x
+		     ((and (or (pred null) (pred numberp)) x1)
+		      (cons x1 nil))
+		     (`(,(and (or (pred null) (pred numberp)) x1) . ,(and (or (pred null) (pred numberp)) x2))
+		      (cons x1 x2))
+		     (`(,(and (or (pred null) (pred numberp)) x1) ,(and (or (pred null) (pred numberp)) x2))
+		      (cons x1 x2))
+		     (_ (cons nil nil))))))
+	    (org-odt--image-size
+	     src-expanded info
+	     (funcall --user-dim (org-odt--read-attribute attr-from :width))
+	     (funcall --user-dim (org-odt--read-attribute attr-from :height))
+	     (org-odt--read-attribute attr-from :scale)
+	     nil			; embed-as
+	     "paragraph"		; FIXME
+	     )))
+	 (widths (car size)) (heights (cdr size))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p "paragraph" "as-char"))
 	 (captions (org-odt-format-label element info 'definition))
@@ -3178,7 +3204,7 @@ used as a communication channel."
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces))))
-    (org-odt--render-image/formula entity href width height
+    (org-odt--render-image/formula entity href widths heights
 				   captions user-frame-params title desc)))
 
 
@@ -3260,7 +3286,7 @@ used as a communication channel."
 
 ;;;; Targets
 
-(defun org-odt--render-image/formula (cfg-key href width height &optional
+(defun org-odt--render-image/formula (cfg-key href widths heights &optional
 					      captions user-frame-params
 					      &rest title-and-desc)
   (let* ((frame-cfg-alist
@@ -3336,7 +3362,7 @@ used as a communication channel."
      ((not caption)
       ;; Merge user frame params with that from configuration.
       (setq inner (funcall --merge-frame-params inner user))
-      (apply 'org-odt--frame href width height
+      (apply 'org-odt--frame href (car widths) (car heights)
 	     (append inner title-and-desc)))
      ;; Case 2: Image/Formula is captioned or labeled.
      ;;         There are two frames: The inner one surrounds the
@@ -3347,6 +3373,8 @@ used as a communication channel."
       (setq outer (funcall --merge-frame-params outer user))
       ;; Short caption, if specified, goes as part of inner frame.
       (setq inner (let ((frame-params (copy-sequence inner)))
+		    (when (or (cdr widths) (cdr heights))
+		      (setcar (cdr frame-params) nil))
 		    (setcar (cdr frame-params)
 			    (concat
 			     (cadr frame-params)
@@ -3355,13 +3383,15 @@ used as a communication channel."
 		    frame-params))
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			  "Standard"
-			  (apply 'org-odt--frame href width height
+			  (apply 'org-odt--frame href (car widths) (car heights)
 				 (append inner title-and-desc)))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
 		 (t (concat text caption)))
-	       width height outer))))))
+	       (or (cdr widths) (car widths))
+	       (or (cdr heights) (car heights))
+	       outer))))))
 
 (defun org-odt--enumerable-p (element _info)
   ;; Element should have a caption or label.
