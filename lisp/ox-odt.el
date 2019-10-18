@@ -3323,15 +3323,15 @@ used as a communication channel."
 	    ("ParagraphImage" ("OrgDisplayImage" nil "paragraph"))
 	    ("PageImage" ("OrgPageImage" nil "page"))
 	    ("CaptionedAs-CharImage"
-	     ("OrgCaptionedImage"
+	     ("OrgDisplayImage"
 	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
 	     ("OrgInlineImage" nil "as-char"))
 	    ("CaptionedParagraphImage"
-	     ("OrgCaptionedImage"
-	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "as-char")
+	     ("OrgDisplayImage"
+	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
 	     ("OrgImageCaptionFrame" nil "paragraph"))
 	    ("CaptionedPageImage"
-	     ("OrgCaptionedImage"
+	     ("OrgDisplayImage"
 	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
 	     ("OrgPageImageCaptionFrame" nil "page"))
 	    ("InlineFormula" ("OrgInlineFormula" nil "as-char"))
