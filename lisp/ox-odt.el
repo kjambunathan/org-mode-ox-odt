@@ -2642,14 +2642,15 @@ CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
   (let* ((plain-list (org-export-get-parent item))
 	 (type (org-element-property :type plain-list))
-	 (_counter (org-element-property :counter item))
+	 (counter (org-element-property :counter item))
 	 (_tag (let ((tag (org-element-property :tag item)))
 		 (and tag
 		      (concat (org-odt--checkbox item)
 			      (org-export-data tag info))))))
     (cl-case type
       ((ordered unordered descriptive-1 descriptive-2)
-       (format "\n<text:list-item>\n%s\n%s"
+       (format "\n<text:list-item %s>\n%s\n%s"
+	       (if (numberp counter) (format "text:start-value=\"%d\"" counter) "")
 	       contents
 	       (let* ((--element-has-a-table-p
 		       (lambda (element _info)
