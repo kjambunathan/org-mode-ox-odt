@@ -2024,10 +2024,8 @@ holding export options."
 	    (unless (member ext org-odt-supported-file-types)
 	      (setq ext "odt"))
 	    (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
-    (with-temp-buffer
-      (insert mimetype)
-      (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "mimetype"))))
+    (let ((coding-system-for-write 'utf-8))
+      (write-region mimetype nil (concat (plist-get info :odt-zip-dir) "mimetype")))
     (org-odt-create-manifest-file-entry info mimetype "/" "1.2")))
 
 ;;;; Write manifest.xml
@@ -2642,14 +2640,15 @@ CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
   (let* ((plain-list (org-export-get-parent item))
 	 (type (org-element-property :type plain-list))
-	 (_counter (org-element-property :counter item))
+	 (counter (org-element-property :counter item))
 	 (_tag (let ((tag (org-element-property :tag item)))
 		 (and tag
 		      (concat (org-odt--checkbox item)
 			      (org-export-data tag info))))))
     (cl-case type
       ((ordered unordered descriptive-1 descriptive-2)
-       (format "\n<text:list-item>\n%s\n%s"
+       (format "\n<text:list-item %s>\n%s\n%s"
+	       (if (numberp counter) (format "text:start-value=\"%d\"" counter) "")
 	       contents
 	       (let* ((--element-has-a-table-p
 		       (lambda (element _info)
