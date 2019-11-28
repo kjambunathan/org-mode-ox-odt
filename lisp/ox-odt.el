@@ -2024,10 +2024,8 @@ holding export options."
 	    (unless (member ext org-odt-supported-file-types)
 	      (setq ext "odt"))
 	    (nth 1 (assoc-string ext org-odt-file-extensions-alist)))))
-    (with-temp-buffer
-      (insert mimetype)
-      (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "mimetype"))))
+    (let ((coding-system-for-write 'utf-8))
+      (write-region mimetype nil (concat (plist-get info :odt-zip-dir) "mimetype")))
     (org-odt-create-manifest-file-entry info mimetype "/" "1.2")))
 
 ;;;; Write manifest.xml
