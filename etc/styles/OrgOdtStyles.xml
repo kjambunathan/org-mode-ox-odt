@@ -460,7 +460,7 @@
 
   <!-- Simple Images   -->
   <style:style style:name="OrgDisplayImage" style:family="graphic" style:parent-style-name="Graphics">
-   <style:graphic-properties text:anchor-type="paragraph" style:wrap="none" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph"/>
+   <style:graphic-properties text:anchor-type="paragraph" style:wrap="run-through" style:number-wrapped-paragraphs="1" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph"/>
   </style:style>
 
   <style:style style:name="OrgPageImage" style:family="graphic" style:parent-style-name="Graphics">
