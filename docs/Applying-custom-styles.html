@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Applying custom styles (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="Applying custom styles (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="Applying custom styles (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Links-in-ODT-export.html" rel="next" title="Links in ODT export">
+<link href="Extending-ODT-export.html#Converting-between-document-formats" rel="prev" title="Converting between document formats">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Applying-custom-styles"></span><div class="header">
+<p>
+Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT export</a>, Previous: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="p" rel="prev">Extending ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Applying-custom-styles-1"></span><h2 class="chapter">4 Applying custom styles</h2>
+
+<p>The ODT exporter ships with a set of OpenDocument styles (see <a href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">Working with OpenDocument style files</a>) that ensure a well-formatted
+output. These factory styles, however, may not cater to your specific
+tastes. To customize the output, you can either modify the above
+styles files directly, or generate the required styles using an
+application like LibreOffice. The latter method is suitable for expert
+and non-expert users alike, and is described here.
+</p>
+
+<hr>
+<span id="Applying-custom-styles-_002d-the-easy-way"></span><span id="Applying-custom-styles-_002d-the-easy-way-1"></span><h3 class="section">4.1 Applying custom styles - the easy way</h3>
+
+<ol>
+<li> Create a sample &lsquo;<samp>example.org</samp>&rsquo; file with the below settings and
+export it to ODT format.
+
+<div class="example">
+<pre class="example">#+OPTIONS: H:10 num:t
+</pre></div>
+
+</li><li> Open the above &lsquo;<samp>example.odt</samp>&rsquo; using LibreOffice. Use the Stylist to
+locate the target styles - these typically have the &lsquo;<samp>Org</samp>&rsquo; prefix -
+and modify those to your taste. Save the modified file either as an
+OpenDocument Text (&lsquo;<samp>.odt</samp>&rsquo;) or OpenDocument Template (&lsquo;<samp>.ott</samp>&rsquo;) file.
+
+</li><li> <span id="index-org_002dodt_002dstyles_002dfile"></span>
+Customize the variable &lsquo;<samp>org-odt-styles-file</samp>&rsquo; and point it to the
+newly created file. For additional configuration options see
+<a href="Advanced-topics-in-ODT-export.html#Overriding-factory-styles">Overriding factory styles</a>.
+
+<span id="index-ODT_005fSTYLES_005fFILE_002c-keyword"></span>
+<p>If you would like to choose a style on a per-file basis, you can
+use the &lsquo;<samp>#+ODT_STYLES_FILE</samp>&rsquo; option. A typical setting will look
+like
+</p>
+<div class="example">
+<pre class="example">#+ODT_STYLES_FILE: &quot;/path/to/example.ott&quot;
+</pre></div>
+
+<p>or
+</p>
+<div class="example">
+<pre class="example">#+ODT_STYLES_FILE: (&quot;/path/to/file.ott&quot; (&quot;styles.xml&quot; &quot;image/hdr.png&quot;))
+</pre></div>
+</li></ol>
+
+<hr>
+<span id="Using-third_002dparty-styles-and-templates"></span><span id="Using-third_002dparty-styles-and-templates-1"></span><h3 class="section">4.2 Using third-party styles and templates</h3>
+
+<p>You can use third-party styles and templates for customizing your
+output. This will produce the desired output only if the template
+provides all style names that the &lsquo;<samp>ODT</samp>&rsquo; exporter relies on. Unless
+this condition is met, the output is going to be less than
+satisfactory. So it is highly recommended that you only work with
+templates that are directly derived from the factory settings.
+</p>
+<hr>
+<div class="header">
+<p>
+Previous: <a href="#Applying-custom-styles-_002d-the-easy-way" accesskey="p" rel="prev">Applying custom styles - the easy way</a>, Up: <a href="#Applying-custom-styles" accesskey="u" rel="up">Applying custom styles</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>

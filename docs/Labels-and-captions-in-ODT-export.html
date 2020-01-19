@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Labels and captions in ODT export (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="Labels and captions in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="Labels and captions in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Literal-examples-in-ODT-export.html" rel="next" title="Literal examples in ODT export">
+<link href="Math-formatting-in-ODT-export.html#Working-with-MathML-or-OpenDocument-formula-files" rel="prev" title="Working with MathML or OpenDocument formula files">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Labels-and-captions-in-ODT-export"></span><div class="header">
+<p>
+Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Labels-and-captions-in-ODT-export-1"></span><h2 class="chapter">9 Labels and captions in ODT export</h2>
+
+<p>You can label and caption various category of objects - an inline
+image, a table, a LaTeX fragment or a Math formula - using &lsquo;<samp>#+LABEL</samp>&rsquo;
+and &lsquo;<samp>#+CAPTION</samp>&rsquo; lines. See <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/File-Archives.html#File-Archives">(emacs)File Archives</a>. ODT exporter
+enumerates each labeled or captioned object of a given category
+separately. As a result, each such object is assigned a sequence
+number based on order of it&rsquo;s appearance in the Org file.
+</p>
+<p>In the exported document, a user-provided caption is augmented with
+the category and sequence number. Consider the following inline image
+in an Org file.
+</p>
+<div class="example">
+<pre class="example">#+CAPTION: Bell curve
+#+LABEL:   fig:SED-HR4049
+[[./img/a.png]]
+</pre></div>
+
+<p>It could be rendered as shown below in the exported document.
+</p>
+<div class="example">
+<pre class="example">Figure 2: Bell curve
+</pre></div>
+
+<span id="index-org_002dodt_002dcategory_002dstrings"></span>
+<p>You can modify the category component of the caption by customizing
+the variable &lsquo;<samp>org-odt-category-strings</samp>&rsquo;. For example, to tag all
+embedded images with the string &lsquo;<samp>Illustration</samp>&rsquo; (instead of the default
+&lsquo;<samp>Figure</samp>&rsquo;) use the following setting.
+</p>
+<div class="lisp">
+<pre class="lisp">(setq org-odt-category-strings
+      '((&quot;en&quot; &quot;Table&quot; &quot;Illustration&quot; &quot;Equation&quot; &quot;Equation&quot;)))
+</pre></div>
+
+<p>With this, previous image will be captioned as below in the exported
+document.
+</p>
+<div class="example">
+<pre class="example">Illustration 2: Bell curve
+</pre></div>
+
+<hr>
+<div class="header">
+<p>
+Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>

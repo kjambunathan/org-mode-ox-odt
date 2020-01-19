@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Top (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="Top (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="Top (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="#Top" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="Pre_002drequisites-for-ODT-export.html" rel="next" title="Pre-requisites for ODT export">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<h1 class="settitle" align="center">OpenDocument Text Exporter Manual</h1>
+
+
+<span id="SEC_Contents"></span>
+<h2 class="contents-heading">Table of Contents</h2>
+
+<div class="contents">
+
+<ul class="no-bullet">
+  <li><a id="toc-Pre_002drequisites-for-ODT-export-1" href="Pre_002drequisites-for-ODT-export.html#Pre_002drequisites-for-ODT-export">1 Pre-requisites for ODT export</a></li>
+  <li><a id="toc-ODT-export-commands-1" href="ODT-export-commands.html#ODT-export-commands">2 ODT export commands</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Exporting-to-ODT-1" href="ODT-export-commands.html#Exporting-to-ODT">2.1 Exporting to ODT</a></li>
+  </ul></li>
+  <li><a id="toc-Extending-ODT-export-1" href="Extending-ODT-export.html#Extending-ODT-export">3 Extending ODT export</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Automatically-exporting-to-other-formats-1" href="Extending-ODT-export.html#Automatically-exporting-to-other-formats">3.1 Automatically exporting to other formats</a></li>
+    <li><a id="toc-Converting-between-document-formats-1" href="Extending-ODT-export.html#Converting-between-document-formats">3.2 Converting between document formats</a></li>
+  </ul></li>
+  <li><a id="toc-Applying-custom-styles-1" href="Applying-custom-styles.html#Applying-custom-styles">4 Applying custom styles</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Applying-custom-styles-_002d-the-easy-way-1" href="Applying-custom-styles.html#Applying-custom-styles-_002d-the-easy-way">4.1 Applying custom styles - the easy way</a></li>
+    <li><a id="toc-Using-third_002dparty-styles-and-templates-1" href="Applying-custom-styles.html#Using-third_002dparty-styles-and-templates">4.2 Using third-party styles and templates</a></li>
+  </ul></li>
+  <li><a id="toc-Links-in-ODT-export-1" href="Links-in-ODT-export.html#Links-in-ODT-export">5 Links in ODT export</a></li>
+  <li><a id="toc-Tables-in-ODT-export-1" href="Tables-in-ODT-export.html#Tables-in-ODT-export">6 Tables in ODT export</a></li>
+  <li><a id="toc-Images-in-ODT-export-1" href="Images-in-ODT-export.html#Images-in-ODT-export">7 Images in ODT export</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Embedding-images-1" href="Images-in-ODT-export.html#Embedding-images">7.1 Embedding images</a></li>
+    <li><a id="toc-Embedding-clickable-images-1" href="Images-in-ODT-export.html#Embedding-clickable-images">7.2 Embedding clickable images</a></li>
+    <li><a id="toc-Sizing-and-scaling-of-embedded-images-1" href="Images-in-ODT-export.html#Sizing-and-scaling-of-embedded-images">7.3 Sizing and scaling of embedded images</a></li>
+    <li><a id="toc-Anchoring-of-images-1" href="Images-in-ODT-export.html#Anchoring-of-images">7.4 Anchoring of images</a></li>
+  </ul></li>
+  <li><a id="toc-Math-formatting-in-ODT-export-1" href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export">8 Math formatting in ODT export</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Working-with-LaTeX-math-snippets-1" href="Math-formatting-in-ODT-export.html#Working-with-LaTeX-math-snippets">8.1 Working with LaTeX math snippets</a></li>
+    <li><a id="toc-Working-with-MathML-or-OpenDocument-formula-files-1" href="Math-formatting-in-ODT-export.html#Working-with-MathML-or-OpenDocument-formula-files">8.2 Working with MathML or OpenDocument formula files</a></li>
+  </ul></li>
+  <li><a id="toc-Labels-and-captions-in-ODT-export-1" href="Labels-and-captions-in-ODT-export.html#Labels-and-captions-in-ODT-export">9 Labels and captions in ODT export</a></li>
+  <li><a id="toc-Literal-examples-in-ODT-export-1" href="Literal-examples-in-ODT-export.html#Literal-examples-in-ODT-export">10 Literal examples in ODT export</a></li>
+  <li><a id="toc-Advanced-topics-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export">11 Advanced topics in ODT export</a>
+  <ul class="no-bullet">
+    <li><a id="toc-Configuring-a-document-converter-1" href="Advanced-topics-in-ODT-export.html#Configuring-a-document-converter">11.1 Configuring a document converter</a></li>
+    <li><a id="toc-Working-with-OpenDocument-style-files-1" href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">11.2 Working with OpenDocument style files</a>
+    <ul class="no-bullet">
+      <li><a id="toc-Factory-styles-1" href="Advanced-topics-in-ODT-export.html#Factory-styles">11.2.1 Factory styles</a></li>
+      <li><a id="toc-Overriding-factory-styles-1" href="Advanced-topics-in-ODT-export.html#Overriding-factory-styles">11.2.2 Overriding factory styles</a></li>
+    </ul></li>
+    <li><a id="toc-Creating-one_002doff-styles-1" href="Advanced-topics-in-ODT-export.html#Creating-one_002doff-styles">11.3 Creating one-off styles</a></li>
+    <li><a id="toc-Customizing-tables-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Customizing-tables-in-ODT-export">11.4 Customizing tables in ODT export</a>
+    <ul class="no-bullet">
+      <li><a id="toc-Custom-table-styles-_002d-an-illustration-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-an-illustration">11.4.1 Custom table styles - an illustration</a></li>
+      <li><a id="toc-Custom-table-styles-_002d-the-nitty_002dgritty-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-the-nitty_002dgritty">11.4.2 Custom table styles - the nitty-gritty</a></li>
+    </ul></li>
+    <li><a id="toc-Validating-OpenDocument-XML-1" href="Advanced-topics-in-ODT-export.html#Validating-OpenDocument-XML">11.5 Validating OpenDocument XML</a></li>
+  </ul></li>
+  <li><a id="toc-Main-Index-1" href="Main-Index.html#Main-Index" rel="index">12 Main Index</a></li>
+  <li><a id="toc-Key-Index-1" href="Key-Index.html#Key-Index" rel="index">13 Key Index</a></li>
+  <li><a id="toc-Command-and-Function-Index-1" href="Command-and-Function-Index.html#Command-and-Function-Index" rel="index">14 Command and Function Index</a></li>
+  <li><a id="toc-Variable-Index-1" href="Variable-Index.html#Variable-Index" rel="index">15 Variable Index</a></li>
+</ul>
+</div>
+
+
+<span id="Top"></span><div class="header">
+<p>
+Next: <a href="Pre_002drequisites-for-ODT-export.html" accesskey="n" rel="next">Pre-requisites for ODT export</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<span id="OpenDocument-Text-Exporter-Manual"></span><h1 class="top">OpenDocument Text Exporter Manual</h1>
+
+<p>This manual is for Org-7.8.08&rsquo;s OpenDocument Text Exporter Manual.
+</p>
+<p>Orgmode<a id="DOCF1" href="#FOOT1"><sup>1</sup></a> supports export to OpenDocument Text (ODT) format using
+the &lsquo;<samp>org-odt.el</samp>&rsquo; module. Documents created by this exporter use the
+OpenDocument-v1.2 specification<a id="DOCF2" href="#FOOT2"><sup>2</sup></a> and are compatible with
+LibreOffice 3.4.
+</p>
+
+<div class="footnote">
+<hr>
+<h4 class="footnotes-heading">Footnotes</h4>
+
+<h5><a id="FOOT1" href="#DOCF1">(1)</a></h3>
+<p>Versions 7.8 or later</p>
+<h5><a id="FOOT2" href="#DOCF2">(2)</a></h3>
+<p><a href="http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html">Open Document Format for Office Applications (OpenDocument)
+Version 1.2</a></p>
+</div>
+<hr>
+<div class="header">
+<p>
+Next: <a href="Pre_002drequisites-for-ODT-export.html" accesskey="n" rel="next">Pre-requisites for ODT export</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>
