@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Extending ODT export (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="Extending ODT export (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="Extending ODT export (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Applying-custom-styles.html#Applying-custom-styles" rel="next" title="Applying custom styles">
+<link href="ODT-export-commands.html#Exporting-to-ODT" rel="prev" title="Exporting to ODT">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Extending-ODT-export"></span><div class="header">
+<p>
+Next: <a href="Applying-custom-styles.html#Applying-custom-styles" accesskey="n" rel="next">Applying custom styles</a>, Previous: <a href="ODT-export-commands.html#ODT-export-commands" accesskey="p" rel="prev">ODT export commands</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Extending-ODT-export-1"></span><h2 class="chapter">3 Extending ODT export</h2>
+
+<p>The ODT exporter can interface with a variety of document converters
+and supports popular converters out of the box. As a result, you can
+use it to export to formats like &lsquo;<samp>doc</samp>&rsquo; or convert a document from one
+format (say &lsquo;<samp>csv</samp>&rsquo;) to another format (say &lsquo;<samp>ods</samp>&rsquo; or &lsquo;<samp>xls</samp>&rsquo;).
+</p>
+<span id="index-unconv"></span>
+<span id="index-org_002dodt_002dconvert_002dprocess"></span>
+<p>If you have a working installation of LibreOffice, a document
+converter is pre-configured for you and you can use it right away. If
+you would like to use &lsquo;<samp>unoconv</samp>&rsquo; as your preferred converter, customize
+the variable &lsquo;<samp>org-odt-convert-process</samp>&rsquo; to point to &lsquo;<samp>unoconv</samp>&rsquo;. You can
+also use your own favorite converter or tweak the default settings of
+the LibreOffice and &lsquo;<samp>unoconv</samp>&rsquo; converters. See <a href="Advanced-topics-in-ODT-export.html#Configuring-a-document-converter">Configuring a document converter</a>.
+</p>
+
+<hr>
+<span id="Automatically-exporting-to-other-formats"></span><span id="Automatically-exporting-to-other-formats-1"></span><h3 class="section">3.1 Automatically exporting to other formats</h3>
+
+<span id="index-org_002dodt_002dpreferred_002doutput_002dformat-2"></span>
+<p>Very often, you will find yourself exporting to ODT format, only to
+immediately save the exported document to other formats like &lsquo;<samp>doc</samp>&rsquo;,
+&lsquo;<samp>docx</samp>&rsquo;, &lsquo;<samp>rtf</samp>&rsquo;, &lsquo;<samp>pdf</samp>&rsquo; etc. In such cases, you can specify your
+preferred output format by customizing the variable
+&lsquo;<samp>org-odt-preferred-output-format</samp>&rsquo;. This way, the export commands (see
+<a href="ODT-export-commands.html#Exporting-to-ODT">Exporting to ODT</a>) can be extended to export to a format that is of
+immediate interest to you.
+</p>
+<hr>
+<span id="Converting-between-document-formats"></span><span id="Converting-between-document-formats-1"></span><h3 class="section">3.2 Converting between document formats</h3>
+
+<p>There are many document converters in the wild which support
+conversion to and from various file formats, including, but not
+limited to the ODT format. LibreOffice converter, mentioned above, is
+one such converter.  Once a converter is configured, you can interact
+with it using the following command.
+</p>
+<dl compact="compact">
+<dt><kbd>M-x org-odt-convert</kbd></dt>
+<dd><span id="index-org_002dodt_002dconvert"></span>
+<p>Convert an existing document from one format to another. With a
+prefix argument, also open the newly produced file.
+</p></dd>
+</dl>
+
+<hr>
+<div class="header">
+<p>
+Previous: <a href="#Automatically-exporting-to-other-formats" accesskey="p" rel="prev">Automatically exporting to other formats</a>, Up: <a href="#Extending-ODT-export" accesskey="u" rel="up">Extending ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>

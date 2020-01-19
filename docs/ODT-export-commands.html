@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ODT export commands (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="ODT export commands (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="ODT export commands (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Extending-ODT-export.html#Extending-ODT-export" rel="next" title="Extending ODT export">
+<link href="Pre_002drequisites-for-ODT-export.html" rel="prev" title="Pre-requisites for ODT export">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="ODT-export-commands"></span><div class="header">
+<p>
+Next: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="n" rel="next">Extending ODT export</a>, Previous: <a href="Pre_002drequisites-for-ODT-export.html" accesskey="p" rel="prev">Pre-requisites for ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="ODT-export-commands-1"></span><h2 class="chapter">2 ODT export commands</h2>
+
+
+<hr>
+<span id="Exporting-to-ODT"></span><span id="Exporting-to-ODT-1"></span><h3 class="section">2.1 Exporting to ODT</h3>
+
+<dl compact="compact">
+<dt><kbd>C-c C-e o o</kbd> (&lsquo;<samp>org-odt-export-to-odt</samp>&rsquo;)</dt>
+<dd><span id="index-C_002dc-C_002de-o"></span>
+<span id="index-org_002dodt_002dexport_002dto_002dodt"></span>
+<p>Export as OpenDocument Text file.
+</p>
+<span id="index-org_002dodt_002dpreferred_002doutput_002dformat"></span>
+<p>If &lsquo;<samp>org-odt-preferred-output-format</samp>&rsquo; is specified, automatically
+convert the exported file to that format. See <a href="Extending-ODT-export.html#Automatically-exporting-to-other-formats">Automatically exporting to other formats</a>.
+</p>
+<span id="index-EXPORT_005fFILE_005fNAME_002c-keyword"></span>
+<p>For an Org file &lsquo;<samp>myfile.org</samp>&rsquo;, the ODT file will be
+&lsquo;<samp>myfile.odt</samp>&rsquo;. The file will be overwritten without warning. If
+there is an active region,<a id="DOCF3" href="#FOOT3"><sup>3</sup></a> only the region will be
+exported. If the selected region is a single tree,<a id="DOCF4" href="#FOOT4"><sup>4</sup></a> the tree
+head will become the document title. If the tree head entry has,
+or inherits, an &lsquo;<samp>EXPORT_FILE_NAME</samp>&rsquo; property, that name will be
+used for the export.
+</p>
+</dd>
+<dt><kbd>C-c C-e o O</kbd></dt>
+<dd><span id="index-C_002dc-C_002de-O"></span>
+<p>Export as OpenDocument Text file and open the resulting file.
+</p>
+<span id="index-org_002dodt_002dpreferred_002doutput_002dformat-1"></span>
+<p>If &lsquo;<samp>org-odt-preferred-output-format</samp>&rsquo; is specified, open the
+converted file instead. See <a href="Extending-ODT-export.html#Automatically-exporting-to-other-formats">Automatically exporting to other formats</a>.
+</p></dd>
+</dl>
+
+<div class="footnote">
+<hr>
+<h4 class="footnotes-heading">Footnotes</h4>
+
+<h5><a id="FOOT3" href="#DOCF3">(3)</a></h3>
+<p>This requires &lsquo;<samp>transient-mark-mode</samp>&rsquo; to be turned on</p>
+<h5><a id="FOOT4" href="#DOCF4">(4)</a></h3>
+<p>To select the current subtree, use <kbd>C-c @</kbd></p>
+</div>
+<hr>
+<div class="header">
+<p>
+Up: <a href="#ODT-export-commands" accesskey="u" rel="up">ODT export commands</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>
