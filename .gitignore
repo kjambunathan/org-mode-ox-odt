@@ -13,13 +13,13 @@
 *.elc
 *.fn
 *.fns
-*.html
+doc/*.html
 *.info
 *.ky
 *.kys
 *.log
 *.patch
-*.pdf
+doc/*.pdf
 *.pg
 *.pgs
 *.ps
