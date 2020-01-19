@@ -12,6 +12,7 @@ helpserver::
 	@echo ""
 
 SERVROOT			= ../kjambunathan.github.io/elpa
+DOCROOT				= ./docs/
 
 ORG_GIT_DIR			= .
 JABREF_GIT_DIR		= ./contrib/odt/JabRefChicagoForOrgmode
@@ -121,6 +122,13 @@ jabrefpkg: ELPA_PKG_TAR_ARGS	= --exclude=*.jar											\
 
 
 odtpkg jabrefpkg: pkg
+
+odtmanual: info
+		make -C doc org-odt.html
+		make -C doc org-odt.pdf
+		$(CP) doc/org-odt-manual/*.html	$(DOCROOT)
+		$(CP) doc/org-odt.pdf			$(DOCROOT)
+
 
 # Local Variables:
 # tab-width: 4

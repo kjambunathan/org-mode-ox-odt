@@ -9,9 +9,9 @@ all:		$(ORG_MAKE_DOC)
 
 info:		org org-odt-old org-odt
 
-html:		org.html org-odt-old.html org-odt.html
+html:		org.html org-odt.html # org-odt-old.html 
 
-pdf:		org.pdf orgguide.pdf org-odt-old.pdf org-odt.pdf
+pdf:		org.pdf orgguide.pdf org-odt.pdf # org-odt-old.pdf
 
 card:		orgcard.pdf orgcard_letter.pdf orgguide.pdf
 
@@ -55,6 +55,7 @@ clean:
 	$(RM) org *.pdf *.html *_letter.tex org-version.inc org-version.tex \
 	      *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.pg *.pgs \
 	      *.toc *.tp *.tps *.vr *.vrs *.log *.html *.ps
+	$(RMR) org-odt-manual
 cleanall:	clean
 	$(RMR) guide manual
 
@@ -76,13 +77,17 @@ clean-install:
 	PDFLATEX=$(PDFTEX) $(TEXI2PDF) $<
 
 %.html:		%.texi org-version.inc
-	$(TEXI2HTML) --no-split -o $@ $<
+	$(TEXI2HTML) $(TEXI2HTMLEXTRA) $<
 ifneq ($(SERVERMK),)
 	../mk/manfull.pl $@
 
 %.txt:		%.tex
 	perl ../mk/orgcard2txt.pl $< > $@
 endif
+
+org-odt.html:
+	TEXI2HTMLEXTRA=--css-ref=style.css --split=chapter --no-headers  -o org-odt-manual
+	SERVERMK=
 
 %_letter.tex:	%.tex
 	$(BATCH) \
