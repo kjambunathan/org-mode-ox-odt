@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Literal examples in ODT export (OpenDocument Text Exporter Manual)</title>
+
+<meta name="description" content="Literal examples in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="keywords" content="Literal examples in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" rel="next" title="Advanced topics in ODT export">
+<link href="Labels-and-captions-in-ODT-export.html" rel="prev" title="Labels and captions in ODT export">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Literal-examples-in-ODT-export"></span><div class="header">
+<p>
+Next: <a href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" accesskey="n" rel="next">Advanced topics in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Literal-examples-in-ODT-export-1"></span><h2 class="chapter">10 Literal examples in ODT export</h2>
+
+<p>Export of literal examples (See <a href="https://www.gnu.org/software/emacs/manual/html_node/org/Literal-examples.html#Literal-examples">(org)Literal examples</a>) with full
+fontification is supported. Internally, the exporter relies on
+&lsquo;<samp>htmlfontify.el</samp>&rsquo; to generate all style definitions needed for a fancy
+listing.<a id="DOCF8" href="#FOOT8"><sup>8</sup></a> The auto-generated styles have &lsquo;<samp>OrgSrc</samp>&rsquo; as prefix and
+inherit their color from the faces used by Emacs &lsquo;<samp>font-lock</samp>&rsquo; library
+for the source language.
+</p>
+<span id="index-org_002dodt_002dcreate_002dcustom_002dstyles_002dfor_002dsrcblocks"></span>
+<p>If you prefer to use your own custom styles for fontification, you can
+do so by customizing the variable
+&lsquo;<samp>org-odt-create-custom-styles-for-srcblocks</samp>&rsquo;.
+</p>
+<span id="index-org_002dodt_002dfontify_002dsrcblocks"></span>
+<p>You can turn off fontification of literal examples by customizing the
+variable &lsquo;<samp>org-odt-fontify-srcblocks</samp>&rsquo;.
+</p>
+<div class="footnote">
+<hr>
+<h4 class="footnotes-heading">Footnotes</h4>
+
+<h5><a id="FOOT8" href="#DOCF8">(8)</a></h3>
+<p>Your &lsquo;<samp>htmlfontify.el</samp>&rsquo; library must at least be at Emacs 24.1
+levels for fontification to be turned on.</p>
+</div>
+<hr>
+<div class="header">
+<p>
+Next: <a href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" accesskey="n" rel="next">Advanced topics in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>
