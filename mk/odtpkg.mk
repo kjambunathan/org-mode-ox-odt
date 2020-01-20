@@ -123,6 +123,7 @@ jabrefpkg: ELPA_PKG_TAR_ARGS	= --exclude=*.jar											\
 
 odtpkg jabrefpkg: pkg
 
+odtmanual: SERVERMK=
 odtmanual: info
 		make -C doc org-odt.html
 		make -C doc org-odt.pdf

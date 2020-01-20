@@ -85,9 +85,7 @@ ifneq ($(SERVERMK),)
 	perl ../mk/orgcard2txt.pl $< > $@
 endif
 
-org-odt.html:
-	TEXI2HTMLEXTRA=--css-ref=style.css --split=chapter --no-headers  -o org-odt-manual
-	SERVERMK=
+org-odt.html: TEXI2HTMLEXTRA=--css-ref=style.css --split=chapter --no-headers  -o org-odt-manual
 
 %_letter.tex:	%.tex
 	$(BATCH) \
