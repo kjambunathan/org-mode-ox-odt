@@ -1,0 +1,3722 @@
+
+# commit 457084cc48c99b6f534a00dd994ffcbeb71200c3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 19 17:09:05 2020 +0530
+
+    Update build files to generate and upload ODT user manuals
+
+    * .gitignore: Ignore HTML and PDF files only in the `doc/' subdir.
+    Those in the `docs/' subdir are version-controlled and served via
+    https://kjambunathan.github.io/org-mode-ox-odt/.
+
+    * doc/Makefile (%.html): Use variable `TEXI2HTMLEXTRA'
+    (org-odt.html): Set `TEXI2HTMLEXTRA' so that the HTML manual is
+    split at chapters, and output to `org-odt-manual/' subdir.
+    (clean): Remove subdir `ord-odt-manual'.
+    (html, pdf): Don't build `org-odt-old.html' and
+    `org-odt-old.pdf'.
+
+    * mk/default.mk (TEXI2HTMLEXTRA): New variable.  Use this to pass
+    additional command options to ${TEXI2HTML}.  The default value
+    builds a monolithic HTML manual with numbered sections.
+
+    * mk/odtpkg.mk (DOCROOT): Root directory for Github page served
+    via https://kjambunathan.github.io/org-mode-ox-odt/.  Set to
+    `docs/' subdir.
+    (odtmanual): New target to upload the ODT user manual to $(DOCROOT).
+
+    See #64.
+
+
+# commit 6cf5b737f0c5166ac8cf65e653ed9c6f2fea0f0e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 19 16:04:25 2020 +0530
+
+    * docs/: New directory that holds the user manual for the ODT backend
+
+    * docs/: New directory that holds the user manual for the ODT backend.
+    * docs/*.html: HTML version of the user manual.  The manual is split at chapters.
+    * docs/org-odt.pdf: PDF version of the user manual.
+    * docs/style.css: CSS Stylesheet for the HTML manual.  Same as https://www.gnu.org/style.css.
+
+    See #64.
+
+
+# commit 77cae1c780f25844c4b00ce12ce416b688812bc4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Dec 3 08:40:25 2019 +0530
+
+    * etc/styles/OrgOdtStyles.xml (OrgDisplayImage): Modified
+
+    * etc/styles/OrgOdtStyles.xml (OrgDisplayImage): Set wrapping to
+    "run-through" and wrap first of the paragraphs.
+
+    Fixes #63.
+
+
+# commit 0d23ca80c0ceb59a49f283a0664d1bab738e10e6
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 28 11:43:38 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-write-mimetype-file): Fix file corruption
+
+    * lisp/ox-odt.el (org-odt-write-mimetype-file): Don't use
+    `write-file'.  Use `write-region' instead.
+
+    Fixes #62.
+
+
+# commit ae1bd5071faf6bba47f6825a6dfb3699f52c2610
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 22 16:54:16 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-item): Honor start counter of a list item.
+    See (info "(org) Plain lists").
+
+    Fixes #62.
+
+    Here is a sample snippet to exercise above change
+
+        Some text
+
+        1. First item
+        2. Second item
+
+        Some intervening text
+
+        3. [@3] Third item
+        4. Fourth item
+
+
+# commit a04d551f096a05910b10a93818473d0a3c4c9064
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 18 22:26:05 2019 +0530
+
+    * lisp/ox-odt.el: Center the image in relation to it's caption.
+
+    * lisp/ox-odt.el (org-odt--render-image/formula): Center the image
+    in relation to it's caption.
+
+    Fixes #61.
+
+
+# commit e48e02a9679c6ceb7e7da9dadcef145d8380e27e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 18 14:54:55 2019 +0530
+
+    * contrib/lisp/ox-jabref.el: Use `cl-lib'
+
+
+# commit aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 18 14:51:09 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-link--inline-image): Remove cruft
+
+    * lisp/ox-odt.el (org-odt-link--inline-image): Remove dubious ODT
+    attributes `:style' and `:attributes'.
+
+
+# commit 6866dda1f0a4d923463f59208ceebba301e382ec
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 18 14:44:53 2019 +0530
+
+    * lisp/ox-odt.el:  Image captions can now be wider than the image width
+
+    * lisp/ox-odt.el (org-odt-link--inline-image): The ODT
+    attribute `:width` can be one of:
+
+    (i) a number (say `w1')
+        #+ATTR_ODT: :width 3
+        [[./img.png]]
+
+    (ii) cons of two numbers (say `(w1 . w2)')
+        #+ATTR_ODT: :width (3 . 5)
+        [[./img.png]]
+
+    (iii) a list of two numbers (say `(w1 w2)')
+        #+ATTR_ODT: :width (3 5)
+        [[./img.png]]
+
+    Likewise for `:height'.
+
+    `w1 x h1' controls the size of an embedded image.  `w2 x h2' controls
+    the size of the the frame that encloses the image /and/ the caption.
+
+    (org-odt---image-size): Renamed from `org-odt--image-size'.
+
+    (org-odt--image-size): New .
+
+    (org-odt--render-image/formula): Honor ODT attributes `:width'
+    and `:height'
+
+    See #61.
+
+    Here is a sample test snippet that demonstrates the above feature:
+
+        #+attr_odt: :width 3
+        #+caption: This is a very long long long long long long long long caption.
+        [[./org-mode-unicorn.png]]
+
+        #+attr_odt: :width (3 7)
+        #+caption: This is a very long long long long long long long long caption.
+        [[./org-mode-unicorn.png]]
+
+
+# commit aa7e05c3855585b478e04a4f83f4a1d382313bb2
+Merge: 7110e5cd5 cff97c361
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Oct 14 09:09:57 2019 +0530
+
+    Merge tag 'release_9.2.6' into no-wip-cite
+
+    Adding release tag
+
+
+# commit 7110e5cd5c6f1e5b2d52e702b125629cec825924
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Aug 20 07:33:54 2019 +0530
+
+    * lisp/ox-odt.el:  De-couple theme used for exported src blocks from the Emacs theme in use
+
+    * lisp/ox-odt.el (org-odt-write-styles-file): Add
+    user-specified styles _after_ the dynamically generated source
+    block styles.
+
+    Fix for #60.
+
+    For example, the following snippet will export to the same set
+    of colors--adwaita, in this case--irrespective of the user
+    theme in effect.
+
+    #+odt_extra_styles: <style:style style:name="OrgSrcFontLockStringFace" style:family="text">
+    #+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#4e9a06" />
+    #+odt_extra_styles:  </style:style>
+    #+odt_extra_styles:
+    #+odt_extra_styles: <style:style style:name="OrgSrcFontLockDocFace" style:family="text">
+    #+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#4e9a06" />
+    #+odt_extra_styles:  </style:style>
+    #+odt_extra_styles:  <style:style style:name="OrgSrcBlock" style:family="paragraph" style:parent-style-name="Preformatted_20_Text">
+    #+odt_extra_styles:    <style:paragraph-properties fo:background-color="#ededed" fo:padding="0.049cm" fo:border="0.51pt solid #000000" style:shadow="none">
+    #+odt_extra_styles:     <style:background-image/>
+    #+odt_extra_styles:    </style:paragraph-properties>
+    #+odt_extra_styles:    <style:text-properties fo:color="#2e3436"/>
+    #+odt_extra_styles:   </style:style>
+    #+odt_extra_styles:
+    #+odt_extra_styles: <style:style style:name="OrgSrcFontLockFunctionNameFace" style:family="text">
+    #+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#00578e" />
+    #+odt_extra_styles:  </style:style>
+    #+odt_extra_styles:
+    #+odt_extra_styles: <style:style style:name="OrgSrcFontLockKeywordFace" style:family="text">
+    #+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#a52a2a" />
+    #+odt_extra_styles:  </style:style>
+    #+BEGIN_SRC emacs-lisp
+     (defun helloworld ()
+       ""
+       (message "hello world"))
+    #+END_SRC
+
+
+# commit c16ac77343fded0e69f5a5f1f45c51d33a69d278
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 28 10:50:08 2019 +0530
+
+    * lisp/ox-odt.el (org-odt--render-image/formula): Use `Standard' paragraph style for inner frame
+
+    * lisp/ox-odt.el (org-odt--render-image/formula): Use
+    `Standard' style instead of `Text_20_body' style for paragraph
+    enclosing the inner frame.
+
+    Temporarily fixes #59.
+
+
+# commit 02f216fd7f4aca484441eff02f2fab0a3c072c0c
+Merge: fd206748f 65a6f5460
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 20 08:32:03 2019 +0530
+
+    Merge tag 'release_9.2.4' into no-wip-cite
+
+    Adding release tag
+
+
+# commit fd206748fcb7ae4db0b126128ed3296226b95ee3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon May 13 19:48:57 2019 +0530
+
+    * lisp/ox-odt.el: Handle subtitle
+
+    * etc/styles/OrgOdtStyles.xml (OrgDocInfo): New style.
+    (OrgTitle, OrgSubtitle): Modified.
+    * lisp/ox-odt.el (org-odt-inner-template)
+    (org-odt-write-meta-file): Handle `:subtitle'.
+
+    Fixes #58.
+
+
+# commit 3e00989833f3d193ed4b6a9c09ef77cb554a616e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Apr 11 15:34:38 2019 +0530
+
+    * lisp/ox-odt.el: Now export to OpenDocument master file with `C-c C-e o m'
+
+    * lisp/ox-odt.el: Add new OpenDocument backend for creating
+    master (i.e., *.odm) files.
+    (org-odt-export-to-odm): New command.  Bind it to keystroke
+    `m' in the submenu for OpenDocument export.  i.e., Use`C-c C-e
+    o m' to export to OpenDocument master file.
+    (:odt-out-file): Remove keyword from the communication
+    channel.  Use `:output-file' instead.
+    (:odt-file-extension): Remove keyword from the the
+    communication channel. Use filename extension of the
+    `:output-file' instead.
+    (org-odt-write-mimetype-file, org-odt-zip): Changes related to
+    previous change.
+    (org-odt-export-as-odf): Initialize the `:output-file' in the
+    communication channel.
+
+
+# commit 46183e9182275562fffd1c878aff679c77d4cf63
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 9 12:25:51 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-write-meta-file): Handle date correctly
+
+    * lisp/ox-odt.el (org-odt-write-meta-file): Don't emit a date
+    if it isn't in Org timestamp format.
+
+
+# commit d0e978c17129152c2967ac7d21b3eb6789a60927
+Merge: 0a8a1161a 01182eb77
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 9 11:43:13 2019 +0530
+
+    Merge tag 'release_9.2.3' into no-wip-cite
+
+    Adding release tag
+
+    # gpg: Signature made Tuesday 02 April 2019 12:01:35 PM IST
+    # gpg:                using RSA key 1BE15A5D08A9D5959581476B1437AC02F73F91A2
+    # gpg: Can't check signature: No public key
+
+
+# commit 0a8a1161a0b9d58b048ddc65c04ada4692efe623
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 9 11:27:48 2019 +0530
+
+    * lisp/ox-odt.el: Add `org-odt-export-{to|as}-odt-backend'
+
+    * lisp/ox-odt.el (org-odt-export-to-odt-backend): New.
+    Extracted from `org-odt-export-to-odt' and generalized to
+    _any_ OpenDocument backend.
+    (org-odt-export-to-odt): Use `org-odt-export-to-odt-backend'.
+    (org-odt-export-as-odt-backend): New.  Extracted from
+    `org-odt-export-as-odt' and generalized to _any_ OpenDocument
+    backend.
+    (org-odt-export-as-odt): Use `org-odt-export-as-odt-backend'.
+
+    Preparing to support export to OpenDocument presentation (odp)
+    format.
+
+
+# commit 49bf77c6577746550ba5a21bf8293ce214f558ac
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 9 10:52:18 2019 +0530
+
+    * lisp/ox-odt.el:  Implement (i) body-only export and (ii) export to buffer
+
+    * lisp/ox-odt.el (org-odt-export-as-odt): New command to
+    export just the contents as an XML buffer.  It can be invoked
+    with `C-c C-e o x'.
+    (org-odt-write-contents-file): Modified.  Now, it handles
+    writing of the contents to disk.  The assembling of contents
+    happens now as part of `org-odt-inner-template'.
+    (org-odt-inner-template): Extracted from
+    `org-odt-write-contents-file'.  See above.
+    (org-odt-export-to-odt): Honour body-only export.  When
+    body-only is non-nil, export just the contents.xml file.
+    ca
+    cke
+    (org-odt-export-to-odt-backend): New.  Extracted from
+    `org-odt-export-to-odt', and generalized to any OpenDocument
+    backend.
+
+
+# commit 4631820f3737194ff799029c87d6889bbea6b656
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Apr 4 13:32:10 2019 +0530
+
+    * lisp/ox-odt.el: Improve numbering of source blocks
+
+    * lisp/ox-odt.el (org-odt-do-format-code): Modified.
+    (org-odt-format-code): Use it.
+
+
+# commit 8ed636455b088f9ddc04634fab6585a2ed550c99
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Apr 4 13:26:46 2019 +0530
+
+    * etc/styles/OrgOdtStyles.xml (OrgSrcblocknumberedline): De-dent by one level
+
+    * etc/styles/OrgOdtStyles.xml (OrgSrcblocknumberedline):
+    De-dent by one level (i.e. by 0.635cm).
+
+
+# commit 72be87ea8a85f0658b1739744fd096db6111e2a4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Apr 3 15:25:08 2019 +0530
+
+    * lisp/ox-odt.el: Prettify XML files, if needed, before they are written to disk
+
+    * lisp/ox-odt.el (org-odt-write-contents-file)
+    (org-odt-write-styles-file)
+    (org-odt-write-meta-file, org-odt-write-manifest-file)
+    (org-odt-template, org-odt-export-as-odf): No need to call
+    `org-odt-prettify-xml-files-maybe'.
+
+
+# commit c18b2827d763eedca10b704ad6290d17179713b4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 2 17:54:33 2019 +0530
+
+    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword
+
+    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword in
+    the communication channel.
+    (org-odt-export-to-odt): Don't let-bind `hfy-user-sheet-assoc'
+    here.  Instead let-bind it later in `org-odt-do-format-code'
+    wherein one can access the communication channel.
+    (org-odt-write-styles-file): Use above keyword.
+
+
+# commit 7c2c3d99aa97ee1ef3febd176f28024c14a28cfd
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Apr 2 10:21:19 2019 +0530
+
+    * lisp/ox-odt.el: Fix earlier commit
+
+    * lisp/ox-odt.el (org-odt--convert): Check value of
+    `org-odt-preferred-output-format'.
+
+
+# commit 769de895f72045c656dcded1345bc768b6fd5aff
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Apr 1 14:28:42 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-template): Simplify
+
+    * lisp/ox-odt.el (DESCRIPTION, KEYWORDS, SUBTITLE): Allow
+    these in buffer settings.
+    (org-odt-zip-dir): Remove it.
+    (:odt-zip-dir): New keyword in the communication channel.
+    Replaces `org-odt-zip-dir'.
+    (org-odt-inner-template): New.
+    (org-odt-write-contents-file, org-odt-write-styles-file)
+    (org-odt-write-meta-file, org-odt-write-mimetype-file)
+    (org-odt-write-manifest-file)
+    (org-odt-prettify-xml-files-maybe, org-odt-zip)
+    (org-odt-cleanup-xml-buffers, org-odt--transform-target)
+    (org-odt--convert): New functions extracted from
+    `org-odt-template'.
+    (org-odt-template): Use above functions.
+    (org-odt--export-wrap):  Remove macro.
+    (org-odt-create-manifest-file-entry)
+    (org-odt-export-as-odf, org-odt-export-to-odt)
+    (org-odt--copy-image-file, org-odt--copy-formula-file):
+    Propagate above changes.
+    (org-odt-transform): Misc changes.
+    (org-odt-convert-capabilities): Add entry for OpenDocument
+    formula files.
+
+
+# commit cc1a80edc104b68b423fe1c3fcc04fee6ba8b725
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Mar 28 19:51:36 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-manifest-file-entries): Remove var
+
+    * lisp/ox-odt.el (org-odt-write-manifest-file): Change
+    signature.  Add this as filter function for final output.
+    (org-odt-write-mimetype-file): New.  Extracted from
+    `org-odt-template'.  Add this as filter function for final
+    output.
+    (:odt-manifest-file-entries): New variable in the
+    communication channel.  Replaces
+    `org-odt-manifest-file-entries'.
+    (org-odt-manifest-file-entries): Remove var.  See above.
+    (org-odt-create-manifest-file-entry):
+    (org-odt--copy-image-file, org-odt-link--inline-image):
+    (org-odt--copy-formula-file, org-odt-link--inline-formula):
+    Change signature.
+    (org-odt-template, org-odt--export-wrap)
+    (org-odt-export-as-odf, org-odt-export-to-odt): Simplify
+
+
+# commit b86a804927a12f7339386cb6c85e7ce8ea81759c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Mar 28 12:38:47 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant
+
+    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant.
+    (org-odt-file-extensions): Remove it. Subsumed by
+    `org-odt-file-extensions-alist'.
+
+    Also propagate above changes.
+
+
+# commit 7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Mar 27 11:35:44 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-automatic-styles, org-odt-object-counters): Remove these vars
+
+    * lisp/ox-odt.el (org-odt-automatic-styles)
+    (org-odt-object-counters): : Remove these vars.  Use
+    `:odt-automatic-styles' and `:odt-object-counters' in the
+    communication channel.
+    (org-odt-export-to-odt): Remove references to the above vars.
+    (org-odt-add-automatic-style): Fold this in to
+    `org-odt--get-derived-paragraph-style' and `org-odt--table'
+    and remove it.
+    (org-odt--get-derived-paragraph-style): Change signature.
+    Append automatic style, if any, to `:odt-automatic-styles'.
+    (org-odt-headline, org-odt-paragraph): Use new signature of
+    `org-odt--get-derived-paragraph-style'.
+    (org-odt--table): Append automatic style, if any, to
+    `:odt-automatic-styles'.
+    (org-odt-template): No need to handle automatic styles for
+    tables and paragraphs specially.  They are already added to
+    `:odt-automatic-styles' as and when they are encountered.
+
+
+# commit 9cb0ab9ccea64100b7b3b7f9caebda676bd57cde
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 26 08:04:50 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-text:section): Renamed from `org-odt-format-section'.
+    Change signature.
+    (org-odt-link, org-odt-special-block, org-odt-table): Related
+    changes.
+
+
+# commit d9518ac902510bc3d5f2030620ecda6cce32d50c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 26 07:26:36 2019 +0530
+
+    * lisp/ox-odt.el (:odt-object-counters): New
+
+    * lisp/ox-odt.el (:odt-object-counters): New key in the
+    communication channel.
+    (:odt-embedded-formulas-count, :odt-embedded-images-count):
+    Remove these keys from the communication channel.  Use
+    `:odt-object-counters' instead.
+    (org-odt--count-object, org-odt--name-object): New functions.
+    (org-odt-link--inline-image, org-odt-link--inline-formula):
+    Use `org-odt--count-object'.
+
+
+# commit b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 26 06:02:06 2019 +0530
+
+    * lisp/ox-odt.el: Remove `draw:name' attribute in `draw:frame' element
+
+    * lisp/ox-odt.el (org-odt--frame): Remove `draw:name'
+    attribute in `draw:frame' element.
+
+
+# commit 1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Mar 25 21:20:38 2019 +0530
+
+    * lisp/ox-odt.el: Remove vars `org-odt-embedded-images-count' & `org-odt-embedded-formulas-count'
+
+    * lisp/ox-odt.el (org-odt-embedded-formulas-count)
+    (org-odt-embedded-images-count): Remove these global
+    variables.  Replace these with `:odt-embedded-formulas-count'
+    and `:odt-embedded-images-count' keys in the communication
+    channel.
+    (org-odt--copy-image-file, org-odt--copy-formula-file): Change
+    signature.
+    (org-odt-link--inline-image, org-odt-link--inline-formula)
+    (org-odt-export-to-odt): Related changes.
+
+
+# commit 8114da779c65985316e0cecc790be893a36ada29
+Merge: 904060258 a6cead0d2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Mar 20 13:50:42 2019 +0530
+
+    Merge tag 'release_9.2.2' into no-wip-cite
+
+    Adding release tag
+
+
+# commit 904060258b4946841d28c946b908fb371d3295b8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Mar 20 12:54:47 2019 +0530
+
+    * lisp/ox-odt.el: Gracefully typeset formula that has *no* caption, but only a label
+
+    * lisp/ox-odt.el (org-odt--target): Remove newlines. This is
+    to avoid extraneous spaces in the exported document.
+
+    (org-odt-format-label): Co-locate the bookmark for label with
+    the sequence number created for it.
+
+    Test case:
+
+        * Images
+
+        This image has /no/ caption or label.
+
+        [[./org-mode-unicorn.png]]
+
+        This image has /no/ caption, but has a label.
+
+        #+NAME: img:1
+        [[./org-mode-unicorn.png]]
+
+        This image has a caption, but /no/ label.
+
+        #+CAPTION: Caption, but no label
+        [[./org-mode-unicorn.png]]
+
+        This image has /both/ a caption and a label.
+
+        #+NAME: img:2
+        #+CAPTION: Caption, and label
+        [[./org-mode-unicorn.png]]
+
+        * Formulas
+
+        This formula has /no/ caption or label.
+
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+
+        This formula has /no/ caption, but has a label.
+
+        #+NAME: fml:1
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+
+        This formula has a caption, but has /no/ label.
+
+        #+CAPTION: Caption, but no label
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+
+        This formula has /both/ a caption and a label.
+
+        #+NAME: fml:2
+        #+CAPTION: Caption, but no label
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+
+        * Links to above images and formulas
+
+        Links to images: [[img:1]], [[img:2]] & [[img:1][Image 1]], [[img:2][Image 2]]
+
+        Links to formulas: [[fml:1]], [[fml:2]] &  [[fml:1][Formula 1]], [[fml:2][Formula 2]]
+
+    Fix #55.
+
+
+# commit f6ad3ff52dea8f6cf0ea45f4571a5b87cf41f11f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Mar 20 11:57:27 2019 +0530
+
+    * lisp/ox-odt.el: Translate latex fragments in caption
+
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Translate latex
+    fragments in caption.
+
+    Test case:
+
+        #+CAPTION: $a$
+        | a |
+
+    See https://lists.gnu.org/archive/html/emacs-orgmode/2015-02/msg00908.html
+
+    Fixes #52.
+
+
+# commit 57429f0d7f6313fc6d79068b8d15aa8af0d3b8e9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 19:43:44 2019 +0530
+
+    * mk/odtpkg.mk: Include *all* versions of OpenDocument rnc files
+
+    * mk/odtpkg.mk (pkg): Remove junk files before creating ELPA tar.
+    (odtpkg): Include the following variants of OpenDocument rnc
+    files: 1.0, 1.1, 1.2, 1.3 and `v1.3+libreoffice'.  Schema
+    validation happens only against the canonical 1.0, 1.1, 1.2 and
+    1.3 variants.
+
+
+# commit 979ae8d43fd078fe0dc6f715e7a380070969141b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 19:26:12 2019 +0530
+
+    * lisp/ox-odt.el: Table caption goes above the table
+
+    * lisp/ox-odt.el (org-odt-caption-and-xref-settings): Table
+    caption goes above the table.  This is what the LaTeX exporter
+    does by default.
+
+    See #55.
+
+
+# commit 75b7ce86c81af762206e31d7d5409d3bbfd11c6a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 17:34:42 2019 +0530
+
+    * etc/schema: Now validate  *any* version of OpenDocument files
+
+    * etc/schema/od-schema.rnc: New. A generic OpenDocument schema
+    file that allows the following variants of OpenDocument
+    format: 1.0, 1.1, 1.2 and 1.3.  Note that it doesn't allow the
+    `1.3+libreoffice' variant by default.
+    * etc/schema/od-manifest-schema.rnc: New.  A generic
+    OpenDocument manifest schema file that allows the following
+    variants of OpenDocument format: 1.0, 1.1, 1.2 and 1.3.  Note
+    that it doesn't allow the `1.3+libreoffice' variant by
+    default.
+    * etc/schema/schemas.xml: Use above rnc files.
+
+
+# commit 720b6617745da04a264733eaeb35f7f73e805ffd
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 16:49:36 2019 +0530
+
+    * etc/schema: Generate `rnc` files from the respective `rng` files
+
+    * etc/schema/odf1.3/OpenDocument-schema-v1.3.rnc:
+    * etc/schema/odf1.3/OpenDocument-manifest-schema-v1.3.rnc:
+    * etc/schema/odf1.3/OpenDocument-dsig-schema-v1.3.rnc:
+    * etc/schema/odf1.2/OpenDocument-v1.2-os-schema.rnc:
+    * etc/schema/odf1.2/OpenDocument-v1.2-os-manifest-schema.rnc:
+    * etc/schema/odf1.2/OpenDocument-v1.2-os-dsig-schema.rnc:
+    * etc/schema/odf1.1/OpenDocument-strict-schema-v1.1.rnc:
+    * etc/schema/odf1.1/OpenDocument-schema-v1.1.rnc:
+    * etc/schema/odf1.1/OpenDocument-manifest-schema-v1.1.rnc:
+    * etc/schema/odf1.0/OpenDocument-strict-schema-v1.0-os.rnc:
+    * etc/schema/odf1.0/OpenDocument-schema-v1.0-os.rnc:
+    * etc/schema/odf1.0/OpenDocument-manifest-schema-v1.0-os.rnc:
+    * etc/schema/libreoffice/OpenDocument-schema-v1.3.rnc:
+    * etc/schema/libreoffice/OpenDocument-schema-v1.3+libreoffice.rnc:
+    * etc/schema/libreoffice/OpenDocument-manifest-schema-v1.3+libreoffice.rnc:
+    * etc/schema/libreoffice/OpenDocument-dsig-schema-v1.3+libreoffice.rnc:
+    New.  Generated from respective `rng` files using `trang`.
+
+        trang -I rng -O rnc <file>.rng <file>.rnc
+
+
+# commit 49c7a83e9c5f5d9f56bff09654ac2266632d4a50
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 16:36:19 2019 +0530
+
+    * etc/schema: Import from LibreOffice repository
+
+    * etc/schema: Import from LibreOffice repository with the following
+      command
+
+      svn export https://github.com/LibreOffice/core/branches/libreoffice-6-2-2/schema
+
+
+# commit 074dcddc6e9aeaf21ec7b67f49884371f83caef7
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 19 16:25:43 2019 +0530
+
+    * etc/schema: Remove it
+
+
+# commit 709bc8312dc950df95057bcb3b937feabbdfde1b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Mar 3 18:00:33 2019 +0530
+
+    * lisp/ox-odt.el: Misc. change
+
+    * lisp/ox-odt.el (org-odt--element-category): Replace
+    `when-let' with an equivalent construct.
+
+
+# commit c8116be0a69849fc68d51646ab97dcea0874d90f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Mar 3 17:29:14 2019 +0530
+
+    * lisp/ox-odt.el: Support for category mapping (from say, a table to figure)
+
+    * lisp/ox-odt.el (org-odt-caption-and-numbering-settings):
+    Replace (a) the variable "Illustration" with "Figure" (b) the
+    style "Illustration" with "Figure".
+    (org-odt-category-attribute-to-category): New.  Alist that
+    maps a `:category' atrribute to category
+    (org-odt--element-category): Honor `:category' attribute.
+
+    An element can forced to be of a certain category by the use of
+    `:category' property.  For example, the following table will be
+    captioned as if it is a figure.
+
+        #+NAME: table
+        #+CAPTION: A Table
+        #+ATTR_ODT: :category "figure"
+        | 1 | 2 |
+        | 3 | 4 |
+
+    This property is particularly useful while typesetting side-by-side
+    figures using a table like the one below.
+
+        #+NAME: table
+        #+CAPTION: Animals
+        #+ATTR_ODT: :category "figure"
+        #+ATTR_ODT: :list-table t
+        -
+          -
+            #+NAME: dog
+            #+CAPTION: A Dog
+            [[./dog.png]]
+          -
+            #+NAME: goat
+            #+CAPTION: A Goat
+            [[./goat.png]]
+
+    See #53.
+
+
+# commit aa67928c5e2dbb0214fd5adbc8d1fcf93481def1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Mar 3 15:56:57 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-caption-and-numbering-settings)
+    (org-odt-caption-and-xref-settings): Add entry for
+    `:SUBENTITY'.
+    (org-odt-template, org-odt-format-label): Handle `:SUBENTITY'.
+    (org-odt--get-captioned-parent)
+    (org-odt--element-secondary-category): New helper routines.
+
+    Introduce category `:SUBENTITY'.
+
+    An element is of type `:SUBENTITY' when it is captioned, and
+    is itself contained within another captioned element.
+    Subentities occur, for example, when a captioned image,
+    src-block or table is included within a list table.
+    Subentities have their own rules on how they are captioned and
+    numbered.
+
+    When counting, a) the first subentity within a captioned
+    element gets assigned a value of 1 and (b) all subentities,
+    irrespective of their specific category--be it an image, a
+    src-block or a table--are considered.
+
+    A subentity's number a) doesn't include chapter number and b)
+    use alphabets.
+
+    Here is a test case that demonstrates numbering of regular
+    entities and sub-entities.
+
+        #+TOC: figures
+        #+TOC: tables
+        #+TOC: listings
+
+        * Composite Table
+
+        #+NAME: list-table
+        #+CAPTION: A Table that *contains* a paragraph, a figure, a source listing and another table
+        #+ATTR_ODT: :list-table t
+        - | /    | <    |
+        - | <c> | <c> |
+        -
+          - Some text
+          -
+            #+ATTR_ODT:
+            #+NAME: subfigure
+            #+CAPTION: This is a figure within a table
+            [[./org-mode-unicorn.png]]
+        - ----------
+          -
+            #+NAME: sublisting
+            #+CAPTION: This is a  source listing within a table
+            #+BEGIN_SRC elisp
+            (defun hello-world ()
+              (message "Hello World"))
+            #+END_SRC
+          -
+            #+NAME: subtable
+            #+CAPTION: This is a table within a table
+            | 1 | 2 |
+            | 3 | 4 |
+
+        Table [[list-table]] contains
+        - a subfigure [[subfigure]]
+        - a sub-listing [[sublisting]]
+        - a subtable [[subtable]]
+
+        This document contains
+        - a figure [[figure]]
+        - a listing [[listing]]
+        - an equation [[equation]]
+        - a table [[table]]
+
+        * Image
+
+        #+ATTR_ODT:
+        #+NAME: figure
+        #+CAPTION: An Image
+        [[./org-mode-unicorn.png]]
+
+        * Source Block
+
+        #+NAME: listing
+        #+CAPTION: A Source Listing
+        #+BEGIN_SRC elisp
+        (defun hello-world ()
+          (message "Hello World"))
+        #+END_SRC
+
+        * Equation
+
+        #+NAME: equation
+        #+CAPTION: An Equation
+           \begin{equation}
+             e = \frac{1}{2}mv^2
+           \end{equation}
+
+        * Table
+
+        #+NAME: table
+        #+CAPTION: A Table
+        | 1 | 2 |
+        | 3 | 4 |
+
+    See #53.
+
+
+# commit 877bf74c7620c360e6ceecc751c1165ee0bc8493
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Mar 3 14:06:52 2019 +0530
+
+    * lisp/ox-odt.el: Modify enumeration logic in anticipation of support for subentities
+
+    * lisp/ox-odt.el (org-odt-format-label): While numbering an
+    element, iterate over all captionable entities--link,
+    src-block and table--instead of iterating over the elements of
+    same type as the element being numbered.
+
+
+# commit d9aef3b19002a764f0c40e707ea8c1092a6aeb57
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Mar 3 11:03:21 2019 +0530
+
+    * lisp/ox-odt.el: Enumerate src-blocks or tables within a `list-table'
+
+    * lisp/ox-odt.el (org-odt-format-label): Fool ox.el in to
+    traversing deep in to tables, so that a src-block or a table
+    within a list table isn't skipped during enumeration.
+
+    Here is a test case for the above changes.
+
+        #+TOC: figures
+        #+TOC: tables
+        #+TOC: listings
+
+        #+NAME: list-table
+        #+CAPTION: A Table that *contains* a paragraph, a figure, a source listing and another table
+        #+ATTR_ODT: :list-table t
+        - | /    | <    |
+        - | <c> | <c> |
+        -
+          - Some text
+          -
+            #+ATTR_ODT:
+            #+NAME: subfigure
+            #+CAPTION: This is a figure within a table
+            [[./org-mode-unicorn.png]]
+        - ----------
+          -
+            #+NAME: sublisting
+            #+CAPTION: This is a  source listing within a table
+            #+BEGIN_SRC elisp
+            (defun hello-world ()
+              (message "Hello World"))
+            #+END_SRC
+          -
+            #+NAME: subtable
+            #+CAPTION: This is a table within a table
+            | 1 | 2 |
+            | 3 | 4 |
+
+        Table [[list-table]] contains
+        - a subfigure [[subfigure]]
+        - a sub-listing [[sublisting]]
+        - a subtable [[subtable]]
+
+
+# commit 9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Mar 2 11:50:28 2019 +0530
+
+    * lisp/ox-odt.el: Replace `org-odt-category-map-alist' with `org-odt-caption-and-numbering-settings'
+
+    * lisp/ox-odt.el (org-odt-category-map-alist): Remove it.
+    (org-odt-caption-and-numbering-settings): New. Replaces
+    `org-odt-category-map-alist'.
+    (org-odt-toc-templates, org-odt-template)
+    (org-odt-format-label): Related changes.
+
+
+# commit 1f4740bb86e2d108b31355a6f0bf5a4980f791b9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 18:28:18 2019 +0530
+
+    * lisp/ox-odt.el: Preparing for adding support for sub-figures etc.
+
+    * lisp/ox-odt.el (org-odt--enumerate): Remove it.  Fold it
+    into `org-odt-format-label'.
+    (org-odt-category-map-alist): Remove references to `org-odt--enumerate'.
+    (org-odt-format-label): See above.
+
+    Preparing for adding support for sub-figures etc.
+
+
+# commit 40ac60898d5ba787aecc46f8f11f1e2f936173c5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 18:03:22 2019 +0530
+
+    * lisp/ox-odt.el: Handle the cases where styles and/or content template file are left unspecified
+
+    * lisp/ox-odt.el (org-odt-template): Gracefully handle the
+    cases when styles and/or content template file are left
+    unspecified.  These files, if they use relative paths, are
+    expanded relative to directory of input file.
+
+
+# commit 1af756b42dd160f795fbf75beab6956627ba5e26
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 13:27:55 2019 +0530
+
+    * lisp/ox-odt.el: Handle formula label correctly
+
+    * lisp/ox-odt.el (org-odt-format-label): Handle formula label
+    correctly.
+
+
+# commit 73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 09:37:28 2019 +0530
+
+    * lisp/ox-odt.el: Rename some variables for consistency
+
+    * lisp/ox-odt.el (org-odt-category-map-alist): Label the list
+    elements with (CATEGORY-HANDLE OD-VARIABLE ENTITY-NAME
+    CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
+    (org-odt-toc-templates, org-odt-format-label): Rename
+    variables to match the above convention.
+
+
+# commit bc0f3cc2362968f499883a7789c375cac5934fc5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 07:56:30 2019 +0530
+
+    * lisp/ox-odt.el:  Paragraph style to be used for captions is now configurable
+
+    * lisp/ox-odt.el (org-odt-category-map-alist): Add a new entry
+    that specifies the paragraph style to be used for caption.
+    (org-odt-format-label): Return caption as a paragraph and use
+    the paragraph style specified in `org-odt-category-map-alist'.
+    (org-odt-toc-templates, org-odt--render-image/formula)
+    (org-odt-src-block, org-odt--table): Related changes.
+
+
+# commit 8dc38db76f6ab27b656c29bda0077a2be550a25c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Mar 1 06:27:31 2019 +0530
+
+    * lisp/ox-odt.el: In a captioned image / formula, caption and image go in paragraphs of their own
+
+    * lisp/ox-odt.el (org-odt--render-image/formula): Put
+    caption and image in paragraphs of their own.
+
+
+# commit d8c0f453b575a3482f8b7c34cc9de1561f235d14
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Feb 28 20:37:22 2019 +0530
+
+    * lisp/ox-odt.el: Honor `:caption-position' in `org-odt-caption-and-xref-settings'
+
+    * lisp/ox-odt.el (org-odt-format-label): When requesting a
+    definition, return caption position in addition to caption and
+    short caption.
+    (org-odt-link--inline-image, org-odt-link--inline-formula):
+    Misc.  changes.
+    (org-odt--render-image/formula): Anchor captioned image and
+    captioned formula as "as-char".  Honor caption position.
+    (org-odt-src-block, org-odt--table): Honor caption position.
+
+    Honor `:caption-position' specified in
+    `org-odt-caption-and-xref-settings'.
+
+
+# commit 81ff8979f27b3532f9f72d45a0b4ff29235a6a44
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Feb 28 14:27:09 2019 +0530
+
+    * lisp/ox-odt.el (org-odt--element-category): New
+
+    * lisp/ox-odt.el (org-odt--element-category): Extracted from
+    `org-odt-format-label'.
+    (org-odt-format-label, org-odt--enumerate):  Use it.
+
+
+# commit f76986d84f6d2fee55e5e5b6109a2edd722f88fb
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 27 17:31:28 2019 +0530
+
+    * testing/examples/odt/masterdocument.org (Links): Add some test cases
+
+
+# commit b1e70e37a81e3bcd21f9af1393b1cc1278e370b3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 27 17:15:42 2019 +0530
+
+    * lisp/ox-odt.el: Remove `org-export-solidify-link-text'.  Use `org-export-get-reference' instead.
+
+
+# commit 9d754c0b1ada13197c0ea86bab7b2effcea0cbdd
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 27 13:45:56 2019 +0530
+
+    * lisp/ox-odt.el: Remove `function' around lambda forms
+
+
+# commit e652fc529de83ff8173bec3350737222fed36c47
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Feb 26 14:53:53 2019 +0530
+
+    * lisp/ox-odt.el: Introduce paragraph blocks.
+
+    * lisp/ox-odt.el (org-odt-special-block, org-odt-paragraph):
+    Introduce paragraph blocks.
+
+        A paragraph block is a special block, where the enclosed
+        paragraphs gets collapsed in to a single paragraph.
+
+        For example, a block like this
+
+        #+begin_paragraph
+            I have apples, oranges and
+
+            bananas.
+        #+end_paragraph
+
+        is typeset as if it were just a single paragraph like this.
+
+           I have apples, oranges and bananas.
+
+        Paragraph blocks are most useful for creating multiple
+        *captioned* images in a single paragraph.
+
+        For example, to construct two side-by-side images (that are
+        also captioned), do
+
+        #+ATTR_ODT: :style "OrgCenter"
+        #+begin_paragraph
+            #+ATTR_ODT: :width 5 :anchor "as-char"
+            #+CAPTION: First Figure
+            [[./org-mode-unicorn.png]]
+
+            #+ATTR_ODT: :width 5 :anchor "as-char"
+            #+CAPTION: Second Figure
+            [[./org-mode-unicorn.png]]
+        #+end_paragraph
+
+        Here is another example,
+
+        #+ATTR_ODT: :style "OrgCenter"
+        #+begin_paragraph
+            #+ATTR_ODT: :width 5 :anchor "as-char"
+            #+CAPTION: First Figure
+            [[./org-mode-unicorn.png]]
+
+            #+ATTR_ODT: :width 5 :anchor "as-char"
+            #+CAPTION: Second Figure
+            [[./org-mode-unicorn.png]]
+
+            #+ATTR_ODT: :width 10 :anchor "as-char"
+            #+CAPTION: Third Figure
+            [[./org-mode-unicorn.png]]
+        #+end_paragraph
+
+    See #53.
+
+
+# commit 072c1f54863a1eeef07d12510e18c9dbb585a803
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 25 13:19:50 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-data-dir): Remove it
+
+    * lisp/ox-odt.el (org-odt-data-dir): Remove it.
+    (org-odt-schema-dir-list, org-odt-styles-dir-list): Propagate above change.
+    (org-odt-styles-dir, org-odt-schema-dir): Simplify. Make it
+    less noisy.
+    (org-odt-template): Minor change.
+
+
+# commit 945e6831343fd8e8b355aca970ecee6ba99368f3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 25 10:44:24 2019 +0530
+
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE, ODT_EXTRA_IMAGES): Change syntax and/or semantics
+
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE):
+    Change syntax.  These are plain strings, instead of
+    `read'-able strings.
+    (ODT_EXTRA_IMAGES): When specified with a relative path, if
+    ODT_STYLES_FILE is a OpenDocument file, the relative path is
+    expanded against the root of the archive file.  Otherwise, the
+    path is expanded against the directory of input Org file.
+
+    (org-odt-template): Honor above change in syntax and/or
+    semantics.
+
+
+# commit f4237879c04e86a7cc6e109ab6776f529e69bfae
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Feb 21 09:59:28 2019 +0530
+
+    * lisp/ox-odt.el: Replace `mapc' with `dolist'.  Also some whitespace cleanups.
+
+
+# commit 44a720dca7b647352eedcecf9f1120818058139e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 20 20:12:12 2019 +0530
+
+    * lisp/ox-odt.el (ODT_EXTRA_IMAGES): Use this to specify image files referenced by styles.xml
+
+    * lisp/ox-odt.el (ODT_EXTRA_IMAGES): New keyword. Use this to
+    specify image files referenced by styles.xml
+    (org-odt-template): Copy over the above images to the exported
+    file.
+    (org-odt--copy-image-file): Add an optional argument to
+    control the name of the copied over file.
+
+    Add support for creating page styles with background images.
+
+    Here is a test case that exercises the use of above keyword.
+
+        $ find .
+        .
+        ./Pictures
+        ./Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png
+        ./pagestyles.org
+
+        $ cat pagestyles.org
+
+        #+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+        #+OPTIONS: author:nil broken-links:nil c:nil creator:nil
+        #+OPTIONS: d:(not "LOGBOOK") date:nil e:t email:nil f:t inline:t num:t
+        #+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+        #+OPTIONS: timestamp:t title:nil toc:nil todo:t |:t
+        #+TITLE: How to customize page styles and layouts
+        #+AUTHOR: Jambunathan K
+
+        #+ODT_EXTRA_IMAGES: Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png
+
+        #+ODT_EXTRA_STYLES: <draw:fill-image draw:name="org-mode-unicorn" xlink:href="Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+
+        #+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="MyTitlePageLayout">
+        #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:layout-grid-color="#c0c0c0" style:layout-grid-lines="20" style:layout-grid-base-height="0.706cm" style:layout-grid-ruby-height="0.353cm" style:layout-grid-mode="none" style:layout-grid-ruby-below="false" style:layout-grid-print="false" style:layout-grid-display="false" draw:fill="bitmap" draw:fill-image-name="org-mode-unicorn" draw:fill-image-width="0cm" draw:fill-image-height="0cm" style:repeat="repeat" draw:fill-image-ref-point-x="0%" draw:fill-image-ref-point-y="0%" draw:fill-image-ref-point="center" draw:tile-repeat-offset="0% vertical" style:footnote-max-height="0cm">
+        #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:background-image xlink:href="Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png" xlink:type="simple" xlink:actuate="onLoad"/>
+        #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+        #+ODT_EXTRA_AUTOMATIC_STYLES:  </style:page-layout-properties>
+        #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:header-style/>
+        #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:footer-style/>
+        #+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+        #+ODT_MASTER_STYLES: <style:master-page style:name="MyTitlePage" style:page-layout-name="MyTitlePageLayout" style:next-style-name="OrgFrontMatterPage"/>
+
+        #+ATTR_ODT: :style "OrgCenter" :page-style "MyTitlePage" :page-break t
+        Phasellus purus.  Nunc eleifend leo vitae magna.  Suspendisse potenti.
+        Vivamus id enim.  Suspendisse potenti.
+
+    See #53.
+
+
+# commit 78b6a1258305cd5c87e8b6ec6082d6c716c8deb2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 19:09:11 2019 +0530
+
+    * lisp/ox-odt.el (ODT_EXTRA_AUTOMATIC_STYLES, ODT_MASTER_STYLES): Use these options to control page styles and layouts
+
+    * lisp/ox-odt.el (ODT_EXTRA_AUTOMATIC_STYLES)
+    (ODT_MASTER_STYLES): New in-buffer options.  Use the former to
+    create custom page layouts.  Use the latter to create custom
+    page styles.
+    (org-odt-template): Append the value of
+    `ODT_EXTRA_AUTOMATIC_STYLES' to
+    "</office:automatic-styles>...</office:automatic-styles>".
+    Append the value of `ODT_MASTER_STYLES' to the end of
+    "</office:master-styles>...</office:master-styles>".
+
+    Here is a sample snippet to exercise the above feature.
+
+            #+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+            #+OPTIONS: author:nil broken-links:nil c:nil creator:nil
+            #+OPTIONS: d:(not "LOGBOOK") date:nil e:t email:nil f:t inline:t num:t
+            #+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+            #+OPTIONS: timestamp:t title:nil toc:nil todo:t |:t
+            #+TITLE: How to customize page styles and layouts
+            #+AUTHOR: Jambunathan K
+
+            #+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="MyFirstPageLayout">
+            #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" fo:background-color="#ffff00" style:writing-mode="lr-tb" style:layout-grid-color="#c0c0c0" style:layout-grid-lines="20" style:layout-grid-base-height="0.706cm" style:layout-grid-ruby-height="0.353cm" style:layout-grid-mode="none" style:layout-grid-ruby-below="false" style:layout-grid-print="false" style:layout-grid-display="false" draw:fill="solid" draw:fill-color="#ffff00" style:footnote-max-height="0cm">
+            #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+            #+ODT_EXTRA_AUTOMATIC_STYLES:  </style:page-layout-properties>
+            #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:header-style/>
+            #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:footer-style/>
+            #+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+            #+ODT_MASTER_STYLES: <style:master-page style:name="MyFirstPage" style:page-layout-name="MyFirstPageLayout" style:next-style-name="OrgFrontMatterPage"/>
+
+            #+ATTR_ODT: :style "OrgCenter" :page-style "MyFirstPage" :page-break t
+            This page has yellow background.
+
+    See #53
+
+
+# commit 6a32b4befa7959e8bbebf0a8a9a8e506e042a6f4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 16:45:20 2019 +0530
+
+    * doc/Makefile: Modified to produce info, pdf and html versions from org-odt-manual.org
+
+
+# commit 4d8c5ba79012849778eda4d4fb0bcb304f6a9e6b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 15:27:39 2019 +0530
+
+    * doc/Makefile (%.texi): Add rule to produce `*.texi' from `*-manual.org' file
+
+    * doc/Makefile (%.texi): Add rule to produce `*.texi' from
+    corresponding `*-manual.org' file.
+
+    * doc/Makefile (org.texi): Remove it. Made redundant by
+    the above rule.
+
+
+# commit f7d2ce76834a74b85ba55549b3bc36d82e7c6380
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 15:10:23 2019 +0530
+
+    * mk/org-fixup.el (org-make-manuals): Modified to take a param
+
+    * mk/org-fixup.el (org-make-manuals): Modified to take a param.
+
+
+# commit 3fa88f845993a5daa9d70eb9b3bb0f26841e2ac6
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 15:08:28 2019 +0530
+
+    * doc/org-odt-manual.org: Add the org version of doc/org-odt-old.texi
+
+
+# commit 5ea6aa348f09c3cafe9281753866af53f0a69c41
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Feb 18 14:55:46 2019 +0530
+
+    * doc/org-odt-old.texi: New. Extract ODT section of doc/org.texi ca. Apr 2012
+
+    * doc/Makefile: Build build info, html & pdf version of the
+    above file.
+
+    * doc/org-odt-old.texi: Extract ODT section of doc/org.texi
+    dtd. Apr 22, 2012 (see commit
+    d6773457a24ac10c0130d87e31de10678de8a4f4)
+
+
+# commit 10f9bef8fcaa359e7b676274a4b629923e471ff4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Feb 16 14:06:01 2019 +0530
+
+    * testing/examples/odt/masterdocument.org: Fix previous commmit
+
+
+# commit 6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Feb 15 20:05:58 2019 +0530
+
+    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update Package-Requires to 9.2.1
+
+    * lisp/ox-odt.el (Package-Requires): Set it to Org
+    9.2.1. Also update Copyright years.
+
+    * contrib/lisp/ox-jabref.el (Package-Requires): Set it to
+    ox-odt 9.2.1. Also update Copyright year.
+
+
+# commit a34abc398845af18d18f7a46b930290fd90f9206
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Feb 15 19:59:16 2019 +0530
+
+    * lisp/ox-odt.el: Handle cite fragments even when the parser doesn't support cite objects
+
+    * lisp/ox-odt.el (org-odt-latex-fragment)
+    (org-odt--translate-cite-fragments)
+    (org-odt--collect-cite-keys): Handle cite fragments even when
+    the Org parser doesn't support `citation' and
+    `citation-reference' objects.
+    * testing/examples/odt/masterdocument.org: Modified to
+    exercise above change.
+
+
+# commit b464b61c733e4e667703ab4b9e9581f274ccd420
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Feb 15 13:29:13 2019 +0530
+
+    * lisp/ox-odt.el (org-odt-hfy-face-to-css): Honor background color
+
+
+# commit b4182bac18a49e4f227db1ca9c315d6e36afd45a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 27 09:31:14 2019 +0530
+
+    * contrib/odt/LibreOffice/OrgModeUtilities.oxt: Update
+
+    * contrib/odt/LibreOffice/OrgModeUtilities.oxt: Update
+
+
+# commit 51a26dd663387aaa9e993359792150dc0b6b7ed2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 27 09:27:35 2019 +0530
+
+    OrgModeUtilities.bas (UpdateAll): Update Indices (NOT with `executeDispatch', but) with an API call
+
+    * contrib/odt/LibreOffice/src/OrgModeUtilities.bas
+    (UpdateAll): Dispatcher, being asynchronous, cannot be relied
+    upon for predictable results. So, remove `executeDispatch`.
+    Use `getDocumentIndexes' to update the Indices, specifically
+    the TOC.
+
+    Hoping that these changes fixes #53.  See also #51.
+
+
+# commit 06c4e1428a840377e53cc8a91e39b75a400fe585
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 27 08:35:35 2019 +0530
+
+    Add contrib/odt/LibreOffice/src/OrgModeUtilities.bas
+
+    * contrib/odt/LibreOffice/src/OrgModeUtilities.bas: New. This
+    is the Basic file that gets bundled within the LibreOffice
+    extension OrgModeUtilities.oxt under contrib/odt/LibreOffice/.
+
+
+# commit 58a50eef55643ce301b8a75e9fbbc5e834d45440
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jan 27 08:25:42 2019 +0530
+
+    Move OrgModeUtilities.oxt to contrib/odt/LibreOffice
+
+    * contrib/odt/LibreOffice/: New.
+    * contrib/odt/LibreOffice/OrgModeUtilities.oxt: Moved from directory contrib/odt/.
+    * mk/odtpkg.mk (odtpkg): Related changes.
+
+
+# commit 22ca6417cd038e0fe7aad5736f8fb8dccb81c453
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Dec 28 14:08:05 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Fix :type of this option
+
+
+# commit 7980ce71565b2ba317ac46775a71646689f3bc35
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 28 13:31:32 2018 +0530
+
+    README.md: Update
+
+
+# commit 2bf3dbfac6907385e7451b6aa3d761d451e32d63
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 28 13:30:26 2018 +0530
+
+    Use https://kjambunathan.github.io/elpa/ as the package URL for installing ox-odt and related packages
+
+    * mk/odtpkg.mk (SERVROOT): Set it to
+    ../kjambunathan.github.io/elpa.
+
+    Effectively, use https://kjambunathan.github.io/elpa/ as the package
+    URL for installing ox-odt and related packages.
+
+
+# commit 793140485c3e3d14cd86845913783a6e85995207
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 28 13:22:54 2018 +0530
+
+    mk/odtpkg.el: Delete
+
+
+# commit ae7bf292dd7e7b90aaa470621499d9d954ccacc8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 28 13:22:36 2018 +0530
+
+    Retire URL https://raw.githubusercontent.com/kjambunathan/org-mode-ox-odt/master/elpa/
+
+    * elpa/JabrefExportChicagoODF-1.2.0.tar: Delete.
+    * elpa/archive-contents: Delete.
+    * elpa/ox-jabref-9.1.14.151.tar: Delete.
+    * elpa/ox-odt-9.1.14.155.tar: Delete.
+    * elpa/: Remove directory
+
+    Effectively, retire
+    https://raw.githubusercontent.com/kjambunathan/org-mode-ox-odt/master/elpa/
+    as the package URL.
+
+
+# commit eda20f2dc6c7d1124c6706bd6eff2ae9a48026ae
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 27 14:00:32 2018 +0530
+
+    mk/odtpkg.mk: Ship './testing/examples/odt/' dir as `./samples/' dir in the ox-odt package
+
+    * mk/odtpkg.mk (odtpkg): Ship './testing/examples/odt/'
+    directory as `./samples/' directory in the ox-odt package.
+
+
+# commit 0f2ca0250e513b7ad360be6166ab27652f57e7a8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 27 10:18:17 2018 +0530
+
+    notes/README.org: Note down features that are exclusive to this branch
+
+
+# commit 23a67bfb6b1d3476fded6fd74dcfd10d0798ec7f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 27 10:11:44 2018 +0530
+
+    notes/README.org: Add commits that are exclusive to this branch
+
+
+# commit 1168f2b925502a3bd11e084ba5960b057a97ac88
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 27 09:21:41 2018 +0530
+
+    notes/README.org: Renamed from README.org
+
+
+# commit 2a613947f89e5026754f232c675e58f1f3559e60
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 25 12:59:05 2018 +0530
+
+    Publish ox-odt-9.1.14.155.tar & JabrefExportChicagoODF-1.2.0.tar
+
+
+# commit b9eba285372ccea495b1dda103fe50bf0bcbbd8d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 25 12:42:05 2018 +0530
+
+    Publish ox-odt-9.1.14.154.tar and JabrefExportChicagoODF-1.2.0.tar
+
+
+# commit 046582d3a7e7296a6d052ca47aead919e6f4ccca
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 25 11:56:40 2018 +0530
+
+    mk/odtpg.mk: Re-implement using target-specific variables
+
+
+# commit ecbaf18a15be3179e82ea10c3332b85e825350cf
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 25 11:20:55 2018 +0530
+
+    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
+
+    * lisp/ox-odt.el: Update library headers
+    * contrib/lisp/ox-jabref.el: Update library headers
+
+
+# commit fe3ffe2fbb306517b4bc217b50ae48d599fb89a9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 19:53:42 2018 +0530
+
+    Publish ox-odt-9.1.14.149.tar and ox-jabref-9.1.14.151.tar
+
+
+# commit 3d9764ab0fb3f94abefda8d2ef34bdfb6165a7a1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 19:45:42 2018 +0530
+
+    Support for building `ox-odt' and `ox-jabref' packages
+
+    * mk/odtpkg.el (odtpkg-update-archive-contents): Helper
+      function for generating elpa/archive-contents
+
+    * mk/odtpkg.mk (jabrefpkg): New target. Builds `ox-jabref-*.tar'.  The
+      package contains ox-jabref.el and the Jabref plugin that generates
+      Chicago-style citations in ODT format.
+
+      (odtpkg): Modify target. `ox-odt-*.tar' now contains ox-odt.el and
+      the LibreOffice plugin OrgModeUtilities.oxt.
+
+    * mk/odtpkg.mk (jabrefpkg): New target.
+
+
+# commit abc7f969ef50158707d15c2eec4fcdaab4156104
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 13:57:09 2018 +0530
+
+    Publish ox-odt-9.1.14.149.tar
+
+
+# commit ae6e9fc1d45538d93d131b97bbef7e582d165f4f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 13:53:51 2018 +0530
+
+    * contrib/lisp/ox-jabref.el: s/chicago.ODF/Chicago.ODF/
+
+
+# commit d27bfb20459037cf472afc666989781d024df462
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 13:46:09 2018 +0530
+
+    mk/odtpkg.mk: Include OrgModeUtilities.oxt and net.sf.jabref.export.Chicago.ODF(English)-1.2.jar
+
+
+# commit 31b46d2b7c9b30ccf5094fd1bb5093f776f0bb2c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 23 13:15:41 2018 +0530
+
+    * contrib/lisp/ox-jabref.el: Fix infinite recursion
+
+    * contrib/lisp/ox-jabref.el (org-jabref--enhanced-backends):
+    Properly clone the struct `org-export-backend'.
+
+
+# commit d9a695ec5c30a91a650ef90968a61ce700e1acd2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 22 23:59:44 2018 +0530
+
+    Publish ox-odt-9.1.14.145.tar
+
+
+# commit 890a33ffb4a9f6311066e4d300f4be9585905e26
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 22 23:57:31 2018 +0530
+
+    * mk/odtpkg.mk: Fix earlier commit
+
+    More fixes for #48.
+
+
+# commit 9099a139eb1f28aa8c25f047ec318f27b7317604
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 22 23:49:20 2018 +0530
+
+    Fix previous commit
+
+    More fixes for #48.
+
+
+# commit 23ce93159e85431eaca34979b436bb6be32451b9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 22 23:30:52 2018 +0530
+
+    Now install ODT exporter from https://raw.githubusercontent.com/kjambunathan/org-mode-ox-odt/master/elpa/
+
+    * mk/odtpkg.mk: New. Based on mk/server.mk. Provide target `odtpkg'.
+    * Makefile: Include above file.
+    * elpa/archive-contents:
+    * elpa/ox-odt-9.1.14.142.tar: Created with `make odtpkg'.
+
+    ODT and JabRef exporter are now available as Emacs Lisp Package. To
+    install these exporters, add
+    https://raw.githubusercontent.com/kjambunathan/org-mode-ox-odt/master/elpa/
+    to your `package-archives'.
+
+    Fixes #48.
+
+
+# commit 2396344595c3a35df809e0c1d4f3f1f3996c9a6f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Nov 5 09:05:33 2018 +0530
+
+    * lisp/ox-odt.el: Allow caption and name in list-tables
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Allow caption and name.
+
+    Fixes #47.
+
+
+# commit 40d3e9ee84165572a1e52474a08b094594c7025d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Aug 10 23:30:53 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
+
+    * contrib/odt/OrgModeUtilities.oxt (Reload): New.
+    * lisp/ox-odt.el (org-odt-transform-processes): Add above
+    macro.
+
+    Fulfill a request made as part of #46.
+
+
+# commit 2e9409632bde8e65af02dea55a33fae4075cdd2d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun May 6 20:47:57 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
+
+    * lisp/ox-odt.el (org-odt-headline): Use list styles to explicitly
+    number headlines.  In the example below, pay particular attention to
+    headline nodes `Resources' and `Glossary'.  They are defined as below
+    and specify a `:list-style' attribute.
+
+        * Resources
+        :PROPERTIES:
+        :ATTR_ODT: :style-prefix "_5f_Appendix_5f_Heading_5f_"   :list-style "_5f_Appendix_5f_Numbering"
+        :END:
+
+        * Glossary
+        :PROPERTIES:
+        :ATTR_ODT: :style-prefix "_5f_EndMatter_5f_Heading_5f_" :list-style ""
+        :END:
+
+    As a result,
+
+    (1) all headlines beginning at (and after) `Resources' but before
+        `Glossary' would follow the numbering style of
+        "_5f_Appendix_5f_Numbering".
+
+        Custom numbering begins at the node `Resources' because it has an
+        explicit :list-style "..."  attribute.  This custom numbering is
+        continued on to all the subsequent headlines i.e., to all it's
+        child headlines (and their children) and it's following sibling
+        nodes (and their children).  Custom numbering terminates at node
+        `Glossary' because it undefines the list style through :list-style
+        "". So, the node `Glossary' and all the following headlines would
+        revert to the default outline numbering.
+
+    (2) Rest of the headlines would use numbering as defined by
+        <text:outline-style style:name="Outline">...</text:outline-style>
+
+    EXAMPLE:
+
+            #+ODT_EXTRA_STYLES: <text:outline-style style:name="Outline">
+            #+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="1" style:num-prefix="Chapter " style:num-suffix=". " style:num-format="1">
+            #+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            #+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-0.762cm" fo:margin-left="0.762cm"/>
+            #+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            #+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            #+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="2" style:num-prefix="Section " style:num-suffix="." style:num-format="1" text:display-levels="2">
+            #+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            #+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="space" fo:text-indent="-1.016cm" fo:margin-left="1.016cm"/>
+            #+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            #+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            #+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="3" style:num-format="">
+            #+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            #+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="listtab" text:list-tab-stop-position="1.27cm" fo:text-indent="-1.27cm" fo:margin-left="1.27cm"/>
+            #+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            #+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            #+ODT_EXTRA_STYLES: </text:outline-style>
+
+            #+ODT_EXTRA_STYLES: <style:style style:name="_5f_FrontMatter_5f_Heading_5f_1" style:display-name="_FrontMatter_Heading_1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:list-style-name="">
+            #+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            #+ODT_EXTRA_STYLES: </style:style>
+
+            #+ODT_EXTRA_STYLES: <style:style style:name="_5f_Appendix_5f_Heading_5f_1" style:display-name="_Appendix_Heading_1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:list-style-name="_5f_Appendix_5f_Numbering">
+            #+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            #+ODT_EXTRA_STYLES:   <style:text-properties fo:color="#0047ff" fo:font-size="15pt" fo:font-weight="bold"/>
+            #+ODT_EXTRA_STYLES: </style:style>
+            #+ODT_EXTRA_STYLES: <style:style style:name="_5f_Appendix_5f_Heading_5f_2" style:display-name="_Appendix_Heading_2" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="2" style:list-style-name="_5f_Appendix_5f_Numbering" style:class="text"/>
+
+            #+ODT_EXTRA_STYLES: <text:list-style style:name="_5f_Appendix_5f_Numbering" style:display-name="_Appendix_Numbering">
+            #+ODT_EXTRA_STYLES:   <text:list-level-style-number text:level="1" text:style-name="Numbering_20_Symbols" style:num-prefix="Appendix " style:num-suffix=". " style:num-format="A">
+            #+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            #+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-1.27cm" fo:margin-left="1.27cm"/>
+            #+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            #+ODT_EXTRA_STYLES:   </text:list-level-style-number>
+            #+ODT_EXTRA_STYLES:   <text:list-level-style-number text:level="2" style:num-prefix="Section " style:num-suffix=". " style:num-format="1" text:display-levels="2">
+            #+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            #+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-1.905cm" fo:margin-left="1.905cm"/>
+            #+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            #+ODT_EXTRA_STYLES:   </text:list-level-style-number>
+            #+ODT_EXTRA_STYLES: </text:list-style>
+
+            #+ODT_EXTRA_STYLES: <style:style style:name="_5f_EndMatter_5f_Heading_5f_1" style:display-name="_EndMatter_Heading_1" style:family="paragraph" style:parent-style-name="_5f_FrontMatter_5f_Heading_5f_1" style:next-style-name="Text_20_body">
+            #+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            #+ODT_EXTRA_STYLES: </style:style>
+
+            * Copyright
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_FrontMatter_5f_Heading_5f_"
+            :END:
+
+            Aliquam erat volutpat.  Cum sociis natoque penatibus et magnis dis
+            parturient montes, nascetur ridiculus mus.  Etiam vel neque nec dui
+            dignissim bibendum.  Mauris mollis tincidunt felis.  Nulla posuere.
+
+            * Introduction
+
+            Donec vitae dolor.  Nullam eu ante vel est convallis dignissim.  Donec
+            hendrerit tempor tellus.  Donec neque quam, dignissim in, mollis nec,
+            sagittis eu, wisi.  Phasellus lacus.  Vivamus id enim.  Aliquam erat
+            volutpat.  Etiam vel tortor sodales tellus ultricies commodo.  Sed
+            diam.
+
+            ** What Is XML?
+
+            Nullam libero mauris, consequat quis, varius et, dictum id, arcu.
+            Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo,
+            quis tempor ligula erat quis odio.  Nullam tempus.  Fusce commodo.
+
+            ** Where Did XML Come From?
+
+            Donec posuere augue in quam.  Mauris mollis tincidunt felis.
+            Phasellus purus.  Mauris ac felis vel velit tristique imperdiet.  Cum
+            sociis natoque penatibus et magnis dis parturient montes, nascetur
+            ridiculus mus.  Nam vestibulum accumsan nisl.  Nunc aliquet, augue nec
+            adipiscing interdum, lacus tellus malesuada massa, quis varius mi
+            purus non odio.
+
+            * Markup and Core Concepts
+
+            Etiam laoreet quam sed arcu.  Nam vestibulum accumsan nisl.  Nulla
+            posuere.  Praesent fermentum tempor tellus.  Vivamus id enim.  Vivamus
+            id enim.  Mauris ac felis vel velit tristique imperdiet.
+
+            ** Tags
+
+            Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Sed
+            bibendum.  Nam euismod tellus id erat.  Donec neque quam, dignissim
+            in, mollis nec, sagittis eu, wisi.
+
+            ** Documents
+
+            Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada
+            massa, quis varius mi purus non odio.  Phasellus lacus.  Donec vitae
+            dolor.  Nunc rutrum turpis sed pede.  Pellentesque tristique imperdiet
+            tortor.  Fusce sagittis, libero non molestie mollis, magna orci
+            ultrices dolor, at vulputate neque nulla lacinia eros.  Fusce
+            suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis
+            tempor ligula erat quis odio.  Vivamus id enim.
+
+            * Resources
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_Appendix_5f_Heading_5f_"   :list-style "_5f_Appendix_5f_Numbering"
+            :END:
+
+            ** Online
+
+            Nulla posuere.  Nunc rutrum turpis sed pede.  Sed bibendum.  Etiam vel
+            neque nec dui dignissim bibendum.  Lorem ipsum dolor sit amet,
+            consectetuer adipiscing elit.  Fusce sagittis, libero non molestie
+            mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia
+            eros.  Nullam tempus.  Etiam vel tortor sodales tellus ultricies
+            commodo.
+
+            ** Books
+
+            Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.  Nam
+            vestibulum accumsan nisl.  Nullam rutrum.  Pellentesque condimentum,
+            magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam
+            neque sit amet urna.
+
+            - Integer placerat tristique nisl
+            - Integer placerat tristique nisl
+            - Nunc rutrum turpis sed pede
+            - Praesent augue
+              - Pellentesque tristique imperdiet tortor
+              - Donec pretium posuere tellus
+              - Sed diam
+              - Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus
+              - Donec hendrerit tempor tellus
+            - Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio
+
+            * Taxonomy of Standards
+
+            Nam vestibulum accumsan nisl.  Nullam rutrum.  Phasellus at dui in
+            ligula mollis ultricies.  Donec hendrerit tempor tellus.  Nulla
+            facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et
+            dictum nunc justo sit amet elit.
+
+            ** Markup and Structure
+
+            Etiam vel tortor sodales tellus ultricies commodo.  Donec neque quam,
+            dignissim in, mollis nec, sagittis eu, wisi.  Lorem ipsum dolor sit
+            amet, consectetuer adipiscing elit.  Donec vitae dolor.  Phasellus at
+            dui in ligula mollis ultricies.  Fusce commodo.
+
+            ** Linking
+
+            Cras placerat accumsan nulla.  Nullam eu ante vel est convallis
+            dignissim.  Proin neque massa, cursus ut, gravida ut, lobortis eget,
+            lacus.  Cras placerat accumsan nulla.  Pellentesque condimentum, magna
+            ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque
+            sit amet urna.
+
+            * Glossary
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_EndMatter_5f_Heading_5f_" :list-style ""
+            :END:
+
+            Donec vitae dolor.  Nunc porta vulputate tellus.  Phasellus lacus.
+            Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Donec
+            at pede.  Aliquam feugiat tellus ut neque.
+
+    This feature is based on the description (and sample document)
+    shared at
+    https://forum.openoffice.org/en/forum/viewtopic.php?f=7&t=19834#p93427.
+
+    Fixes #44.
+
+
+# commit ef951e32f4d852dafe595e81b479dd0e071ecd49
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun May 6 16:01:07 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+
+
+# commit 4b98f0da058f61e10470218748fb69170b398360
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun May 6 14:46:44 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+
+
+# commit 6463b26b31c7a6eb33024da878c4176698a36cc8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun May 6 12:33:10 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-headline): Minor Re-factoring
+
+
+# commit fa62e4d3614f2a3e54f09ed72fe333ef09be610f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed May 2 20:12:01 2018 +0530
+
+    * etc/styles/OrgOdtStyles.xml(OrgOutline): New list style
+
+
+# commit 25787b1f2800455d2ecf368aa20c7212132f7e19
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat May 5 11:27:20 2018 +0530
+
+    * lisp/ox-odt.el (org-odt-paragraph): Trim whitespace from paragraph contents
+
+    Partial fix for #45.
+
+
+# commit 07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Feb 4 10:07:57 2018 +0530
+
+    * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+
+    * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+    (org-odt--enumerate, org-odt--enumerate): Honor above option.
+
+    Fixes #40.
+
+
+# commit 6941f81951c2a9fb5ebb098376982bbae0448f6f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Dec 27 14:01:44 2017 +0530
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    When a table specifies both a `:style' and `:p-style"
+    attribute, only the table cells (i.e., cell borders etc) get
+    styled as per the table template.  The paragraphs within the
+    cells get styled *not* based on the template, but by "default"
+    rules.
+
+    This change is best understood using the following example.
+
+    - in the first snippet, BOTH the cell borders and column
+    alignment are controlled by the table cookies.
+
+    - in the second snippet, BOTH the cell borders and column
+    alignment are controlled by the template "GriddedTable".
+    i.e., table cookies are ineffectual.
+
+    - in the third snippet, the cell borders are controlled by the
+    template "GriddedTable" while the column alignment is
+    determined by table cookies.
+
+            #+CAPTION: A table that is styled the ~Org~ way
+            #+ATTR_ODT: :p-style "OrgTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+
+            #+CAPTION: A table that is styled the ~ODF~ way
+            #+ATTR_ODT: :style "GriddedTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+
+            #+CAPTION: A table that is styled using a mix of ~Org~ _and_ ~ODF~ way
+            #+ATTR_ODT: :p-style "OrgTable" :style "GriddedTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+
+            Fixes #39.
+
+
+# commit 252d671d9eb01424809898ba435095f6ee1dcf38
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Dec 27 12:19:49 2017 +0530
+
+    ox-odt: Rationalize paragraph style names used within tables
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    In tables that are styled using table templates, use
+    `Contents' as suffix for paragraph stylenames instead of
+    `TableParagraph'.
+    (org-odt-table-styles): Update docstring to reflect above
+    change.
+    * etc/styles/OrgOdtContentTemplate.xml
+    (OrgEquationFirstColumnContents)
+    (OrgEquationLastColumnContents, CustomContents)
+    (CustomLastRowContents, CustomLastColumnContents)
+    (CustomFirstRowContents, CustomFirstColumnContents): Renamed
+    from their counterparts.
+
+    Preparing the ground for addressing #39.
+
+
+# commit 208a38f5e21e4d2ebd3fd6e37ea4988897203002
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Dec 21 10:26:45 2017 +0530
+
+    * lisp/ox-odt.el: Fix previous commit
+
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE): New in buffer option.
+    (org-odt-template): Honor above option.
+
+    Fixes #37.
+
+
+# commit 294f8fa18913e0f90e0889c120e2656bb6ee0122
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Dec 21 09:02:57 2017 +0530
+
+    * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
+
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE): New in buffer option.
+    (org-odt-template): Honor above option.
+
+    Fixes #37.
+
+
+# commit d0822e37894ecaf64c4fd95e9b049e5af3a3afe8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Dec 3 14:22:06 2017 +0530
+
+    contrib/lisp/ox-freemind.el: Honor export options for todo, pri and tags
+
+    * contrib/lisp/ox-freemind.el
+    (org-freemind--build-node-contents): Honor export options for
+    todo, priority and tags.
+    (org-freemind-headline): Remove unused variables.  Don't
+    export tags as freemind node attribute.
+
+
+# commit 7d6965a65a30693ded2aa4b040a4fabb0e1585ee
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Dec 3 11:56:02 2017 +0530
+
+    * contrib/lisp/ox-freemind.el: Use lexical binding
+
+
+# commit c77f0da167e918e62f5479c56991b4fe0868052b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Dec 2 16:04:59 2017 +0530
+
+    * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles)
+    (org-odt-template): See comments below.
+
+    To create a table with custom paragraph styles, define *just* the
+    styles for the header and content cells.  These styles shouldn't be
+    *automatic* styles, but be *common* styles.  (With the current change,
+    you no longer have to define the paragraph styles for left, right and
+    center aligned cells.  The ODT exporter generates the "aligned" styles
+    for you.)
+
+    Here is a sample snippet for you to try.
+
+        #+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_small" style:family="paragraph" style:parent-style-name="Text_20_body">
+        #+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="50%"/>
+        #+ODT_EXTRA_STYLES: </style:style>
+
+        #+ODT_EXTRA_STYLES: <style:style style:name="MyOrgTableContents" style:family="paragraph" style:parent-style-name="Text_20_body_small"/>
+        #+ODT_EXTRA_STYLES: <style:style style:name="MyOrgTableHeading" style:family="paragraph" style:parent-style-name="MyOrgTableContents" style:class="extra">
+        #+ODT_EXTRA_STYLES:   <style:text-properties fo:font-weight="bold"/>
+        #+ODT_EXTRA_STYLES: </style:style>
+
+        #+ATTR_ODT: :p-style "MyOrgTable"
+        |  <r> | <c>  | <l>  |
+        | aaaa | bbbb | cccc |
+        |------+------+------|
+        | dddd | eeee | ffff |
+        | gggg | hhhh | iiii |
+
+    Fixes #24.
+
+
+# commit 4235a4bc89685f8a61c8d7f7271aeb1d71d0c526
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Dec 2 14:05:46 2017 +0530
+
+    * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
+
+    * lisp/ox-odt.el (ODT_EXTRA_STYLES): New option.
+    (org-odt-template): Add above option to the end of
+    "<office:styles>...</office:styles>".
+
+    Use this option to define common styles.  When using
+    LibreOffice, these styles are visible via the stylist.
+
+    For example, the snippet below first defines a *common* style
+    named "Text_20_body_small".  Subsequently, it applies that
+    style to a paragraph.
+
+        #+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_small" style:family="paragraph" style:parent-style-name="Text_20_body">
+        #+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="50%"/>
+        #+ODT_EXTRA_STYLES: </style:style>
+
+        #+ATTR_ODT: :style "Text_20_body_small"
+        Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+        Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+        Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+
+# commit 53e9160bd128135050564ccc86d24f52ba48f80e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 21 14:13:26 2017 +0530
+
+    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'
+
+    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'.
+
+    Fixes #35.
+
+
+# commit d01d4129c81172c77d761b4ddae7741d7bc780d1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 15 13:26:22 2017 +0530
+
+    lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
+
+    * contrib/odt/OrgModeUtilities.oxt (UpdateAll): Add a new
+    optional argument `removeFileLinks'.
+    * lisp/ox-odt.el (org-odt-transform-processes): Add new macro
+    "Update All and Break Links".  Removed macro
+    "Update indices and xrefs".
+    (org-odt-link): Misc. fixes.
+
+
+# commit 5e07820f8a1a221befe30b89c5d30b3a499cb426
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 7 19:32:53 2017 +0530
+
+    * testing/examples/odt/pagebreak.odt: New. Created from pagebreak.org.
+
+    This file is created with shell command
+
+        $ cd ~/src/org-mode-ox-odt/testing/examples/odt
+        $ emacs --batch -Q -l ~/init.el --visit pagebreak.org -funcall org-odt-export-to-odt
+
+    with the content of the `init.el' file above being
+
+        (require 'cl)
+
+        (dolist (dir
+                 '(
+                   "~/src/org-mode-ox-odt/lisp/"
+                   "~/src/org-mode-ox-odt/contrib/lisp/"
+                   ))
+          (cl-pushnew dir load-path))
+
+        (require 'ox-odt)
+
+        (custom-set-variables
+         ;; custom-set-variables was added by Custom.
+         ;; If you edit it by hand, you could mess it up, so be careful.
+         ;; Your init file should contain only one such instance.
+         ;; If there is more than one, they won't work right.
+         '(org-adapt-indentation nil)
+         '(org-export-backends (quote (ascii html icalendar latex odt)))
+         '(org-export-in-background nil)
+         '(org-file-apps (quote ((system . "xdg-open %s"))))
+         '(org-jabref-command (quote ("jabref" "-n" "true")))
+         '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+         '(org-latex-to-mathml-jar-file "~/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar")
+         '(org-modules
+           (quote
+            (org-bbdb org-bibtex org-docview org-gnus org-info org-irc ox-jabref org-mhe org-rmail org-w3m)))
+         '(org-odt-prettify-xml t)
+         '(org-odt-transform-processes
+           (quote
+            (("Update indices and xrefs" "soffice" "--norestore" "--invisible" "--headless" "macro:///OrgMode.Utilities.UpdateAllIndexes(%I)")))))
+
+    Xref #29.
+
+
+# commit 5ecc9189353d84eae9dd2b8956952f9a1f0b3408
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 7 19:22:24 2017 +0530
+
+    testing/examples/odt/pagebreak.org: New
+
+    Test case for #29.
+
+
+# commit 9f9a39edf8d86c1540e09301b5dae27348578ced
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 7 19:14:21 2017 +0530
+
+    lisp/ox-odt.el: Improve support for pagebreaks
+
+    * etc/styles/OrgOdtStyles.xml (OrgPageBreakDefault)
+    (OrgPageBreakLandscape):  Remove it.
+
+    * lisp/ox-odt.el (org-odt-page-break-style-format): New constant.
+    (org-odt--get-derived-paragraph-style): New helper routine.
+    (org-odt--read-attribute): Improve.
+    (org-odt-keyword): Invert how PAGEBREAKs are handled.  Now,
+    PAGEBREAK keywords create an empty paragraph on the current
+    page, which is then *followed* with a new page.  (Previously,
+    this keyword created a new page, in which an empty paragraph
+    was created.)
+    (org-odt-paragraph, org-odt-headline, org-odt-special-block):
+    Use derived paragraph styles that honor the three new
+    properties: `:page-break', `:page-style', and `page:number'.
+    `:page-break' can take one of the following values: "before",
+    t, "after".  These properties correspond with the options
+    under Paragraph->Text Flow->Breaks. See
+    https://help.libreoffice.org/Writer/Text_Flow#Breaks.)
+
+    a) To shift a paragraph to a new page, use
+          #+ATTR_ODT: :pagebreak t
+          Blah blah blah blah ...
+
+    b) To shift a paragraph to a new page, that uses a specific
+    page style, say "OrgFirstPage", use
+
+          #+ATTR_ODT: :page-style "OrgFirstPage"
+          Blah blah blah blah ...
+
+    c) To shift a paragraph to a new page, that uses a specific
+    page style, say "OrgFirstPage", and to begin numbering the
+    page from numeral 1, use
+
+          #+ATTR_ODT: :page-style "OrgFirstPage" :page-number 1
+          Blah blah blah blah ...
+
+    The above properties can also be applied to headlines.  For
+    example, to shift a headline to a new page, that uses a
+    specific page style, say "OrgFirstPage", and to begin
+    numbering the page from numeral 1, use
+
+          * Copyright Statement
+          :PROPERTIES:
+          :ATTR_ODT: :page-number 1 :page-style "OrgFirstPage"
+          :END:
+
+    See #29.
+
+
+# commit 51a23cf9c8b4b32bf8ca26ce516ff7357ac5842b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 5 17:32:55 2017 +0530
+
+    lisp/ox-odt.el: Allow customization of headline styles
+
+    * lisp/ox-odt.el (org-odt--read-attribute): Retrieve values
+    from ATTR_ODT property of a headline.
+    (org-odt-headline): Associate a style with
+    headlines.
+
+    Use either of the following snippets to typeset the headline
+    with "Heading_20_1_unnumbered".  Note that in the second case,
+    the effective style is a concatenation of prefix, level and
+    suffix.
+
+        * Chapter 1
+         :PROPERTIES:
+         :ATTR_ODT:  :style "Heading_20_1_unnumbered"
+         :END:
+
+        * Chapter 1
+         :PROPERTIES:
+         :ATTR_ODT:  :style-prefix "Heading_20_" :style-suffix "_unnumbered"
+         :END:
+
+    A partial fix for #29.
+
+
+# commit 3480c66f3fad99fd04f3eaf8fd5cf88a62f7f626
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Nov 5 10:06:04 2017 +0530
+
+    lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
+
+    * lisp/ox-odt.el (ODT_FILE_EXTENSION): New in buffer option.
+    (org-odt--export-wrap): Add mime type  for OpenDocument master files.
+    (org-odt-export-to-odt): Honor above export option.
+
+    Export an Org file to OpenDocument master file, when
+
+        #+ODT_FILE_EXTENSION: odm
+
+
+# commit 01369e6449b33237bf2a1fec2d38b5b5f4d4b6d7
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Nov 4 11:39:16 2017 +0530
+
+    contrib/lisp/ox-jabref.el: Misc. fixes
+
+    * contrib/lisp/ox-jabref.el (org-jabref--sanitize-options):
+    Gracefully handle the case where #+BIB_FILE: line specifies an
+    empty value.
+    (org-jabref--get-export-format): Remove cruft.
+
+
+# commit b37d9b2a72d3a6a83068b93b81ced6707b80182c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 3 18:14:15 2017 +0530
+
+    lisp/ox-odt.el: Transclude ODT links
+
+    * lisp/ox-odt.el (org-odt--transclude-link-p): New.
+    (org-odt-link, org-odt-paragraph, org-odt-special-block):
+    Handle link transclusion.
+    (org-odt-table): Top level tables need not go in indented
+    section.
+
+    Use one of the following constructs to transclude a
+    subdocument in to the currently exported document.
+
+        #+ATTR_ODT: :transclude t
+        [[file:subdocument1.odt]]
+        #+ATTR_ODT: :style \"OrgTwoColumnSection\"
+
+        #+BEGIN_section
+          #+ATTR_ODT: :transclude t
+          [[file:subdocument1.odt]]
+        #+END_section
+
+    Once the document is exported, use LibreOffice's
+    "Menu->Tools->Update->Update All" to do the actual
+    transclusion.
+
+    More changes for #31.
+
+
+# commit c80c58bd59711384783aee730d4a675409e83fe9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 3 16:28:02 2017 +0530
+
+    * testing/examples/odt/masterdocument.org: Add snippets for transcluding ODT links
+    * testing/examples/odt/subdocument1.org: New.
+    * testing/examples/odt/subdocument1.odt: New.
+    * testing/examples/odt/subdocument2.org: Update
+
+
+# commit 006c2234a5735aad20de829d1d8bc6eece6e62cf
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 3 13:37:03 2017 +0530
+
+    testing/examples/odt/masterdocument.org: Renamed from test-new.org
+
+
+# commit 68fde5f33f10c902ff88ecc9e8d43aeb9f5350a2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 3 13:24:56 2017 +0530
+
+    * testing/examples/odt/test-new.org: Update
+
+    * testing/examples/odt/subdocument1.org: New
+    * testing/examples/odt/subdocument1.odt: New
+    * testing/examples/odt/subdocument2.org: Add
+    * testing/examples/odt/test-new.org: Add links to local org files
+
+
+# commit 145f1c3a35527087bc267d2b37b1bdd77bf02d90
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Nov 3 11:35:58 2017 +0530
+
+    lisp/ox-odt.el: Handle relative filepaths correctly
+
+    * lisp/ox-odt.el (org-odt-link): Unescape and url encode
+    protocol urls.  Prepend relative file paths with "../".
+
+
+# commit 90045053d36bcf3cb5fc2ccdc546700821f2f9f5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 2 09:58:25 2017 +0530
+
+    lisp/ox-odt.el: Support OpenOffice sections
+
+    * etc/styles/OrgOdtContentTemplate.xml (OrgSection)
+    (OrgTwoColumnSection, OrgThreeColumnSection)
+    (OrgTwoColumnSection-2-1, OrgTwoColumnSection-1-2): New
+    automatic section styles.
+
+    * lisp/ox-odt.el (org-odt-special-block): New special-block of
+    type `section' which emits "<text:section>...</text:section>".
+    (org-odt-paragraph): A paragraph within a section get it's
+    style from `:p-style' attribute.
+    For example, the following snippet creates a 2-column section
+    section, with columns in ratio 2:1 and with paragraphs that
+    are centered.
+
+        #+ATTR_ODT: :style "OrgTwoColumnSection-1-2" :p-style "OrgCenter"
+        #+BEGIN_section
+          Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+          Pellentesque condimentum, magna ut suscipit hendrerit, ipsum
+          augue ornare nulla, non luctus diam neque sit amet urna.  Sed
+          id ligula quis est convallis tempor.  Nullam eu ante vel est
+          convallis dignissim.  Nullam tristique diam non turpis.  Donec
+          posuere augue in quam.  Aliquam erat volutpat.  Nam vestibulum
+          accumsan nisl.  Sed diam.  Proin quam nisl, tincidunt et,
+          mattis eget, convallis nec, purus.  Pellentesque dapibus
+          suscipit ligula.  Nunc porta vulputate tellus.  Mauris ac
+          felis vel velit tristique imperdiet.  Nunc porta vulputate
+          tellus.  Sed bibendum.  Nullam eu ante vel est convallis
+          dignissim.
+        #+END_section
+
+    Fixes #31.
+
+
+# commit 73a299d46cf0aa231b42eb7730cf8001b49c67d9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Nov 2 07:54:40 2017 +0530
+
+    lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
+
+    * lisp/ox-odt.el (ODT_AUTOMATIC_STYLES): New option.
+    (org-odt-template): Append above value to
+    "<office:automatic-styles>...</office:automatic-styles>".
+
+    For example, the following snippet defines a custom paragraph
+    style that uses drop caps and applies that style to a paragraph,
+    presumably the first one in a chapter.
+
+        #+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps" style:family="paragraph" style:parent-style-name="Text_20_body">
+        #+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+        #+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+        #+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+        #+ODT_AUTOMATIC_STYLES: </style:style>
+
+        #+ATTR_ODT: :style "DropCaps"
+        Ipsum dolor sit amet, consectetuer adipiscing elit. Donec
+        hendrerit tempor tellus. Donec pretium posuere tellus. Proin quam
+        nisl, tincidunt et, mattis eget, convallis nec, purus.
+
+
+# commit 5c05cec684524cc5595215d9810762f773d5e288
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 1 15:57:17 2017 +0530
+
+    lisp/ox-odt.el:  Allow \cite{} in captions
+
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments):
+    (org-odt--collect-cite-keys): Descend in to affiliated
+    keywords.
+
+    Fixes #32.
+
+
+# commit 75a95084041f591cf6682403aabaa39574401893
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 1 14:35:32 2017 +0530
+
+    contrib/odt/JabRefChicagoForOrgmode: Update
+
+    Pull workaround for kjambunathan/org-mode-ox-odt/issues/33.
+
+
+# commit 1ab0243a8012f035c6f3110de11d484b1156ef71
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 1 12:47:04 2017 +0530
+
+    Summary: contrib/odt/JabRefChicagoForOrgmode: Update
+
+    Fixes kjambunathan/org-mode-ox-odt#33.
+
+
+# commit 93fd12346a74f38006394bdc3678dee2836927bc
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 1 12:34:10 2017 +0530
+
+    contrib/odt/JabRefChicagoForOrgmode: New submodule
+
+
+# commit 44c9f09a16ce8d8900eec0e89bb2f45d24d2ecad
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Nov 1 10:14:19 2017 +0530
+
+    contrib/odt/JabRefChicagoForOrgmode: Remove verbatim copy of this sub-project
+
+
+# commit 51fdeef7c11681a067e5530bee6e045605a86a9a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Oct 30 18:01:52 2017 +0530
+
+    testing/examples/odt/test-new.org:  Update
+
+    * testing/examples/odt/test-new.org: Use #+BIB_FILE and
+    #+ODT_JABREF_CITATION_STYLE.
+
+
+# commit dbe3995d5e1f14c03b82fb724321ccf7c9b89727
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Oct 30 17:50:08 2017 +0530
+
+    Introduce keywords BIB_FILE and ODT_JABREF_CITATION_STYLE
+
+    * lisp/ox-odt.el (odt): New in buffer keyword BIB_FILE.
+    * contrib/lisp/ox-jabref.el (org-jabref--enhanced-backends): New keyword
+    ODT_JABREF_CITATION_STYLE
+    (org-jabref--read-bibliography-attribute)
+    (org-jabref--get-citation-style): Remove.
+    (org-jabref--sanitize-options): New.
+    (org-jabref--get-export-format)
+    (org-export--collect-tree-properties): Related changes.
+
+    With these changes, an Org file that uses Bibliography and Citations
+    looks like this.
+
+        #+BIB_FILE: "MyLibrary.bib"
+        #+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"
+
+        Blah blah blah \cite{blah}
+
+        #+BIBLIOGRAPHY:
+
+    Fixes kjambunathan/org-mode-ox-odt/issues/30?_pjax=%23js-repo-pjax-container#issuecomment-340135723
+
+
+# commit 29abb97cf5fdaa730df8cb1d29a292fff8e607b7
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Oct 30 13:27:27 2017 +0530
+
+    lisp/ox-odt.el:  Handle case where #+ODT_STYLES_FILE is empty
+
+
+# commit 6a3657e2b2ba910afe0d1c5b387e67e4b5344027
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Oct 30 10:39:13 2017 +0530
+
+    contrib/lisp/ox-jabref.el: Check for missing export plugins
+
+    * contrib/lisp/ox-jabref.el (org-jabref--run-cmd): Return command output
+    (org-jabref-get-available-export-formats): New.
+    (org-export--collect-tree-properties): Complain, if the
+    required JabRef plugins are missing.
+
+    Fixes  kjambunathan/org-mode-ox-odt#18.
+
+
+# commit 7e25aae7158194bd4d76568485b0c3b9b43d0a4e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Oct 29 22:16:07 2017 +0530
+
+    ox-odt.el, ox-jabref.el: Gracefully handle corner cases
+
+    * lisp/ox-odt.el (org-odt-citation): Improve transcoding.
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments): Store
+    the original \cite{} fragment in the new object.
+    * contrib/lisp/ox-jabref.el (org-jabref-citation): Gracefully
+    handle case where a cite key cannot be translated to a valid
+    text.
+
+
+# commit 3557eb09dd5c59aed64151391ebac66ec8aa75cd
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 27 15:50:25 2017 +0530
+
+    Revert "lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'"
+
+    This reverts commit 7b2484ed4029a0e2f40514117e606c3cfbee11ca.
+
+
+# commit ce9906282ce6475eb869fd59baff54bc52b3217e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 27 13:56:29 2017 +0530
+
+    lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'
+
+
+# commit 4560eb5e429b7f30eb0a9bb47c2463815434988f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 27 10:26:17 2017 +0530
+
+    lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
+
+    * lisp/ox-odt.el (org-odt-paragraph): Handle verse blocks
+    * lisp/ox-odt.el (org-odt-verse-block): Use
+    `org-odt-paragraph' to infer paragraph styles.
+
+    Fixes  kjambunathan/org-mode-ox-odt#26.
+
+
+
+# commit 0f2ae078ec1e323fe5952e7a173605db2c4f0c78
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Sep 5 13:44:53 2017 +0530
+
+    lisp/ox-odt.el: In list tables, ignore col alignment cookies
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    Ignore col alignment cookies on list tables.
+
+    This works around issue kjambunathan/org-mode-ox-odt#25.
+
+
+# commit 600b075a30ba414be077d1213c434374568d99ec
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Sep 5 12:33:55 2017 +0530
+
+    lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
+
+    * lisp/ox-odt.el (org-odt-paragraph): Use
+    `org-odt-table-cell--get-paragraph-styles'.
+    (org-odt-table-cell--get-paragraph-styles): Update docstring.
+
+    Fixes  kjambunathan/org-mode-ox-odt#24.
+
+
+# commit 9a2eb32660b9b2f941549b00eed1f84f8c50f56b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Sep 5 09:59:28 2017 +0530
+
+    * lisp/ox-odt.el: Minor refactoring
+
+    * lisp/ox-odt.el (org-odt-table-cell): Extract
+    `org-odt-table-cell--get-paragraph-styles'.
+    (org-odt-table-cell--get-paragraph-styles): New helper function.
+
+
+# commit 2d9083f998fe36f0a48131c6e2f1402d1693e089
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Sep 5 09:26:19 2017 +0530
+
+    lisp/ox-odt.el (org-odt--translate-list-tables): Fix regexp
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Use
+    beginning of string instead of beginning of line in regexp.
+
+
+# commit 80d038f0106d3dfbe15e9a08bdfe39c30b6ecb68
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Sep 4 15:59:04 2017 +0530
+
+    testing/examples/odt/test-new.org: Add col. width & align attrs to list table
+
+
+# commit 55f83d4e531ebca43bcac9c428df586a823f108a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Sep 4 15:53:32 2017 +0530
+
+    lisp/ox-odt.el: Support column width and sizing of list tables
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Add support
+    for column grouping and sizing.  Column alignment is not
+    supported.
+
+    Fixes  kjambunathan/org-mode-ox-odt#23.
+
+
+# commit 157b5efe9db4bb260c0ec3147d8149ae867528fb
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Aug 29 13:21:32 2017 +0530
+
+    lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs
+
+    * lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs.
+
+    Partially fixes  kjambunathan/org-mode-ox-odt#22, by not creating
+     multiple paragraphs with "OrgTitle".
+
+
+# commit 151fc830fde8a3ef3810fbc00c52f2ae010f3a12
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Aug 28 14:28:15 2017 +0530
+
+    testing/examples/odt/test-new.org: Add a few "#+TOC: ... local" lines
+
+
+# commit 3141527b8e7649b05d02af77c52a56510d766763
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Aug 28 13:57:40 2017 +0530
+
+    lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
+
+    * lisp/ox-odt.el (org-odt-toc-templates): New.
+    (org-odt-keyword): Honor "local" spec in #+TOC directives
+    (org-odt-begin-toc, org-odt-end-toc): Modify ODT index
+    templates to support above keyword.
+
+    Fixes kjambunathan/org-mode-ox-odt#21.
+
+
+# commit 3ddc198fad274de3d47f6965de239bf101056a11
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Aug 13 13:30:56 2017 +0530
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Suggest a new
+    transformer that optimizes column width of tables.
+
+    Partially fixes kjambunathan/org-mode-ox-odt#16
+
+
+# commit 05257c58a54a060a7558f2827d8a964bf2acddff
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Aug 13 10:54:05 2017 +0530
+
+    contrib/odt/OrgModeUtilities.oxt (OptimizeColumnWidth): New
+
+
+# commit 9e158d05585808fe98f1e2f2ce50c852599f1338
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 10:46:38 2017 +0530
+
+    * testing/examples/odt/test-new.odt: Sample document created with ODT exporter
+
+    * testing/examples/odt/test-new.odt: Document created by running the
+      ODT exporter on ./testing/examples/odt/test-new.org.
+
+
+# commit 8c1ad02d59b780b8020dd4841f1829c36def71f8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 10:41:24 2017 +0530
+
+    testing/examples/odt/test-new.org:  Misc. changes
+
+
+# commit f794d088635966c2ce8906df48f4452020cf586e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 09:46:44 2017 +0530
+
+    OrgModeUtilities.oxt: Library of LibreOffice macros
+
+    * contrib/odt/OrgModeUtilities.oxt: New.  Library of LibreOffice
+      macros of interest to Org mode ODT exporter.
+
+
+# commit 0349b7d58ad45c7295d6a4d0a4645479f0bf5f5a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 10:35:07 2017 +0530
+
+    lisp/ox-odt.el: Support document transformation using LibreOffice macros
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Add new user option.
+    (org-odt-caption-and-xref-settings): Update docstring.
+    (org-odt-transform): New.
+    (org-odt--export-wrap):  Use `org-odt-transform'.
+
+
+# commit db4791840fa59db7e0faf209544a96a3e550680f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 09:53:59 2017 +0530
+
+    Move files around
+
+    Collect all stuff of interest to ODT exporter under ./contrib/odt and
+    ./testing/examples/odt/.
+
+
+# commit 0583693c3d0c1af534c84103272d1bb154dfa222
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 10:18:41 2017 +0530
+
+    testing/examples/odt/test-new.org: Test cases for TOC generation
+
+
+# commit 88a044f90df0807d602d70b2f2838787799ffea4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 10:13:02 2017 +0530
+
+    lisp/ox-odt.el: Generate table of figures, listings and tables.
+
+    * lisp/ox-odt.el (org-odt-keyword): Support following directives:
+        (1) #+TOC: figures
+        (2) #+TOC: listings
+        (3) #+TOC: tables
+
+
+# commit 7317b8843ef9db12b9026a6af96491a535c26b03
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jul 27 09:58:13 2017 +0530
+
+    OrgOdtStyles.xml: Add styles for indices
+
+    * etc/styles/OrgOdtStyles.xml (Index_20_Link)
+    (Org_20_Index_20_Heading, Org_20_Index): New styles for
+    displaying Indices of Figures, Tables, Listings etc.
+
+
+# commit da12fab8a8649688909fd5ca1ee777fc90f557a3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Jul 25 10:36:15 2017 +0530
+
+    contrib/JabRefChicagoForOrgmode/*: Add layout files for ODF
+
+    * contrib/JabRefChicagoForOrgmode/*: Add layout files for ODF.  Remove
+      layout files for RTF.
+
+
+# commit 2b9f0a4c216d93643c52dee997d1fb73f809a008
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Jul 24 08:59:29 2017 +0530
+
+    todo2/: Record commits and patches from that master that may have to be merged here
+
+    * todo2/README.org:
+    * todo2/*.patch: New.
+
+
+# commit 9e180abdd93244dca9b4204db2c3db4183ee4f41
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 23 14:12:10 2017 +0530
+
+    Mark mathtoweb.jar as an executable
+
+    * contrib/scripts/mathtoweb/mathtoweb.jar: Mark it as executable
+
+
+# commit f203b7452ffa8ac37651a36e6c3b2af464e1a44b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 17:25:46 2017 +0530
+
+    Add JabRef layout files for exporting citations in OD format
+
+    * contrib/JabRefChicagoForOrgmode/*: New.
+
+    Add JabRef layout files for exporting citations in 'Chicago Manual Of
+    Style' format.
+
+
+# commit 139bd0e80cf7a4ef409cdefbb977dfaa9734b99c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 16:53:48 2017 +0530
+
+    Update test-new.org
+
+    * testing/examples/odt/test-new.org: Updated to catch up with
+    recent changes in the exporter.  Use
+    contrib/biblatex-examples/biblatex-examples.bib, as
+    BIBLIOGRAPHY database.
+
+
+# commit 7921ad7f109743a662563858b9bd0b6b27f814fb
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 11:16:34 2017 +0530
+
+    Add an org file for unit testing the ODT exporter
+
+    * testing/examples/odt/org-mode-unicorn.png:
+    * testing/examples/odt/test-new.org: New.
+
+    See
+
+    (1) https://lists.gnu.org/archive/html/bug-gnu-emacs/2013-09/msg00572.html
+    (2) https://lists.gnu.org/archive/html/bug-gnu-emacs/2013-09/zipg3L2P_Q384.zip
+
+
+# commit f9d9dc24929ec449cdf2ae93ceddbca44a3ea992
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 13:47:34 2017 +0530
+
+    Import biblatex-examples.bib
+
+    * contrib/biblatex-examples/README.org:
+    * contrib/biblatex-examples/biblatex-examples.bib: New
+
+    The above bib file is used within ./testing/examples/odt/test-new.org.
+
+
+# commit fa77e5512a16eafd9429adb6735986edd461aaf7
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 13:14:52 2017 +0530
+
+    Copy over mathtoweb.jar for convenience
+
+    *  contrib/scripts/mathtoweb/mathtoweb.jar:
+    *  contrib/scripts/mathtoweb/README.org: New
+
+
+# commit 2183227e6b7b91e2f14d4ef260000fa28abe7bd1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 09:50:01 2017 +0530
+
+    lisp/ox-odt.el: Support \cite{} fragments
+
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments): New filter.
+
+
+# commit fe167f8202bcfe6527479cabe736c51e23f50aac
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 09:47:04 2017 +0530
+
+    done2: Add directory
+
+
+# commit fb35142b88ab8b2720bb727f32cbf9846fffbec8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 08:28:57 2017 +0530
+
+    README.org: Update
+
+
+# commit e18b77bdc89eb4c176291c1d1c63093f64c4dfb1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jul 21 08:25:12 2017 +0530
+
+    Create todo1, done1 subdirs
+
+
+# commit e44643e8c14a8cdc48a701276afc27e2b8521c33
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Jul 19 13:15:26 2017 +0530
+
+    Fix all loose ends with ODT's JabRef exporter
+
+    * lisp/ox-odt.el (org-odt--collect-cite-keys): Format of
+    citation object has changed in the exporter.  Catch up with it.
+
+    * contrib/lisp/ox-jabref.el (org-export--collect-tree-properties): Renamed
+    from `org-export-collect-tree-properties'.
+    (ox-jabref-unload-function):  Propagate above name change.
+    (org-jabref-citation): Format of citation object has changed in the exporter.
+    Catch up with it.
+
+    * contrib/lisp/ox-jabref.el: Use lexical-binding.
+
+
+# commit 1197cde5e87e3c447bdfd00507ee12e9ee7ec615
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Jul 18 11:47:47 2017 +0530
+
+    lisp/ox-odt.el: Improve list tables
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Improve
+    list tables.
+
+
+# commit cc19c42ff5055ad8fc9a7a1a63b14494dcbbad11
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:36:30 2017 +0530
+
+    Update README.org
+
+
+# commit 2bfe94db32eb4fbf328d5d9b4bbf8ea8d7835453
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:35:36 2017 +0530
+
+    Update README.org
+
+
+# commit 1addd92ffe06535813fb863e6ddd66e49f1f64b1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:33:39 2017 +0530
+
+    Update README.org
+
+
+# commit 82b5bbb3a6f8f9e3dcc88db72069b7b149e5e405
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:28:37 2017 +0530
+
+    Update README.org
+
+
+# commit bd3cc3871202a15bb9b5c3529f109bef4f75bd9b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:16:10 2017 +0530
+
+    Update README.org
+
+
+# commit 98173782ac981f8ca13d33582f2e794b2fb32eb9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sun Jul 16 00:08:17 2017 +0530
+
+    README.org: Note down patches and commits that are to be merged
+
+
+# commit 87dfb928f899db9259f382ccef312b0ca5214c2a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 15 22:53:25 2017 +0530
+
+    lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
+
+    * lisp/ox-odt.el (org-odt-htmlfontify-string): Replace
+    `org-no-warnings' with `with-no-warnings'.
+
+    * lisp/ox-odt.el (org-odt--translate-description-lists/latex)
+    (org-odt--translate-description-lists/html): Use `eq' instead
+    of `equal'.
+
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments):
+    Propagate signature change for `org-format-latex'.
+
+    * lisp/ox-odt.el (org-odt-table): Use "Org mode", or "Org",
+    instead of "Org-mode" in comment and docstrings.
+
+    * lisp/ox-odt.el (org-odt-table-cell): Use `org-element-class'.
+
+    * lisp/ox-odt.el (org-odt-get-table-cell-styles): Use `assq'
+    instead of `assoc'.
+
+    * lisp/ox-odt.el (org-odt-do-format-code): Use
+    `org-font-lock-ensure' instead of `font-lock-ensure'.
+
+    * lisp/ox-odt.el (org-odt--copy-formula-file): Use `file-name-extension'.
+
+    * lisp/ox-odt.el (org-odt-footnote-reference): Only inline
+    footnotes are to be wrapped within a paragraph.
+
+    * lisp/ox-odt.el (org-odt-template): Use `setq-local' instead
+    of `make-local-variable'.
+
+    * lisp/ox-odt.el (org-odt-template, org-odt--export-wrap):
+    Change (message (format ...)) to (message ...), and likewise
+    for ‘error’.  This lessens the probability of confusion when
+    the output of ‘format’ contains ‘%’.
+
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Use
+    `string-match-p' instead of `org-string-match-p'.
+
+    * lisp/ox-odt.el (org-odt-template): Do not call `read' on an empty
+    string.
+
+    * lisp/ox-odt.el (org-odt-toc): Ignore targets, links and
+    footnote references from table of contents.
+
+    * lisp/ox-odt.el (org-odt-table-styles): Don't quote nil and t
+    in doc strings.
+
+    * lisp/ox-odt.el (org-odt-inline-image-rules): Add svg.
+
+    * lisp/ox-odt.el (org-odt-format-headline-function)
+    (org-odt-format-inlinetask-function): Update :version
+    (org-odt-inline-image-rules): Update :version and :package-version
+
+    *lisp/ox-odt.el: (org-odt-automatic-styles)
+    (org-odt-category-map-alist)
+    (org-odt-format-headline-function, org-odt-table-styles):
+    Backslash cleanup in Elisp source files.
+
+    * lisp/ox-odt.el: Update Copyright years.
+
+
+# commit 3c0b2d4258580a4b6259998939eebefd52b2b5a4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 15 20:43:58 2017 +0530
+
+    * lisp/ox-odt.el: Remove `:export-block' from backend definition
+
+    Export block sytax is changed. See commit
+    54318add34f09ff39d3fd034a4c1a89f60fd8759.
+
+    Export blocks are explicitly marked as such at the syntax level to
+    disambiguate their parsing from special blocks.  The new syntax is
+
+      #+BEGIN_EXPORT backend
+      ...
+      #+END_EXPORT
+
+    instead of
+
+      #+BEGIN_backend
+      ...
+      #+END_backend
+
+    As a consequence, =INCLUDE= keywords syntax is modified, e.g.,
+
+      #+INCLUDE: "file.org" HTML
+
+    becomes
+
+      #+INCLUDE: "file.org" export html
+
+
+# commit 5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 15 20:28:18 2017 +0530
+
+    lisp/ox-odt.el: Add kludge to get past compilation errors
+
+    * lisp/ox-odt.el: Temporarily define `org-export-solidify-link-text'
+    to get past compilation errors.
+
+    Per commit 459033265295723cbfb0fccb3577acbfdc9d0285 merge, use
+    `org-export-get-reference' and remove
+    `org-export-solidify-link-text'.  Until then, make do with this
+    workaround.
+
+
+# commit 348b08b6d64fbcb7d664929f80fb0f04ebe25c73
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 15 20:14:41 2017 +0530
+
+    lisp/ox-odt.el: Use `cl-lib'
+
+
+# commit 5e25808b5292eff445a676394721d9dfe9858734
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jul 15 20:11:59 2017 +0530
+
+    lisp/ox-odt.el: Use lexical binding
+
+
+# commit 600a30790eb868524f9d230a951c7b64c376d39e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Jul 24 19:25:02 2013 +0530
+
+    ox-odt.el: Add support for JabRef
+
+    * contrib/lisp/ox-jabref.el: New file.
+
+    * lisp/org.el (org-modules): Add ox-jabref.
+
+    * etc/styles/OrgOdtStyles.xml (Bibliography_20_Heading)
+    (Bibliography, OrgBibliographyList, OrgCite): New styles.
+
+    * lisp/ox-odt.el (org-export-define-backend): New non-standard
+    element `citation-reference'.  Register
+    `org-odt--translate-cite-fragments'.
+    (org-odt--translate-cite-fragments):  New filter.
+    (org-odt-citation-transcoders): New user option.
+    (org-odt-citation-reference, org-odt-citation-reference/numbered):
+    Stock transcoders for `citation-reference' elements.
+    (org-odt-keyword): Handle BIBLIOGRAPHY.
+    (org-odt--export-wrap): Make the condition case debuggable.
+
+    Import JabRef Chicago filters
+
+    * JabRef: New directory.
+    * JabRef/Chicago_export_filters.pdf: New file.
+    * JabRef/net.sf.jabref.export.Chicago.ODF(English)-1.2.jar:
+    Chicago filters modified for use with OpenDocument export.
+
+    (ox-odt, ox-jabref): Recognize \citep{} etc as cite fragments
+
+    * lisp/ox-odt.el (org-odt-cite-regexp): New user option.
+    (org-odt-citation-reference/numbered)
+    (org-odt--translate-cite-fragments): Use `org-odt-cite-regexp'.
+    * contrib/lisp/ox-jabref.el
+    (org-jabref-odt-citation-transcoders): Fix custom group.
+    (org-jabref-odt-citation-reference/text):  Use `org-odt-cite-regexp'.
+
+    Recognize \citep{}, \citet{} etc as cite fragments.  See
+    http://lists.gnu.org/archive/html/emacs-orgmode/2014-01/msg00581.html
+
+    ox-jabref.el: Expand "~" etc. in bib file name
+
+    * contrib/lisp/ox-jabref.el
+    (org-jabref--read-bibliography-attribute): Expand file name.
+    Add check for existence.
+
+    ox-odt.el, ox-jabref.el: Trim cite key
+
+    * lisp/ox-odt.el (org-odt-citation-reference/numbered):
+    (org-odt--translate-cite-fragments): Trim cite key.
+
+    * contrib/lisp/ox-jabref.el
+    (org-jabref-odt-citation-reference/text): Trim cite key.
+
+    ox-jabref.el: Match exactly against the citekey
+
+    * contrib/lisp/ox-jabref.el (org-jabref-export-cite-key):
+    Match exactly against the citekey.
+
+    ox-jabref.el: Use cache to speed up export of citations and bibliography
+
+    * contrib/lisp/ox-jabref.el
+    (org-jabref-temporary-file-directory): New.
+    (org-jabref-use-cache, org-jabref-cache-directory): New user
+    variables.
+    (org-jabref-export--with-cache): New.  Wrap `org-jabref-export-bib-file'
+    and `org-jabref-export-cite-key' with a cache lookup.
+    (org-jabref-load-citation-cache): New.  Around advice for
+    `org-export-collect-tree-properties'.  Push :citation-cache in
+    to info.
+    (org-jabref-write-citation-cache): New.
+    (org-jabref--enhanced-odt-backend): Install
+    `org-jabref-write-citation-cache' as a final filter.
+    (ox-jabref-unload-function): Deactivate advice for
+    `org-export-collect-tree-properties'.
+    (org-jabref-export-cite-key): Throw `user-error' if the JabRef
+    command fails.
+
+    Use a cache to speed up second and subsequent export of
+    citations.  This circumvents slow-down experienced with the
+    JabRef command line processing.  See
+
+    1. http://lists.gnu.org/archive/html/emacs-orgmode/2013-07/msg01099.html
+    2. http://lists.gnu.org/archive/html/emacs-orgmode/2014-04/msg01094.html
+
+    ox-jabref.el: Cleanup whitespace that precede citation numbers
+
+    * contrib/lisp/ox-jabref.el (org-jabref-odt-cleanup-citation-references): New.
+    (org-jabref--enhanced-odt-backend): Install the above final filter.
+
+    Preserve spaces after citation-reference objects
+
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments): Copy over
+    :post-blank prop of cite fragments.
+
+    * contrib/lisp/ox-jabref.el (org-jabref-odt-citation-reference):
+    Honor :post-blank property.
+
+    ox-jabref.el (org-jabref-clear-cache): New command
+
+    * contrib/lisp/ox-jabref.el (org-jabref-clear-cache): New command.
+    (org-jabref-cache-directory): Update docstring.
+
+    OrgOdtContentTemplate.xml (OrgIndexSection): Editable and no background color
+
+    * etc/styles/OrgOdtContentTemplate.xml (OrgIndexSection): Remove
+    background color. This makes the exported document
+    printer-friendly.  Make the section editable.
+
+    OrgOdtStyles.xml (Bibliography): Use hanging indent
+
+    * etc/styles/OrgOdtStyles.xml (Bibliography): Use hanging indent.
+
+    (ox-jabref.el): Speed-up export & Support more citation styles
+
+    * contrib/lisp/ox-jabref.el (org-jabref-citation-styles):
+    (org-jabref-citation-formatters): New user variables.
+
+    * lisp/ox-odt.el (org-odt-cite-regexp): Relax it.
+    Allow match for the word "cite" anywhere withing the latex
+    command.
+    (org-odt--format-footnote-definition): Factored out from
+    `org-odt-footnote-reference'.
+    (org-odt-footnote-reference): Use it.
+    (org-odt-citation-reference/numbered): Remove it.
+
+    Don't use hanging indent for numbered bibliography
+
+    * contrib/lisp/ox-jabref.el
+    (org-jabref--strip-and-add-pre/post-notes): Trivial fix.
+    (org-jabref-odt-format-bibliography): Removed.
+    (org-jabref-odt-format-bibliography--no-hanging-indent)
+    (org-jabref-odt-format-bibliography--use-hanging-indent): New.
+    (org-jabref-citation-formatters): Use above functions.
+
+    ox-odt.el, ox-jabref.el: Integrate with new citation syntax
+
+    * lisp/ox-odt.el:
+    (org-odt-citation): New.
+    (org-odt--collect-cite-keys): Add
+    (org-odt-cite-regexp): Remove it.
+    (org-odt-citation-reference): Remove it
+    (org-odt--translate-cite-fragments): Remove it.
+
+    * contrib/lisp/ox-jabref.el: Integrate with new citation syntax.
+
+    ox-odt.el: Update copyright years
+
+
+# commit 137a793be614aa9c15216946819ea0ac94ede48f
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Mar 4 00:18:27 2015 +0530
+
+    ox-odt.el: Fix leading whitespace
+
+
+# commit 13e4ed94ddb3c0eb1e0f00c0769d451c0de36c9d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 20:32:40 2015 +0530
+
+    ox-odt.el: Preserve white space when converting LaTeX code.
+
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Preserve
+    white space when converting LaTeX code.
+
+    Reported-by: Rasmus <rasmus@gmx.us>
+    <http://permalink.gmane.org/gmane.emacs.orgmode/95472>
+
+
+
+# commit 7018bab4a97432485391991729fbf1f0fdbec71e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 19:34:48 2015 +0530
+
+    ox-odt.el (org-odt-template): Don't create empty paragraphs
+
+    * lisp/ox-odt.el (org-odt-template): Avoid creating of empty
+    paragraphs when the document carries no date.
+
+
+# commit f141bfa086e828d91f41ca3d8ea034bcaca665a3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 18:47:52 2015 +0530
+
+    ox-odt.el (org-odt-link): Fix custom link handling
+
+    * lisp/ox-odt.el (org-odt-link): Propagage signature change to
+    `org-export-custom-protocol-maybe'.
+
+    Reported-by: Christian Moe <mail@christianmoe.com>
+    <http://permalink.gmane.org/gmane.emacs.orgmode/95402>
+
+
+
+# commit 6a057013030dcf24703d0524fe0d720cf3a6b106
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 18:43:05 2015 +0530
+
+    ox-odt.el: Use scope param in org-export-footnote-* calls
+
+    * lisp/ox-odt.el (org-odt-footnote-reference): Use scope param in to
+    `org-export-footnote-first-reference-p' and
+    `org-export-get-footnote-number'.
+
+
+
+# commit 6b57ccfb03251a22cfb028efb5d766a2602e815a
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 18:34:02 2015 +0530
+
+    ox-odt.el: Update copyright years
+
+    * lisp/ox-odt.el: Update copyright years
+
+
+
+# commit ec8e10c3620139f01680fb65ac483635d7a869f4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 11:11:33 2015 +0530
+
+    ox-odt.el: Enumerate footnotes based on body text
+
+    * lisp/ox-odt.el (org-odt-footnote-reference): Enumerate footnotes
+    based on reading order of body text.
+
+    See http://permalink.gmane.org/gmane.emacs.orgmode/94900
+
+
+
+# commit 1ebf7288358eb8fdb8391f648ee16409ff2c0893
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 10:57:37 2015 +0530
+
+    ox-odt.el: Support `:with-title'
+
+    * lisp/ox-odt.el (org-odt-template): Honor `:with-title' option.
+
+
+
+# commit caf11f92c303581691160001e2530d33eb67789c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 10:57:37 2015 +0530
+
+    ox-odt.el: Support `:with-title'
+
+    * lisp/ox-odt.el (org-odt-template): Honor `:with-title' option.
+
+
+
+# commit 8411bbefc066c9f4cc2976e14dff58aa1af097e5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Mar 3 00:03:21 2015 +0530
+
+    ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
+
+    * lisp/ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
+
+
+
+# commit 0fd769033635af5425144ba97569cf553aef186c
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Mar 2 23:23:03 2015 +0530
+
+    ox-odt.el: Fix exporting radio link with missing radio target
+
+    * lisp/ox-odt.el (org-odt-link): When radio link has no valid
+    target (e.g., this is a subtree export and the radio target is not
+    in the exported subtree), simply return contents.
+
+    Thanks to Daniel Clement for reporting it.
+
+    http://permalink.gmane.org/gmane.emacs.orgmode/90218
+
+
+# commit 075a71da7486180df0eedc29384798c86b6f7d75
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Mar 2 23:12:37 2015 +0530
+
+    ox-odt.el: Misc. changes
+
+    * lisp/ox-odt.el (org-odt-styles-dir)
+    (org-odt-create-custom-styles-for-srcblocks, org-odt-table-styles)
+    (org-odt-get-table-cell-styles): Fix docstring.
+    (org-odt-format-inlinetask-function)
+    (org-odt-format-headline-function): Fix versions.
+
+
+# commit 054175b96e5a65c4e9fa7731c2059ecc51657fe0
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Mar 2 22:45:42 2015 +0530
+
+    ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
+
+    * lisp/ox-odt.el (org-odt-format-headline-function): Set this to
+    `org-odt-format-headline-default-function'.
+    (org-odt-format-headline-default-function): New.  Based on
+    `org-odt-format-headline'.
+    (org-odt-format-headline): Remove it.
+    (org-odt-format-toc-headline): Change signature.
+    (org-odt-format-headline--wrap): Change signature.  Propagate
+    above changes.
+    (org-odt-format-inlinetask-function): Set this to
+    `org-odt-format-inlinetask-default-function'.
+    (org-odt-inlinetask): Use `:odt-format-inlinetask-function'.
+    (org-odt-format-inlinetask-default-function): New.  Factored out
+    from `org-odt-inlinetask'.
+
+
+# commit b00162b45bc730d0a97ce0fdda4c1a3a2220aaf1
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Mar 2 21:04:33 2015 +0530
+
+    ox-odt.el: Use options instead of hard-coded variables
+
+    * lisp/ox-odt.el (org-odt-content-template-file)
+    (org-odt-display-outline-level, org-odt-fontify-srcblocks)
+    (org-odt-format-drawer-function, org-odt-format-headline-function)
+    (org-odt-format-inlinetask-function, org-odt-inline-formula-rules)
+    (org-odt-inline-image-rules, org-odt-pixels-per-inch)
+    (org-odt-styles-file, org-odt-table-styles)
+    (org-odt-use-date-fields): Replace these hard-coded variables with
+    options.
+
+    (org-odt-do-format-code): Change signature.
+    (org-odt-fixed-width, org-odt-latex-environment)
+    (org-odt-format-code): Propagate above change.
+
+    (org-odt--image-size): Change signature.
+    (org-odt-link--inline-image): Propagate above change.
+
+
+# commit 3d4f6e2ed7a50628d5f1f0b0bb0589e7268a36a8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 11 15:28:43 2015 +0530
+
+    ox-odt.el: Remove some export options associated to variables
+
+    * lisp/ox-odt.el: Remove following options from ':options-alist':
+    `:odt-convert-capabilities' `:odt-convert-process'
+    `:odt-convert-processes `:odt-create-custom-styles-for-srcblocks
+    `:odt-preferred-output-format' `:odt-prettify-xml'
+    `:odt-schema-dir'.
+
+    These variables are meant to be used outside (or on the fringe) of
+    the export process, where information channel is not available.
+
+
+
+# commit 9463904c714c47b310c2b7f48950c363e496b14b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 11 15:16:40 2015 +0530
+
+    ox-odt.el (org-odt-special-block): Preserve case
+
+    * lisp/ox-odt.el (org-odt-special-block): Preserve case.
+
+
+
+# commit 823290f9ebe293316a0a6d3f989949c12f721bec
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 11 14:59:23 2015 +0530
+
+    ox-odt: Fix invocation of `org-format-latex'
+
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Fix
+    invocation of `org-format-latex'.
+
+
+
+# commit 06067fbd8bcd4d2059f9c756b942a15177975492
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Wed Feb 11 14:44:44 2015 +0530
+
+    ox-odt: Use `org-element-lineage' instead of `org-export-get-genealogy'
+
+    * ox-odt.el (org-odt--enumerate)
+    (org-odt-link--infer-description, org-odt-paragraph)
+    (org-odt-table): Use `org-element-lineage' instead of
+    `org-export-get-genealogy'.
+
+
+
+# commit 0907fe182bb223804c28d2dddc5594900586ffe4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu May 1 09:34:29 2014 +0530
+
+    Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
+
+    * lisp/ox-odt.el (org-odt-caption-and-xref-settings): Re-work docstring.
+    (org-odt-format-label): Correctly check for standard value (of
+    `org-odt-caption-and-xref-settings').
+    (org-odt-link--infer-description, org-odt-link): "???" as
+    placeholder for unresolved fields is confusing.  Use
+    [PLS. UPDATE FIELDS] instead.
+
+    ox-odt.el: Add "txt" as output format
+
+    * lisp/ox-odt.el (org-odt-convert-capabilities): Allow conversion
+    to "Text (encoded)" format.
+
+
+# commit 4aff9c9a697c6335d63add6c0dfbcf5d73629b3d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Feb 21 14:24:37 2014 +0530
+
+    ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
+
+    * lisp/ox-odt.el (org-odt--format-paragraph): Remove it.
+    (org-odt-paragraph): Propagate above change.
+    (org-odt-footnote-reference): Use `org-export-data' and not
+    `org-export-data-with-backend'.
+
+
+# commit 5d1452b669eb22b06420805292d10c250f61dfd8
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Feb 15 11:26:23 2014 +0530
+
+    Use a "OrgPageBreakDefault" as default PAGEBREAK style
+
+    * lisp/ox-odt.el (org-odt-keyword): Use "OrgPageBreakDefault"
+    as the fall back style for #+PAGEBREAK keywords.
+
+
+# commit 8a2fc2f324eb980f50ea219f41b944624f983262
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Feb 15 09:54:20 2014 +0530
+
+    ox-odt.el: Support for page nos. etc as part of xref-es
+
+    * lisp/ox-odt.el (org-odt-caption-and-xref-settings): New user option.
+    (org-odt-label-styles): Remove.
+    (org-odt-category-map-alist): Modify.  Remove label-style field.
+    (org-odt--xref-target): New.
+    (org-odt-link, org-odt-link--infer-description)
+    (org-odt-format-label, org-odt-link--inline-formula):
+    Propagate above change.
+    (org-odt-bookmark-prefix): Remove.
+    (org-odt--target): Propagate above change.
+
+    See
+
+    1. http://lists.gnu.org/archive/html/emacs-orgmode/2013-11/msg00769.html
+    2. http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00585.html
+
+
+# commit 2bde8d3ea1c82151cb79b74d485101d6f817eeb7
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Mon Jan 27 19:45:39 2014 +0530
+
+    ox-odt.el: Cope with empty title
+
+    * lisp/ox-odt.el (org-odt-template): Cope with empty title.
+
+
+# commit b65818e4126517c4ad8d832bd28e953984e8bfa4
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Jan 24 21:43:33 2014 +0530
+
+    ox-odt.el: Fix cell borders
+
+    * lisp/ox-odt.el (org-odt-table-cell): Fix cell borders.
+
+    Support for easy creation of borderless tables.  See
+    http://lists.gnu.org/archive/html/emacs-orgmode/2014-01/msg01085.html
+
+
+# commit e6175f48a56d0124910ee87e7721e53740837493
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jan 23 18:35:12 2014 +0530
+
+    ox-odt.el (org-odt-schema-dir-list): Add git and elpa paths
+
+    * lisp/ox-odt.el (org-odt-schema-dir-list): Add paths for git
+    checkout and ELPA installation.
+
+
+# commit 5148d2b355df876cdaf07b73f2be17001371151b
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jan 23 17:52:39 2014 +0530
+
+    ox-odt.el (generated-autoload-file): Don't set it
+
+
+# commit dc3f8b217dc47e7f89697dc3acc718b0ee5d0202
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Jan 23 17:49:05 2014 +0530
+
+    ox-odt.el: Fix paths of data and styles directories
+
+    * lisp/ox-odt.el (org-odt-data-dir): Set it to nil.
+    (org-odt-styles-dir-list): Fix path for git checkouts.
+
+
+# commit 22387862d78c39c08a023761109183a0591c5228
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Thu Dec 19 00:09:25 2013 +0530
+
+    ox-odt.el: Fix issues seen with ODT files having multiple images
+
+    * lisp/ox-odt.el (org-odt-format-label): Ignore short captions.
+    (org-odt--frame): Always specify "draw:name" attribute.
+
+    Fixes
+    http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00047.html
+
+
+# commit 472985f824b52e66322161d5cf4f209bf028300d
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 5 07:35:01 2013 +0530
+
+    ox-odt.el: Explicitly set coding system of XML files to 'utf-8
+
+    * lisp/ox-odt.el (org-odt--export-wrap): Set
+    `coding-system-for-write' and `save-buffer-coding-system' to
+    'utf-8.
+    (org-odt-export-as-odf): Remove redundant code.
+
+    Fixes http://lists.gnu.org/archive/html/emacs-orgmode/2013-10/msg00873.html
+
+
+# commit 9beade15558d90d03a908f7bbc1014b915ce3796
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Tue Nov 5 06:49:53 2013 +0530
+
+    contrib/lisp/ox-freemind.el: Require cl
+
+
+# commit 6d814d9957b5a502a457e8994eccf4ac761009f9
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 4 13:51:36 2013 +0530
+
+    ox-odt.el: Support hrule and table attributes in list tables
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Honor table
+    specific attributes.  Allow hrules within list-tables.
+
+
+# commit 6bd6b42fbd33f5b69ed43b94fdd016df4ef25ba5
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 4 11:35:27 2013 +0530
+
+    ox-odt.el: Don't allow table row to split across pages
+
+    * etc/styles/OrgOdtContentTemplate.xml (OrgTableRow, CustomRow): New styles.
+    * lisp/ox-odt.el (org-odt-table-row): Use above styles.
+
+
+# commit 762dd52f011dd563c8716b06f570d0a06c541045
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Oct 4 01:45:08 2013 +0530
+
+    ox-odt.el: Specify cell widths using `:widths' attribute
+
+    * lisp/ox-odt.el (org-odt-table-first-row-data-cells): Remove.
+    (org-odt--table-cell-widths): Handle ODT attribute `:widths'.
+    (org-odt-table-cell, org-odt--table): Propagate above changes.
+
+    i.e., Render the following tables just the same way.
+
+    | a | b | c |
+    | d | e | f |
+
+    | <3> | <6>    | <9>       |
+    | a   | b      | c         |
+    | d   | e      | f         |
+
+
+# commit f4db2240d05b0fb554904b76106639c652bf9198
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Fri Aug 30 15:35:02 2013 +0530
+
+    ox-odt.el: Support for pagebreaks, custom paragraph styles.
+
+    * etc/styles/OrgOdtStyles.xml (OrgPageBreakDefault)
+    (OrgPageBreakLandscape): New styles.
+
+    * lisp/ox-odt.el (org-odt-keyword): Add PAGEBREAK.
+    (org-odt--format-paragraph): Handle `:p-style' attribute
+    attached to `plain-list' and `item' elements.
+    (org-odt-paragraph):  Handle `:style' attribute.
+    (org-odt-plain-list): Handle `:style' attribute of `ordered'
+    and `unordered' lists.  Descriptive lists are ignored (for
+    now).
+    (org-odt-special-block): Use `org-odt--read-attribute'.
+
+    FIXME: Handle paragraph styles for description lists, standard and
+    user-defined special blocks and those within footnotes?
+
+
+# commit 5334d5ae6a341bc827a8b3135c136fdaa1918ff3
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Aug 24 15:30:13 2013 +0530
+
+    ox-odt.el: Fix handling of ODT attributes
+
+    * lisp/ox-odt.el (org-odt--read-attribute): New.
+    (org-odt-template, org-odt-link--inline-image, org-odt-src-block)
+    (org-odt-table-style-spec, org-odt-table-cell)
+    (org-odt--translate-list-tables): Use it.
+
+
+# commit 38a345e320db558a65879cfa8cbe340d1e00253e
+# Author: Jambunathan K <kjambunathan@gmail.com>
+# Date:   Sat Jun 29 17:59:48 2013 +0530
+
+    ox-odt: Support for typesetting Description lists as in LaTeX
+
+    * etc/styles.OrgOdtStyles.xml (OrgDescriptionTerm)
+    (OrgDescriptionDefinition): New styles for typesetting
+    description lists.
+
+    * lisp/ox-odt.el (org-odt-description-list-style): New user option.
+    (org-odt--translate-description-lists/html): Renmed from
+    `org-odt--translate-description-lists.  Use new style
+    "OrgDescriptionTerm".  Update comments.
+    (org-odt--translate-description-lists/latex): New.
+    (org-odt-bold): Add an internal `:style' property.
+
+# Local Variables:
+# mode: org
+# End:
