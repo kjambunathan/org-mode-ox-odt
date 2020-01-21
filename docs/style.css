@@ -165,6 +165,8 @@ div.example > pre.example {
 
 pre.menu-comment { padding-top: 1.3em; margin: 0; }
 
+.settitle { display: none; }
+h1.top { text-align: center; }
 
 /*** FOR WIDE SCREENS ***/
 
