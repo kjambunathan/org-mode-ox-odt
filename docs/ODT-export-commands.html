@@ -3,10 +3,10 @@
 <!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>ODT export commands (OpenDocument Text Exporter Manual)</title>
+<title>ODT export commands (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
 
-<meta name="description" content="ODT export commands (OpenDocument Text Exporter Manual)">
-<meta name="keywords" content="ODT export commands (OpenDocument Text Exporter Manual)">
+<meta name="description" content="ODT export commands (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="ODT export commands (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
@@ -15,7 +15,7 @@
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="index.html" rel="up" title="Top">
 <link href="Extending-ODT-export.html#Extending-ODT-export" rel="next" title="Extending ODT export">
-<link href="Pre_002drequisites-for-ODT-export.html" rel="prev" title="Pre-requisites for ODT export">
+<link href="Getting-Started-with-ODT-export.html#Configuration" rel="prev" title="Configuration">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
@@ -42,14 +42,14 @@ ul.no-bullet {list-style: none}
 <body lang="en">
 <span id="ODT-export-commands"></span><div class="header">
 <p>
-Next: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="n" rel="next">Extending ODT export</a>, Previous: <a href="Pre_002drequisites-for-ODT-export.html" accesskey="p" rel="prev">Pre-requisites for ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="n" rel="next">Extending ODT export</a>, Previous: <a href="Getting-Started-with-ODT-export.html#Getting-Started-with-ODT-export" accesskey="p" rel="prev">Getting Started with ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
-<span id="ODT-export-commands-1"></span><h2 class="chapter">2 ODT export commands</h2>
+<span id="ODT-export-commands-1"></span><h2 class="chapter">3 ODT export commands</h2>
 
 
 <hr>
-<span id="Exporting-to-ODT"></span><span id="Exporting-to-ODT-1"></span><h3 class="section">2.1 Exporting to ODT</h3>
+<span id="Exporting-to-ODT"></span><span id="Exporting-to-ODT-1"></span><h3 class="section">3.1 Exporting to ODT</h3>
 
 <dl compact="compact">
 <dt><kbd>C-c C-e o o</kbd> (&lsquo;<samp>org-odt-export-to-odt</samp>&rsquo;)</dt>
@@ -60,15 +60,6 @@ Next: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="n" rel
 <span id="index-org_002dodt_002dpreferred_002doutput_002dformat"></span>
 <p>If &lsquo;<samp>org-odt-preferred-output-format</samp>&rsquo; is specified, automatically
 convert the exported file to that format. See <a href="Extending-ODT-export.html#Automatically-exporting-to-other-formats">Automatically exporting to other formats</a>.
-</p>
-<span id="index-EXPORT_005fFILE_005fNAME_002c-keyword"></span>
-<p>For an Org file &lsquo;<samp>myfile.org</samp>&rsquo;, the ODT file will be
-&lsquo;<samp>myfile.odt</samp>&rsquo;. The file will be overwritten without warning. If
-there is an active region,<a id="DOCF3" href="#FOOT3"><sup>3</sup></a> only the region will be
-exported. If the selected region is a single tree,<a id="DOCF4" href="#FOOT4"><sup>4</sup></a> the tree
-head will become the document title. If the tree head entry has,
-or inherits, an &lsquo;<samp>EXPORT_FILE_NAME</samp>&rsquo; property, that name will be
-used for the export.
 </p>
 </dd>
 <dt><kbd>C-c C-e o O</kbd></dt>
@@ -81,15 +72,6 @@ converted file instead. See <a href="Extending-ODT-export.html#Automatically-exp
 </p></dd>
 </dl>
 
-<div class="footnote">
-<hr>
-<h4 class="footnotes-heading">Footnotes</h4>
-
-<h5><a id="FOOT3" href="#DOCF3">(3)</a></h3>
-<p>This requires &lsquo;<samp>transient-mark-mode</samp>&rsquo; to be turned on</p>
-<h5><a id="FOOT4" href="#DOCF4">(4)</a></h3>
-<p>To select the current subtree, use <kbd>C-c @</kbd></p>
-</div>
 <hr>
 <div class="header">
 <p>

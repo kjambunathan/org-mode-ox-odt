@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Getting Started with ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
+
+<meta name="description" content="Getting Started with ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="Getting Started with ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="ODT-export-commands.html#ODT-export-commands" rel="next" title="ODT export commands">
+<link href="Project-Summary.html" rel="prev" title="Project Summary">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Getting-Started-with-ODT-export"></span><div class="header">
+<p>
+Next: <a href="ODT-export-commands.html#ODT-export-commands" accesskey="n" rel="next">ODT export commands</a>, Previous: <a href="Project-Summary.html" accesskey="p" rel="prev">Project Summary</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Getting-Started-with-ODT-export-1"></span><h2 class="chapter">2 Getting Started with ODT export</h2>
+
+
+<hr>
+<span id="Pre_002drequisites-for-ODT-export"></span><span id="Pre_002drequisites-for-ODT-export-1"></span><h3 class="section">2.1 Pre-requisites for ODT export</h3>
+
+<p>The ODT backend depends on the following programs
+</p>
+<table>
+<thead><tr><th>Program</th><th>Purpose</th></tr></thead>
+<tr><td>&lsquo;<samp>zip</samp>&rsquo;<a id="DOCF1" href="#FOOT1"><sup>1</sup></a></td><td>To produce OpenDocument files</td></tr>
+<tr><td>&lsquo;<samp>unzip</samp>&rsquo;<a id="DOCF2" href="#FOOT2"><sup>2</sup></a></td><td>To unzip  custom styles</td></tr>
+<tr><td>&lsquo;<samp>identify</samp>&rsquo;<a id="DOCF3" href="#FOOT3"><sup>3</sup></a></td><td>To identify the size of an inline image</td></tr>
+<tr><td>&lsquo;<samp>latex</samp>&rsquo;<a id="DOCF4" href="#FOOT4"><sup>4</sup></a></td><td>To compile LaTeX fragments to &lsquo;<samp>dvi</samp>&rsquo; images</td></tr>
+<tr><td>&lsquo;<samp>dvisgm</samp>&rsquo;<a id="DOCF5" href="#FOOT5"><sup>5</sup></a></td><td>To convert &lsquo;<samp>dvi</samp>&rsquo; images to &lsquo;<samp>svg</samp>&rsquo;</td></tr>
+<tr><td>&lsquo;<samp>dvipng</samp>&rsquo;<a id="DOCF6" href="#FOOT6"><sup>6</sup></a></td><td>To convert &lsquo;<samp>dvi</samp>&rsquo; images to &lsquo;<samp>png</samp>&rsquo;</td></tr>
+<tr><td>&lsquo;<samp>convert</samp>&rsquo;<a id="DOCF7" href="#FOOT7"><sup>7</sup></a></td><td>To convert inline &lsquo;<samp>pdf</samp>&rsquo; to &lsquo;<samp>png</samp>&rsquo;</td></tr>
+<tr><td>&lsquo;<samp>latexmlmath</samp>&rsquo;<a id="DOCF8" href="#FOOT8"><sup>8</sup></a></td><td>To convert LaTeX math snippets to MathML</td></tr>
+<tr><td>&lsquo;<samp>mathtoweb</samp>&rsquo;<a id="DOCF9" href="#FOOT9"><sup>9</sup></a></td><td>〃</td></tr>
+<tr><td>&lsquo;<samp>jabref</samp>&rsquo;<a id="DOCF10" href="#FOOT10"><sup>10</sup></a></td><td>To handle bibliography and citations</td></tr>
+</table>
+
+
+<p>Of these, &lsquo;<samp>zip</samp>&rsquo; is essential.  Rest are optional.
+</p>
+<hr>
+<span id="Installation"></span><span id="Installation-1"></span><h3 class="section">2.2 Installation</h3>
+
+<p>You can install the OpenDocument Text export backend using the Emacs
+package manager.  The archive URL for the package is
+<a href="https://kjambunathan.github.io/elpa/">https://kjambunathan.github.io/elpa/</a>.
+</p>
+<p>A typical configuration look like this
+</p>
+<div class="lisp">
+<pre class="lisp">(custom-set-variables
+ '(package-archives
+   (quote
+    ((&quot;gnu&quot; . &quot;https://elpa.gnu.org/packages/&quot;)
+     (&quot;ox-odt&quot; . &quot;https://kjambunathan.github.io/elpa/&quot;)))))
+</pre></div>
+
+<p>In the &lsquo;<samp>*Packages*</samp>&rsquo; buffer, packages from this archive show up as below
+</p>
+<div class="example">
+<pre class="example">JabrefExportChicagoODF 1.2.2      ... Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat
+ox-odt                 9.2.6.263  ... OpenDocument Text Exporter for Org Mode
+</pre></div>
+
+<hr>
+<span id="Configuration"></span><span id="Configuration-1"></span><h3 class="section">2.3 Configuration</h3>
+
+<p>Here is a sample configuration.
+</p>
+<div class="example">
+<pre class="example">(custom-set-variables
+ '(org-odt-convert-process &quot;LibreOffice&quot;)
+ '(org-odt-preferred-output-format &quot;docx&quot;)
+ '(org-odt-transform-processes
+   '((&quot;Optimize Column Width of all Tables&quot;
+      &quot;soffice&quot; &quot;--norestore&quot; &quot;--invisible&quot; &quot;--headless&quot;
+      &quot;macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)&quot;)
+     (&quot;Update All&quot;
+      &quot;soffice&quot; &quot;--norestore&quot; &quot;--invisible&quot; &quot;--headless&quot;
+      &quot;macro:///OrgMode.Utilities.UpdateAll(%I)&quot;)
+     (&quot;Reload&quot;
+      &quot;soffice&quot; &quot;--norestore&quot; &quot;--invisible&quot; &quot;--headless&quot;
+      &quot;macro:///OrgMode.Utilities.Reload(%I)&quot;)))
+ '(org-jabref-command '(&quot;jabref&quot; &quot;-n&quot; &quot;true&quot;))
+ '(org-latex-to-mathml-convert-command &quot;java -jar %j -unicode -force -df %o %I&quot;)
+ '(org-latex-to-mathml-jar-file
+   &quot;/home/kjambunathan/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar&quot;))
+
+(setcdr (assq 'system org-file-apps-defaults-gnu) &quot;xdg-open %s&quot;)
+
+(require 'ox-jabref)
+</pre></div>
+
+<p>Above configuration sets up the ODT backend as follows:
+</p>
+<ol>
+<li> Use &lsquo;<samp>&quot;LibreOffice&quot;</samp>&rsquo; (i.e., &lsquo;<samp>soffice</samp>&rsquo; executable) as the document converter
+</li><li> Generate a &lsquo;<samp>docx</samp>&rsquo; document for every &lsquo;<samp>odt</samp>&rsquo; document
+</li><li> Process the &lsquo;<samp>odt</samp>&rsquo; document with a set of LibreOffice Basic Macros to
+<ul>
+<li> Optimize the column width of all tables
+</li><li> Update cross-references, table of contents etc.
+</li><li> (if you are already viewing a past version of a &lsquo;<samp>odt</samp>&rsquo; file),
+re-load the new file in the same application window.
+</li></ul>
+</li><li> Tell where your &lsquo;<samp>JabRef</samp>&rsquo; and &lsquo;<samp>mathtoweb</samp>&rsquo; executables are located, and how they are invoked.
+</li><li> (if you are using a GNU system) open the &lsquo;<samp>odt</samp>&rsquo; document with your
+preferred OpenDocument viewer, presumably &lsquo;<samp>LibreOffice</samp>&rsquo;.
+</li><li> Load &lsquo;<samp>ox-jabref</samp>&rsquo; so as to produce documents with bibliography and citations .
+</li></ol>
+
+<div class="footnote">
+<hr>
+<h4 class="footnotes-heading">Footnotes</h4>
+
+<h5><a id="FOOT1" href="#DOCF1">(1)</a></h3>
+<p><a href="http://www.info-zip.org/">Info-ZIP</a></p>
+<h5><a id="FOOT2" href="#DOCF2">(2)</a></h3>
+<p><a href="http://www.info-zip.org/">Info-ZIP</a></p>
+<h5><a id="FOOT3" href="#DOCF3">(3)</a></h3>
+<p><a href="https://imagemagick.org">ImageMagick</a></p>
+<h5><a id="FOOT4" href="#DOCF4">(4)</a></h3>
+<p><a href="http://www.tug.org/texlive/">TeX Live</a></p>
+<h5><a id="FOOT5" href="#DOCF5">(5)</a></h3>
+<p><a href="http://www.tug.org/texlive/">TeX Live</a></p>
+<h5><a id="FOOT6" href="#DOCF6">(6)</a></h3>
+<p><a href="http://www.nongnu.org/dvipng/">dvipng</a></p>
+<h5><a id="FOOT7" href="#DOCF7">(7)</a></h3>
+<p><a href="https://imagemagick.org">ImageMagick</a></p>
+<h5><a id="FOOT8" href="#DOCF8">(8)</a></h3>
+<p><a href="http://dlmf.nist.gov/LaTeXML/">LaTeXML</a></p>
+<h5><a id="FOOT9" href="#DOCF9">(9)</a></h3>
+<p><a href="http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl">MathToWeb</a></p>
+<h5><a id="FOOT10" href="#DOCF10">(10)</a></h3>
+<p><a href="https://www.jabref.org/">JabRef</a></p>
+</div>
+<hr>
+<div class="header">
+<p>
+Previous: <a href="#Installation" accesskey="p" rel="prev">Installation</a>, Up: <a href="#Getting-Started-with-ODT-export" accesskey="u" rel="up">Getting Started with ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>

@@ -3,10 +3,10 @@
 <!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Advanced topics in ODT export (OpenDocument Text Exporter Manual)</title>
+<title>Advanced topics in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
 
-<meta name="description" content="Advanced topics in ODT export (OpenDocument Text Exporter Manual)">
-<meta name="keywords" content="Advanced topics in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="description" content="Advanced topics in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="Advanced topics in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
@@ -45,7 +45,7 @@ ul.no-bullet {list-style: none}
 Next: <a href="Main-Index.html" accesskey="n" rel="next">Main Index</a>, Previous: <a href="Literal-examples-in-ODT-export.html" accesskey="p" rel="prev">Literal examples in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
-<span id="Advanced-topics-in-ODT-export-1"></span><h2 class="chapter">11 Advanced topics in ODT export</h2>
+<span id="Advanced-topics-in-ODT-export-1"></span><h2 class="chapter">12 Advanced topics in ODT export</h2>
 
 <p>If you rely heavily on ODT export, you may want to exploit the full
 set of features that the exporter offers. This section describes
@@ -53,7 +53,7 @@ features that would be of interest to power users.
 </p>
 
 <hr>
-<span id="Configuring-a-document-converter"></span><span id="Configuring-a-document-converter-1"></span><h3 class="section">11.1 Configuring a document converter</h3>
+<span id="Configuring-a-document-converter"></span><span id="Configuring-a-document-converter-1"></span><h3 class="section">12.1 Configuring a document converter</h3>
 
 <p>The ODT exporter can work with popular converters with little or no
 extra configuration from your side. See <a href="Extending-ODT-export.html#Extending-ODT-export">Extending ODT export</a>. If you
@@ -88,7 +88,7 @@ customizing the variable &lsquo;<samp>org-odt-convert-process</samp>&rsquo;.
 </p></li></ol>
 
 <hr>
-<span id="Working-with-OpenDocument-style-files"></span><span id="Working-with-OpenDocument-style-files-1"></span><h3 class="section">11.2 Working with OpenDocument style files</h3>
+<span id="Working-with-OpenDocument-style-files"></span><span id="Working-with-OpenDocument-style-files-1"></span><h3 class="section">12.2 Working with OpenDocument style files</h3>
 
 <p>This section explores the internals of the ODT exporter and the means
 by which it produces styled documents. Read this section if you are
@@ -97,7 +97,7 @@ used by the exporter.
 </p>
 
 <hr>
-<span id="Factory-styles"></span><span id="Factory-styles-1"></span><h4 class="subsection">11.2.1 Factory styles</h4>
+<span id="Factory-styles"></span><span id="Factory-styles-1"></span><h4 class="subsection">12.2.1 Factory styles</h4>
 
 <span id="index-org_002dodt_002dstyles_002ddir"></span>
 <p>The ODT exporter relies on two files for generating its output. These
@@ -139,7 +139,7 @@ numbered.
 </dl>
 
 <hr>
-<span id="Overriding-factory-styles"></span><span id="Overriding-factory-styles-1"></span><h4 class="subsection">11.2.2 Overriding factory styles</h4>
+<span id="Overriding-factory-styles"></span><span id="Overriding-factory-styles-1"></span><h4 class="subsection">12.2.2 Overriding factory styles</h4>
 
 <p>The following two variables control the location from which the ODT
 exporter picks up the custom styles and content template files. You
@@ -184,7 +184,7 @@ used in the final output.
 </dl>
 
 <hr>
-<span id="Creating-one_002doff-styles"></span><span id="Creating-one_002doff-styles-1"></span><h3 class="section">11.3 Creating one-off styles</h3>
+<span id="Creating-one_002doff-styles"></span><span id="Creating-one_002doff-styles-1"></span><h3 class="section">12.3 Creating one-off styles</h3>
 
 <p>There are times when you would want one-off formatting in the exported
 document. You can achieve this by embedding raw OpenDocument XML in
@@ -251,7 +251,7 @@ This paragraph is specially formatted and uses bold text.
 </li></ol>
 
 <hr>
-<span id="Customizing-tables-in-ODT-export"></span><span id="Customizing-tables-in-ODT-export-1"></span><h3 class="section">11.4 Customizing tables in ODT export</h3>
+<span id="Customizing-tables-in-ODT-export"></span><span id="Customizing-tables-in-ODT-export-1"></span><h3 class="section">12.4 Customizing tables in ODT export</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-4"></span>
 <p>You can override the default formatting of the table by specifying a
@@ -259,11 +259,11 @@ custom table style with the &lsquo;<samp>#+ATTR_ODT</samp>&rsquo; line. For a di
 default formatting of tables see <a href="Tables-in-ODT-export.html">Tables in ODT export</a>.
 </p>
 <p>This feature closely mimics the way table templates are defined in the
-OpenDocument-v1.2 specification.<a id="DOCF9" href="#FOOT9"><sup>9</sup></a>
+OpenDocument-v1.2 specification.<a id="DOCF15" href="#FOOT15"><sup>15</sup></a>
 </p>
 
 <hr>
-<span id="Custom-table-styles-_002d-an-illustration"></span><span id="Custom-table-styles-_002d-an-illustration-1"></span><h4 class="subsection">11.4.1 Custom table styles - an illustration</h4>
+<span id="Custom-table-styles-_002d-an-illustration"></span><span id="Custom-table-styles-_002d-an-illustration-1"></span><h4 class="subsection">12.4.1 Custom table styles - an illustration</h4>
 
 <p>To have a quick preview of this feature, install the below setting and
 export the table that follows.
@@ -295,12 +295,12 @@ Template&rsquo; in OrgOdtContentTemplate.xml (see <a href="#Factory-styles">Fact
 need additional templates you have to define these styles yourselves.
 </p>
 <hr>
-<span id="Custom-table-styles-_002d-the-nitty_002dgritty"></span><span id="Custom-table-styles-_002d-the-nitty_002dgritty-1"></span><h4 class="subsection">11.4.2 Custom table styles - the nitty-gritty</h4>
+<span id="Custom-table-styles-_002d-the-nitty_002dgritty"></span><span id="Custom-table-styles-_002d-the-nitty_002dgritty-1"></span><h4 class="subsection">12.4.2 Custom table styles - the nitty-gritty</h4>
 
 <p>To use this feature proceed as follows:
 </p>
 <ol>
-<li> Create a table template<a id="DOCF10" href="#FOOT10"><sup>10</sup></a>
+<li> Create a table template<a id="DOCF16" href="#FOOT16"><sup>16</sup></a>
 
 <p>A table template is nothing but a set of &lsquo;<samp>table-cell</samp>&rsquo; and
 &lsquo;<samp>paragraph</samp>&rsquo; styles for each of the following table cell categories:
@@ -343,7 +343,7 @@ styles in the &lsquo;<samp>&lt;office:automatic-styles&gt;</samp>&rsquo;
 &hellip; &lsquo;<samp>&lt;/office:automatic-styles&gt;</samp>&rsquo; element of the content template
 file (see <a href="#Factory-styles">Factory styles</a>).
 </p>
-</li><li> Define a table style<a id="DOCF11" href="#FOOT11"><sup>11</sup></a>
+</li><li> Define a table style<a id="DOCF17" href="#FOOT17"><sup>17</sup></a>
 
 <p>To define a table style, create an entry for the style in the
 variable &lsquo;<samp>org-odt-table-styles</samp>&rsquo; and specify the following:
@@ -385,7 +385,7 @@ the &lsquo;<samp>ATTR_ODT</samp>&rsquo; line as shown below.
 </li></ol>
 
 <hr>
-<span id="Validating-OpenDocument-XML"></span><span id="Validating-OpenDocument-XML-1"></span><h3 class="section">11.5 Validating OpenDocument XML</h3>
+<span id="Validating-OpenDocument-XML"></span><span id="Validating-OpenDocument-XML-1"></span><h3 class="section">12.5 Validating OpenDocument XML</h3>
 
 <p>Occasionally, you will discover that the document created by the ODT
 exporter cannot be opened by your favorite application. One of the
@@ -393,7 +393,7 @@ common reasons for this is that the &lsquo;<samp>.odt</samp>&rsquo; file is corr
 cases, you may want to validate the document against the OpenDocument
 RELAX NG Compact Syntax (RNC) schema.
 </p>
-<p>For de-compressing the &lsquo;<samp>.odt</samp>&rsquo; file<a id="DOCF12" href="#FOOT12"><sup>12</sup></a>: See <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/File-Archives.html#File-Archives">(emacs)File Archives</a>. For general help with validation (and schema-sensitive
+<p>For de-compressing the &lsquo;<samp>.odt</samp>&rsquo; file<a id="DOCF18" href="#FOOT18"><sup>18</sup></a>: See <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/File-Archives.html#File-Archives">(emacs)File Archives</a>. For general help with validation (and schema-sensitive
 editing) of XML files: See <a href="https://www.gnu.org/software/emacs/manual/html_node/nxml-mode/Introduction.html#Introduction">(nxml-mode)Introduction</a>.
 </p>
 <p>If you have ready access to OpenDocument &lsquo;<samp>.rnc</samp>&rsquo; files and the needed
@@ -406,18 +406,18 @@ for you.
 <hr>
 <h4 class="footnotes-heading">Footnotes</h4>
 
-<h5><a id="FOOT9" href="#DOCF9">(9)</a></h3>
+<h5><a id="FOOT15" href="#DOCF15">(15)</a></h3>
 <p><a href="http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html">OpenDocument-v1.2 Specification</a></p>
-<h5><a id="FOOT10" href="#DOCF10">(10)</a></h3>
+<h5><a id="FOOT16" href="#DOCF16">(16)</a></h3>
 <p>See the &lsquo;<samp>&lt;table:table-template&gt;</samp>&rsquo; element of the
 OpenDocument-v1.2 specification</p>
-<h5><a id="FOOT11" href="#DOCF11">(11)</a></h3>
+<h5><a id="FOOT17" href="#DOCF17">(17)</a></h3>
 <p>See the attributes &lsquo;<samp>table:template-name</samp>&rsquo;,
 &lsquo;<samp>table:use-first-row-styles</samp>&rsquo;, &lsquo;<samp>table:use-last-row-styles</samp>&rsquo;,
 &lsquo;<samp>table:use-first-column-styles</samp>&rsquo;, &lsquo;<samp>table:use-last-column-styles</samp>&rsquo;,
 &lsquo;<samp>table:use-banding-rows-styles</samp>&rsquo;, and &lsquo;<samp>table:use-banding-column-styles</samp>&rsquo;
 of the &lsquo;<samp>&lt;table:table&gt;</samp>&rsquo; element in the OpenDocument-v1.2 specification</p>
-<h5><a id="FOOT12" href="#DOCF12">(12)</a></h3>
+<h5><a id="FOOT18" href="#DOCF18">(18)</a></h3>
 <p>&lsquo;<samp>.odt</samp>&rsquo; files are nothing but &lsquo;<samp>zip</samp>&rsquo; archives</p>
 </div>
 <hr>

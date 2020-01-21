@@ -3,10 +3,10 @@
 <!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Images in ODT export (OpenDocument Text Exporter Manual)</title>
+<title>Images in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
 
-<meta name="description" content="Images in ODT export (OpenDocument Text Exporter Manual)">
-<meta name="keywords" content="Images in ODT export (OpenDocument Text Exporter Manual)">
+<meta name="description" content="Images in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="Images in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
@@ -45,11 +45,11 @@ ul.no-bullet {list-style: none}
 Next: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="n" rel="next">Math formatting in ODT export</a>, Previous: <a href="Tables-in-ODT-export.html" accesskey="p" rel="prev">Tables in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
-<span id="Images-in-ODT-export-1"></span><h2 class="chapter">7 Images in ODT export</h2>
+<span id="Images-in-ODT-export-1"></span><h2 class="chapter">8 Images in ODT export</h2>
 
 
 <hr>
-<span id="Embedding-images"></span><span id="Embedding-images-1"></span><h3 class="section">7.1 Embedding images</h3>
+<span id="Embedding-images"></span><span id="Embedding-images-1"></span><h3 class="section">8.1 Embedding images</h3>
 
 <p>You can embed images within the exported document by providing a link
 to the desired image file with no link description. For example, to
@@ -64,7 +64,7 @@ embed &lsquo;<samp>img.png</samp>&rsquo; do either of the following:
 </pre></div>
 
 <hr>
-<span id="Embedding-clickable-images"></span><span id="Embedding-clickable-images-1"></span><h3 class="section">7.2 Embedding clickable images</h3>
+<span id="Embedding-clickable-images"></span><span id="Embedding-clickable-images-1"></span><h3 class="section">8.2 Embedding clickable images</h3>
 
 <p>You can create clickable images by providing a link whose description
 is a link to an image file. For example, to embed a image
@@ -76,7 +76,7 @@ website, do the following
 </pre></div>
 
 <hr>
-<span id="Sizing-and-scaling-of-embedded-images"></span><span id="Sizing-and-scaling-of-embedded-images-1"></span><h3 class="section">7.3 Sizing and scaling of embedded images</h3>
+<span id="Sizing-and-scaling-of-embedded-images"></span><span id="Sizing-and-scaling-of-embedded-images-1"></span><h3 class="section">8.3 Sizing and scaling of embedded images</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-2"></span>
 <p>You can control the size and scale of the embedded images using the
@@ -87,7 +87,7 @@ website, do the following
 document in units of centimeters. In order to scale the embedded
 images, the exporter queries for pixel dimensions of the images using
 one of a) ImageMagick&rsquo;s identify program or b) Emacs &lsquo;<samp>create-image</samp>&rsquo;
-and &lsquo;<samp>image-size</samp>&rsquo; APIs.<a id="DOCF6" href="#FOOT6"><sup>6</sup></a> The pixel dimensions are subsequently
+and &lsquo;<samp>image-size</samp>&rsquo; APIs.<a id="DOCF12" href="#FOOT12"><sup>12</sup></a> The pixel dimensions are subsequently
 converted in to units of centimeters using
 &lsquo;<samp>org-odt-pixels-per-inch</samp>&rsquo;. The default value of this variable is set
 to &lsquo;<samp>display-pixels-per-inch</samp>&rsquo;. You can tweak this variable to achieve
@@ -136,7 +136,7 @@ original height:width ratio, do the following
 </dl>
 
 <hr>
-<span id="Anchoring-of-images"></span><span id="Anchoring-of-images-1"></span><h3 class="section">7.4 Anchoring of images</h3>
+<span id="Anchoring-of-images"></span><span id="Anchoring-of-images-1"></span><h3 class="section">8.4 Anchoring of images</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-3"></span>
 <p>You can control the manner in which an image is anchored by setting
@@ -155,7 +155,7 @@ of the the following three values for the &lsquo;<samp>:anchor</samp>&rsquo; pro
 <hr>
 <h4 class="footnotes-heading">Footnotes</h4>
 
-<h5><a id="FOOT6" href="#DOCF6">(6)</a></h3>
+<h5><a id="FOOT12" href="#DOCF12">(12)</a></h3>
 <p>Use of ImageMagick is only desirable. However, if you routinely
 produce documents that have large images or you export your Org files
 that has images using a Emacs batch script, then the use of
