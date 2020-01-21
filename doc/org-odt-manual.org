@@ -2,8 +2,8 @@
 #+OPTIONS: author:t broken-links:nil c:nil creator:nil
 #+OPTIONS: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
 #+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
-#+OPTIONS: timestamp:t title:t toc:t todo:t |:t
-#+TITLE: OpenDocument Text Exporter Manual
+#+OPTIONS: timestamp:t title:t toc:nil todo:t |:t
+#+TITLE: OpenDocument Text Exporter for Emacs' Org Mode
 #+AUTHOR: Jambunathan K
 #+EMAIL: kjambunathan@gmail.com
 #+LANGUAGE: en
@@ -32,20 +32,152 @@
 # #+texinfo_dir_title: Org Mode: (org)
 # #+texinfo_dir_desc: Outline-based notes management and organizer
 
-This manual is for Org-7.8.08's OpenDocument Text Exporter Manual.
+#+texinfo: @defindex win
 
-Orgmode[fn:1] supports export to OpenDocument Text (ODT) format using
-the =org-odt.el= module. Documents created by this exporter use the
-OpenDocument-v1.2 specification[fn:2] and are compatible with
-LibreOffice 3.4.
+This manual documents =ox-odt=, an Emacs Lisp library that exports
+[[https://orgmode.org/][Org mode]] files to
+[[http://www.oasis-open.org/committees/office][OpenDocument format]]
+format. Office Documents produced by this backend are compliant with
+[[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2
+Specification]], and can be opened with
+[[http://www.libreoffice.org/][LibreOffice]] or any other compliant
+OpenDocument application.
 
-* Pre-requisites for ODT export
+This manual is for a /fork/ of the [[info:org::OpenDocument Text
+export]] engine that ships with stock Emacs.  If you are an existing
+user of the stock Emacs backend, and want to learn about new features
+/exclusive/ to this fork jump right to [[*What is New]] section.
+
+#+texinfo: @contents
+
+* Project Summary
+
+- Description :: The Authoritative fork of Org mode's ODT exporter 
+
+- Version ::
+
+- Depends on :: 
+
+- Suggests ::
+
+- Enhances :: 
+
+- Published ::
+
+- Author :: Jambunathan K <kjambuanthan at gmail.com>
+
+- Maintainer :: Jambunathan K <kjambuanthan at gmail.com>
+
+- BugReports :: https://github.com/kjambunathan/org-mode-ox-odt/issues
+
+- License ::
+
+- URL :: https://github.com/kjambunathan/org-mode-ox-odt
+
+- Downloads ::
+
+  - ELPA URL :: https://kjambunathan.github.io/elpa/
+
+  - User Manual (online HTML) :: https://kjambunathan.github.io/org-mode-ox-odt/
+
+  - User Manual (PDF) :: https://kjambunathan.github.io/org-mode-ox-odt/org-odt.pdf
+
+* Getting Started with ODT export
 :PROPERTIES:
 :DESCRIPTION: What packages ODT exporter relies on
 :END:
 
-The ODT exporter relies on the zip program to create the final output.
-Check the availability of this program before proceeding further.
+** Pre-requisites for ODT export
+:PROPERTIES:
+:DESCRIPTION: What packages ODT exporter relies on
+:END:
+
+The ODT backend depends on the following programs
+
+| Program             | Purpose                                    |
+|---------------------+--------------------------------------------|
+| =zip=[fn:1]         | To produce OpenDocument files              |
+| =unzip=[fn:1]       | To unzip  custom styles                    |
+|---------------------+--------------------------------------------|
+| =identify=[fn:2]    | To identify the size of an inline image    |
+|---------------------+--------------------------------------------|
+| =latex=[fn:3]       | To compile LaTeX fragments to =dvi= images |
+| =dvisgm=[fn:3]      | To convert =dvi= images to =svg=           |
+| =dvipng=[fn:4]      | To convert =dvi= images to =png=           |
+| =convert=[fn:5]     | To convert inline =pdf= to =png=           |
+|---------------------+--------------------------------------------|
+| =latexmlmath=[fn:6] | To convert LaTeX math snippets to MathML   |
+| =mathtoweb=[fn:7]   | 〃                                         |
+|---------------------+--------------------------------------------|
+| =jabref=[fn:8]      | To handle bibliography and citations       |
+
+
+Of these, =zip= is essential.  Rest are optional.
+
+** Installation
+
+You can install the OpenDocument Text export backend using the Emacs
+package manager.  The archive URL for the package is
+[[https://kjambunathan.github.io/elpa/]].
+
+A typical configuration look like this
+
+#+begin_src elisp
+(custom-set-variables
+ '(package-archives
+   (quote
+    (("gnu" . "https://elpa.gnu.org/packages/")
+     ("ox-odt" . "https://kjambunathan.github.io/elpa/")))))
+#+end_src
+
+In the =*Packages*= buffer, packages from this archive show up as below
+
+#+begin_example
+JabrefExportChicagoODF 1.2.2      ... Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat
+ox-odt                 9.2.6.263  ... OpenDocument Text Exporter for Org Mode
+#+end_example
+
+** Configuration
+
+Here is a sample configuration.
+
+#+begin_example
+(custom-set-variables
+ '(org-odt-convert-process "LibreOffice")
+ '(org-odt-preferred-output-format "docx")
+ '(org-odt-transform-processes
+   '(("Optimize Column Width of all Tables"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)")
+     ("Update All"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.UpdateAll(%I)")
+     ("Reload"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.Reload(%I)")))
+ '(org-jabref-command '("jabref" "-n" "true"))
+ '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+ '(org-latex-to-mathml-jar-file
+   "/home/kjambunathan/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar"))
+
+(setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
+
+(require 'ox-jabref)
+#+end_example
+
+Above configuration sets up the ODT backend as follows:
+
+1. Use ="LibreOffice"= (i.e., =soffice= executable) as the document converter
+2. Generate a =docx= document for every =odt= document
+3. Process the =odt= document with a set of LibreOffice Basic Macros to
+   - Optimize the column width of all tables
+   - Update cross-references, table of contents etc.
+   - (if you are already viewing a past version of a =odt= file),
+     re-load the new file in the same application window.
+4. Tell where your =JabRef= and =mathtoweb= executables are located, and how they are invoked.
+5. (if you are using a GNU system) open the =odt= document with your
+   preferred OpenDocument viewer, presumably =LibreOffice=.
+6. Load =ox-jabref= so as to produce documents with bibliography and citations .
 
 * ODT export commands
 :PROPERTIES:
@@ -64,15 +196,6 @@ Check the availability of this program before proceeding further.
      If =org-odt-preferred-output-format= is specified, automatically
      convert the exported file to that format. See [[*Automatically
      exporting to other formats]].
-
-     #+cindex: EXPORT_FILE_NAME, keyword
-     For an Org file =myfile.org=, the ODT file will be
-     =myfile.odt=. The file will be overwritten without warning. If
-     there is an active region,[fn:3] only the region will be
-     exported. If the selected region is a single tree,[fn:4] the tree
-     head will become the document title. If the tree head entry has,
-     or inherits, an =EXPORT_FILE_NAME= property, that name will be
-     used for the export.
 
 - {{{kbd(C-c C-e o O)}}} ::
 
@@ -217,7 +340,7 @@ rules separating row and column groups (See [[info:org::Column
 Groups]]). Furthermore, all tables are typeset to occupy the same width.
 If the table specifies alignment and relative width for its columns
 (See [[info:org::Column Width and Alignment]]) then these are honored on
-export.[fn:5]
+export.[fn:9]
 
 #+cindex: @samp{ATTR_ODT}, keyword
 You can control the width of the table by specifying =:rel-width=
@@ -292,7 +415,7 @@ The exporter specifies the desired size of the image in the final
 document in units of centimeters. In order to scale the embedded
 images, the exporter queries for pixel dimensions of the images using
 one of a) ImageMagick's identify program or b) Emacs =create-image=
-and =image-size= APIs.[fn:6] The pixel dimensions are subsequently
+and =image-size= APIs.[fn:10] The pixel dimensions are subsequently
 converted in to units of centimeters using
 =org-odt-pixels-per-inch=. The default value of this variable is set
 to =display-pixels-per-inch=. You can tweak this variable to achieve
@@ -387,7 +510,7 @@ ODT document in one of the following ways:
    variables =org-latex-to-mathml-convert-command= and
    =org-latex-to-mathml-jar-file=.
 
-   If you prefer to use MathToWeb[fn:7] as your converter, you can
+   If you prefer to use MathToWeb[fn:9] as your converter, you can
    configure the above variables as shown below.
 
    #+BEGIN_SRC lisp
@@ -500,7 +623,7 @@ document.
 Export of literal examples (See [[info:org::Literal examples]]) with full
 fontification is supported. Internally, the exporter relies on
 =htmlfontify.el= to generate all style definitions needed for a fancy
-listing.[fn:8] The auto-generated styles have =OrgSrc= as prefix and
+listing.[fn:11] The auto-generated styles have =OrgSrc= as prefix and
 inherit their color from the faces used by Emacs =font-lock= library
 for the source language.
 
@@ -720,7 +843,7 @@ custom table style with the =#+ATTR_ODT= line. For a discussion on
 default formatting of tables see [[*Tables in ODT export]].
 
 This feature closely mimics the way table templates are defined in the
-OpenDocument-v1.2 specification.[fn:9]
+OpenDocument-v1.2 specification.[fn:12]
 
 *** Custom table styles - an illustration
 
@@ -757,7 +880,7 @@ need additional templates you have to define these styles yourselves.
 
 To use this feature proceed as follows:
 
-1. Create a table template[fn:10]
+1. Create a table template[fn:13]
 
    A table template is nothing but a set of =table-cell= and
    =paragraph= styles for each of the following table cell categories:
@@ -797,7 +920,7 @@ To use this feature proceed as follows:
    ... =</office:automatic-styles>= element of the content template
    file (see [[*Factory styles]]).
 
-2. Define a table style[fn:11]
+2. Define a table style[fn:14]
 
    To define a table style, create an entry for the style in the
    variable =org-odt-table-styles= and specify the following:
@@ -846,7 +969,7 @@ common reasons for this is that the =.odt= file is corrupt. In such
 cases, you may want to validate the document against the OpenDocument
 RELAX NG Compact Syntax (RNC) schema.
 
-For de-compressing the =.odt= file[fn:12]: See [[info:emacs::File
+For de-compressing the =.odt= file[fn:15]: See [[info:emacs::File
 Archives]]. For general help with validation (and schema-sensitive
 editing) of XML files: See [[info:nxml-mode::Introduction]].
 
@@ -855,43 +978,6 @@ schema-locating rules in a single folder, you can customize the
 variable =org-odt-schema-dir= to point to that directory. The ODT
 exporter will take care of updating the =rng-schema-locating-files=
 for you.
-
-* Footnotes
-
-[fn:1] Versions 7.8 or later
-
-[fn:2] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][Open Document Format for Office Applications (OpenDocument)
-Version 1.2]]
-
-[fn:3] This requires =transient-mark-mode= to be turned on
-
-[fn:4] To select the current subtree, use {{{kbd(C-c @)}}}
-
-[fn:5] The column widths are interpreted as weighted ratios with the
-default weight being 1
-
-[fn:6] Use of ImageMagick is only desirable. However, if you routinely
-produce documents that have large images or you export your Org files
-that has images using a Emacs batch script, then the use of
-ImageMagick is mandatory.
-
-[fn:7] See [[http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl][MathToWeb]]
-
-[fn:8] Your =htmlfontify.el= library must at least be at Emacs 24.1
-levels for fontification to be turned on.
-
-[fn:9] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
-
-[fn:10] See the =<table:table-template>= element of the
-OpenDocument-v1.2 specification
-
-[fn:11] See the attributes =table:template-name=,
-=table:use-first-row-styles=, =table:use-last-row-styles=,
-=table:use-first-column-styles=, =table:use-last-column-styles=,
-=table:use-banding-rows-styles=, and =table:use-banding-column-styles=
-of the =<table:table>= element in the OpenDocument-v1.2 specification
-
-[fn:12] =.odt= files are nothing but =zip= archives
 
 * Main Index
 :PROPERTIES:
@@ -916,3 +1002,64 @@ of the =<table:table>= element in the OpenDocument-v1.2 specification
 :DESCRIPTION: Options that control the exporter
 :INDEX:    vr
 :END:
+
+* What is New
+:PROPERTIES:
+:DESCRIPTION: Features exclusive to this exporter
+:INDEX:    win
+:END:
+
+* Footnotes
+
+[fn:1] [[http://www.info-zip.org/][Info-ZIP]]
+
+[fn:2] [[https://imagemagick.org][ImageMagick]]
+
+[fn:3] [[http://www.tug.org/texlive/][TeX Live]]
+
+[fn:4] [[http://www.nongnu.org/dvipng/][dvipng]]
+
+[fn:5] [[https://imagemagick.org][ImageMagick]]
+
+[fn:6] [[http://dlmf.nist.gov/LaTeXML/][LaTeXML]]
+
+[fn:7] [[http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl][MathToWeb]]
+
+[fn:8] [[https://www.jabref.org/][JabRef]]
+
+[fn:9] See [[http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl][MathToWeb]]
+
+[fn:10] Use of ImageMagick is only desirable. However, if you routinely
+produce documents that have large images or you export your Org files
+that has images using a Emacs batch script, then the use of
+ImageMagick is mandatory.
+
+[fn:11] Your =htmlfontify.el= library must at least be at Emacs 24.1
+levels for fontification to be turned on.
+
+[fn:12] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
+
+[fn:13] See the =<table:table-template>= element of the
+OpenDocument-v1.2 specification
+
+[fn:14] See the attributes =table:template-name=,
+=table:use-first-row-styles=, =table:use-last-row-styles=,
+=table:use-first-column-styles=, =table:use-last-column-styles=,
+=table:use-banding-rows-styles=, and =table:use-banding-column-styles=
+of the =<table:table>= element in the OpenDocument-v1.2 specification
+
+[fn:15] =.odt= files are nothing but =zip= archives
+
+[fn:16]
+
+[fn:17] The column widths are interpreted as weighted ratios with the
+default weight being 1
+
+[fn:18] Versions 7.8 or later
+
+[fn:19] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][Open Document Format for Office Applications (OpenDocument)
+Version 1.2]]
+
+[fn:20] To select the current subtree, use {{{kbd(C-c @)}}}
+
+[fn:21] This requires =transient-mark-mode= to be turned on
