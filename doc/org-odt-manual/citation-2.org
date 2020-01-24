@@ -1,0 +1,17 @@
+#+ODT_STYLES_FILE: a5landscape.ott
+
+#+BIB_FILE: "novices.bib"
+#+odt_jabref_citation_style: "Chicago (full-note)"
+
+Nicola L. C. Talbot in his book [cite:@novices; p. 97] says,
+
+#+begin_quote
+"If you have a large number of citations in your document, it's best
+to use an external bibliographic application, such as =bibtex= or
+=biber=. However, that is beyond the scope of this book.  See,
+instead, /A Guide to LaTeX/ \cite{kopka95}, /The LaTeX Companion/
+\cite{goossens94} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
+[cite:@thesis]."
+#+end_quote
+
+#+BIBLIOGRAPHY: 

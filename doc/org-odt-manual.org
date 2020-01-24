@@ -32,7 +32,7 @@
 # #+texinfo_dir_title: Org Mode: (org)
 # #+texinfo_dir_desc: Outline-based notes management and organizer
 
-#+texinfo: @defindex win
+#+texinfo: @defindex wn
 
 This manual documents =ox-odt=, an Emacs Lisp library that exports
 [[https://orgmode.org/][Org mode]] files to
@@ -52,15 +52,15 @@ user of the stock Emacs backend, and want to learn about new features
 
 * Project Summary
 
-- Description :: The Authoritative fork of Org mode's ODT exporter 
+- Description :: The Authoritative fork of Org mode's ODT exporter
 
 - Version ::
 
-- Depends on :: 
+- Depends on ::
 
 - Suggests ::
 
-- Enhances :: 
+- Enhances ::
 
 - Published ::
 
@@ -155,7 +155,7 @@ Here is a sample configuration.
      ("Reload"
       "soffice" "--norestore" "--invisible" "--headless"
       "macro:///OrgMode.Utilities.Reload(%I)")))
- '(org-jabref-command '("jabref" "-n" "true"))
+ '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n"))
  '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
  '(org-latex-to-mathml-jar-file
    "/home/kjambunathan/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar"))
@@ -325,6 +325,100 @@ A =\ref{label}=-style reference to an image, table etc. is replaced
 with a cross-reference and sequence number of the labeled entity. See
 [[*Labels and captions in ODT export]].
 
+
+* List Tables in ODT export
+:PROPERTIES:
+:DESCRIPTION: How Tables are exported
+:END:
+
+A =List Table=, in simple terms, is a list that is typeset as a table.
+Use it to create tables with multi-paragraph content.
+
+- Why a =List Table=? ::
+
+Org mode's tables are line-oriented i.e., each row (and hence a cell)
+cannot span multiple lines.  This choice has serious limitations.
+Specifically, 
+
+- a table cell cannot have more than a single paragraph
+
+- if the sole paragraph has copious text, the table will overflow your
+  display screen, and editing or reviewing such tables is very
+  cumbersome and annoying.
+
+A list table overcomes the above problem.
+
+Lists that are marked with attribute `:list-table' are called as
+list tables.  They will be rendered as a table within the exported
+document.
+
+** Examples
+
+- A simple list table ::
+
+Consider an example.  The following list table
+
+#+ATTR_ODT: :rel-width 80
+#+ATTR_ODT: :list-table t
+-
+  - Row 1, Col 1 
+  - Row 1, Col 2 
+  - Row 1, Col 3 
+  - Row 1, Col 4 
+- -----
+  - Row 2, Col 1 
+  - Row 2, Col 2 
+  - Row 2, Col 3 
+  - Row 2, Col 4 
+
+will be exported as though it were an Org table like the one show
+below.
+
+| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+
+List tables can contain hrule (see example above).  They can also
+contain table specific attributes.  Except for column alignment
+(i.e., lrc spec), all other attributes (column sizing and grouping)
+are honored on export.
+
+- A list table with rules, column size and alignments :: 
+
+#+ATTR_ODT: :list-table t
+- | /    | <    |    > |       |
+- | <l8> | <r4> | <c2> | <l1>  |
+- --------
+  - Row 1
+  - Row 1.1
+    - Subitem under 1.1
+    - Yet another subitem under 1.1
+  - Row 1.2
+  - Row 1.3
+- --------
+  - Row 2
+  - Row 2.1
+
+    Subtext for 2.1
+  - Row 2.2
+  - Row 2.3
+- --------
+
+you could get, the following table, in to the exported document.
+
+|-------+-----------------------------------+---------+---------|
+| Row 1 | - Row 1.1                         | Row 1.2 | Row 1.3 |
+|       |   - Subitem under 1.1             |         |         |
+|       |   - Yet another subitem under 1.1 |         |         |
+|-------+-----------------------------------+---------+---------|
+| Row 2 | Row 2.1                           | Row 2.2 | Row 2.3 |
+|       |                                   |         |         |
+|       | Subtext for 2.1                   |         |         |
+|-------+-----------------------------------+---------+---------|
+
+
+- List table with table and figures :: 
+
+MOTIVATION: 
 * Tables in ODT export
 :PROPERTIES:
 :DESCRIPTION: How Tables are exported
@@ -636,6 +730,147 @@ do so by customizing the variable
 You can turn off fontification of literal examples by customizing the
 variable =org-odt-fontify-srcblocks=.
 
+* Bibliography and Citations in ODT export
+
+#+texinfo: @wnindex @samp{JabRef}, bibliography, citation
+The ODT export back-end uses JabRef to produce Bibliography and
+Citations.
+
+** Configure JabRef with =Chicago.ODF= custom export
+
+- Set up JabRef with =Chicago.ODF= custom export ::
+
+Install Jabref[fn:6].
+
+Navigate to =package-user-dir=, and locate the
+=JabrefExportChicagoODF-1.2.2.tar=[fn:12].  Extract it to get a set of
+=layout= files.
+
+Launch JabRef GUI.  Navigate to =Options -> Manage custom exports=,
+and add an entry for each of the layout files as below.
+
+#+CAPTION:  How to setup JabRef-5.0's =Manage custom exports=
+| Export name               | Main layout file                            | Extension |
+|---------------------------+---------------------------------------------+-----------|
+| Chicago.ODF.abstract      | <whatever>/Chicago.ODF.abstract.layout      | xml       |
+| Chicago.ODF.biblio        | <whatever>/Chicago.ODF.biblio.layout        | xml       |
+| Chicago.ODF.footend       | <whatever>/Chicago.ODF.footend.layout       | xml       |
+| Chicago.ODF.footend.short | <whatever>/Chicago.ODF.footend.short.layout | xml       |
+| Chicago.ODF.note          | <whatever>/Chicago.ODF.note.layout          | xml       |
+| Chicago.ODF.reference     | <whatever>/Chicago.ODF.reference.layout     | xml       |
+| Chicago.ODF.text          | <whatever>/Chicago.ODF.text.layout          | xml       |
+
+
+#+CAPTION: Screenshot of JabRef-5.0's =Manage custom exports=
+[[./JabRefCustomizeExportFormats.png]]
+
+Verify that the Chicago ODF plugin is successfully registered.  In a
+terminal, do
+
+     #+begin_example
+     /opt/jabref/bin//JabRef -n -h
+     #+end_example
+
+Ensure that the =Available export formats= mentions the =Chicago.ODF=.
+
+#+begin_example
+Available export formats: html, simplehtml, docbook5, docbook4, din1505,
+bibordf, tablerefs, listrefs, tablerefsabsbib, harvard, iso690rtf,
+iso690txt, endnote, oocsv, ris, misq, bibtexml, oocalc, ods, MSBib,
+mods, xmp, pdf, Chicago.ODF.abstract, Chicago.ODF.biblio,
+Chicago.ODF.footend, Chicago.ODF.footend.short, Chicago.ODF.note,
+Chicago.ODF.reference, Chicago.ODF.text
+#+end_example
+
+- Configure Emacs ::
+
+Tell Emacs how to launch =jabref=.
+
+Use this if you have =JabRef= executable.
+
+#+begin_example
+(custom-set-variables
+ '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n")))
+#+end_example
+
+Use this if you have JabRef as a =jar= file.
+
+#+begin_example
+(custom-set-variables
+ '(org-jabref-command '("java -jar ~/Downloads/JabRef-2.9.2.jar" "-n")))
+#+end_example
+
+** Example
+
+#+CAPTION: Sample ~novices.bib~
+#+begin_example
+@book{goossens94,
+  author = "Michel Goossens and Frank Mittelbach and Alexander Samarin",
+  title = "The {\LaTeX}\space companion",
+  publisher = "Addison-Wesley",
+  year = 1994
+}
+
+@book{kopka95,
+  author = "Helmut Kopka and Patrick W. Daly",
+  title = "A guide to {\LaTeXe}: document preparation
+           for beginners and advanced users",
+  publisher = "Addison-Wesley",
+  year = 1995
+}
+
+@book{novices,
+  author = "Nicola L. C. Talbot",
+  title = "{\LaTeX}\space for Complete Novices",
+  volume = 1,
+  publisher = "Dickmaw Books",
+  series = "Dickimaw {\LaTeX}\space Series",
+  note = "\url{\baseurl/latex/novices/}",
+  isbn="978-1-909440-00-5",
+  year = 2012
+}
+
+@book{thesis,
+  author = "Nicola L. C. Talbot",
+  title = "Using {\LaTeX}\space to Write a Ph.D. Thesis",
+  volume = 2,
+  publisher = "Dickmaw Books",
+  series = "The Dickimaw {\LaTeX}\space Series",
+  note = "\url{\baseurl/latex/thesis/}",
+  year = 2012
+}
+#+end_example
+
+: #+bib_file: "./biblatex-examples/novices.bib"
+: #+odt_jabref_citation_style: "Chicago (author-date)"
+:
+: : Nicola L. C. Talbot in his book [cite:@novices; p. 97] says,
+:
+: #+begin_quote
+: "If you have a large number of citations in your document, it's best
+: to use an external bibliographic application, such as =bibtex= or
+: =biber=. However, that is beyond the scope of this book.  See,
+: instead, /A Guide to LaTeX/ \cite{kopka95}, /The LaTeX Companion/
+: \cite{goossens94} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
+: [cite:@thesis]."
+: #+end_quote
+:
+: #+bibliography:
+
+** Sample Outputs
+
+- Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Numeric"~ ::
+# #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Numeric"~
+[[./citation-1.png]]
+
+- Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"~ ::
+# #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"~
+[[./citation-2.png]]
+
+- Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"~ ::
+# #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"~
+[[./citation-3.png]]
+
 * Advanced topics in ODT export
 :PROPERTIES:
 :DESCRIPTION: Read this if you are a power user
@@ -843,7 +1078,7 @@ custom table style with the =#+ATTR_ODT= line. For a discussion on
 default formatting of tables see [[*Tables in ODT export]].
 
 This feature closely mimics the way table templates are defined in the
-OpenDocument-v1.2 specification.[fn:12]
+OpenDocument-v1.2 specification.[fn:13]
 
 *** Custom table styles - an illustration
 
@@ -880,7 +1115,7 @@ need additional templates you have to define these styles yourselves.
 
 To use this feature proceed as follows:
 
-1. Create a table template[fn:13]
+1. Create a table template[fn:14]
 
    A table template is nothing but a set of =table-cell= and
    =paragraph= styles for each of the following table cell categories:
@@ -920,7 +1155,7 @@ To use this feature proceed as follows:
    ... =</office:automatic-styles>= element of the content template
    file (see [[*Factory styles]]).
 
-2. Define a table style[fn:14]
+2. Define a table style[fn:15]
 
    To define a table style, create an entry for the style in the
    variable =org-odt-table-styles= and specify the following:
@@ -969,7 +1204,7 @@ common reasons for this is that the =.odt= file is corrupt. In such
 cases, you may want to validate the document against the OpenDocument
 RELAX NG Compact Syntax (RNC) schema.
 
-For de-compressing the =.odt= file[fn:15]: See [[info:emacs::File
+For de-compressing the =.odt= file[fn:16]: See [[info:emacs::File
 Archives]]. For general help with validation (and schema-sensitive
 editing) of XML files: See [[info:nxml-mode::Introduction]].
 
@@ -1006,8 +1241,10 @@ for you.
 * What is New
 :PROPERTIES:
 :DESCRIPTION: Features exclusive to this exporter
-:INDEX:    win
+:INDEX:    wn
 :END:
+
+#+texinfo: @printindex wn
 
 * Footnotes
 
@@ -1037,29 +1274,25 @@ ImageMagick is mandatory.
 [fn:11] Your =htmlfontify.el= library must at least be at Emacs 24.1
 levels for fontification to be turned on.
 
-[fn:12] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
+[fn:12] See
+[[https://github.com/kjambunathan/JabRefChicagoForOrgmode][Jabref
+Plugin for export to Chicago Manual of Style in ~OpenDocument~
+format]].  This a port of
+[[https://github.com/JabRef/layouts.jabref.org/tree/master/Chicago%20(English)][Jabref's
+Plugin for export to Chicago Manual of Style in ~RTF~ format]].
 
-[fn:13] See the =<table:table-template>= element of the
+[fn:13] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
+
+[fn:14] See the =<table:table-template>= element of the
 OpenDocument-v1.2 specification
 
-[fn:14] See the attributes =table:template-name=,
+[fn:15] See the attributes =table:template-name=,
 =table:use-first-row-styles=, =table:use-last-row-styles=,
 =table:use-first-column-styles=, =table:use-last-column-styles=,
 =table:use-banding-rows-styles=, and =table:use-banding-column-styles=
 of the =<table:table>= element in the OpenDocument-v1.2 specification
 
-[fn:15] =.odt= files are nothing but =zip= archives
-
-[fn:16]
+[fn:16] =.odt= files are nothing but =zip= archives
 
 [fn:17] The column widths are interpreted as weighted ratios with the
 default weight being 1
-
-[fn:18] Versions 7.8 or later
-
-[fn:19] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][Open Document Format for Office Applications (OpenDocument)
-Version 1.2]]
-
-[fn:20] To select the current subtree, use {{{kbd(C-c @)}}}
-
-[fn:21] This requires =transient-mark-mode= to be turned on
