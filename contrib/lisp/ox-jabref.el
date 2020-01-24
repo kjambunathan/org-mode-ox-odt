@@ -725,7 +725,7 @@ Return the XML representation as a string. Specifically,
 	  (let* ((bib-alist (assoc-default bibliography-jabref-format citation-cache ))
 		 (cite-key-text-alist (cl-loop for (cite-key . text) in bib-alist
 					    with n = 0 collect
-					    (cons cite-key (number-to-string (incf n))))))
+					    (cons cite-key (number-to-string (cl-incf n))))))
 	    (push (cons "Numeric" cite-key-text-alist)
 		  citation-cache)))
 
