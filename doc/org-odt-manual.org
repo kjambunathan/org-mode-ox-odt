@@ -54,6 +54,8 @@ user of the stock Emacs backend, and want to learn about new features
 
 - Description :: The Authoritative fork of Org mode's ODT exporter
 
+- URL :: https://github.com/kjambunathan/org-mode-ox-odt
+
 - Version ::
 
 - Depends on ::
@@ -72,15 +74,13 @@ user of the stock Emacs backend, and want to learn about new features
 
 - License ::
 
-- URL :: https://github.com/kjambunathan/org-mode-ox-odt
-
 - Downloads ::
 
   - ELPA URL :: https://kjambunathan.github.io/elpa/
 
   - User Manual (online HTML) :: https://kjambunathan.github.io/org-mode-ox-odt/
 
-  - User Manual (PDF) :: https://kjambunathan.github.io/org-mode-ox-odt/org-odt.pdf
+  # - User Manual (PDF) :: https://kjambunathan.github.io/org-mode-ox-odt/org-odt.pdf
 
 * Getting Started with ODT export
 :PROPERTIES:
@@ -736,6 +736,104 @@ variable =org-odt-fontify-srcblocks=.
 The ODT export back-end uses JabRef to produce Bibliography and
 Citations.
 
+=org= doesn't have a /standard/ markup for bibliography and citation
+references.  This is true for this export backend as well.  So, the
+syntax described in the next section is /specific/ to the ODT backend,
+and doesn't carry over to other backends.
+
+
+- Bibliography and Citation-specific Keywords in ODT export ::
+
+   An =org= file with bibliography and citations look like
+
+   : #+BIB_FILE: "novices.bib"
+   : #+ODT_JABREF_CITATION_STYLE: "Numeric" 
+   :
+   : Some text content
+   : 
+   : #+BIBLIOGRAPHY: 
+
+   - =BIB_FILE= :: 
+
+        #+cindex: @samp{BIB_FILE}, keyword
+        Path to the bibliography file
+
+   - =ODT_JABREF_CITATION_STYLE= ::
+
+        #+cindex: @samp{ODT_JABREF_CITATION_STYLE}, keyword
+        Citation style to use.  You can choose one of the following
+        options
+
+           - ="Numeric"=
+           - ="Chicago (full-note)"=
+           - ="Chicago (author-date)"=
+
+   - =BIBLIOGRAPHY= - ::
+   
+        #+cindex: @samp{SUBTITLE}, keyword
+        Bibliography is inserted here.
+
+
+- How to cite? ::
+
+   The ODT backend recognizes following citation references
+
+   - =\cite{}= snippets :: 
+
+   - Pandoc's Berkeley-style Citations[fn:12] ::
+
+     The semi-official Org-mode citation syntax was designed by Richard
+     Lawrence with additions by contributors on the emacs-orgmode mailing
+     list. It is based on John MacFarlane’s pandoc Markdown syntax. It’s
+     dubbed Berkeley syntax due the place of activity of its creators, both
+     philosophers at UC Berkeley.  
+
+     - Simple in-text citation :: This is the simplest form of
+          citation. It consists of the citation ID prefixed by ‘@’.
+
+            - Example ::
+
+                #+begin_example
+                @WatsonCrick1953 showed that DNA forms a double-helix.
+                #+end_example
+
+     - In-text citation list :: Citations presented in the text
+          unparenthesized are called in-text citations. The syntax for
+          these citations is
+
+       #+begin_example
+       [cite: =PREFIX=; =INDIVIDUAL-REFERENCE=; ... =INDIVIDUAL-REFERENCE=; =SUFFIX=]
+       #+end_example
+
+       where the initial =PREFIX= and final =SUFFIX= are optional. At least one
+       =INDIVIDUAL-REFERENCE= must be present. The colon and semicolons here
+       are literal and indicate the end of the =TAG= and the end of a =PREFIX= or
+       =INDIVIDUAL-REFERENCE= respectively.
+
+       An =INDIVIDUAL-REFERENCE= has the format:
+
+       =PREFIX= =KEY= =SUFFIX=
+
+       The =KEY= is obligatory, and the prefix and suffix are optional.
+
+       A =PREFIX= or =SUFFIX= is arbitrary text (except ;, ], and citation keys).
+
+       - Example ::
+
+           #+begin_example
+           [cite: See; @Mandelkern1981; and @Watson1953]
+           #+end_example
+
+     - Parenthetical citation :: Citations surrounded by parantheses. The
+          syntax is identical to in-text citations, except for the
+          additional parentheses enclosing the initial cite tag.
+
+          - Example :: 
+
+             #+begin_example
+             [(cite): See; @Mandelkern1981; and @Watson1953]     
+             #+end_example
+
 ** Configure JabRef with =Chicago.ODF= custom export
 
 - Set up JabRef with =Chicago.ODF= custom export ::
@@ -743,7 +841,7 @@ Citations.
 Install Jabref[fn:6].
 
 Navigate to =package-user-dir=, and locate the
-=JabrefExportChicagoODF-1.2.2.tar=[fn:12].  Extract it to get a set of
+=JabrefExportChicagoODF-1.2.2.tar=[fn:13].  Extract it to get a set of
 =layout= files.
 
 Launch JabRef GUI.  Navigate to =Options -> Manage custom exports=,
@@ -784,13 +882,15 @@ Chicago.ODF.reference, Chicago.ODF.text
 
 - Configure Emacs ::
 
-Tell Emacs how to launch =jabref=.
+Tell Emacs about =JabRef='s executable.
 
 Use this if you have =JabRef= executable.
 
 #+begin_example
 (custom-set-variables
  '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n")))
+
+(require 'ox-jabref)
 #+end_example
 
 Use this if you have JabRef as a =jar= file.
@@ -798,7 +898,10 @@ Use this if you have JabRef as a =jar= file.
 #+begin_example
 (custom-set-variables
  '(org-jabref-command '("java -jar ~/Downloads/JabRef-2.9.2.jar" "-n")))
+
+(require 'ox-jabref)
 #+end_example
+
 
 ** Example
 
@@ -1078,7 +1181,7 @@ custom table style with the =#+ATTR_ODT= line. For a discussion on
 default formatting of tables see [[*Tables in ODT export]].
 
 This feature closely mimics the way table templates are defined in the
-OpenDocument-v1.2 specification.[fn:13]
+OpenDocument-v1.2 specification.[fn:14]
 
 *** Custom table styles - an illustration
 
@@ -1115,7 +1218,7 @@ need additional templates you have to define these styles yourselves.
 
 To use this feature proceed as follows:
 
-1. Create a table template[fn:14]
+1. Create a table template[fn:15]
 
    A table template is nothing but a set of =table-cell= and
    =paragraph= styles for each of the following table cell categories:
@@ -1155,7 +1258,7 @@ To use this feature proceed as follows:
    ... =</office:automatic-styles>= element of the content template
    file (see [[*Factory styles]]).
 
-2. Define a table style[fn:15]
+2. Define a table style[fn:16]
 
    To define a table style, create an entry for the style in the
    variable =org-odt-table-styles= and specify the following:
@@ -1204,7 +1307,7 @@ common reasons for this is that the =.odt= file is corrupt. In such
 cases, you may want to validate the document against the OpenDocument
 RELAX NG Compact Syntax (RNC) schema.
 
-For de-compressing the =.odt= file[fn:16]: See [[info:emacs::File
+For de-compressing the =.odt= file[fn:17]: See [[info:emacs::File
 Archives]]. For general help with validation (and schema-sensitive
 editing) of XML files: See [[info:nxml-mode::Introduction]].
 
@@ -1274,25 +1377,27 @@ ImageMagick is mandatory.
 [fn:11] Your =htmlfontify.el= library must at least be at Emacs 24.1
 levels for fontification to be turned on.
 
-[fn:12] See
+[fn:12] See section titled /Berkeley-style citations/ at https://pandoc.org/org.html
+
+[fn:13] See
 [[https://github.com/kjambunathan/JabRefChicagoForOrgmode][Jabref
 Plugin for export to Chicago Manual of Style in ~OpenDocument~
 format]].  This a port of
 [[https://github.com/JabRef/layouts.jabref.org/tree/master/Chicago%20(English)][Jabref's
 Plugin for export to Chicago Manual of Style in ~RTF~ format]].
 
-[fn:13] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
+[fn:14] [[http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html][OpenDocument-v1.2 Specification]]
 
-[fn:14] See the =<table:table-template>= element of the
+[fn:15] See the =<table:table-template>= element of the
 OpenDocument-v1.2 specification
 
-[fn:15] See the attributes =table:template-name=,
+[fn:16] See the attributes =table:template-name=,
 =table:use-first-row-styles=, =table:use-last-row-styles=,
 =table:use-first-column-styles=, =table:use-last-column-styles=,
 =table:use-banding-rows-styles=, and =table:use-banding-column-styles=
 of the =<table:table>= element in the OpenDocument-v1.2 specification
 
-[fn:16] =.odt= files are nothing but =zip= archives
+[fn:17] =.odt= files are nothing but =zip= archives
 
-[fn:17] The column widths are interpreted as weighted ratios with the
+[fn:18] The column widths are interpreted as weighted ratios with the
 default weight being 1
