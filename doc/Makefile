@@ -55,7 +55,7 @@ clean:
 	$(RM) org *.pdf *.html *_letter.tex org-version.inc org-version.tex \
 	      *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.pg *.pgs \
 	      *.toc *.tp *.tps *.vr *.vrs *.log *.html *.ps
-	$(RMR) org-odt-manual
+	$(RMR) org-odt-manual/*.html
 cleanall:	clean
 	$(RMR) guide manual
 

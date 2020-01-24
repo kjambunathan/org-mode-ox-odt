@@ -12,7 +12,7 @@ helpserver::
 	@echo ""
 
 SERVROOT			= ../kjambunathan.github.io/elpa
-DOCROOT				= ./docs/
+DOCROOT				= ./docs
 
 ORG_GIT_DIR			= .
 JABREF_GIT_DIR		= ./contrib/odt/JabRefChicagoForOrgmode
@@ -125,11 +125,12 @@ odtpkg jabrefpkg: pkg
 
 odtmanual: SERVERMK=
 odtmanual: info
-		make -C doc org-odt.html
-		make -C doc org-odt.pdf
-		$(CP) doc/org-odt-manual/*.html	$(DOCROOT)
-		$(CP) doc/org-odt.pdf			$(DOCROOT)
-
+	git clean -d -f
+	make -C doc org-odt.html
+	$(RM) $(DOCROOT)/*
+	mv doc/org-odt-manual/*.html $(DOCROOT)
+	$(CP) doc/org-odt-manual/*.png $(DOCROOT)
+	$(CP) doc/org-odt-manual/*.css $(DOCROOT)
 
 # Local Variables:
 # tab-width: 4
