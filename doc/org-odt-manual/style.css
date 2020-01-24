@@ -165,8 +165,34 @@ div.example > pre.example {
 
 pre.menu-comment { padding-top: 1.3em; margin: 0; }
 
-.settitle { display: none; }
-h1.top { text-align: center; }
+.settitle {
+    display: none;
+}
+
+h1.top {
+    text-align: center;
+}
+
+.footnote h5 {
+    float: left;
+    clear: left;
+    margin: 0;
+    padding: 0;
+    padding-right: .5em;
+}
+.footnote p { clear: right; }
+
+img {
+    border-width: 1px;
+    border-color: black;
+    border-style: solid;
+    border-radius: .3em;
+}
+
+pre.example {
+    overflow: auto;
+    overflow-y: hidden;
+}
 
 /*** FOR WIDE SCREENS ***/
 
