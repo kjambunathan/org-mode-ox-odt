@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>List Tables in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
+
+<meta name="description" content="List Tables in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="List Tables in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Tables-in-ODT-export.html" rel="next" title="Tables in ODT export">
+<link href="Links-in-ODT-export.html" rel="prev" title="Links in ODT export">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="List-Tables-in-ODT-export"></span><div class="header">
+<p>
+Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT export</a>, Previous: <a href="Links-in-ODT-export.html" accesskey="p" rel="prev">Links in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="List-Tables-in-ODT-export-1"></span><h2 class="chapter">7 List Tables in ODT export</h2>
+
+<p>A &lsquo;<samp>List Table</samp>&rsquo;, in simple terms, is a list that is typeset as a table.
+Use it to create tables with multi-paragraph content.
+</p>
+<dl compact="compact">
+<dt>Why a &lsquo;<samp>List Table</samp>&rsquo;?</dt>
+</dl>
+
+<p>Org mode&rsquo;s tables are line-oriented i.e., each row (and hence a cell)
+cannot span multiple lines.  This choice has serious limitations.
+Specifically, 
+</p>
+<ul>
+<li> a table cell cannot have more than a single paragraph
+
+</li><li> if the sole paragraph has copious text, the table will overflow your
+display screen, and editing or reviewing such tables is very
+cumbersome and annoying.
+</li></ul>
+
+<p>A list table overcomes the above problem.
+</p>
+<p>Lists that are marked with attribute &lsquo;:list-table&rsquo; are called as
+list tables.  They will be rendered as a table within the exported
+document.
+</p>
+
+<hr>
+<span id="Examples"></span><span id="Examples-1"></span><h3 class="section">7.1 Examples</h3>
+
+<dl compact="compact">
+<dt>A simple list table</dt>
+</dl>
+
+<p>Consider an example.  The following list table
+</p>
+<ul>
+<li> <ul>
+<li> Row 1, Col 1 
+</li><li> Row 1, Col 2 
+</li><li> Row 1, Col 3 
+</li><li> Row 1, Col 4 
+</li></ul>
+</li><li> &mdash;&ndash;
+<ul>
+<li> Row 2, Col 1 
+</li><li> Row 2, Col 2 
+</li><li> Row 2, Col 3 
+</li><li> Row 2, Col 4 
+</li></ul>
+</li></ul>
+
+<p>will be exported as though it were an Org table like the one show
+below.
+</p>
+<table>
+<tr><td>Row 1, Col 1</td><td>Row 1, Col 2</td><td>Row 1, Col 3</td><td>Row 1, Col 4</td></tr>
+<tr><td>Row 2, Col 1</td><td>Row 2, Col 2</td><td>Row 2, Col 3</td><td>Row 2, Col 4</td></tr>
+</table>
+
+<p>List tables can contain hrule (see example above).  They can also
+contain table specific attributes.  Except for column alignment
+(i.e., lrc spec), all other attributes (column sizing and grouping)
+are honored on export.
+</p>
+<dl compact="compact">
+<dt>A list table with rules, column size and alignments</dt>
+</dl>
+
+<ul>
+<li> | /    | &lt;    |    &gt; |       |
+</li><li> | &lt;l8&gt; | &lt;r4&gt; | &lt;c2&gt; | &lt;l1&gt;  |
+</li><li> &mdash;&mdash;&ndash;
+<ul>
+<li> Row 1
+</li><li> Row 1.1
+<ul>
+<li> Subitem under 1.1
+</li><li> Yet another subitem under 1.1
+</li></ul>
+</li><li> Row 1.2
+</li><li> Row 1.3
+</li></ul>
+</li><li> &mdash;&mdash;&ndash;
+<ul>
+<li> Row 2
+</li><li> Row 2.1
+
+<p>Subtext for 2.1
+</p></li><li> Row 2.2
+</li><li> Row 2.3
+</li></ul>
+</li><li> &mdash;&mdash;&ndash;
+</li></ul>
+
+<p>you could get, the following table, in to the exported document.
+</p>
+<table>
+<thead><tr><th>Row 1</th><th>- Row 1.1</th><th>Row 1.2</th><th>Row 1.3</th></tr></thead>
+<thead><tr><th></th><th>- Subitem under 1.1</th><th></th><th></th></tr></thead>
+<thead><tr><th></th><th>- Yet another subitem under 1.1</th><th></th><th></th></tr></thead>
+<tr><td>Row 2</td><td>Row 2.1</td><td>Row 2.2</td><td>Row 2.3</td></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td>Subtext for 2.1</td><td></td><td></td></tr>
+</table>
+
+
+<dl compact="compact">
+<dt>List table with table and figures</dt>
+</dl>
+
+<p>MOTIVATION:
+</p>
+<hr>
+<div class="header">
+<p>
+Up: <a href="#List-Tables-in-ODT-export" accesskey="u" rel="up">List Tables in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>

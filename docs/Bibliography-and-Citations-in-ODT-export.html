@@ -1,0 +1,360 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Bibliography and Citations in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
+
+<meta name="description" content="Bibliography and Citations in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="keywords" content="Bibliography and Citations in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="index.html" rel="start" title="Top">
+<link href="Main-Index.html" rel="index" title="Main Index">
+<link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="index.html" rel="up" title="Top">
+<link href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" rel="next" title="Advanced topics in ODT export">
+<link href="Literal-examples-in-ODT-export.html" rel="prev" title="Literal examples in ODT export">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+<link rel="stylesheet" type="text/css" href="style.css">
+
+
+</head>
+
+<body lang="en">
+<span id="Bibliography-and-Citations-in-ODT-export"></span><div class="header">
+<p>
+Next: <a href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" accesskey="n" rel="next">Advanced topics in ODT export</a>, Previous: <a href="Literal-examples-in-ODT-export.html" accesskey="p" rel="prev">Literal examples in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+<hr>
+<span id="Bibliography-and-Citations-in-ODT-export-1"></span><h2 class="chapter">13 Bibliography and Citations in ODT export</h2>
+
+<span id="index-JabRef_002c-bibliography_002c-citation"></span>
+<p>The ODT export back-end uses JabRef to produce Bibliography and
+Citations.
+</p>
+<p>&lsquo;<samp>org</samp>&rsquo; doesn&rsquo;t have a <em>standard</em> markup for bibliography and citation
+references.  This is true for this export backend as well.  So, the
+syntax described in the next section is <em>specific</em> to the ODT backend,
+and doesn&rsquo;t carry over to other backends.
+</p>
+
+<dl compact="compact">
+<dt>Bibliography and Citation-specific Keywords in ODT export</dt>
+<dd><p>An &lsquo;<samp>org</samp>&rsquo; file with bibliography and citations look like
+</p>
+<div class="example">
+<pre class="example">#+BIB_FILE: &quot;novices.bib&quot;
+#+ODT_JABREF_CITATION_STYLE: &quot;Numeric&quot; 
+
+Some text content
+
+#+BIBLIOGRAPHY: 
+</pre></div>
+
+
+<dl compact="compact">
+<dt>&lsquo;<samp>BIB_FILE</samp>&rsquo;</dt>
+<dd><span id="index-BIB_005fFILE_002c-keyword"></span>
+<p>Path to the bibliography file
+</p>
+</dd>
+<dt>&lsquo;<samp>ODT_JABREF_CITATION_STYLE</samp>&rsquo;</dt>
+<dd><span id="index-ODT_005fJABREF_005fCITATION_005fSTYLE_002c-keyword"></span>
+<p>Citation style to use.  You can choose one of the following
+options
+</p>
+<ul>
+<li> &lsquo;<samp>&quot;Numeric&quot;</samp>&rsquo;
+</li><li> &lsquo;<samp>&quot;Chicago (full-note)&quot;</samp>&rsquo;
+</li><li> &lsquo;<samp>&quot;Chicago (author-date)&quot;</samp>&rsquo;
+</li></ul>
+
+</dd>
+<dt>&lsquo;<samp>BIBLIOGRAPHY</samp>&rsquo; -</dt>
+<dd><span id="index-SUBTITLE_002c-keyword"></span>
+<p>Bibliography is inserted here.
+</p></dd>
+</dl>
+</dd>
+</dl>
+
+
+<dl compact="compact">
+<dt>How to cite?</dt>
+<dd><p>The ODT backend recognizes following citation references
+</p>
+<dl compact="compact">
+<dt>&lsquo;<samp>\cite{}</samp>&rsquo; snippets</dt>
+<dt>Pandoc&rsquo;s Berkeley-style Citations<a id="DOCF15" href="#FOOT15"><sup>15</sup></a></dt>
+<dd><p>The semi-official Org-mode citation syntax was designed by Richard
+Lawrence with additions by contributors on the emacs-orgmode mailing
+list. It is based on John MacFarlane’s pandoc Markdown syntax. It’s
+dubbed Berkeley syntax due the place of activity of its creators, both
+philosophers at UC Berkeley.  
+</p>
+<dl compact="compact">
+<dt>Simple in-text citation</dt>
+<dd><p>This is the simplest form of
+citation. It consists of the citation ID prefixed by ‘@’.
+</p>
+<dl compact="compact">
+<dt>Example</dt>
+<dd><div class="example">
+<pre class="example">@WatsonCrick1953 showed that DNA forms a double-helix.
+</pre></div>
+</dd>
+</dl>
+
+</dd>
+<dt>In-text citation list</dt>
+<dd><p>Citations presented in the text
+unparenthesized are called in-text citations. The syntax for
+these citations is
+</p>
+<div class="example">
+<pre class="example">[cite: =PREFIX=; =INDIVIDUAL-REFERENCE=; ... =INDIVIDUAL-REFERENCE=; =SUFFIX=]
+</pre></div>
+
+<p>where the initial &lsquo;<samp>PREFIX</samp>&rsquo; and final &lsquo;<samp>SUFFIX</samp>&rsquo; are optional. At least one
+&lsquo;<samp>INDIVIDUAL-REFERENCE</samp>&rsquo; must be present. The colon and semicolons here
+are literal and indicate the end of the &lsquo;<samp>TAG</samp>&rsquo; and the end of a &lsquo;<samp>PREFIX</samp>&rsquo; or
+&lsquo;<samp>INDIVIDUAL-REFERENCE</samp>&rsquo; respectively.
+</p>
+<p>An &lsquo;<samp>INDIVIDUAL-REFERENCE</samp>&rsquo; has the format:
+</p>
+<p>&lsquo;<samp>PREFIX</samp>&rsquo; &lsquo;<samp>KEY</samp>&rsquo; &lsquo;<samp>SUFFIX</samp>&rsquo;
+</p>
+<p>The &lsquo;<samp>KEY</samp>&rsquo; is obligatory, and the prefix and suffix are optional.
+</p>
+<p>A &lsquo;<samp>PREFIX</samp>&rsquo; or &lsquo;<samp>SUFFIX</samp>&rsquo; is arbitrary text (except ;, ], and citation keys).
+</p>
+<dl compact="compact">
+<dt>Example</dt>
+<dd><div class="example">
+<pre class="example">[cite: See; @Mandelkern1981; and @Watson1953]
+</pre></div>
+</dd>
+</dl>
+
+</dd>
+<dt>Parenthetical citation</dt>
+<dd><p>Citations surrounded by parantheses. The
+syntax is identical to in-text citations, except for the
+additional parentheses enclosing the initial cite tag.
+</p>
+<dl compact="compact">
+<dt>Example</dt>
+<dd><div class="example">
+<pre class="example">[(cite): See; @Mandelkern1981; and @Watson1953]     
+</pre></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+<hr>
+<span id="Configure-JabRef-with-ChicagoODF-custom-export"></span><span id="Configure-JabRef-with-Chicago_002eODF-custom-export"></span><h3 class="section">13.1 Configure JabRef with &lsquo;<samp>Chicago.ODF</samp>&rsquo; custom export</h3>
+
+<dl compact="compact">
+<dt>Set up JabRef with &lsquo;<samp>Chicago.ODF</samp>&rsquo; custom export</dt>
+</dl>
+
+<p>Install Jabref<a id="DOCF16" href="#FOOT16"><sup>16</sup></a>.
+</p>
+<p>Navigate to &lsquo;<samp>package-user-dir</samp>&rsquo;, and locate the
+&lsquo;<samp>JabrefExportChicagoODF-1.2.2.tar</samp>&rsquo;<a id="DOCF17" href="#FOOT17"><sup>17</sup></a>.  Extract it to get a set of
+&lsquo;<samp>layout</samp>&rsquo; files.
+</p>
+<p>Launch JabRef GUI.  Navigate to &lsquo;<samp>Options -&gt; Manage custom exports</samp>&rsquo;,
+and add an entry for each of the layout files as below.
+</p>
+<div class="float"><span id="org2a05237"></span>
+<table>
+<thead><tr><th>Export name</th><th>Main layout file</th><th>Extension</th></tr></thead>
+<tr><td>Chicago.ODF.abstract</td><td>&lt;whatever&gt;/Chicago.ODF.abstract.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.biblio</td><td>&lt;whatever&gt;/Chicago.ODF.biblio.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.footend</td><td>&lt;whatever&gt;/Chicago.ODF.footend.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.footend.short</td><td>&lt;whatever&gt;/Chicago.ODF.footend.short.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.note</td><td>&lt;whatever&gt;/Chicago.ODF.note.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.reference</td><td>&lt;whatever&gt;/Chicago.ODF.reference.layout</td><td>xml</td></tr>
+<tr><td>Chicago.ODF.text</td><td>&lt;whatever&gt;/Chicago.ODF.text.layout</td><td>xml</td></tr>
+</table>
+
+<div class="float-caption"><p><strong>Table 13.1: </strong>How to setup JabRef-5.0&rsquo;s </p></div></div>
+
+<div class="float">
+<img src="./JabRefCustomizeExportFormats.png" alt="./JabRefCustomizeExportFormats">
+
+<div class="float-caption"><p><strong>Figure: </strong>Screenshot of JabRef-5.0&rsquo;s </p></div></div>
+<p>Verify that the Chicago ODF plugin is successfully registered.  In a
+terminal, do
+</p>
+<div class="example">
+<pre class="example">/opt/jabref/bin//JabRef -n -h
+</pre></div>
+
+<p>Ensure that the &lsquo;<samp>Available export formats</samp>&rsquo; mentions the &lsquo;<samp>Chicago.ODF</samp>&rsquo;.
+</p>
+<div class="example">
+<pre class="example">Available export formats: html, simplehtml, docbook5, docbook4, din1505,
+bibordf, tablerefs, listrefs, tablerefsabsbib, harvard, iso690rtf,
+iso690txt, endnote, oocsv, ris, misq, bibtexml, oocalc, ods, MSBib,
+mods, xmp, pdf, Chicago.ODF.abstract, Chicago.ODF.biblio,
+Chicago.ODF.footend, Chicago.ODF.footend.short, Chicago.ODF.note,
+Chicago.ODF.reference, Chicago.ODF.text
+</pre></div>
+
+<dl compact="compact">
+<dt>Configure Emacs</dt>
+</dl>
+
+<p>Tell Emacs about &lsquo;<samp>JabRef</samp>&rsquo;&rsquo;s executable.
+</p>
+<p>Use this if you have &lsquo;<samp>JabRef</samp>&rsquo; executable.
+</p>
+<div class="example">
+<pre class="example">(custom-set-variables
+ '(org-jabref-command '(&quot;/opt/jabref/bin/JabRef&quot; &quot;-n&quot;)))
+
+(require 'ox-jabref)
+</pre></div>
+
+<p>Use this if you have JabRef as a &lsquo;<samp>jar</samp>&rsquo; file.
+</p>
+<div class="example">
+<pre class="example">(custom-set-variables
+ '(org-jabref-command '(&quot;java -jar ~/Downloads/JabRef-2.9.2.jar&quot; &quot;-n&quot;)))
+
+(require 'ox-jabref)
+</pre></div>
+
+<hr>
+<span id="Example"></span><span id="Example-1"></span><h3 class="section">13.2 Example</h3>
+
+<div class="example">
+<pre class="example">@book{goossens94,
+  author = &quot;Michel Goossens and Frank Mittelbach and Alexander Samarin&quot;,
+  title = &quot;The {\LaTeX}\space companion&quot;,
+  publisher = &quot;Addison-Wesley&quot;,
+  year = 1994
+}
+
+@book{kopka95,
+  author = &quot;Helmut Kopka and Patrick W. Daly&quot;,
+  title = &quot;A guide to {\LaTeXe}: document preparation
+           for beginners and advanced users&quot;,
+  publisher = &quot;Addison-Wesley&quot;,
+  year = 1995
+}
+
+@book{novices,
+  author = &quot;Nicola L. C. Talbot&quot;,
+  title = &quot;{\LaTeX}\space for Complete Novices&quot;,
+  volume = 1,
+  publisher = &quot;Dickmaw Books&quot;,
+  series = &quot;Dickimaw {\LaTeX}\space Series&quot;,
+  note = &quot;\url{\baseurl/latex/novices/}&quot;,
+  isbn=&quot;978-1-909440-00-5&quot;,
+  year = 2012
+}
+
+@book{thesis,
+  author = &quot;Nicola L. C. Talbot&quot;,
+  title = &quot;Using {\LaTeX}\space to Write a Ph.D. Thesis&quot;,
+  volume = 2,
+  publisher = &quot;Dickmaw Books&quot;,
+  series = &quot;The Dickimaw {\LaTeX}\space Series&quot;,
+  note = &quot;\url{\baseurl/latex/thesis/}&quot;,
+  year = 2012
+}
+</pre></div>
+
+<div class="example">
+<pre class="example">#+bib_file: &quot;./biblatex-examples/novices.bib&quot;
+#+odt_jabref_citation_style: &quot;Chicago (author-date)&quot;
+
+: Nicola L. C. Talbot in his book [cite:@novices; p. 97] says,
+
+#+begin_quote
+&quot;If you have a large number of citations in your document, it's best
+to use an external bibliographic application, such as =bibtex= or
+=biber=. However, that is beyond the scope of this book.  See,
+instead, /A Guide to LaTeX/ \cite{kopka95}, /The LaTeX Companion/
+\cite{goossens94} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
+[cite:@thesis].&quot;
+#+end_quote
+
+#+bibliography:
+</pre></div>
+
+<hr>
+<span id="Sample-Outputs"></span><span id="Sample-Outputs-1"></span><h3 class="section">13.3 Sample Outputs</h3>
+
+<dl compact="compact">
+<dt>Sample output with <code>#+ODT_JABREF_CITATION_STYLE: &quot;Numeric&quot;</code></dt>
+</dl>
+
+<img src="./citation-1.png" alt="./citation-1">
+
+<dl compact="compact">
+<dt>Sample output with <code>#+ODT_JABREF_CITATION_STYLE: &quot;Chicago (full-note)&quot;</code></dt>
+</dl>
+
+<img src="./citation-2.png" alt="./citation-2">
+
+<dl compact="compact">
+<dt>Sample output with <code>#+ODT_JABREF_CITATION_STYLE: &quot;Chicago (author-date)&quot;</code></dt>
+</dl>
+
+<img src="./citation-3.png" alt="./citation-3">
+
+<div class="footnote">
+<hr>
+<h4 class="footnotes-heading">Footnotes</h4>
+
+<h5><a id="FOOT15" href="#DOCF15">(15)</a></h3>
+<p>See section titled <em>Berkeley-style citations</em> at <a href="https://pandoc.org/org.html">https://pandoc.org/org.html</a></p>
+<h5><a id="FOOT16" href="#DOCF16">(16)</a></h3>
+<p><a href="http://dlmf.nist.gov/LaTeXML/">LaTeXML</a></p>
+<h5><a id="FOOT17" href="#DOCF17">(17)</a></h3>
+<p>See
+<a href="https://github.com/kjambunathan/JabRefChicagoForOrgmode">Jabref
+Plugin for export to Chicago Manual of Style in <code>OpenDocument</code>
+format</a>.  This a port of
+<a href="https://github.com/JabRef/layouts.jabref.org/tree/master/Chicago (English)">Jabref&rsquo;s
+Plugin for export to Chicago Manual of Style in <code>RTF</code> format</a>.</p>
+</div>
+<hr>
+<div class="header">
+<p>
+Previous: <a href="#Example" accesskey="p" rel="prev">Example</a>, Up: <a href="#Bibliography-and-Citations-in-ODT-export" accesskey="u" rel="up">Bibliography and Citations in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+</div>
+
+
+
+</body>
+</html>
