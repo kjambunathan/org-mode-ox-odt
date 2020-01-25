@@ -32,10 +32,10 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'ob-comint)
 (require 'org-macs)
 (require 'org-compat)
-(require 'ob-keys)
-(require 'ob-comint)
+(require 'org-keys)
 
 (declare-function org-element-at-point "org-element" ())
 (declare-function org-element-class "org-element" (datum &optional parent))
@@ -152,6 +152,8 @@ current-window     Show edit buffer in the current window, keeping all other
                    windows.
 split-window-below Show edit buffer below the current window, keeping all
                    other windows.
+split-window-right Show edit buffer to the right of the current window,
+                   keeping all other windows.
 other-window       Use `switch-to-buffer-other-window' to display edit buffer.
 reorganize-frame   Show only two windows on the current frame, the current
                    window and the edit buffer.  When exiting the edit buffer,
@@ -162,6 +164,7 @@ other-frame        Use `switch-to-buffer-other-frame' to display edit buffer.
   :type '(choice
 	  (const current-window)
 	  (const split-window-below)
+	  (const split-window-right)
 	  (const other-frame)
 	  (const other-window)
 	  (const reorganize-frame)))
@@ -255,6 +258,9 @@ issued in the language major mode buffer."
 (defvar-local org-src--block-indentation nil)
 (put 'org-src--block-indentation 'permanent-local t)
 
+(defvar-local org-src--content-indentation nil)
+(put 'org-src--content-indentation 'permanent-local t)
+
 (defvar-local org-src--end-marker nil)
 (put 'org-src--end-marker 'permanent-local t)
 
@@ -269,9 +275,6 @@ issued in the language major mode buffer."
 
 (defvar-local org-src--remote nil)
 (put 'org-src--remote 'permanent-local t)
-
-(defvar-local org-src--saved-temp-window-config nil)
-(put 'org-src--saved-temp-window-config 'permanent-local t)
 
 (defvar-local org-src--source-type nil
   "Type of element being edited, as a symbol.")
@@ -303,15 +306,6 @@ Return nil if there is no such buffer."
 	     (= end org-src--end-marker)
 	     (eq (marker-buffer end) (marker-buffer org-src--end-marker))
 	     (throw 'exit b))))))
-
-(defun org-src--get-lang-mode (lang)
-  "Return major mode that should be used for LANG.
-LANG is a string, and the returned major mode is a symbol."
-  (intern
-   (concat
-    (let ((l (or (cdr (assoc lang org-src-lang-modes)) lang)))
-      (if (symbolp l) (symbol-name l) l))
-    "-mode")))
 
 (defun org-src--coordinates (pos beg end)
   "Return coordinates of POS relatively to BEG and END.
@@ -431,7 +425,7 @@ Assume point is in the corresponding edit buffer."
 	 (if org-src--preserve-indentation 0
 	   (+ (or org-src--block-indentation 0)
 	      (if (memq org-src--source-type '(example-block src-block))
-		  org-edit-src-content-indentation
+		  org-src--content-indentation
 		0))))
 	(use-tabs? (and (> org-src--tab-width 0) t))
 	(source-tab-width org-src--tab-width)
@@ -475,7 +469,6 @@ When REMOTE is non-nil, do not try to preserve point or mark when
 moving from the edit area to the source.
 
 Leave point in edit buffer."
-  (setq org-src--saved-temp-window-config (current-window-configuration))
   (let* ((area (org-src--contents-area datum))
 	 (beg (copy-marker (nth 0 area)))
 	 (end (copy-marker (nth 1 area) t))
@@ -494,9 +487,9 @@ Leave point in edit buffer."
 	     (source-file-name (buffer-file-name (buffer-base-buffer)))
 	     (source-tab-width (if indent-tabs-mode tab-width 0))
 	     (type (org-element-type datum))
-	     (ind (org-with-wide-buffer
-		   (goto-char (org-element-property :begin datum))
-		   (current-indentation)))
+	     (block-ind (org-with-point-at (org-element-property :begin datum)
+			  (current-indentation)))
+	     (content-ind org-edit-src-content-indentation)
 	     (preserve-ind
 	      (and (memq type '(example-block src-block))
 		   (or (org-element-property :preserve-indent datum)
@@ -539,7 +532,8 @@ Leave point in edit buffer."
 	(setq org-src--end-marker end)
 	(setq org-src--remote remote)
 	(setq org-src--source-type type)
-	(setq org-src--block-indentation ind)
+	(setq org-src--block-indentation block-ind)
+	(setq org-src--content-indentation content-ind)
 	(setq org-src--preserve-indentation preserve-ind)
 	(setq org-src--overlay overlay)
 	(setq org-src--allow-write-back write-back)
@@ -572,7 +566,7 @@ Leave point in edit buffer."
   "Fontify code block.
 This function is called by emacs automatic fontification, as long
 as `org-src-fontify-natively' is non-nil."
-  (let ((lang-mode (org-src--get-lang-mode lang)))
+  (let ((lang-mode (org-src-get-lang-mode lang)))
     (when (fboundp lang-mode)
       (let ((string (buffer-substring-no-properties start end))
 	    (modified (buffer-modified-p))
@@ -766,6 +760,15 @@ Org-babel commands."
     (org-src-do-at-code-block
      (call-interactively (lookup-key org-babel-map key)))))
 
+(defun org-src-get-lang-mode (lang)
+  "Return major mode that should be used for LANG.
+LANG is a string, and the returned major mode is a symbol."
+  (intern
+   (concat
+    (let ((l (or (cdr (assoc lang org-src-lang-modes)) lang)))
+      (if (symbolp l) (symbol-name l) l))
+    "-mode")))
+
 (defun org-src-edit-buffer-p (&optional buffer)
   "Non-nil when current buffer is a source editing buffer.
 If BUFFER is non-nil, test it instead."
@@ -793,7 +796,14 @@ Raise an error when current buffer is not a source editing buffer."
     (`other-window
      (switch-to-buffer-other-window buffer))
     (`split-window-below
-     (select-window (split-window-vertically))
+     (if (eq context 'exit)
+	 (delete-window)
+       (select-window (split-window-vertically)))
+     (pop-to-buffer-same-window buffer))
+    (`split-window-right
+     (if (eq context 'exit)
+	 (delete-window)
+       (select-window (split-window-horizontally)))
      (pop-to-buffer-same-window buffer))
     (`other-frame
      (pcase context
@@ -950,7 +960,7 @@ the LaTeX environment in the Org mode buffer."
     (org-src--edit-element
      element
      (org-src--construct-edit-buffer-name (buffer-name) "LaTeX environment")
-     (org-src--get-lang-mode "latex")
+     (org-src-get-lang-mode "latex")
      t)
     t))
 
@@ -975,7 +985,7 @@ Throw an error when not at an export block."
 			       ;; Missing export-block type.  Fallback
 			       ;; to default mode.
 			       "fundamental")))
-	   (mode (org-src--get-lang-mode type)))
+	   (mode (org-src-get-lang-mode type)))
       (unless (functionp mode) (error "No such language mode: %s" mode))
       (org-src--edit-element
        element
@@ -1008,7 +1018,7 @@ name of the sub-editing buffer."
     (let* ((lang
 	    (if (eq type 'src-block) (org-element-property :language element)
 	      "example"))
-	   (lang-f (and (eq type 'src-block) (org-src--get-lang-mode lang)))
+	   (lang-f (and (eq type 'src-block) (org-src-get-lang-mode lang)))
 	   (babel-info (and (eq type 'src-block)
 			    (org-babel-get-src-block-info 'light)))
 	   deactivate-mark)
@@ -1041,7 +1051,7 @@ name of the sub-editing buffer."
 		 (org-src--on-datum-p context))
       (user-error "Not on inline source code"))
     (let* ((lang (org-element-property :language context))
-	   (lang-f (org-src--get-lang-mode lang))
+	   (lang-f (org-src-get-lang-mode lang))
 	   (babel-info (org-babel-get-src-block-info 'light))
 	   deactivate-mark)
       (unless (functionp lang-f) (error "No such language mode: %s" lang-f))
@@ -1172,10 +1182,7 @@ Throw an error if there is no such buffer."
        (write-back (org-src--goto-coordinates coordinates beg end))))
     ;; Clean up left-over markers and restore window configuration.
     (set-marker beg nil)
-    (set-marker end nil)
-    (when org-src--saved-temp-window-config
-      (set-window-configuration org-src--saved-temp-window-config)
-      (setq org-src--saved-temp-window-config nil))))
+    (set-marker end nil)))
 
 
 (provide 'org-src)

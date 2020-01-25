@@ -31,11 +31,10 @@
 ;; iPhone and Android - any external viewer/flagging/editing
 ;; application that uses the same conventions could be used.
 
+(require 'cl-lib)
 (require 'org)
 (require 'org-agenda)
-(require 'cl-lib)
-
-(defvar org-agenda-keep-restricted-file-list)
+(require 'ol)
 
 ;;; Code:
 
@@ -57,7 +56,7 @@ In addition to this, the list may also contain the following symbols:
 
 `org-agenda-text-search-extra-files'
      Include the files given in the variable
-     `org-agenda-text-search-extra-files'"
+     `org-agenda-text-search-extra-files'."
   :group 'org-mobile
   :type '(list :greedy t
 	       (option (const :tag "org-agenda-files" org-agenda-files))
@@ -670,8 +669,7 @@ The table of checksums is written to the file mobile-checksums."
 	    (org-mobile-escape-olp (nth 4 (org-heading-components))))))
 
 (defun org-mobile-escape-olp (s)
-  (let  ((table '(?: ?/)))
-    (org-link-escape s table)))
+  (org-link-encode s '(?: ?/)))
 
 (defun org-mobile-create-sumo-agenda ()
   "Create a file that contains all custom agenda views."
@@ -965,7 +963,7 @@ is currently a noop.")
 	(if (not (string-match "\\`olp:\\(.*?\\)$" link))
 	    nil
 	  (let ((file (match-string 1 link)))
-	    (setq file (org-link-unescape file))
+	    (setq file (org-link-decode file))
 	    (setq file (expand-file-name file org-directory))
 	    (save-excursion
 	      (find-file file)
@@ -975,9 +973,9 @@ is currently a noop.")
 	      (point-marker))))
       (let ((file (match-string 1 link))
 	    (path (match-string 2 link)))
-	(setq file (org-link-unescape file))
+	(setq file (org-link-decode file))
 	(setq file (expand-file-name file org-directory))
-	(setq path (mapcar 'org-link-unescape
+	(setq path (mapcar #'org-link-decode
 			   (org-split-string path "/")))
 	(org-find-olp (cons file path))))))
 

@@ -116,6 +116,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'ol)
 
 (declare-function org-publish-get-project-from-filename "ox-publish"
 		  (filename &optional up))
@@ -300,7 +301,7 @@ results of that splitting are returned as a list."
          (split-parts (split-string data sep)))
     (cond ((not unhexify) split-parts)
 	  ((fboundp unhexify) (mapcar unhexify split-parts))
-	  (t (mapcar #'org-link-unescape split-parts)))))
+	  (t (mapcar #'org-link-decode split-parts)))))
 
 (defun org-protocol-flatten-greedy (param-list &optional strip-path replacement)
   "Transform PARAM-LIST into a flat list for greedy handlers.
@@ -381,7 +382,7 @@ If INFO is already a property list, return it unchanged."
 	  (while data
 	    (setq result
 		  (append result
-			  (list (pop data) (org-link-unescape (pop data))))))
+			  (list (pop data) (org-link-decode (pop data))))))
 	  result)
       (let ((data (org-protocol-split-data info t org-protocol-data-separator)))
 	(if default-order
@@ -489,12 +490,12 @@ Now template ?b will be used."
 	 (region (or (plist-get parts :body) ""))
 	 (orglink
 	  (if (null url) title
-	    (org-make-link-string url (or (org-string-nw-p title) url))))
+	    (org-link-make-string url (or (org-string-nw-p title) url))))
 	 ;; Avoid call to `org-store-link'.
 	 (org-capture-link-is-already-stored t))
     ;; Only store link if there's a URL to insert later on.
     (when url (push (list url title) org-stored-links))
-    (org-store-link-props :type type
+    (org-link-store-props :type type
 			  :link url
 			  :description title
 			  :annotation orglink

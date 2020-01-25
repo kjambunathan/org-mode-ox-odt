@@ -209,17 +209,6 @@ because otherwise all these markers will point to nowhere."
   `(let (pop-up-frames display-buffer-alist)
      ,@body))
 
-(defmacro org-table-with-shrunk-field (&rest body)
-  "Save field shrunk state, execute BODY and restore state."
-  (declare (debug (body)))
-  (org-with-gensyms (end shrunk size)
-    `(let* ((,shrunk (save-match-data (org-table--shrunk-field)))
-	    (,end (and ,shrunk (copy-marker (overlay-end ,shrunk) t)))
-	    (,size (and ,shrunk (- ,end (overlay-start ,shrunk)))))
-       (when ,shrunk (delete-overlay ,shrunk))
-       (unwind-protect (progn ,@body)
-	 (when ,shrunk (move-overlay ,shrunk (- ,end ,size) ,end))))))
-
 
 ;;; Buffer and windows
 
@@ -346,7 +335,7 @@ if it fails."
 		 (let ((min-ind (point-max)))
 		   (save-excursion
 		     (while (re-search-forward "^[ \t]*\\S-" nil t)
-		       (let ((ind (1- (current-column))))
+		       (let ((ind (current-indentation)))
 			 (if (zerop ind) (throw :exit nil)
 			   (setq min-ind (min min-ind ind))))))
 		   min-ind))))
@@ -643,7 +632,7 @@ program is needed for, so that the error message can be more informative."
 (defvar org-inlinetask-min-level) ; defined in org-inlinetask.el
 (defun org-get-limited-outline-regexp ()
   "Return outline-regexp with limited number of levels.
-The number of levels is controlled by `org-inlinetask-min-level'"
+The number of levels is controlled by `org-inlinetask-min-level'."
   (cond ((not (derived-mode-p 'org-mode))
 	 outline-regexp)
 	((not (featurep 'org-inlinetask))
@@ -991,6 +980,43 @@ as-is if removal failed."
     (insert code)
     (if (org-do-remove-indentation n) (buffer-string) code)))
 
+(defun org-fill-template (template alist)
+  "Find each %key of ALIST in TEMPLATE and replace it."
+  (let ((case-fold-search nil))
+    (dolist (entry (sort (copy-sequence alist)
+                         (lambda (a b) (< (length (car a)) (length (car b))))))
+      (setq template
+	    (replace-regexp-in-string
+	     (concat "%" (regexp-quote (car entry)))
+	     (or (cdr entry) "") template t t)))
+    template))
+
+(defun org-replace-escapes (string table)
+  "Replace %-escapes in STRING with values in TABLE.
+TABLE is an association list with keys like \"%a\" and string values.
+The sequences in STRING may contain normal field width and padding information,
+for example \"%-5s\".  Replacements happen in the sequence given by TABLE,
+so values can contain further %-escapes if they are define later in TABLE."
+  (let ((tbl (copy-alist table))
+	(case-fold-search nil)
+        (pchg 0)
+        re rpl)
+    (dolist (e tbl)
+      (setq re (concat "%-?[0-9.]*" (substring (car e) 1)))
+      (when (and (cdr e) (string-match re (cdr e)))
+        (let ((sref (substring (cdr e) (match-beginning 0) (match-end 0)))
+              (safe "SREF"))
+          (add-text-properties 0 3 (list 'sref sref) safe)
+          (setcdr e (replace-match safe t t (cdr e)))))
+      (while (string-match re string)
+        (setq rpl (format (concat (substring (match-string 0 string) 0 -1) "s")
+                          (cdr e)))
+        (setq string (replace-match rpl t t string))))
+    (while (setq pchg (next-property-change pchg string))
+      (let ((sref (get-text-property pchg 'sref string)))
+	(when (and sref (string-match "SREF" string pchg))
+	  (setq string (replace-match sref t t string)))))
+    string))
 
 
 ;;; Text properties
@@ -1072,7 +1098,7 @@ nil, just return 0."
    ((numberp s) s)
    ((stringp s)
     (condition-case nil
-	(float-time (org-time-string-to-time s))
+	(float-time (apply #'encode-time (org-parse-time-string s)))
       (error 0)))
    (t 0)))
 

@@ -58,10 +58,55 @@
 
 ;;; Code:
 
-(require 'org)
 (require 'avl-tree)
 (require 'cl-lib)
+(require 'ol)
+(require 'org)
+(require 'org-compat)
+(require 'org-entities)
+(require 'org-footnote)
+(require 'org-list)
+(require 'org-macs)
+(require 'org-table)
 
+(declare-function org-at-heading-p "org" (&optional _))
+(declare-function org-end-of-subtree "org" (&optional invisible-ok to-heading))
+(declare-function org-escape-code-in-string "org-src" (s))
+(declare-function org-find-visible "org" ())
+(declare-function org-macro-escape-arguments "org-macro" (&rest args))
+(declare-function org-macro-extract-arguments "org-macro" (s))
+(declare-function org-reduced-level "org" (l))
+(declare-function org-unescape-code-in-string "org-src" (s))
+(declare-function outline-next-heading "outline" ())
+(declare-function outline-previous-heading "outline" ())
+
+(defvar org-archive-tag)
+(defvar org-clock-line-re)
+(defvar org-closed-string)
+(defvar org-comment-string)
+(defvar org-complex-heading-regexp)
+(defvar org-dblock-start-re)
+(defvar org-deadline-string)
+(defvar org-done-keywords)
+(defvar org-drawer-regexp)
+(defvar org-edit-src-content-indentation)
+(defvar org-emph-re)
+(defvar org-emphasis-regexp-components)
+(defvar org-keyword-time-not-clock-regexp)
+(defvar org-match-substring-regexp)
+(defvar org-odd-levels-only)
+(defvar org-outline-regexp-bol)
+(defvar org-planning-line-re)
+(defvar org-property-drawer-re)
+(defvar org-property-format)
+(defvar org-property-re)
+(defvar org-scheduled-string)
+(defvar org-src-preserve-indentation)
+(defvar org-tags-column)
+(defvar org-time-stamp-formats)
+(defvar org-todo-regexp)
+(defvar org-ts-regexp-both)
+(defvar org-verbatim-re)
 
 
 ;;; Definitions And Rules
@@ -95,7 +140,7 @@ specially in `org-element--object-lex'.")
   (setq org-element-paragraph-separate
 	(concat "^\\(?:"
 		;; Headlines, inlinetasks.
-		org-outline-regexp "\\|"
+		"\\*+ " "\\|"
 		;; Footnote definitions.
 		"\\[fn:[-_[:word:]]+\\]" "\\|"
 		;; Diary sexps.
@@ -121,7 +166,7 @@ specially in `org-element--object-lex'.")
 		;; LaTeX environments.
 		"\\\\begin{\\([A-Za-z0-9*]+\\)}" "\\|"
 		;; Clock lines.
-		(regexp-quote org-clock-string) "\\|"
+		"CLOCK:" "\\|"
 		;; Lists.
 		(let ((term (pcase org-plain-list-ordered-item-terminator
 			      (?\) ")") (?. "\\.") (_ "[.)]")))
@@ -942,7 +987,7 @@ Return value is a plist."
 Return a list whose CAR is `headline' and CDR is a plist
 containing `:raw-value', `:title', `:begin', `:end',
 `:pre-blank', `:contents-begin' and `:contents-end', `:level',
-`:priority', `:tags', `:todo-keyword',`:todo-type', `:scheduled',
+`:priority', `:tags', `:todo-keyword', `:todo-type', `:scheduled',
 `:deadline', `:closed', `:archivedp', `:commentedp'
 `:footnote-section-p', `:post-blank' and `:post-affiliated'
 keywords.
@@ -1737,7 +1782,7 @@ Return a list whose CAR is `clock' and CDR is a plist containing
   (save-excursion
     (let* ((case-fold-search nil)
 	   (begin (point))
-	   (value (progn (search-forward org-clock-string (line-end-position) t)
+	   (value (progn (search-forward "CLOCK:" (line-end-position) t)
 			 (skip-chars-forward " \t")
 			 (org-element-timestamp-parser)))
 	   (duration (and (search-forward " => " (line-end-position) t)
@@ -1762,7 +1807,7 @@ Return a list whose CAR is `clock' and CDR is a plist containing
 
 (defun org-element-clock-interpreter (clock _)
   "Interpret CLOCK element as Org syntax."
-  (concat org-clock-string " "
+  (concat "CLOCK: "
 	  (org-element-timestamp-interpreter
 	   (org-element-property :value clock) nil)
 	  (let ((duration (org-element-property :duration clock)))
@@ -3002,7 +3047,7 @@ Assume point is at the beginning of the snippet."
 
 When at a footnote reference, return a list whose car is
 `footnote-reference' and cdr a plist with `:label', `:type',
-`:begin', `:end', `:content-begin', `:contents-end' and
+`:begin', `:end', `:contents-begin', `:contents-end' and
 `:post-blank' as keywords.  Otherwise, return nil."
   (when (looking-at org-footnote-re)
     (let ((closing (with-syntax-table org-element--pair-square-table
@@ -3265,10 +3310,10 @@ Assume point is at the beginning of the link."
 	(setq contents-begin (match-beginning 1))
 	(setq contents-end (match-end 1)))
        ;; Type 2: Standard link, i.e. [[https://orgmode.org][homepage]]
-       ((looking-at org-bracket-link-regexp)
+       ((looking-at org-link-bracket-re)
 	(setq format 'bracket)
-	(setq contents-begin (match-beginning 3))
-	(setq contents-end (match-end 3))
+	(setq contents-begin (match-beginning 2))
+	(setq contents-end (match-end 2))
 	(setq link-end (match-end 0))
 	;; RAW-LINK is the original link.  Decode any encoding.
 	;; Expand any abbreviation in it.
@@ -3315,7 +3360,7 @@ Assume point is at the beginning of the link."
 	  (setq type "fuzzy")
 	  (setq path raw-link))))
        ;; Type 3: Plain link, e.g., https://orgmode.org
-       ((looking-at org-plain-link-re)
+       ((looking-at org-link-plain-re)
 	(setq format 'plain)
 	(setq raw-link (match-string-no-properties 0))
 	(setq type (match-string-no-properties 1))
@@ -3324,7 +3369,7 @@ Assume point is at the beginning of the link."
        ;; Type 4: Angular link, e.g., <https://orgmode.org>.  Unlike to
        ;; bracket links, follow RFC 3986 and remove any extra
        ;; whitespace in URI.
-       ((looking-at org-angle-link-re)
+       ((looking-at org-link-angle-re)
 	(setq format 'angle)
 	(setq type (match-string-no-properties 1))
 	(setq link-end (match-end 0))
@@ -4022,7 +4067,8 @@ element it has to parse."
        ((org-at-heading-p)
 	(org-element-inlinetask-parser limit raw-secondary-p))
        ;; From there, elements can have affiliated keywords.
-       (t (let ((affiliated (org-element--collect-affiliated-keywords limit)))
+       (t (let ((affiliated (org-element--collect-affiliated-keywords
+			     limit (memq granularity '(nil object)))))
 	    (cond
 	     ;; Jumping over affiliated keywords put point off-limits.
 	     ;; Parse them as regular keywords.
@@ -4108,7 +4154,7 @@ element it has to parse."
 ;; that element, and, in the meantime, collect information they give
 ;; into appropriate properties.  Hence the following function.
 
-(defun org-element--collect-affiliated-keywords (limit)
+(defun org-element--collect-affiliated-keywords (limit parse)
   "Collect affiliated keywords from point down to LIMIT.
 
 Return a list whose CAR is the position at the first of them and
@@ -4117,13 +4163,16 @@ beginning of the first line after them.
 
 As a special case, if element doesn't start at the beginning of
 the line (e.g., a paragraph starting an item), CAR is current
-position of point and CDR is nil."
+position of point and CDR is nil.
+
+When PARSE is non-nil, values from keywords belonging to
+`org-element-parsed-keywords' are parsed as secondary strings."
   (if (not (bolp)) (list (point))
     (let ((case-fold-search t)
 	  (origin (point))
 	  ;; RESTRICT is the list of objects allowed in parsed
-	  ;; keywords value.
-	  (restrict (org-element-restriction 'keyword))
+	  ;; keywords value.  If PARSE is nil, no object is allowed.
+	  (restrict (and parse (org-element-restriction 'keyword)))
 	  output)
       (while (and (< (point) limit) (looking-at org-element--affiliated-re))
 	(let* ((raw-kwd (upcase (match-string 1)))
@@ -4132,35 +4181,35 @@ position of point and CDR is nil."
 	       (kwd (or (cdr (assoc raw-kwd
 				    org-element-keyword-translation-alist))
 			raw-kwd))
+	       ;; PARSED? is non-nil when keyword should have its
+	       ;; value parsed.
+	       (parsed? (member kwd org-element-parsed-keywords))
 	       ;; Find main value for any keyword.
 	       (value
-		(save-match-data
-		  (org-trim
-		   (buffer-substring-no-properties
-		    (match-end 0) (line-end-position)))))
-	       ;; PARSEDP is non-nil when keyword should have its
-	       ;; value parsed.
-	       (parsedp (member kwd org-element-parsed-keywords))
-	       ;; If KWD is a dual keyword, find its secondary
-	       ;; value.  Maybe parse it.
-	       (dualp (member kwd org-element-dual-keywords))
+		(let ((beg (match-end 0))
+		      (end (save-excursion
+			     (end-of-line)
+			     (skip-chars-backward " \t")
+			     (point))))
+		  (if parsed?
+		      (org-element--parse-objects beg end nil restrict)
+		    (org-trim (buffer-substring-no-properties beg end)))))
+	       ;; If KWD is a dual keyword, find its secondary value.
+	       ;; Maybe parse it.
+	       (dual? (member kwd org-element-dual-keywords))
 	       (dual-value
-		(and dualp
+		(and dual?
 		     (let ((sec (match-string-no-properties 2)))
-		       (if (or (not sec) (not parsedp)) sec
+		       (cond
+			((and sec parsed?)
 			 (save-match-data
 			   (org-element--parse-objects
-			    (match-beginning 2) (match-end 2) nil restrict))))))
+			    (match-beginning 2) (match-end 2) nil restrict)))
+			(sec sec)))))
 	       ;; Attribute a property name to KWD.
 	       (kwd-sym (and kwd (intern (concat ":" (downcase kwd))))))
 	  ;; Now set final shape for VALUE.
-	  (when parsedp
-	    (setq value
-		  (org-element--parse-objects
-		   (match-end 0)
-		   (progn (end-of-line) (skip-chars-backward " \t") (point))
-		   nil restrict)))
-	  (when dualp
+	  (when dual?
 	    (setq value (and (or value dual-value) (cons value dual-value))))
 	  (when (or (member kwd org-element-multiple-keywords)
 		    ;; Attributes can always appear on multiple lines.
@@ -5695,7 +5744,7 @@ the process stopped before finding the expected result."
 
 (defconst org-element--cache-sensitive-re
   (concat
-   org-outline-regexp-bol "\\|"
+   "^\\*+ " "\\|"
    "\\\\end{[A-Za-z0-9*]+}[ \t]*$" "\\|"
    "^[ \t]*\\(?:"
    "#\\+\\(?:BEGIN[:_]\\|END\\(?:_\\|:?[ \t]*$\\)\\)" "\\|"

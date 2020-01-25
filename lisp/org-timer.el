@@ -419,7 +419,9 @@ using three `C-u' prefix arguments."
 	   (if (numberp org-timer-default-timer)
 	       (number-to-string org-timer-default-timer)
 	     org-timer-default-timer))
-	 (effort-minutes (ignore-errors (floor (org-get-at-eol 'effort-minutes 1))))
+	 (effort-minutes (let ((effort (org-entry-get nil org-effort-property)))
+			   (when (org-string-nw-p effort)
+			     (floor (org-duration-to-minutes effort)))))
 	 (minutes (or (and (numberp opt) (number-to-string opt))
 		      (and (not (equal opt '(64)))
 			   effort-minutes
@@ -464,7 +466,8 @@ time is up."
 		 (run-hooks 'org-timer-done-hook)))))
 
 (defun org-timer--get-timer-title ()
-  "Construct timer title from heading or file name of Org buffer."
+  "Construct timer title.
+Try to use an Org header, otherwise use the buffer name."
   (cond
    ((derived-mode-p 'org-agenda-mode)
     (let* ((marker (or (get-text-property (point) 'org-marker)
@@ -480,7 +483,7 @@ time is up."
    ((derived-mode-p 'org-mode)
     (or (ignore-errors (org-get-heading))
 	(buffer-name (buffer-base-buffer))))
-   (t (error "Not in an Org buffer"))))
+   (t (buffer-name (buffer-base-buffer)))))
 
 (provide 'org-timer)
 
