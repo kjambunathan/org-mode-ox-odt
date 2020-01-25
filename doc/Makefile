@@ -7,11 +7,11 @@ endif
 
 all:		$(ORG_MAKE_DOC)
 
-info:		org org-odt-old org-odt
+info:		org
 
-html:		org.html org-odt.html # org-odt-old.html 
+html:		org.html
 
-pdf:		org.pdf orgguide.pdf org-odt.pdf # org-odt-old.pdf
+pdf:		org.pdf orgguide.pdf
 
 card:		orgcard.pdf orgcard_letter.pdf orgguide.pdf
 
@@ -27,11 +27,11 @@ guide::		orgguide.texi org-version.inc
 	../mk/guidesplit.pl $@/*
 endif
 
-%.texi:	%-manual.org
+org.texi:	org-manual.org
 	$(BATCH) \
 	  --eval '(add-to-list '"'"'load-path "../lisp")' \
 	  --eval '(load "../mk/org-fixup.el")' \
-	  --eval '(org-make-manuals (list "$<"))'
+	  --eval '(org-make-manuals)'
 
 org-version.inc:	org.texi
 	@echo "org-version: $(ORGVERSION) ($(GITVERSION))"
@@ -55,7 +55,6 @@ clean:
 	$(RM) org *.pdf *.html *_letter.tex org-version.inc org-version.tex \
 	      *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.pg *.pgs \
 	      *.toc *.tp *.tps *.vr *.vrs *.log *.html *.ps
-	$(RMR) org-odt-manual/*.html
 cleanall:	clean
 	$(RMR) guide manual
 
@@ -77,15 +76,13 @@ clean-install:
 	PDFLATEX=$(PDFTEX) $(TEXI2PDF) $<
 
 %.html:		%.texi org-version.inc
-	$(TEXI2HTML) $(TEXI2HTMLEXTRA) $<
+	$(TEXI2HTML) --no-split -o $@ $<
 ifneq ($(SERVERMK),)
 	../mk/manfull.pl $@
 
 %.txt:		%.tex
 	perl ../mk/orgcard2txt.pl $< > $@
 endif
-
-org-odt.html: TEXI2HTMLEXTRA=--css-ref=style.css --split=chapter --no-headers  -o org-odt-manual
 
 %_letter.tex:	%.tex
 	$(BATCH) \
