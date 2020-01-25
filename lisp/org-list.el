@@ -86,7 +86,6 @@
 (defvar org-clock-string)
 (defvar org-closed-string)
 (defvar org-deadline-string)
-(defvar org-description-max-indent)
 (defvar org-done-keywords)
 (defvar org-drawer-regexp)
 (defvar org-element-all-objects)
@@ -328,14 +327,6 @@ with the word \"recursive\" in the value."
   :group 'org-plain-lists
   :type 'boolean)
 
-(defcustom org-list-description-max-indent 20
-  "Maximum indentation for the second line of a description list.
-When the indentation would be larger than this, it will become
-5 characters instead."
-  :group 'org-plain-lists
-  :type 'integer
-  :safe #'wholenump)
-
 (defcustom org-list-indent-offset 0
   "Additional indentation for sub-items in a list.
 By setting this to a small number, usually 1 or 2, one can more
@@ -347,14 +338,6 @@ clearly distinguish sub-items in a list."
 (defvar org-list-forbidden-blocks '("example" "verse" "src" "export")
   "Names of blocks where lists are not allowed.
 Names must be in lower case.")
-
-(defvar org-list-export-context '(block inlinetask)
-  "Context types where lists will be interpreted during export.
-
-Valid types are `drawer', `inlinetask' and `block'.  More
-specifically, type `block' is determined by the variable
-`org-list-forbidden-blocks'.")
-
 
 
 ;;; Predicates and regexps
@@ -2074,25 +2057,13 @@ Possible values are: `folded', `children' or `subtree'.  See
   "Return column at which body of ITEM should start."
   (save-excursion
     (goto-char item)
-    (if (save-excursion
-	  (end-of-line)
-	  (re-search-backward
-	   "[ \t]::\\([ \t]\\|$\\)" (line-beginning-position) t))
-	;; Descriptive list item.  Body starts after item's tag, if
-	;; possible.
-	(let ((start (1+ (- (match-beginning 1) (line-beginning-position))))
-	      (ind (current-indentation)))
-	  (if (> start (+ ind org-list-description-max-indent))
-	      (+ ind 5)
-	    start))
-      ;; Regular item.  Body starts after bullet.
-      (looking-at "[ \t]*\\(\\S-+\\)")
-      (+ (progn (goto-char (match-end 1)) (current-column))
-	 (if (and org-list-two-spaces-after-bullet-regexp
-		  (string-match-p org-list-two-spaces-after-bullet-regexp
-				  (match-string 1)))
-	     2
-	   1)))))
+    (looking-at "[ \t]*\\(\\S-+\\)")
+    (+ (progn (goto-char (match-end 1)) (current-column))
+       (if (and org-list-two-spaces-after-bullet-regexp
+		(string-match-p org-list-two-spaces-after-bullet-regexp
+				(match-string 1)))
+	   2
+	 1))))
 
 
 
@@ -3179,10 +3150,14 @@ Point is left at list's end."
 (defun org-list-make-subtree ()
   "Convert the plain list at point into a subtree."
   (interactive)
-  (if (not (ignore-errors (goto-char (org-in-item-p))))
-      (error "Not in a list")
-    (let ((list (save-excursion (org-list-to-lisp t))))
-      (insert (org-list-to-subtree list) "\n"))))
+  (let ((item (org-in-item-p)))
+    (unless item (error "Not in a list"))
+    (goto-char item)
+    (let ((level (pcase (org-current-level)
+		   (`nil 1)
+		   (l (1+ (org-reduced-level l)))))
+	  (list (save-excursion (org-list-to-lisp t))))
+      (insert (org-list-to-subtree list level) "\n"))))
 
 (defun org-list-to-generic (list params)
   "Convert a LIST parsed through `org-list-to-lisp' to a custom format.
@@ -3491,21 +3466,22 @@ with overruling parameters for `org-list-to-generic'."
 		 :cbtrans "[-] ")))
     (org-list-to-generic list (org-combine-plists defaults params))))
 
-(defun org-list-to-subtree (list &optional params)
+(defun org-list-to-subtree (list &optional start-level params)
   "Convert LIST into an Org subtree.
-LIST is as returned by `org-list-to-lisp'.  PARAMS is a property
-list with overruling parameters for `org-list-to-generic'."
+LIST is as returned by `org-list-to-lisp'.  Subtree starts at
+START-LEVEL or level 1 if nil.  PARAMS is a property list with
+overruling parameters for `org-list-to-generic'."
   (let* ((blank (pcase (cdr (assq 'heading org-blank-before-new-entry))
 		  (`t t)
 		  (`auto (save-excursion
 			   (org-with-limited-levels (outline-previous-heading))
 			   (org-previous-line-empty-p)))))
-	 (level (org-reduced-level (or (org-current-level) 0)))
+	 (level (or start-level 1))
 	 (make-stars
 	  (lambda (_type depth &optional _count)
 	    ;; Return the string for the heading, depending on DEPTH
 	    ;; of current sub-list.
-	    (let ((oddeven-level (+ level depth)))
+	    (let ((oddeven-level (+ level (1- depth))))
 	      (concat (make-string (if org-odd-levels-only
 				       (1- (* 2 oddeven-level))
 				     oddeven-level)

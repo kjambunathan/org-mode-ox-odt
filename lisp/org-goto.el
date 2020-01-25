@@ -172,7 +172,6 @@ When nil, you can use these keybindings to navigate the buffer:
 (defun org-goto-local-auto-isearch ()
   "Start isearch."
   (interactive)
-  (goto-char (point-min))
   (let ((keys (this-command-keys)))
     (when (eq (lookup-key isearch-mode-map keys) 'isearch-printing-char)
       (isearch-mode t)
@@ -228,7 +227,6 @@ position or nil."
 	 (isearch-hide-immediately nil)
 	 (isearch-search-fun-function
 	  (lambda () #'org-goto--local-search-headings))
-	 (org-goto-selected-point org-goto-exit-command)
 	 (help (or help org-goto-help)))
      (save-excursion
        (save-window-excursion

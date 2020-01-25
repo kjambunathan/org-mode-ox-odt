@@ -35,12 +35,16 @@
 (declare-function notifications-notify "notifications" (&rest params))
 (declare-function org-element-property "org-element" (property element))
 (declare-function org-element-type "org-element" (element))
+(declare-function org-link-display-format "ol" (s))
+(declare-function org-link-heading-search-string "ol" (&optional string))
+(declare-function org-link-make-string "ol" (link &optional description))
 (declare-function org-table-goto-line "org-table" (n))
+(declare-function org-dynamic-block-define "org" (type func))
 
-(defvar org-frame-title-format-backup frame-title-format)
+(defvar org-frame-title-format-backup nil)
 (defvar org-state)
+(defvar org-link-bracket-re)
 (defvar org-time-stamp-formats)
-
 
 (defgroup org-clock nil
   "Options concerning clocking working time in Org mode."
@@ -303,6 +307,7 @@ string as argument."
    :link nil
    :narrow '40!
    :indent t
+   :hidefiles nil
    :formula nil
    :timestamp nil
    :level nil
@@ -524,8 +529,7 @@ cannot be translated."
   (cond ((functionp org-clock-heading-function)
 	 (funcall org-clock-heading-function))
 	((org-before-first-heading-p) "???")
-	(t (replace-regexp-in-string
-	    org-bracket-link-analytic-regexp "\\5"
+	(t (org-link-display-format
 	    (org-no-properties (org-get-heading t t t t))))))
 
 (defun org-clock-menu ()
@@ -1352,6 +1356,7 @@ the default behavior."
 	 ;; add to frame title
 	 (when (or (eq org-clock-clocked-in-display 'frame-title)
 		   (eq org-clock-clocked-in-display 'both))
+	   (setq org-frame-title-format-backup frame-title-format)
 	   (setq frame-title-format org-clock-frame-title-format))
 	 (org-clock-update-mode-line)
 	 (when org-clock-mode-line-timer
@@ -1542,6 +1547,14 @@ line and position cursor in that line."
 	 (org-log-states-order-reversed (goto-char (car (last positions))))
 	 (t (goto-char (car positions))))))))
 
+(defun org-clock-restore-frame-title-format ()
+  "Restore `frame-title-format' from `org-frame-title-format-backup'.
+`frame-title-format' is restored if `org-frame-title-format-backup' is not nil
+and current `frame-title-format' is equal to `org-clock-frame-title-format'."
+  (when (and org-frame-title-format-backup
+	     (equal frame-title-format org-clock-frame-title-format))
+    (setq frame-title-format org-frame-title-format-backup)))
+
 ;;;###autoload
 (defun org-clock-out (&optional switch-to-state fail-quietly at-time)
   "Stop the currently running clock.
@@ -1553,7 +1566,7 @@ to, overriding the existing value of `org-clock-out-switch-to-state'."
     (when (not (org-clocking-p))
       (setq global-mode-string
 	    (delq 'org-mode-line-string global-mode-string))
-      (setq frame-title-format org-frame-title-format-backup)
+      (org-clock-restore-frame-title-format)
       (force-mode-line-update)
       (if fail-quietly (throw 'exit t) (user-error "No active clock")))
     (let ((org-clock-out-switch-to-state
@@ -1609,7 +1622,7 @@ to, overriding the existing value of `org-clock-out-switch-to-state'."
 	    (setq org-clock-idle-timer nil))
 	  (setq global-mode-string
 		(delq 'org-mode-line-string global-mode-string))
-	  (setq frame-title-format org-frame-title-format-backup)
+	  (org-clock-restore-frame-title-format)
 	  (when org-clock-out-switch-to-state
 	    (save-excursion
 	      (org-back-to-heading t)
@@ -1709,7 +1722,7 @@ Optional argument N tells to change by that many units."
   (when (not (org-clocking-p))
     (setq global-mode-string
 	  (delq 'org-mode-line-string global-mode-string))
-    (setq frame-title-format org-frame-title-format-backup)
+    (org-clock-restore-frame-title-format)
     (force-mode-line-update)
     (error "No active clock"))
   (save-excursion    ; Do not replace this with `with-current-buffer'.
@@ -1723,9 +1736,10 @@ Optional argument N tells to change by that many units."
       (sit-for 2)))
   (move-marker org-clock-marker nil)
   (move-marker org-clock-hd-marker nil)
+  (setq org-clock-current-task nil)
   (setq global-mode-string
 	(delq 'org-mode-line-string global-mode-string))
-  (setq frame-title-format org-frame-title-format-backup)
+  (org-clock-restore-frame-title-format)
   (force-mode-line-update)
   (message "Clock canceled")
   (run-hooks 'org-clock-cancel-hook))
@@ -2053,8 +2067,10 @@ in the buffer and update it."
     (start (goto-char start)))
   (org-update-dblock))
 
+(org-dynamic-block-define "clocktable" #'org-clock-report)
+
 (defun org-day-of-week (day month year)
-  "Returns the day of the week as an integer."
+  "Return the day of the week as an integer."
   (nth 6
        (decode-time
 	(date-to-time
@@ -2391,6 +2407,7 @@ the currently selected interval size."
 	   (ws (plist-get params :wstart))
 	   (ms (plist-get params :mstart))
 	   (step (plist-get params :step))
+	   (hide-files (plist-get params :hidefiles))
 	   (formatter (or (plist-get params :formatter)
 			  org-clock-clocktable-formatter
 			  'org-clocktable-write-default))
@@ -2445,7 +2462,9 @@ the currently selected interval size."
 	     ;; Even though `file-with-archives' can consist of
 	     ;; multiple files, we consider this is one extended file
 	     ;; instead.
-	     (and (consp files) (not (eq scope 'file-with-archives)))))
+	     (and (not hide-files)
+		  (consp files)
+		  (not (eq scope 'file-with-archives)))))
 
 	(funcall formatter
 		 origin
@@ -2616,12 +2635,12 @@ from the dynamic block definition."
 	      (when narrow-cut-p
 		(setq headline
 		      (if (and (string-match
-				(format "\\`%s\\'" org-bracket-link-regexp)
+				(format "\\`%s\\'" org-link-bracket-re)
 				headline)
-			       (match-end 3))
+			       (match-end 2))
 			  (format "[[%s][%s]]"
 				  (match-string 1 headline)
-				  (org-shorten-string (match-string 3 headline)
+				  (org-shorten-string (match-string 2 headline)
 						      narrow))
 			(org-shorten-string headline narrow))))
 	      (cl-flet ((format-field (f) (format (cond ((not emph) "%s |")
@@ -2689,80 +2708,88 @@ LEVEL is an integer.  Indent by two spaces per level above 1."
   (if (= level 1) ""
     (concat "\\_" (make-string (* 2 (1- level)) ?\s))))
 
-(defun org-clocktable-increment-day (ts &optional n)
-  "Increment day in TS by N (defaulting to 1).
-The TS argument has the same type as the return values of
-`float-time' or `current-time'."
-  (let ((tsd (org-decode-time ts)))
-    (cl-incf (nth 3 tsd) (or n 1))
-    (setf (nth 8 tsd) nil) ; no time zone: increasing day skips one whole day
-    (apply 'encode-time tsd)))
-
 (defun org-clocktable-steps (params)
-  "Step through the range to make a number of clock tables."
-  (let* ((ts (plist-get params :tstart))
-	 (te (plist-get params :tend))
-	 (ws (plist-get params :wstart))
-	 (ms (plist-get params :mstart))
-	 (step0 (plist-get params :step))
-	 (stepskip0 (plist-get params :stepskip0))
-	 (block (plist-get params :block))
-	 cc tsb)
-    (when block
-      (setq cc (org-clock-special-range block nil t ws ms)
-	    ts (or (car cc)
-		   ;; The year Org was born.
-		   "<2003-01-01 Thu 00:00>")
-	    te (nth 1 cc)))
-    (cond
-     ((numberp ts)
-      ;; If ts is a number, it's an absolute day number from
-      ;; org-agenda.
-      (pcase-let ((`(,month ,day ,year) (calendar-gregorian-from-absolute ts)))
-	(setq ts (float-time (encode-time 0 0 0 day month year)))))
-     (ts (setq ts (org-matcher-time ts))))
-    (cond
-     ((numberp te)
-      ;; Likewise for te.
-      (pcase-let ((`(,month ,day ,year) (calendar-gregorian-from-absolute te)))
-	(setq te (float-time (encode-time 0 0 0 day month year)))))
-     (te (setq te (org-matcher-time te))))
-    (setq tsb
-	  (if (eq step0 'week)
-	      (let ((dow (nth 6 (org-decode-time ts))))
-		(if (<= dow ws) ts
-		  (float-time (org-clocktable-increment-day ts ; decrement
-							    (- ws dow)))))
-	    ts))
-    (while (< tsb te)
+  "Create one or more clock tables, according to PARAMS.
+Step through the range specifications in plist PARAMS to make
+a number of clock tables."
+  (let* ((ignore-empty-tables (plist-get params :stepskip0))
+         (step (plist-get params :step))
+         (step-header
+          (pcase step
+            (`day "Daily report: ")
+            (`week "Weekly report starting on: ")
+            (`month "Monthly report starting on: ")
+            (`year "Annual report starting on: ")
+            (_ (user-error "Unknown `:step' specification: %S" step))))
+         (week-start (or (plist-get params :wstart) 1))
+         (month-start (or (plist-get params :mstart) 1))
+         (range
+          (pcase (plist-get params :block)
+            (`nil nil)
+            (range
+             (org-clock-special-range range nil t week-start month-start))))
+         ;; For both START and END, any number is an absolute day
+         ;; number from Agenda.  Otherwise, consider value to be an Org
+         ;; timestamp string.  The `:block' property has precedence
+         ;; over `:tstart' and `:tend'.
+         (start
+          (pcase (if range (car range) (plist-get params :tstart))
+            ((and (pred numberp) n)
+             (pcase-let ((`(,m ,d ,y) (calendar-gregorian-from-absolute n)))
+               (apply #'encode-time (list 0 0 org-extend-today-until d m y))))
+            (timestamp
+	     (seconds-to-time
+	      (org-matcher-time (or timestamp
+				    ;; The year Org was born.
+				    "<2003-01-01 Thu 00:00>"))))))
+         (end
+          (pcase (if range (nth 1 range) (plist-get params :tend))
+            ((and (pred numberp) n)
+             (pcase-let ((`(,m ,d ,y) (calendar-gregorian-from-absolute n)))
+               (apply #'encode-time (list 0 0 org-extend-today-until d m y))))
+            (timestamp (seconds-to-time (org-matcher-time timestamp))))))
+    (while (time-less-p start end)
       (unless (bolp) (insert "\n"))
-      (let* ((start-time (max tsb ts))
-	     (dow (nth 6 (org-decode-time tsb)))
-	     (days-to-skip (cond ((eq step0 'day) 1)
-				 ;; else 'week:
-				 ((= dow ws) 7)
-				 (t (- ws dow)))))
-	(setq tsb (float-time (org-clocktable-increment-day tsb days-to-skip)))
-	(insert "\n"
-		(if (eq step0 'day) "Daily report: "
-		  "Weekly report starting on: ")
-		(org-format-time-string (org-time-stamp-format nil t) start-time)
-		"\n")
-	(let ((table-begin (line-beginning-position 0))
-	      (step-time
-	       (org-dblock-write:clocktable
-		(org-combine-plists
-		 params
-		 (list
-		  :header "" :step nil :block nil
-		  :tstart (org-format-time-string (org-time-stamp-format t t)
-						  start-time)
-		  :tend (org-format-time-string (org-time-stamp-format t t)
-						(min te tsb)))))))
-	  (re-search-forward "^[ \t]*#\\+END:")
-	  (when (and stepskip0 (equal step-time 0))
-	    ;; Remove the empty table
-	    (delete-region (line-beginning-position) table-begin))))
+      ;; Insert header before each clock table.
+      (insert "\n"
+              step-header
+              (format-time-string (org-time-stamp-format nil t) start)
+	      "\n")
+      ;; Compute NEXT, which is the end of the current clock table,
+      ;; according to step.
+      (let* ((next
+              (apply #'encode-time
+                     (pcase-let
+                         ((`(,_ ,_ ,_ ,d ,m ,y ,dow . ,_) (decode-time start)))
+                       (pcase step
+                         (`day (list 0 0 org-extend-today-until (1+ d) m y))
+                         (`week
+                          (let ((offset (if (= dow week-start) 7
+                                          (mod (- week-start dow) 7))))
+                            (list 0 0 org-extend-today-until (+ d offset) m y)))
+                         (`month (list 0 0 0 month-start (1+ m) y))
+                         (`year (list 0 0 org-extend-today-until 1 1 (1+ y)))))))
+             (table-begin (line-beginning-position 0))
+	     (step-time
+              ;; Write clock table between START and NEXT.
+	      (org-dblock-write:clocktable
+	       (org-combine-plists
+	        params (list :header ""
+                             :step nil
+                             :block nil
+		             :tstart (format-time-string
+                                      (org-time-stamp-format t t)
+                                      start)
+		             :tend (format-time-string
+                                    (org-time-stamp-format t t)
+                                    ;; Never include clocks past END.
+                                    (if (time-less-p end next) end next)))))))
+	(let ((case-fold-search t)) (re-search-forward "^[ \t]*#\\+END:"))
+	;; Remove the table if it is empty and `:stepskip0' is
+	;; non-nil.
+	(when (and ignore-empty-tables (equal step-time 0))
+	  (delete-region (line-beginning-position) table-begin))
+        (setq start next))
       (end-of-line 0))))
 
 (defun org-clock-get-table-data (file params)
@@ -2846,8 +2873,8 @@ PROPERTIES: The list properties specified in the `:properties' parameter
 		       (hdl
 			(if (not link) headline
 			  (let ((search
-				 (org-make-org-heading-search-string headline)))
-			    (org-make-link-string
+				 (org-link-heading-search-string headline)))
+			    (org-link-make-string
 			     (if (not (buffer-file-name)) search
 			       (format "file:%s::%s" (buffer-file-name) search))
 			     ;; Prune statistics cookies.  Replace

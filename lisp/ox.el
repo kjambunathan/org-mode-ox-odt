@@ -73,6 +73,7 @@
 
 (require 'cl-lib)
 (require 'ob-exp)
+(require 'ol)
 (require 'org-element)
 (require 'org-macro)
 (require 'tabulated-list)
@@ -804,7 +805,7 @@ also be set with the OPTIONS keyword, e.g. \"timestamp:nil\"."
   :safe #'booleanp)
 
 (defcustom org-export-with-timestamps t
-  "Non nil means allow timestamps in export.
+  "Non-nil means allow timestamps in export.
 
 It can be set to any of the following values:
   t          export all timestamps.
@@ -3270,6 +3271,11 @@ storing and resolving footnotes.  It is created automatically."
 	    (let* ((value (org-element-property :value element))
 		   (ind (current-indentation))
 		   location
+		   (coding-system-for-read
+		    (or (and (string-match ":coding +\\(\\S-+\\)>" value)
+			     (prog1 (intern (match-string 1 value))
+			       (setq value (replace-match "" nil nil value))))
+			coding-system-for-read))
 		   (file
 		    (and (string-match "^\\(\".+?\"\\|\\S-+\\)\\(?:\\s-+\\|$\\)"
 				       value)
@@ -3517,8 +3523,8 @@ is to happen."
 	  (goto-char (point-min))
 	  (unless (eq major-mode 'org-mode)
 	    (let ((org-inhibit-startup t)) (org-mode)))	;set regexps
-	  (let ((regexp (concat org-plain-link-re "\\|" org-angle-link-re)))
-	    (while (re-search-forward org-any-link-re nil t)
+	  (let ((regexp (concat org-link-plain-re "\\|" org-link-angle-re)))
+	    (while (re-search-forward org-link-any-re nil t)
 	      (let ((link (save-excursion
 			    (forward-char -1)
 			    (save-match-data (org-element-context)))))
@@ -3701,18 +3707,24 @@ will become the empty string."
 		(cdr (nreverse (cons (funcall prepare-value s) result))))))))
     (if property (plist-get attributes property) attributes)))
 
-(defun org-export-get-caption (element &optional shortp)
+(defun org-export-get-caption (element &optional short)
   "Return caption from ELEMENT as a secondary string.
 
-When optional argument SHORTP is non-nil, return short caption,
-as a secondary string, instead.
+When optional argument SHORT is non-nil, return short caption, as
+a secondary string, instead.
 
 Caption lines are separated by a white space."
-  (let ((full-caption (org-element-property :caption element)) caption)
-    (dolist (line full-caption (cdr caption))
-      (let ((cap (funcall (if shortp 'cdr 'car) line)))
-	(when cap
-	  (setq caption (nconc (list " ") (copy-sequence cap) caption)))))))
+  (let ((full-caption (org-element-property :caption element))
+	(get (if short #'cdr #'car))
+	caption)
+    (dolist (line full-caption)
+      (pcase (funcall get line)
+	(`nil nil)
+	(c
+	 (setq caption
+	       (nconc (list " ")
+		      (copy-sequence c) caption)))))
+    (cdr caption)))
 
 
 ;;;; For Derived Back-ends
@@ -4156,6 +4168,9 @@ meant to be translated with `org-export-data' or alike."
 ;; specified id or custom-id in parse tree, the path to the external
 ;; file with the id.
 ;;
+;; `org-export-resolve-link' searches for the destination of a link
+;; within the parsed tree and returns the element.
+;;
 ;; `org-export-resolve-coderef' associates a reference to a line
 ;; number in the element it belongs, or returns the reference itself
 ;; when the element isn't numbered.
@@ -4243,8 +4258,8 @@ structure of RULES.
 
 Return modified DATA."
   (let ((link-re (format "\\`\\(?:%s\\|%s\\)\\'"
-			 org-plain-link-re
-			 org-angle-link-re))
+			 org-link-plain-re
+			 org-link-angle-re))
 	(case-fold-search t))
     (org-element-map data 'link
       (lambda (l)
@@ -4350,7 +4365,7 @@ as returned by `org-export-search-cells'."
   (let ((targets (org-export-search-cells datum)))
     (and targets (cl-some (lambda (cell) (member cell targets)) cells))))
 
-(defun org-export-resolve-fuzzy-link (link info)
+(defun org-export-resolve-fuzzy-link (link info &rest pseudo-types)
   "Return LINK destination.
 
 INFO is a plist holding contextual information.
@@ -4367,6 +4382,10 @@ Return value can be an object or an element:
 
 - Otherwise, throw an error.
 
+PSEUDO-TYPES are pseudo-elements types, i.e., elements defined
+specifically in an export back-end, that could have a name
+affiliated keyword.
+
 Assume LINK type is \"fuzzy\".  White spaces are not
 significant."
   (let* ((search-cells (org-export-string-to-search-cell
@@ -4379,7 +4398,7 @@ significant."
     (if (not (eq cached 'not-found)) cached
       (let ((matches
 	     (org-element-map (plist-get info :parse-tree)
-		 (cons 'target org-element-all-elements)
+		 (append pseudo-types '(target) org-element-all-elements)
 	       (lambda (datum)
 		 (and (org-export-match-search-cell-p datum search-cells)
 		      datum)))))
@@ -4437,6 +4456,31 @@ has type \"radio\"."
 		 t)
 	     radio))
       info 'first-match)))
+
+(defun org-export-resolve-link (link info)
+  "Return LINK destination.
+
+LINK is a string or a link object.
+
+INFO is a plist holding contextual information.
+
+Return value can be an object or an element:
+
+- If LINK path matches an ID or a custom ID, return the headline.
+
+- If LINK path matches a fuzzy link, return its destination.
+
+- Otherwise, throw an error."
+  ;; Convert string links to link objects.
+  (when (stringp link)
+    (setq link (with-temp-buffer
+		 (save-excursion
+		   (insert (org-link-make-string link)))
+		 (org-element-link-parser))))
+  (pcase (org-element-property :type link)
+    ((or "custom-id" "id") (org-export-resolve-id-link link info))
+    ("fuzzy" (org-export-resolve-fuzzy-link link info))
+    (_ (signal 'org-link-broken (list (org-element-property :path link))))))
 
 (defun org-export-file-uri (filename)
   "Return file URI associated to FILENAME."
@@ -4757,7 +4801,7 @@ code."
 
 ;;;; For Tables
 ;;
-;; `org-export-table-has-special-column-p' and and
+;; `org-export-table-has-special-column-p' and
 ;; `org-export-table-row-is-special-p' are predicates used to look for
 ;; meta-information about the table structure.
 ;;
@@ -6885,7 +6929,7 @@ options as CDR."
       (org-export--dispatch-ui options first-key expertp))
      ;; q key at first level aborts export.  At second level, cancel
      ;; first key instead.
-     ((eq key ?q) (if (not first-key) (error "Export aborted")
+     ((eq key ?q) (if (not first-key) (user-error "Export aborted")
 		    (org-export--dispatch-ui options nil expertp)))
      ;; Help key: Switch back to standard interface if expert UI was
      ;; active.

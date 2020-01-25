@@ -909,7 +909,7 @@ PROJECT is the current project."
 
 (defun org-publish-sitemap-default (title list)
   "Default site map, as a string.
-TITLE is the the title of the site map.  LIST is an internal
+TITLE is the title of the site map.  LIST is an internal
 representation for the files to include, as returned by
 `org-list-to-lisp'.  PROJECT is the current project."
   (concat "#+TITLE: " title "\n\n"
@@ -1171,7 +1171,10 @@ references with `org-export-get-reference'."
 	   (with-current-buffer (find-file-noselect file)
 	     (org-with-point-at 1
 	       (let ((org-link-search-must-match-exact-headline t))
-		 (org-link-search search nil t))
+		 (condition-case err
+		     (org-link-search search nil t)
+		   (error
+		    (signal 'org-link-broken (cdr err)))))
 	       (and (org-at-heading-p)
 		    (org-string-nw-p (org-entry-get (point) "CUSTOM_ID"))))))))
    ((not org-publish-cache)
@@ -1298,8 +1301,8 @@ the file including them will be republished as well."
 		    (let* ((value (org-element-property :value element))
 			   (filename
 			    (and (string-match "\\`\\(\".+?\"\\|\\S-+\\)" value)
-				 (let ((m (org-unbracket-string
-					   "\"" "\"" (match-string 1 value))))
+				 (let ((m (org-strip-quotes
+					   (match-string 1 value))))
 				   ;; Ignore search suffix.
 				   (if (string-match "::.*?\\'" m)
 				       (substring m 0 (match-beginning 0))

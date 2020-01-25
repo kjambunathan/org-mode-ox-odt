@@ -41,6 +41,9 @@
 (declare-function org-element-property "org-element" (property element))
 (declare-function org-element-restriction "org-element" (element))
 (declare-function org-element-type "org-element" (element))
+(declare-function org-dynamic-block-define "org" (type func))
+(declare-function org-link-display-format "ol" (s))
+(declare-function org-link-open-from-string "ol" (s &optional arg))
 
 (defvar org-agenda-columns-add-appointments-to-effort-sum)
 (defvar org-agenda-columns-compute-summary-properties)
@@ -253,7 +256,7 @@ value for ITEM property."
 		     (concat (make-string (1- (org-current-level))
 					  (if org-hide-leading-stars ?\s ?*))
 			     "* "))))
-	   (concat stars (org-columns-compact-links value))))
+	   (concat stars (org-link-display-format value))))
 	(`(,_ ,_ ,_ ,_ nil) value)
 	;; If PRINTF is set, assume we are displaying a number and
 	;; obey to the format string.
@@ -517,14 +520,6 @@ for the duration of the command.")
     (when (local-variable-p 'org-colview-initial-truncate-line-value)
       (setq truncate-lines org-colview-initial-truncate-line-value))))
 
-(defun org-columns-compact-links (s)
-  "Replace [[link][desc]] with [desc] or [link]."
-  (while (string-match org-bracket-link-regexp s)
-    (setq s (replace-match
-	     (concat "[" (match-string (if (match-end 3) 3 1) s) "]")
-	     t t s)))
-  s)
-
 (defun org-columns-show-value ()
   "Show the full value of the property."
   (interactive)
@@ -570,7 +565,9 @@ for the duration of the command.")
 (defvar org-overriding-columns-format nil
   "When set, overrides any other format definition for the agenda.
 Don't set this, this is meant for dynamic scoping.  Set
-`org-local-columns-format' instead.")
+`org-columns-default-format' and `org-columns-default-format-for-agenda'
+instead.  You should use this variable only in the local settings
+section for a custom agenda view.")
 
 (defvar-local org-local-columns-format nil
   "When set, overrides any other format definition for the agenda.
@@ -772,7 +769,7 @@ around it."
 (defun org-columns-open-link (&optional arg)
   (interactive "P")
   (let ((value (get-char-property (point) 'org-columns-value)))
-    (org-open-link-from-string value arg)))
+    (org-link-open-from-string value arg)))
 
 ;;;###autoload
 (defun org-columns-get-format-and-top-level ()
@@ -1132,16 +1129,7 @@ as a canonical duration, i.e., using units defined in
   "Apply FUN to time values TIMES.
 Return the result as a duration."
   (org-duration-from-minutes
-   (apply fun
-	  (mapcar (lambda (time)
-		    ;; Unlike to `org-duration-to-minutes' standard
-		    ;; behavior, we want to consider plain numbers as
-		    ;; hours.  As a consequence, we treat them
-		    ;; differently.
-		    (if (string-match-p "\\`[0-9]+\\(?:\\.[0-9]*\\)?\\'" time)
-			(* 60 (string-to-number time))
-		      (org-duration-to-minutes time)))
-		  times))
+   (apply fun (mapcar #'org-duration-to-minutes times))
    (org-duration-h:mm-only-p times)))
 
 (defun org-columns--compute-spec (spec &optional update)
@@ -1262,7 +1250,7 @@ When PRINTF is non-nil, use it to format the result."
   "Summarize CHECK-BOXES with a check-box cookie."
   (format "[%d/%d]"
 	  (cl-count-if (lambda (b) (or (equal b "[X]")
-				  (string-match-p "\\[\\([1-9]\\)/\\1\\]" b)))
+				   (string-match-p "\\[\\([1-9]\\)/\\1\\]" b)))
 		       check-boxes)
 	  (length check-boxes)))
 
@@ -1348,14 +1336,15 @@ and variances (respectively) of the individual estimates."
 
 ;;; Dynamic block for Column view
 
-(defun org-columns--capture-view (maxlevel match skip-empty format local)
+(defun org-columns--capture-view (maxlevel match skip-empty exclude-tags format local)
   "Get the column view of the current buffer.
 
 MAXLEVEL sets the level limit.  SKIP-EMPTY tells whether to skip
 empty rows, an empty row being one where all the column view
-specifiers but ITEM are empty.  FORMAT is a format string for
-columns, or nil.  When LOCAL is non-nil, only capture headings in
-current subtree.
+specifiers but ITEM are empty.  EXCLUDE-TAGS is a list of tags
+that will be excluded from the resulting view.  FORMAT is a
+format string for columns, or nil.  When LOCAL is non-nil, only
+capture headings in current subtree.
 
 This function returns a list containing the title row and all
 other rows.  Each row is a list of fields, as strings, or
@@ -1378,9 +1367,13 @@ other rows.  Each row is a list of fields, as strings, or
 					     'org-columns-value
 					   'org-columns-value-modified)))
 		     row)))
-	   (unless (and skip-empty
-			(let ((r (delete-dups (remove "" row))))
-			  (or (null r) (and has-item (= (length r) 1)))))
+	   (unless (or
+		    (and skip-empty
+			 (let ((r (delete-dups (remove "" row))))
+			   (or (null r) (and has-item (= (length r) 1)))))
+		    (and exclude-tags
+			 (cl-some (lambda (tag) (member tag exclude-tags))
+				  (org-get-tags))))
 	     (push (cons (org-reduced-level (org-current-level)) (nreverse row))
 		   table)))))
      (or (and maxlevel (format "LEVEL<=%d" maxlevel))
@@ -1480,6 +1473,7 @@ PARAMS is a property list of parameters:
 	      (org-columns--capture-view (plist-get params :maxlevel)
 					 (plist-get params :match)
 					 (plist-get params :skip-empty-rows)
+					 (plist-get params :exclude-tags)
 					 (plist-get params :format)
 					 view-pos))))))
     (when table
@@ -1556,6 +1550,7 @@ PARAMS is a property list of parameters:
 		     (id)))))
   (org-update-dblock))
 
+(org-dynamic-block-define "columnview" #'org-columns-insert-dblock)
 
 
 ;;; Column view in the agenda
@@ -1573,6 +1568,7 @@ PARAMS is a property list of parameters:
 	  (cond
 	   ((bound-and-true-p org-overriding-columns-format))
 	   ((bound-and-true-p org-local-columns-format))
+	   ((bound-and-true-p org-columns-default-format-for-agenda))
 	   ((let ((m (org-get-at-bol 'org-hd-marker)))
 	      (and m
 		   (or (org-entry-get m "COLUMNS" t)

@@ -297,12 +297,12 @@ its header arguments."
 
 (defun org-babel-prep-session:C (_session _params)
   "This function does nothing as C is a compiled language with no
-support for sessions"
+support for sessions."
   (error "C is a compiled language -- no support for sessions"))
 
 (defun org-babel-load-session:C (_session _body _params)
   "This function does nothing as C is a compiled language with no
-support for sessions"
+support for sessions."
   (error "C is a compiled language -- no support for sessions"))
 
 ;; helper functions
@@ -393,9 +393,9 @@ of the same value."
 	(setq val (string-to-char val))))
     (let* ((type-data (org-babel-C-val-to-C-type val))
 	   (type (car type-data))
-	   (formated (org-babel-C-format-val type-data val))
-	   (suffix (car formated))
-	   (data (cdr formated)))
+	   (formatted (org-babel-C-format-val type-data val))
+	   (suffix (car formatted))
+	   (data (cdr formatted)))
       (format "%s %s%s = %s;"
 	      type
 	      var

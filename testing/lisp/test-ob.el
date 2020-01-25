@@ -30,7 +30,7 @@ should still return the link."
      (org-test-with-temp-text
 	 "
 * Test
-  #+<point>BEGIN_SRC emacs-lisp :file test.txt :cache yes
+  #+<point>BEGIN_SRC emacs-lisp :results file :file test.txt :cache yes
     (message \"test\")
   #+END_SRC"
        ;; Execute twice as the first time creates the cache.
@@ -759,6 +759,30 @@ x
 #+begin_src emacs-lisp
   baz
 #+end_src"
+	    (org-babel-expand-noweb-references))))
+  ;; Respect COMMENT headlines
+  (should
+   (equal "C"
+	  (org-test-with-temp-text "
+#+begin_src emacs-lisp :noweb yes<point>
+  <<foo>>
+#+end_src
+
+* COMMENT A
+#+name: foo
+#+begin_src emacs-lisp
+  A
+#+end_src
+
+* COMMENT B
+#+begin_src emacs-lisp :noweb-ref foo
+  B
+#+end_src
+
+* C
+#+begin_src emacs-lisp :noweb-ref foo
+  C
+#+end_src"
 	    (org-babel-expand-noweb-references)))))
 
 (ert-deftest test-ob/splitting-variable-lists-in-references ()
@@ -1003,30 +1027,48 @@ trying to find the :END: marker."
 The file is just a link to `:file' value.  Inhibit non-empty
 result write to `:file' value."
   (org-test-with-temp-text "
+<point>#+begin_src shell :results value file link :file \"/tmp/test.txt\"
+echo \"hello\" > /tmp/test.txt
+echo \"test\"
+#+end_src"
+    (org-babel-execute-src-block)
+    (should (search-forward "[[file:/tmp/test.txt]]" nil t))
+    (should (with-temp-buffer
+	      (insert-file-contents "/tmp/test.txt")
+	      (string= "hello\n" (buffer-string)))))
+  ;; Without "link" output type, the result is not a file.
+  (should-not
+   (org-test-with-temp-text "
 <point>#+begin_src shell :results value link :file \"/tmp/test.txt\"
 echo \"hello\" > /tmp/test.txt
 echo \"test\"
 #+end_src"
-   (org-babel-execute-src-block)
-   (should (search-forward "[[file:/tmp/test.txt]]" nil nil))
-   (should (with-temp-buffer
-	     (insert-file-contents "/tmp/test.txt")
-	     (string= "hello\n" (buffer-string))))))
+     (org-babel-execute-src-block)
+     (search-forward "[[file:/tmp/test.txt]]" nil t))))
 
 (ert-deftest test-ob/result-graphics-link-type-header-argument ()
   "Ensure that the result is a link to a file.
 The file is just a link to `:file' value.  Inhibit non-empty
 result write to `:file' value."
   (org-test-with-temp-text "
+<point>#+begin_src shell :results value file graphics :file \"/tmp/test.txt\"
+echo \"hello\" > /tmp/test.txt
+echo \"test\"
+#+end_src"
+    (org-babel-execute-src-block)
+    (should (search-forward "[[file:/tmp/test.txt]]" nil nil))
+    (should (with-temp-buffer
+	      (insert-file-contents "/tmp/test.txt")
+	      (string= "hello\n" (buffer-string)))))
+  ;; Without "link" output type, the result is not a file.
+  (should-not
+   (org-test-with-temp-text "
 <point>#+begin_src shell :results value graphics :file \"/tmp/test.txt\"
 echo \"hello\" > /tmp/test.txt
 echo \"test\"
 #+end_src"
-   (org-babel-execute-src-block)
-   (should (search-forward "[[file:/tmp/test.txt]]" nil nil))
-   (should (with-temp-buffer
-	     (insert-file-contents "/tmp/test.txt")
-	     (string= "hello\n" (buffer-string))))))
+     (org-babel-execute-src-block)
+     (search-forward "[[file:/tmp/test.txt]]" nil t))))
 
 (ert-deftest test-ob/inline-src_blk-preceded-punct-preceded-by-point ()
   (let ((test-line ".src_emacs-lisp[ :results verbatim ]{ \"x\"  }")
@@ -1514,6 +1556,32 @@ echo \"$data\"
        (buffer-substring-no-properties (line-beginning-position)
 				       (point-max)))))))
 
+(ert-deftest test-ob/preserve-comma-escape ()
+  "Preserve comma escapes when inserting results."
+  (should
+   (equal
+    "#+begin_example
+line 1
+,* headline 2
+,* headline 3
+,* headline 4
+,* headline 5
+#+end_example
+"
+    (org-test-with-temp-text "#+begin_src emacs-lisp :wrap example
+\"line 1
+,* headline 2
+,* headline 3
+,* headline 4
+,* headline 5
+\"
+#+end_src
+"
+      (org-babel-execute-src-block)
+      (let ((case-fold-search t)) (search-forward "result" nil t))
+      (downcase (buffer-substring-no-properties (line-beginning-position 2)
+						(point-max)))))))
+
 (ert-deftest test-ob/safe-header-args ()
   "Detect safe and unsafe header args."
   (let ((safe-args '((:cache . "foo")
@@ -1588,6 +1656,41 @@ echo \"$data\"
     (should (equal "xxx/foo.bar"
 		   (cdr (assq :file (nth 2 (org-babel-get-src-block-info t))))))
     ))
+
+(ert-deftest test-ob-core/dir-mkdirp ()
+  "Test :mkdirp with :dir header combination."
+  (should-not
+   (org-test-with-temp-text-in-file
+       "#+begin_src emacs-lisp :dir \"data/code\"
+t
+#+end_src"
+     (org-babel-execute-src-block)
+     (message default-directory)
+     (file-directory-p "data/code")))
+  (should-not
+   (org-test-with-temp-text-in-file
+       "#+begin_src emacs-lisp :mkdirp no :dir \"data/code\"
+t
+#+end_src"
+     (org-babel-execute-src-block)
+     (message default-directory)
+     (file-directory-p "data/code")))
+  (should
+   (org-test-with-temp-text-in-file
+       "#+begin_src emacs-lisp :mkdirp yes :dir \"data/code\"
+t
+#+end_src"
+     (org-babel-execute-src-block)
+     (message default-directory)
+     (prog1 (file-directory-p "data/code")
+       (delete-directory "data" t))))
+  (should
+   (equal "/tmp/test-dir-no-mkdirp/"
+	  (org-test-with-temp-text-in-file
+	      "#+begin_src emacs-lisp :dir /tmp/test-dir-no-mkdirp
+default-directory
+#+end_src"
+	    (org-babel-execute-src-block)))))
 
 (ert-deftest test-ob/script-escape ()
   ;; Delimited lists of numbers
@@ -2015,6 +2118,16 @@ abc
 	  "#+begin_src emacs-lisp\n3 #(ref:foo)\n#+end_src"
 	(let ((org-coderef-label-format "#(ref:%s)"))
 	  (org-babel-execute-src-block))))))
+
+(ert-deftest test-ob/string-to-number ()
+    (should (=  0   (org-babel--string-to-number "0")))
+    (should (=  1   (org-babel--string-to-number "1")))
+    (should (eq nil (org-babel--string-to-number "000")))
+    (should (eq nil (org-babel--string-to-number "001")))
+    (should (eq nil (org-babel--string-to-number "010")))
+    (should (=  100 (org-babel--string-to-number "100")))
+    (should (=  0.1 (org-babel--string-to-number "0.1")))
+    (should (=  1.0 (org-babel--string-to-number "1.0"))))
 
 (provide 'test-ob)
 

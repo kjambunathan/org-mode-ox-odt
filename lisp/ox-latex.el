@@ -127,6 +127,7 @@
     (:latex-format-headline-function nil nil org-latex-format-headline-function)
     (:latex-format-inlinetask-function nil nil org-latex-format-inlinetask-function)
     (:latex-hyperref-template nil nil org-latex-hyperref-template t)
+    (:latex-image-default-scale nil nil org-latex-image-default-scale)
     (:latex-image-default-height nil nil org-latex-image-default-height)
     (:latex-image-default-option nil nil org-latex-image-default-option)
     (:latex-image-default-width nil nil org-latex-image-default-width)
@@ -211,13 +212,12 @@
 
 (defconst org-latex-polyglossia-language-alist
   '(("am" "amharic")
-    ("ast" "asturian")
     ("ar" "arabic")
-    ("bo" "tibetan")
-    ("bn" "bengali")
+    ("ast" "asturian")
     ("bg" "bulgarian")
+    ("bn" "bengali")
+    ("bo" "tibetan")
     ("br" "breton")
-    ("bt-br" "brazilian")
     ("ca" "catalan")
     ("cop" "coptic")
     ("cs" "czech")
@@ -226,6 +226,7 @@
     ("de" "german" "german")
     ("de-at" "german" "austrian")
     ("de-de" "german" "german")
+    ("dsb" "lsorbian")
     ("dv" "divehi")
     ("el" "greek")
     ("en" "english" "usmax")
@@ -247,40 +248,40 @@
     ("he" "hebrew")
     ("hi" "hindi")
     ("hr" "croatian")
+    ("hsb" "usorbian")
     ("hu" "magyar")
     ("hy" "armenian")
-    ("id" "bahasai")
     ("ia" "interlingua")
+    ("id" "bahasai")
     ("is" "icelandic")
     ("it" "italian")
     ("kn" "kannada")
     ("la" "latin" "modern")
-    ("la-modern" "latin" "modern")
     ("la-classic" "latin" "classic")
     ("la-medieval" "latin" "medieval")
+    ("la-modern" "latin" "modern")
     ("lo" "lao")
     ("lt" "lithuanian")
     ("lv" "latvian")
-    ("mr" "maranthi")
     ("ml" "malayalam")
-    ("nl" "dutch")
+    ("mr" "maranthi")
     ("nb" "norsk")
-    ("nn" "nynorsk")
     ("nko" "nko")
+    ("nl" "dutch")
+    ("nn" "nynorsk")
     ("no" "norsk")
     ("oc" "occitan")
     ("pl" "polish")
     ("pms" "piedmontese")
     ("pt" "portuges")
+    ("pt-br" "brazilian")
     ("rm" "romansh")
     ("ro" "romanian")
     ("ru" "russian")
     ("sa" "sanskrit")
-    ("hsb" "usorbian")
-    ("dsb" "lsorbian")
+    ("se" "samin")
     ("sk" "slovak")
     ("sl" "slovenian")
-    ("se" "samin")
     ("sq" "albanian")
     ("sr" "serbian")
     ("sv" "swedish")
@@ -294,8 +295,6 @@
     ("ur" "urdu")
     ("vi" "vietnamese"))
   "Alist between language code and corresponding Polyglossia option")
-
-
 
 (defconst org-latex-table-matrix-macros '(("bordermatrix" . "\\cr")
 					  ("qbordermatrix" . "\\cr")
@@ -385,7 +384,7 @@ variable is non-nil, Org passes their value to \\label unchanged.
 You are responsible for ensuring that the value is a valid LaTeX
 \\label key, and that no other \\label commands with the same key
 appear elsewhere in your document.  (Keys may contain letters,
-numbers, and the following punctuation: '_' '.'  '-' ':'.)  There
+numbers, and the following punctuation: `_' `.' `-' `:'.)  There
 are no such limitations on CUSTOM_ID and NAME when this variable
 is nil.
 
@@ -707,6 +706,16 @@ This value will not be used if a height is provided."
   :version "24.4"
   :package-version '(Org . "8.0")
   :type 'string)
+
+(defcustom org-latex-image-default-scale ""
+  "Default scale for images.
+This value will not be used if a width or a scale is provided,
+or if the image is wrapped within a \"wrapfigure\" environment.
+Scale overrides width and height."
+  :group 'org-export-latex
+  :package-version '(Org . "9.3")
+  :type 'string
+  :safe #'stringp)
 
 (defcustom org-latex-image-default-height ""
   "Default height for images.
@@ -1238,7 +1247,7 @@ calling `org-latex-compile'."
 ;;; Internal Functions
 
 (defun org-latex--caption-above-p (element info)
-  "Non nil when caption is expected to be located above ELEMENT.
+  "Non-nil when caption is expected to be located above ELEMENT.
 INFO is a plist holding contextual information."
   (let ((above (plist-get info :latex-caption-above)))
     (if (symbolp above) above
@@ -1267,17 +1276,19 @@ Eventually, if FULL is non-nil, wrap label within \"\\label{}\"."
 	  (and (or user-label force)
 	       (if (and user-label (plist-get info :latex-prefer-user-labels))
 		   user-label
-		 (concat (cl-case type
-			   (headline "sec:")
-			   (table "tab:")
-			   (latex-environment
+		 (concat (pcase type
+			   (`headline "sec:")
+			   (`table "tab:")
+			   (`latex-environment
 			    (and (string-match-p
 				  org-latex-math-environments-re
 				  (org-element-property :value datum))
 				 "eq:"))
-			   (paragraph
+			   (`latex-matrices "eq:")
+			   (`paragraph
 			    (and (org-element-property :caption datum)
-				 "fig:")))
+				 "fig:"))
+			   (_ nil))
 			 (org-export-get-reference datum info))))))
     (cond ((not full) label)
 	  (label (format "\\label{%s}%s"
@@ -1327,7 +1338,7 @@ For non-floats, see `org-latex--wrap-label'."
 		      (t (symbol-name type*)))
 		  ""))
 	      (if short (format "[%s]" (org-export-data short info)) "")
-	      label
+	      (org-trim label)
 	      (org-export-data main info))))))
 
 (defun org-latex-guess-inputenc (header)
@@ -2374,13 +2385,18 @@ used as a communication channel."
 	  (if (plist-member attr :center) (plist-get attr :center)
 	    (plist-get info :latex-images-centered)))
 	 (comment-include (if (plist-get attr :comment-include) "%" ""))
-	 ;; It is possible to specify width and height in the
-	 ;; ATTR_LATEX line, and also via default variables.
-	 (width (cond ((plist-get attr :width))
+	 ;; It is possible to specify scale or width and height in
+	 ;; the ATTR_LATEX line, and also via default variables.
+	 (scale (cond ((eq float 'wrap) "")
+		      ((plist-get attr :scale))
+		      (t (plist-get info :latex-image-default-scale))))
+	 (width (cond ((org-string-nw-p scale) "")
+		      ((plist-get attr :width))
 		      ((plist-get attr :height) "")
 		      ((eq float 'wrap) "0.48\\textwidth")
 		      (t (plist-get info :latex-image-default-width))))
-	 (height (cond ((plist-get attr :height))
+	 (height (cond ((org-string-nw-p scale) "")
+		       ((plist-get attr :height))
 		       ((or (plist-get attr :width)
 			    (memq float '(figure wrap))) "")
 		       (t (plist-get info :latex-image-default-height))))
@@ -2402,18 +2418,22 @@ used as a communication channel."
 		  (format "\\begin{tikzpicture}[%s]\n%s\n\\end{tikzpicture}"
 			  options
 			  image-code)))
-	  (when (or (org-string-nw-p width) (org-string-nw-p height))
-	    (setq image-code (format "\\resizebox{%s}{%s}{%s}"
-				     (if (org-string-nw-p width) width "!")
-				     (if (org-string-nw-p height) height "!")
-				     image-code))))
+	  (setq image-code
+		(cond ((org-string-nw-p scale)
+		       (format "\\scalebox{%s}{%s}" scale image-code))
+		      ((or (org-string-nw-p width) (org-string-nw-p height))
+		       (format "\\resizebox{%s}{%s}{%s}"
+			       (if (org-string-nw-p width) width "!")
+			       (if (org-string-nw-p height) height "!")
+			       image-code))
+		      (t image-code))))
       ;; For other images:
-      ;; - add width and height to options.
+      ;; - add scale, or width and height to options.
       ;; - include the image with \includegraphics.
-      (when (org-string-nw-p width)
-	(setq options (concat options ",width=" width)))
-      (when (org-string-nw-p height)
-	(setq options (concat options ",height=" height)))
+      (if (org-string-nw-p scale)
+	  (setq options (concat options ",scale=" scale))
+	(when (org-string-nw-p width) (setq options (concat options ",width=" width)))
+	(when (org-string-nw-p height) (setq options (concat options ",height=" height))))
       (let ((search-option (org-element-property :search-option link)))
         (when (and search-option
                    (equal filetype "pdf")
@@ -2520,9 +2540,10 @@ INFO is a plist holding contextual information.  See
      ;; Links pointing to a headline: Find destination and build
      ;; appropriate referencing command.
      ((member type '("custom-id" "fuzzy" "id"))
-      (let ((destination (if (string= type "fuzzy")
-			     (org-export-resolve-fuzzy-link link info)
-			   (org-export-resolve-id-link link info))))
+      (let ((destination
+	     (if (string= type "fuzzy")
+		 (org-export-resolve-fuzzy-link link info 'latex-matrices)
+	       (org-export-resolve-id-link link info))))
 	(cl-case (org-element-type destination)
 	  ;; Id link points to an external file.
 	  (plain-text
@@ -2715,12 +2736,18 @@ it."
 			      'latex-matrices)))
 	    (let* ((caption (and (not (string= mode "inline-math"))
 				 (org-element-property :caption table)))
+		   (name (and (not (string= mode "inline-math"))
+			      (org-element-property :name table)))
 		   (matrices
 		    (list 'latex-matrices
-			  (list :caption caption
+			  ;; Inherit name from the first table.
+			  (list :name name
+				;; FIXME: what syntax for captions?
+				;;
+				;; :caption caption
 				:markup
 				(cond ((string= mode "inline-math") 'inline)
-				      (caption 'equation)
+				      ((or caption name) 'equation)
 				      (t 'math)))))
 		   (previous table)
 		   (next (org-export-get-next-element table info)))
@@ -2735,6 +2762,8 @@ it."
 				    :attr_latex next :mode)
 				   (plist-get info :latex-default-table-mode))
 			       mode))
+		(org-element-put-property table :name nil)
+		(org-element-put-property table :caption nil)
 		(org-element-extract-element previous)
 		(org-element-adopt-elements matrices previous)
 		(setq previous next))
@@ -2744,20 +2773,29 @@ it."
 	      (org-element-put-property
 	       matrices :post-blank (org-element-property :post-blank previous))
 	      (org-element-put-property previous :post-blank 0)
+	      (org-element-put-property table :name nil)
+	      (org-element-put-property table :caption nil)
 	      (org-element-extract-element previous)
 	      (org-element-adopt-elements matrices previous))))))
     info)
   data)
 
-(defun org-latex-matrices (matrices contents _info)
+(defun org-latex-matrices (matrices contents info)
   "Transcode a MATRICES element from Org to LaTeX.
 CONTENTS is a string.  INFO is a plist used as a communication
 channel."
-  (format (cl-case (org-element-property :markup matrices)
-	    (inline "\\(%s\\)")
-	    (equation "\\begin{equation}\n%s\\end{equation}")
-	    (t "\\[\n%s\\]"))
-	  contents))
+  (pcase (org-element-property :markup matrices)
+    (`inline (format "\\(%s\\)" contents))
+    (`equation
+     (let ((caption (org-latex--caption/label-string matrices info))
+	   (caption-above? (org-latex--caption-above-p matrices info)))
+       (concat "\\begin{equation}\n"
+	       (and caption-above? caption)
+	       contents
+	       (and (not caption-above?) caption)
+	       "\\end{equation}")))
+    (_
+     (format "\\[\n%s\\]" contents))))
 
 
 ;;;; Pseudo Object: LaTeX Math Block
@@ -2920,21 +2958,23 @@ contextual information."
        ;; Case 3.  Use minted package.
        ((eq listings 'minted)
 	(let* ((caption-str (org-latex--caption/label-string src-block info))
+	       (placement (or (org-unbracket-string "[" "]" (plist-get attributes :placement))
+			      (plist-get info :latex-default-figure-position)))
 	       (float-env
 		(cond
 		 ((string= "multicolumn" float)
 		  (format "\\begin{listing*}[%s]\n%s%%s\n%s\\end{listing*}"
-			  (plist-get info :latex-default-figure-position)
+			  placement
 			  (if caption-above-p caption-str "")
 			  (if caption-above-p "" caption-str)))
 		 (caption
 		  (format "\\begin{listing}[%s]\n%s%%s\n%s\\end{listing}"
-			  (plist-get info :latex-default-figure-position)
+			  placement
 			  (if caption-above-p caption-str "")
 			  (if caption-above-p "" caption-str)))
 		 ((string= "t" float)
 		  (concat (format "\\begin{listing}[%s]\n"
-				  (plist-get info :latex-default-figure-position))
+				  placement)
 			  "%s\n\\end{listing}"))
 		 (t "%s")))
 	       (options (plist-get info :latex-minted-options))
@@ -3142,6 +3182,56 @@ centered."
 	  info)
 	(apply 'concat (nreverse align)))))
 
+(defun org-latex--decorate-table (table attributes caption above? info)
+  "Decorate TABLE string with caption and float environment.
+
+ATTRIBUTES is the plist containing is LaTeX attributes.  CAPTION
+is its caption, as a string or nil.  It is located above the
+table if ABOVE? is non-nil.  INFO is the plist containing current
+export parameters.
+
+Return new environment, as a string."
+  (let* ((float-environment
+	  (let ((float (plist-get attributes :float)))
+	    (cond ((and (not float) (plist-member attributes :float)) nil)
+		  ((member float '("sidewaystable" "sideways")) "sidewaystable")
+		  ((equal float "multicolumn") "table*")
+		  ((or float (org-string-nw-p caption)) "table")
+		  (t nil))))
+	 (placement
+	  (or (plist-get attributes :placement)
+	      (format "[%s]" (plist-get info :latex-default-figure-position))))
+	 (center? (if (plist-member attributes :center)
+		      (plist-get attributes :center)
+		    (plist-get info :latex-tables-centered)))
+	 (fontsize (let ((font (plist-get attributes :font)))
+		     (and font (concat font "\n")))))
+    (concat (cond
+	     (float-environment
+	      (concat (format "\\begin{%s}%s\n" float-environment placement)
+		      (if above? caption "")
+		      (when center? "\\centering\n")
+		      fontsize))
+	     (caption
+	      (concat (and center? "\\begin{center}\n" )
+		      (if above? caption "")
+		      (cond ((and fontsize center?) fontsize)
+			    (fontsize (concat "{" fontsize))
+			    (t nil))))
+	     (center? (concat "\\begin{center}\n" fontsize))
+	     (fontsize (concat "{" fontsize)))
+	    table
+	    (cond
+	     (float-environment
+	      (concat (if above? "" (concat "\n" caption))
+		      (format "\n\\end{%s}" float-environment)))
+	     (caption
+	      (concat (if above? "" (concat "\n" caption))
+		      (and center? "\n\\end{center}")
+		      (and fontsize (not center?) "}")))
+	     (center? "\n\\end{center}")
+	     (fontsize "}")))))
+
 (defun org-latex--org-table (table contents info)
   "Return appropriate LaTeX code for an Org table.
 
@@ -3151,109 +3241,44 @@ channel.
 
 This function assumes TABLE has `org' as its `:type' property and
 `table' as its `:mode' attribute."
-  (let* ((caption (org-latex--caption/label-string table info))
-	 (attr (org-export-read-attribute :attr_latex table))
-	 ;; Determine alignment string.
+  (let* ((attr (org-export-read-attribute :attr_latex table))
 	 (alignment (org-latex--align-string table info))
-	 ;; Determine environment for the table: longtable, tabular...
 	 (table-env (or (plist-get attr :environment)
 			(plist-get info :latex-default-table-environment)))
-	 ;; If table is a float, determine environment: table, table*
-	 ;; or sidewaystable.
-	 (float-env (unless (member table-env '("longtable" "longtabu"))
-		      (let ((float (plist-get attr :float)))
-			(cond
-			 ((and (not float) (plist-member attr :float)) nil)
-			 ((or (string= float "sidewaystable")
-			      (string= float "sideways")) "sidewaystable")
-			 ((string= float "multicolumn") "table*")
-			 ((or float
-			      (org-element-property :caption table)
-			      (org-string-nw-p (plist-get attr :caption)))
-			  "table")))))
-	 ;; Extract others display options.
-	 (fontsize (let ((font (plist-get attr :font)))
-		     (and font (concat font "\n"))))
-	 ;; "tabular" environment doesn't allow to define a width.
-	 (width (and (not (equal table-env "tabular")) (plist-get attr :width)))
-	 (spreadp (plist-get attr :spread))
-	 (placement
-	  (or (plist-get attr :placement)
-	      (format "[%s]" (plist-get info :latex-default-figure-position))))
-	 (centerp (if (plist-member attr :center) (plist-get attr :center)
-		    (plist-get info :latex-tables-centered)))
-	 (caption-above-p (org-latex--caption-above-p table info)))
-    ;; Prepare the final format string for the table.
+	 (width
+	  (let ((w (plist-get attr :width)))
+	    (cond ((not w) "")
+		  ((member table-env '("tabular" "longtable")) "")
+		  ((member table-env '("tabu" "longtabu"))
+		   (format (if (plist-get attr :spread) " spread %s "
+			     " to %s ")
+			   w))
+		  (t (format "{%s}" w)))))
+	 (caption (org-latex--caption/label-string table info))
+	 (above? (org-latex--caption-above-p table info)))
     (cond
-     ;; Longtable.
-     ((equal "longtable" table-env)
-      (concat (and fontsize (concat "{" fontsize))
-	      (format "\\begin{longtable}{%s}\n" alignment)
-	      (and caption-above-p
-		   (org-string-nw-p caption)
-		   (concat caption "\\\\\n"))
-	      contents
-	      (and (not caption-above-p)
-		   (org-string-nw-p caption)
-		   (concat caption "\\\\\n"))
-	      "\\end{longtable}\n"
-	      (and fontsize "}")))
-     ;; Longtabu
-     ((equal "longtabu" table-env)
-      (concat (and fontsize (concat "{" fontsize))
-	      (format "\\begin{longtabu}%s{%s}\n"
-		      (if width
-			  (format " %s %s "
-				  (if spreadp "spread" "to") width) "")
-		      alignment)
-	      (and caption-above-p
-		   (org-string-nw-p caption)
-		   (concat caption "\\\\\n"))
-	      contents
-	      (and (not caption-above-p)
-		   (org-string-nw-p caption)
-		   (concat caption "\\\\\n"))
-	      "\\end{longtabu}\n"
-	      (and fontsize "}")))
-     ;; Others.
-     (t (concat (cond
-		 (float-env
-		  (concat (format "\\begin{%s}%s\n" float-env placement)
-			  (if caption-above-p caption "")
-			  (when centerp "\\centering\n")
-			  fontsize))
-		 ((and (not float-env) caption)
-		  (concat
-		   (and centerp "\\begin{center}\n" )
-		   (if caption-above-p caption "")
-		   (cond ((and fontsize centerp) fontsize)
-			 (fontsize (concat "{" fontsize)))))
-		 (centerp (concat "\\begin{center}\n" fontsize))
-		 (fontsize (concat "{" fontsize)))
-		(cond ((equal "tabu" table-env)
-		       (format "\\begin{tabu}%s{%s}\n%s\\end{tabu}"
-			       (if width (format
-					  (if spreadp " spread %s " " to %s ")
-					  width) "")
-			       alignment
-			       contents))
-		      (t (format "\\begin{%s}%s{%s}\n%s\\end{%s}"
-				 table-env
-				 (if width (format "{%s}" width) "")
-				 alignment
-				 contents
-				 table-env)))
-		(cond
-		 (float-env
-		  (concat (if caption-above-p "" (concat "\n" caption))
-			  (format "\n\\end{%s}" float-env)))
-		 ((and (not float-env) caption)
-		  (concat
-		   (if caption-above-p "" (concat "\n" caption))
-		   (and centerp "\n\\end{center}")
-		   (and fontsize (not centerp) "}")))
-		 (centerp "\n\\end{center}")
-		 (fontsize "}")))))))
+     ((member table-env '("longtable" "longtabu"))
+      (let ((fontsize (let ((font (plist-get attr :font)))
+			(and font (concat font "\n")))))
+	(concat (and fontsize (concat "{" fontsize))
+		(format "\\begin{%s}%s{%s}\n" table-env width alignment)
+		(and above?
+		     (org-string-nw-p caption)
+		     (concat caption "\\\\\n"))
+		contents
+		(and (not above?)
+		     (org-string-nw-p caption)
+		     (concat caption "\\\\\n"))
+		(format "\\end{%s}" table-env)
+		(and fontsize "}"))))
+     (t
+      (let ((output (format "\\begin{%s}%s{%s}\n%s\\end{%s}"
+			    table-env
+			    width
+			    alignment
+			    contents
+			    table-env)))
+	(org-latex--decorate-table output attr caption above? info))))))
 
 (defun org-latex--table.el-table (table info)
   "Return appropriate LaTeX code for a table.el table.
@@ -3267,30 +3292,29 @@ property."
   ;; Ensure "*org-export-table*" buffer is empty.
   (with-current-buffer (get-buffer-create "*org-export-table*")
     (erase-buffer))
-  (let ((output (with-temp-buffer
-		  (insert (org-element-property :value table))
-		  (goto-char 1)
-		  (re-search-forward "^[ \t]*|[^|]" nil t)
-		  (table-generate-source 'latex "*org-export-table*")
-		  (with-current-buffer "*org-export-table*"
-		    (org-trim (buffer-string))))))
+  (let ((output
+	 (replace-regexp-in-string
+	  "^%.*\n" ""			;remove comments
+	  (with-temp-buffer
+	    (save-excursion (insert (org-element-property :value table)))
+	    (re-search-forward "^[ \t]*|[^|]" nil t)
+	    (table-generate-source 'latex "*org-export-table*")
+	    (with-current-buffer "*org-export-table*"
+	      (org-trim (buffer-string))))
+	  t t)))
     (kill-buffer (get-buffer "*org-export-table*"))
-    ;; Remove left out comments.
-    (while (string-match "^%.*\n" output)
-      (setq output (replace-match "" t t output)))
-    (let ((attr (org-export-read-attribute :attr_latex table)))
+    (let ((attr (org-export-read-attribute :attr_latex table))
+	  (caption (org-latex--caption/label-string table info))
+	  (above? (org-latex--caption-above-p table info)))
       (when (plist-get attr :rmlines)
 	;; When the "rmlines" attribute is provided, remove all hlines
-	;; but the the one separating heading from the table body.
+	;; but the one separating heading from the table body.
 	(let ((n 0) (pos 0))
 	  (while (and (< (length output) pos)
 		      (setq pos (string-match "^\\\\hline\n?" output pos)))
 	    (cl-incf n)
 	    (unless (= n 2) (setq output (replace-match "" nil nil output))))))
-      (let ((centerp (if (plist-member attr :center) (plist-get attr :center)
-		       (plist-get info :latex-tables-centered))))
-	(if (not centerp) output
-	  (format "\\begin{center}\n%s\n\\end{center}" output))))))
+      (org-latex--decorate-table output attr caption above? info))))
 
 (defun org-latex--math-table (table info)
   "Return appropriate LaTeX code for a matrix.

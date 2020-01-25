@@ -326,7 +326,7 @@ INFO is a plist used as a communication channel.
 
 The value is either the label specified in \"BEAMER_opt\"
 property, the custom ID, if there is one and
-`:latex-prefer-user-labels' property has a non nil value, or
+`:latex-prefer-user-labels' property has a non-nil value, or
 a unique internal label.  This function assumes HEADLINE will be
 treated as a frame."
   (cond
@@ -645,13 +645,22 @@ as a communication channel."
 		contents))
        ;; Case 4: HEADLINE is a note.
        ((member environment '("note" "noteNH"))
-	(format "\\note{%s}"
-		(concat (and (equal environment "note")
-			     (concat
-			      (org-export-data
-			       (org-element-property :title headline) info)
-			      "\n"))
-			(org-trim contents))))
+        (concat "\\note"
+		;; Overlay specification.
+		(let ((overlay (org-element-property :BEAMER_ACT headline)))
+		  (when overlay
+		    (org-beamer--normalize-argument
+		     overlay
+		     (if (string-match "\\`\\[.*\\]\\'" overlay)
+			 'defaction 'action))))
+		(format "{%s}"
+                        (concat (and (equal environment "note")
+                                     (concat
+                                      (org-export-data
+                                       (org-element-property :title headline)
+				       info)
+                                      "\n"))
+				(org-trim contents)))))
        ;; Case 5: HEADLINE is a frame.
        ((= level frame-level)
 	(org-beamer--format-frame headline contents info))
