@@ -123,14 +123,18 @@ jabrefpkg: ELPA_PKG_TAR_ARGS	= --exclude=*.jar											\
 
 odtpkg jabrefpkg: pkg
 
-odtmanual: SERVERMK=
-odtmanual: info
+odtmanual:
 	git clean -d -f
+	make
 	make -C doc org-odt.html
 	$(RM) $(DOCROOT)/*
 	mv doc/org-odt-manual/*.html $(DOCROOT)
+	mv doc/org-odt $(DOCROOT)
 	$(CP) doc/org-odt-manual/*.png $(DOCROOT)
 	$(CP) doc/org-odt-manual/*.css $(DOCROOT)
+	make -C doc org-odt.pdf
+	mv doc/org-odt.pdf $(DOCROOT)
+	make -C doc clean
 
 # Local Variables:
 # tab-width: 4

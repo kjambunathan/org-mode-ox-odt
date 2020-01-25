@@ -7,7 +7,7 @@ endif
 
 all:		$(ORG_MAKE_DOC)
 
-info:		org orgguide
+info:		org orgguide org-odt
 
 html:		org.html
 
@@ -46,6 +46,23 @@ org-version.tex:	orgcard.tex
 	@printf "\def\\\\versionyear{$(YEAR)}\n" >> org-version.tex
 	@printf "\def\year{$(YEAR)}\n" >> org-version.tex
 
+imagelinks:
+	$(RM) *.png
+	 $(foreach f, $(wildcard org-odt-manual/*.png), ln -s $f  $(notdir $f);)
+
+org-odt.texi: org-odt-manual.org imagelinks
+	$(BATCH) \
+	  --eval '(add-to-list '"'"'load-path "../lisp")' \
+	  --eval '(load "../mk/org-fixup.el")' \
+	  --eval '(org-make-manuals (list "$<"))'
+
+org-odt.html: TEXI2HTMLEXTRA=--css-ref=style.css --split=chapter --no-headers  -o org-odt-manual
+org-odt.html:		org-odt.texi
+	$(TEXI2HTML) $(TEXI2HTMLEXTRA) $<
+
+org-odt.pdf: org-odt.texi
+	texi2pdf $<
+
 install:	org orgguide
 	if [ ! -d $(DESTDIR)$(infodir) ]; then $(MKDIR) $(DESTDIR)$(infodir); else true; fi ;
 	$(CP) org $(DESTDIR)$(infodir)
@@ -54,9 +71,11 @@ install:	org orgguide
 	$(INSTALL_INFO) --infodir=$(DESTDIR)$(infodir) orgguide
 
 clean:
-	$(RM) org orgguide *.pdf *.html *_letter.tex org-version.inc \
+	$(RM) org orgguide org-odt *.pdf *.html *_letter.tex org-version.inc \
 	      org-version.tex *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys \
               *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.log *.html *.ps
+	$(RMR) org-odt-manual/*.html
+	$(RM) *.png
 cleanall:	clean
 	$(RMR) guide manual
 
@@ -79,7 +98,8 @@ clean-install:
 	PDFLATEX=$(PDFTEX) $(TEXI2PDF) $<
 
 %.html:		%.texi org-version.inc
-	$(TEXI2HTML) --no-split -o $@ $<
+
+	$(TEXI2HTML) $(TEXI2HTMLEXTRA) $<
 ifneq ($(SERVERMK),)
 	../mk/manfull.pl $@
 

@@ -27,10 +27,11 @@
 (require 'autoload)
 (require 'org-compat "org-compat.el")
 
-(defun org-make-manuals ()
+(defun org-make-manuals (&optional manuals)
   "Generate the Texinfo files out of Org manuals."
   (require 'ox-texinfo)
-  (dolist (manual '("../doc/org-manual.org" "../doc/org-guide.org"))
+  (setq manuals (or manuals '("../doc/org-manual.org" "../doc/org-guide.org")))
+  (dolist (manual manuals)
     (find-file manual)
     (org-texinfo-export-to-texinfo)))
 
