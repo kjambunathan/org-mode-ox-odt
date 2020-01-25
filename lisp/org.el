@@ -760,7 +760,6 @@ For export specific modules, see also `org-export-backends'."
 	(const :tag "   info:              Links to Info nodes" org-info)
 	(const :tag "   inlinetask:        Tasks independent of outline hierarchy" org-inlinetask)
 	(const :tag "   irc:               Links to IRC/ERC chat sessions" org-irc)
-	(const :tag "   JabRef:            Export citations with JabRef" ox-jabref)
 	(const :tag "   mhe:               Links to MHE folders/messages" org-mhe)
 	(const :tag "   mouse:             Additional mouse support" org-mouse)
 	(const :tag "   protocol:          Intercept calls from emacsclient" org-protocol)
