@@ -113,6 +113,7 @@
     (:with-latex nil "tex" org-odt-with-latex)
     ;; ODT-specific keywords
     ;; Keywords that affect styles.xml
+    (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
     (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
@@ -2132,11 +2133,12 @@ holding export options."
 
 ;;;; Wrapper for File Conversion
 
-(defun org-odt--convert (target _backend _info)
+(defun org-odt--convert (target _backend info)
   (condition-case-unless-debug err
-      (if org-odt-preferred-output-format
-	  (org-odt-convert target org-odt-preferred-output-format)
-	target)
+      (let ((output-fmt (plist-get info :odt-preferred-output-format)))
+	(if (org-string-nw-p output-fmt)
+	    (org-odt-convert target output-fmt)
+	  target))
     (error (message (error-message-string err))
 	   target)))
 
