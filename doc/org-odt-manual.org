@@ -732,7 +732,7 @@ variable =org-odt-fontify-srcblocks=.
 
 * Bibliography and Citations in ODT export
 
-#+texinfo: @wnindex @samp{JabRef}, bibliography, citation
+# #+texinfo: @wnindex @samp{JabRef}, bibliography, citation
 The ODT export back-end uses JabRef to produce Bibliography and
 Citations.
 
@@ -770,7 +770,7 @@ and doesn't carry over to other backends.
 
    - =BIBLIOGRAPHY= - ::
    
-        #+cindex: @samp{SUBTITLE}, keyword
+        #+cindex: @samp{BIBLIOGRAPHY}, keyword
         Bibliography is inserted here.
 
 
@@ -859,6 +859,7 @@ and add an entry for each of the layout files as below.
 | Chicago.ODF.text          | <whatever>/Chicago.ODF.text.layout          | xml       |
 
 
+#+ATTR_TEXINFO: :width 15cm
 #+CAPTION: Screenshot of JabRef-5.0's =Manage custom exports=
 [[./JabRefCustomizeExportFormats.png]]
 
@@ -964,14 +965,17 @@ Use this if you have JabRef as a =jar= file.
 
 - Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Numeric"~ ::
 # #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Numeric"~
+#+ATTR_TEXINFO: :width 15cm
 [[./citation-1.png]]
 
 - Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"~ ::
 # #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"~
+#+ATTR_TEXINFO: :width 15cm
 [[./citation-2.png]]
 
 - Sample output with ~#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"~ ::
 # #+CAPTION: ~#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"~
+#+ATTR_TEXINFO: :width 15cm
 [[./citation-3.png]]
 
 * Advanced topics in ODT export
@@ -1342,12 +1346,16 @@ for you.
 :END:
 
 * What is New
-:PROPERTIES:
-:DESCRIPTION: Features exclusive to this exporter
-:INDEX:    wn
-:END:
 
-#+texinfo: @printindex wn
+- [[*Bibliography and Citations in ODT export]]
+
+# * What is New
+# :PROPERTIES:
+# :DESCRIPTION: Features exclusive to this exporter
+# :INDEX:    wn
+# :END:
+
+# #+texinfo: @printindex wn
 
 * Footnotes
 
