@@ -5417,100 +5417,104 @@ exported file."
 ;; Translate lists to tables
 
 (defun org-odt--translate-list-tables (tree _backend info)
-  (org-element-map tree 'plain-list
-    (lambda (l1-list)
-      (when (org-odt--read-attribute l1-list :list-table)
-	;; Replace list with table.
-	(org-element-set-element
-	 l1-list
-	 ;; Build replacement table.
-	 (apply 'org-element-adopt-elements
-		(list 'table (list :type 'org
-				   :attr_odt (org-element-property :attr_odt l1-list)
-				   :caption (org-element-property :caption l1-list)
-				   :name (org-element-property :name l1-list)))
-		(delq nil
-		      (apply 'append
-			     (org-element-map l1-list 'item
-			       (lambda (l1-item)
-				 (let* ((l1-item-contents (org-element-contents l1-item))
-					l1-item-leading-text l2-list)
-				   ;; Remove Level-2 list from the Level-item.  It
-				   ;; will be subsequently attached as table-cells.
-				   (let ((cur l1-item-contents) prev)
-				     (while (and cur (not (eq (org-element-type (car cur))
-							      'plain-list)))
-				       (setq prev cur)
-				       (setq cur (cdr cur)))
+  (let* ((org-element-all-objects (remq 'table-cell org-element-all-objects))
+	 (org-element-all-elements (cons 'table-cell org-element-all-elements))
+	 (org-element-greater-elements (append '(table-row table-cell)
+					       org-element-greater-elements)))
+    (org-element-map tree 'plain-list
+      (lambda (l1-list)
+	(when (org-odt--read-attribute l1-list :list-table)
+	  ;; Replace list with table.
+	  (org-element-set-element
+	   l1-list
+	   ;; Build replacement table.
+	   (apply 'org-element-adopt-elements
+		  (list 'table (list :type 'org
+				     :attr_odt (org-element-property :attr_odt l1-list)
+				     :caption (org-element-property :caption l1-list)
+				     :name (org-element-property :name l1-list)))
+		  (delq nil
+			(apply 'append
+			       (org-element-map l1-list 'item
+				 (lambda (l1-item)
+				   (let* ((l1-item-contents (org-element-contents l1-item))
+					  l1-item-leading-text l2-list)
+				     ;; Remove Level-2 list from the Level-item.  It
+				     ;; will be subsequently attached as table-cells.
+				     (let ((cur l1-item-contents) prev)
+				       (while (and cur (not (eq (org-element-type (car cur))
+								'plain-list)))
+					 (setq prev cur)
+					 (setq cur (cdr cur)))
 
-				     (if (null prev)
+				       (if (null prev)
+					   (setq l2-list (car cur))
+					 (setcdr prev nil)
 					 (setq l2-list (car cur))
-				       (setcdr prev nil)
-				       (setq l2-list (car cur))
-				       (setq l1-item-leading-text l1-item-contents)))
+					 (setq l1-item-leading-text l1-item-contents)))
 
-				   (list
-				    (when (and l1-item-leading-text
-					       (eq (org-element-type (car l1-item-leading-text))
-						   'paragraph))
-				      (let ((leading-text (org-trim
-							   (org-element-interpret-data
-							    (car l1-item-leading-text)))))
-					(cond
-					 ;; Is the leading text of the Level-1 a horizontal rule?
-					 ((string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
-							leading-text)
-					  ;; Yes. Splice a rule in to the table.
-					  (org-element-adopt-elements
-					      (list 'table-row (list :type 'rule))))
-					 ;; Is the leading text of the Level-1 a special row?
-					 ((string-match "\\`|" leading-text)
-					  ;; Yes. Splice that special row in to the table.
-					  (org-element-map
-					      (with-temp-buffer
-						(insert leading-text)
-						(org-element-parse-buffer))
-					      'table-row
-					    (lambda (table-row)
-					      ;; Nuke all attributes other than `:parent'.
-					      (setcar (cdr table-row) (list :type 'standard))
-					      (org-element-map table-row 'table-cell
-						(lambda (table-cell)
-						  ;; Nuke all attributes other than `:parent'.
-						  (setcar (cdr table-cell) (list :parent table-row))
-						  table-cell))
-					      ;; Unfortunately,`org-export--prune-tree'runs before
-					      ;; this filter is called. Do what prune would have done
-					      ;; had it run *after* the listified table has got in to tree.
-					      (when info
-						(plist-put info :ignore-list
-							   (cons table-row (plist-get info :ignore-list))))
-					      table-row)
-					    nil 'first-match)))))
-				    (when l2-list
-				      (apply 'org-element-adopt-elements
-					     ;; Level-1 items start a table row.
-					     (list 'table-row (list :type 'standard))
-					     ;; Level-2 items define
-					     ;; subsequent table-cells
-					     ;; of the row.
-					     (org-element-map l2-list 'item
-					       (lambda (l2-item)
-						 (apply 'org-element-adopt-elements
-							(list 'table-cell nil)
-							(org-element-contents l2-item)))
-					       info nil 'item))))))
-			       info nil 'item)))))
-	;; Complain if the listified table is non-homogenous.
-	;; Note: A list table is non-homogenous if it's rows has
-	;; uneven number of cells.
-	(unless (apply '= (org-element-map l1-list 'table-row
-			    (lambda (table-row)
-			      (when (eq (org-element-property :type table-row) 'standard)
-				(length (org-element-contents table-row))))))
-	  (user-error "List table is non-homogenous")))
-      nil)
-    info)
+				     (list
+				      (when (and l1-item-leading-text
+						 (eq (org-element-type (car l1-item-leading-text))
+						     'paragraph))
+					(let ((leading-text (org-trim
+							     (org-element-interpret-data
+							      (car l1-item-leading-text)))))
+					  (cond
+					   ;; Is the leading text of the Level-1 a horizontal rule?
+					   ((string-match "\\`[[:space:]]*-\\{5,\\}[[:space:]]*\\'"
+							  leading-text)
+					    ;; Yes. Splice a rule in to the table.
+					    (org-element-adopt-elements
+						(list 'table-row (list :type 'rule))))
+					   ;; Is the leading text of the Level-1 a special row?
+					   ((string-match "\\`|" leading-text)
+					    ;; Yes. Splice that special row in to the table.
+					    (org-element-map
+						(with-temp-buffer
+						  (insert leading-text)
+						  (org-element-parse-buffer))
+						'table-row
+					      (lambda (table-row)
+						;; Nuke all attributes other than `:parent'.
+						(setcar (cdr table-row) (list :type 'standard))
+						(org-element-map table-row 'table-cell
+						  (lambda (table-cell)
+						    ;; Nuke all attributes other than `:parent'.
+						    (setcar (cdr table-cell) (list :parent table-row))
+						    table-cell))
+						;; Unfortunately,`org-export--prune-tree'runs before
+						;; this filter is called. Do what prune would have done
+						;; had it run *after* the listified table has got in to tree.
+						(when info
+						  (plist-put info :ignore-list
+							     (cons table-row (plist-get info :ignore-list))))
+						table-row)
+					      nil 'first-match)))))
+				      (when l2-list
+					(apply 'org-element-adopt-elements
+					       ;; Level-1 items start a table row.
+					       (list 'table-row (list :type 'standard))
+					       ;; Level-2 items define
+					       ;; subsequent table-cells
+					       ;; of the row.
+					       (org-element-map l2-list 'item
+						 (lambda (l2-item)
+						   (apply 'org-element-adopt-elements
+							  (list 'table-cell nil)
+							  (org-element-contents l2-item)))
+						 info nil 'item))))))
+				 info nil 'item)))))
+	  ;; Complain if the listified table is non-homogenous.
+	  ;; Note: A list table is non-homogenous if it's rows has
+	  ;; uneven number of cells.
+	  (unless (apply '= (org-element-map l1-list 'table-row
+			      (lambda (table-row)
+				(when (eq (org-element-property :type table-row) 'standard)
+				  (length (org-element-contents table-row))))))
+	    (user-error "List table is non-homogenous")))
+	nil)
+      info))
   tree)
 
 
