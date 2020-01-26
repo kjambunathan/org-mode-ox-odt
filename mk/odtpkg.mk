@@ -85,6 +85,7 @@ odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el																\
 										contrib/lisp/ox-jabref.el													\
 										contrib/odt/LibreOffice/OrgModeUtilities.oxt								\
 										testing/examples/odt/														\
+										docs/																		\
 										$(ELPA_PKG_NAME)-pkg.el
 
 odtpkg: ELPA_PKG_TAR_ARGS			= --exclude=test-new.odt									\
