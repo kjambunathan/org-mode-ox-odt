@@ -82,6 +82,71 @@ user of the stock Emacs backend, and want to learn about new features
 
   # - User Manual (PDF) :: https://kjambunathan.github.io/org-mode-ox-odt/org-odt.pdf
 
+
+* Structure of ELPA tar
+
+- ./ ::
+    ox-jabref.el                                      \\
+    ox-odt-pkg.el                                     \\
+    ox-odt.el                                         \\
+
+- etc/styles/ ::
+    OrgOdtContentTemplate.xml                         \\
+    OrgOdtStyles.xml                                  \\
+    README                                            \\
+
+- LibreOffice :: 
+    LibreOffice/OrgModeUtilities.oxt
+
+- docs/ ::
+    index.html                                        \\
+    org-odt                                           \\
+    org-odt.pdf                                       \\
+    style.css                                         \\
+
+- etc/schema/ :: 
+    od-manifest-schema.rnc                            \\
+    od-schema.rnc                                     \\
+    schemas.xml                                       \\
+
+- etc/schema/libreoffice/ ::
+    OpenDocument-dsig-schema-v1.3+libreoffice.rnc     \\
+    OpenDocument-manifest-schema-v1.3+libreoffice.rnc \\
+    OpenDocument-schema-v1.3+libreoffice.rnc          \\
+    OpenDocument-schema-v1.3.rnc                      \\
+
+- etc/schema/odf1.0/ :: 
+    OpenDocument-manifest-schema-v1.0-os.rnc          \\
+    OpenDocument-schema-v1.0-os.rnc                   \\
+    OpenDocument-strict-schema-v1.0-os.rnc            \\
+
+- etc/schema/odf1.1/ :: 
+    OpenDocument-manifest-schema-v1.1.rnc             \\
+    OpenDocument-schema-v1.1.rnc                      \\
+    OpenDocument-strict-schema-v1.1.rnc               \\
+
+- etc/schema/odf1.2/ :: 
+    OpenDocument-v1.2-os-dsig-schema.rnc              \\
+    OpenDocument-v1.2-os-manifest-schema.rnc          \\
+    OpenDocument-v1.2-os-schema.rnc                   \\
+
+- etc/schema/odf1.3/ ::
+    OpenDocument-dsig-schema-v1.3.rnc                 \\
+    OpenDocument-manifest-schema-v1.3.rnc             \\
+    OpenDocument-schema-v1.3.rnc                      \\
+
+- samples/biblatex-examples/ ::
+    README.org                                        \\
+    biblatex-examples.bib                             \\
+
+- samples/ ::
+    masterdocument.org                                \\
+    org-mode-unicorn.png                              \\
+    pagebreak.odt                                     \\
+    pagebreak.org                                     \\
+    subdocument1.odt                                  \\
+    subdocument1.org                                  \\
+
 * Getting Started with ODT export
 :PROPERTIES:
 :DESCRIPTION: What packages ODT exporter relies on
