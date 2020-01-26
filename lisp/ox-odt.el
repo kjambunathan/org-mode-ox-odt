@@ -5417,10 +5417,13 @@ exported file."
 ;; Translate lists to tables
 
 (defun org-odt--translate-list-tables (tree _backend info)
-  (let* ((org-element-all-objects (remq 'table-cell org-element-all-objects))
-	 (org-element-all-elements (cons 'table-cell org-element-all-elements))
+  (let* ((org-element-all-objects-1 org-element-all-objects)
+	 (org-element-all-elements-1 org-element-all-elements)
+	 (org-element-greater-elements-1 org-element-greater-elements)
+	 (org-element-all-objects (remq 'table-cell org-element-all-objects-1))
+	 (org-element-all-elements (cons 'table-cell org-element-all-elements-1))
 	 (org-element-greater-elements (append '(table-row table-cell)
-					       org-element-greater-elements)))
+					       org-element-greater-elements-1)))
     (org-element-map tree 'plain-list
       (lambda (l1-list)
 	(when (org-odt--read-attribute l1-list :list-table)
@@ -5471,9 +5474,12 @@ exported file."
 					   ((string-match "\\`|" leading-text)
 					    ;; Yes. Splice that special row in to the table.
 					    (org-element-map
-						(with-temp-buffer
-						  (insert leading-text)
-						  (org-element-parse-buffer))
+						(let ((org-element-all-objects org-element-all-objects-1 )
+						      (org-element-all-elements org-element-all-elements-1)
+						      (org-element-greater-elements org-element-greater-elements-1))
+						  (with-temp-buffer
+						    (insert leading-text)
+						    (org-element-parse-buffer)))
 						'table-row
 					      (lambda (table-row)
 						;; Nuke all attributes other than `:parent'.
