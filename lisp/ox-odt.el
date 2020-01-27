@@ -1882,9 +1882,22 @@ holding export options."
       (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
 
       ;; Position the cursor.
+      ;; (goto-char (point-min))
+      ;; (when (re-search-forward "</office:automatic-styles>" nil t)
+      ;; 	(goto-char (match-beginning 0)))
+
+      ;; Position the cursor.
       (goto-char (point-min))
-      (when (re-search-forward "</office:automatic-styles>" nil t)
-	(goto-char (match-beginning 0)))
+      ;; When there are duplicate page layouts with same name defined,
+      ;; LibreOffice seems to go with the first definition it
+      ;; encounters.  So, inserting at the beginning of automatic
+      ;; styles section, gives us the flexibility of redefining page
+      ;; layouts using '#+ODT_EXTRA_AUTOMATIC_STYLES: ...'.  You can
+      ;; see this in action in doc/org-odt-manual/list-table-1.org etc
+      ;; where I change the page height to create an image file that
+      ;; is aesthetically pleasing for inclusion in the manuals.
+      (when (re-search-forward "<office:automatic-styles>" nil t)
+	(goto-char (match-end 0)))
 
       ;; Write automatic styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
