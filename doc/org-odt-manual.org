@@ -221,13 +221,23 @@ Here is a sample configuration.
       "soffice" "--norestore" "--invisible" "--headless"
       "macro:///OrgMode.Utilities.Reload(%I)")))
  '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n"))
- '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+ '(org-latex-to-mathml-convert-command
+   "java -jar %j -unicode -force -df %o %I")
  '(org-latex-to-mathml-jar-file
-   "/home/kjambunathan/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar"))
+   "/home/kjambunathan/Downloads/mathtoweb.jar"))
 
-(setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
-
+(require 'ox-odt)
 (require 'ox-jabref)
+
+;; (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
+(setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
+
+(advice-add 'org-open-file :around
+            (lambda (orig-fun &rest args)
+              ;; Work around a weird problem with xdg-open.
+              (let ((process-connection-type nil))
+                (apply orig-fun args))))
+
 #+end_example
 
 Above configuration sets up the ODT backend as follows:
@@ -393,7 +403,7 @@ with a cross-reference and sequence number of the labeled entity. See
 
 * List Tables in ODT export
 :PROPERTIES:
-:DESCRIPTION: How Tables are exported
+:DESCRIPTION: How to create Tables with multi-paragraph content
 :END:
 
 A =List Table=, in simple terms, is a list that is typeset as a table.
@@ -423,6 +433,7 @@ document.
 
 Consider an example.  The following list table
 
+#+begin_example
 #+ATTR_ODT: :rel-width 80
 #+ATTR_ODT: :list-table t
 -
@@ -435,55 +446,143 @@ Consider an example.  The following list table
   - Row 2, Col 2 
   - Row 2, Col 3 
   - Row 2, Col 4 
+#+end_example
+
 
 will be exported as though it were an Org table like the one show
 below.
 
+
+#+begin_example
 | Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
 | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+#+end_example
 
-List tables can contain hrule (see example above).  They can also
-contain table specific attributes.  Except for column alignment
-(i.e., lrc spec), all other attributes (column sizing and grouping)
-are honored on export.
+#+ATTR_TEXINFO: :width 15cm
+[[./list-table-1.png]]
 
-- A list table with rules, column size and alignments :: 
+** A list table with rules, column size and alignments
 
+List tables honor all attributes save for the column alignments.
+
+#+begin_example
 #+ATTR_ODT: :list-table t
-- | /    | <    |    > |       |
-- | <l8> | <r4> | <c2> | <l1>  |
+- | /    | <    | >    |      |
+- | <l2> | <l1> | <l1> | <l8> |
+- 
+  - Row 1, Col 1
+  - Row 1, Col 2
+  - Row 1, Col 3
+  - Row 1, Col 4
+- ----------------
+  - Row 2, Col 1
+  - Row 2, Col 2
+  - Row 2, Col 3
+  - Row 2, Col 4
+#+end_example
+
+Above list table will be exported as if it were an Org table like the
+one below
+
+#+begin_example
+| /            | <            | >            |              |
+| <l2>         | <l1>         | <l1>         | <l8>         |
+| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+|--------------+--------------+--------------+--------------|
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+#+end_example
+
+#+ATTR_TEXINFO: :width 15cm
+[[./list-table-2.png]]
+
+Here is a real-world table that uses the same template as the one
+above
+
+#+begin_example
+#+ATTR_ODT: :list-table t
+- | /    | <    | >    |      |
+- | <l2> | <l1> | <l1> | <l8> |
+- 
+  - Day
+  - Min Temp
+  - Max Temp
+  - Summary
+- ----------------
+  - Monday
+  - 11C
+  - 22C
+  - 
+    1. A clear day with lots of sunshine.
+    2. Late in the day, a strong breeze will bring down the temperatures.
+- ----------------
+  - Tuesday
+  - 9C
+  - 19C
+  - 
+    1. Cloudy with rain, across many northern regions.
+    2. Clear spells across most of Scotland and Northern Ireland, but
+       rain reaching the far northwest.
+#+end_example
+
+#+ATTR_TEXINFO: :width 15cm
+[[./list-table-3.png]]
+
+** List table with table and figures
+
+List tables are particularly well-suited for creating captioned
+side-by-side images.  Note that with conventional =org= tables, even
+though you can place images side-by-side using a table, you cannot
+caption them.
+
+#+begin_example
+#+ATTR_ODT: :list-table t
+- 
+  - 
+    #+CAPTION: A Unicorn
+    [[./org-mode-unicorn.png]]
+  - 
+    #+CAPTION: Yet another Unicorn
+    [[./org-mode-unicorn.png]]
+#+end_example
+
+#+ATTR_TEXINFO: :width 15cm
+[[./list-table-4.png]]
+
+** List table can contain other tables
+
+#+begin_example
+#+ATTR_ODT: :list-table t
+- 
+  - Comments
+  - A Dog & A Cat
 - --------
-  - Row 1
-  - Row 1.1
-    - Subitem under 1.1
-    - Yet another subitem under 1.1
-  - Row 1.2
-  - Row 1.3
+  - This table contains
+    - A Dog
+    - A cat
+
+    | Animal | What it does |
+    |--------+--------------|
+    | Dog    | Barks        |
+    | Cat    | News         |
+
+  - 
+    #+ATTR_ODT: :list-table t
+    - 
+      - 
+        #+CAPTION: A Dog
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
+      - 
+        #+CAPTION: A Cat
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
 - --------
-  - Row 2
-  - Row 2.1
+#+end_example
 
-    Subtext for 2.1
-  - Row 2.2
-  - Row 2.3
-- --------
-
-you could get, the following table, in to the exported document.
-
-|-------+-----------------------------------+---------+---------|
-| Row 1 | - Row 1.1                         | Row 1.2 | Row 1.3 |
-|       |   - Subitem under 1.1             |         |         |
-|       |   - Yet another subitem under 1.1 |         |         |
-|-------+-----------------------------------+---------+---------|
-| Row 2 | Row 2.1                           | Row 2.2 | Row 2.3 |
-|       |                                   |         |         |
-|       | Subtext for 2.1                   |         |         |
-|-------+-----------------------------------+---------+---------|
+#+ATTR_TEXINFO: :width 15cm
+[[./list-table-6.png]]
 
 
-- List table with table and figures :: 
-
-MOTIVATION: 
 * Tables in ODT export
 :PROPERTIES:
 :DESCRIPTION: How Tables are exported
@@ -796,6 +895,9 @@ You can turn off fontification of literal examples by customizing the
 variable =org-odt-fontify-srcblocks=.
 
 * Bibliography and Citations in ODT export
+:PROPERTIES:
+:DESCRIPTION: Use JabRef to produce ODT documents with Citation and Bibliography
+:END:
 
 # #+texinfo: @wnindex @samp{JabRef}, bibliography, citation
 The ODT export back-end uses JabRef to produce Bibliography and
@@ -1412,7 +1514,8 @@ for you.
 
 * What is New
 
-- [[*Bibliography and Citations in ODT export]]
+- [[*Bibliography and Citations in ODT export]] :: Use JabRef to produce ODT documents with Citation and Bibliography
+- [[*List Tables in ODT export]] :: Create a table with multi-paragraph content using a =List table=
 
 # * What is New
 # :PROPERTIES:
