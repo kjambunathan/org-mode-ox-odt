@@ -5514,13 +5514,19 @@ exported file."
 						 info nil 'item))))))
 				 info nil 'item)))))
 	  ;; Complain if the listified table is non-homogenous.
-	  ;; Note: A list table is non-homogenous if it's rows has
-	  ;; uneven number of cells.
-	  (unless (apply '= (org-element-map l1-list 'table-row
-			      (lambda (table-row)
-				(when (eq (org-element-property :type table-row) 'standard)
-				  (length (org-element-contents table-row))))))
-	    (user-error "List table is non-homogenous")))
+	  ;; Note: A list table is homogenous if all it's rows have
+	  ;; same number of columns.  Otherwise, it is non-homogenous.
+	  (let* ((table-rows (org-element-map l1-list 'table-row
+			       (lambda (table-row)
+				 (when (eq (org-element-property :type table-row) 'standard)
+				   (org-element-contents table-row)))
+			       info nil 'table-row))
+		 (ncols-per-row (cl-loop for table-row in table-rows
+					 collect (length (org-element-contents table-row)))))
+	    (unless (apply '= ncols-per-row)
+	      (user-error "List table is non-homogenous.  %s"
+			  (format "List table has %d rows, with rows having following number of columns: %S"
+				  (length table-rows) ncols-per-row)))))
 	nil)
       info))
   tree)
