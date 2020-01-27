@@ -4439,6 +4439,53 @@ contextual information."
 
 ;;;; Table Cell
 
+(defun org-odt-table-row-number (table-row info)
+  "Return TABLE-ROW number.
+INFO is a plist used as a communication channel.  Return value is
+zero-indexed and ignores separators.  The function returns nil
+for special rows and separators.
+
+This is based on `org-export-table-row-number', with suitable
+modifications to account for nested tables."
+  (when (eq (org-element-property :type table-row) 'standard)
+    (let* ((cache (or (plist-get info :table-row-number-cache)
+		      (let ((table (make-hash-table :test #'eq)))
+			(plist-put info :table-row-number-cache table)
+			table)))
+	   (cached (gethash table-row cache 'no-cache)))
+      (if (not (eq cached 'no-cache)) cached
+	;; First time a row is queried, populate cache with all the
+	;; rows from the table.
+	(let ((number -1))
+	  (org-element-map (org-export-get-parent-table table-row) 'table-row
+	    (lambda (row)
+	      (when (eq (org-element-property :type row) 'standard)
+		(puthash row (cl-incf number) cache)))
+	    info nil 'table-cell))
+	(gethash table-row cache)))))
+
+(defun org-odt-table-cell-address (table-cell info)
+  "Return address of a regular TABLE-CELL object.
+
+TABLE-CELL is the cell considered.  INFO is a plist used as
+a communication channel.
+
+Address is a CONS cell (ROW . COLUMN), where ROW and COLUMN are
+zero-based index.  Only exportable cells are considered.  The
+function returns nil for other cells.
+
+This is based on `org-export-table-cell-address', with suitable
+modifications to account for nested tables."
+  (let* ((table-row (org-export-get-parent table-cell))
+	 (row-number (org-odt-table-row-number table-row info)))
+    (when row-number
+      (cons row-number
+	    (let ((col-count 0))
+	      (org-element-map table-row 'table-cell
+		(lambda (cell)
+		  (if (eq cell table-cell) col-count (cl-incf col-count) nil))
+		info 'first-match 'table-cell))))))
+
 (defun org-odt-table-style-spec (element info)
   (let* ((table (org-export-get-parent-table element))
 	 (table-style (org-odt--read-attribute table :style)))
@@ -4461,7 +4508,7 @@ property.  See also
 
 When STYLE-SPEC is non-nil, ignore the above cookie and return
 styles congruent with the ODF-1.2 specification."
-  (let* ((table-cell-address (org-export-table-cell-address table-cell info))
+  (let* ((table-cell-address (org-odt-table-cell-address table-cell info))
 	 (r (car table-cell-address)) (c (cdr table-cell-address))
 	 (style-spec (org-odt-table-style-spec table-cell info))
 	 (table-dimensions (org-export-table-dimensions
@@ -4517,7 +4564,7 @@ styles congruent with the ODF-1.2 specification."
       (lambda (table-cell)
 	(or (and user-width-p (string-to-number (or (pop user-widths) "0")))
 	    (org-export-table-cell-width table-cell info) 0))
-      info)))
+      info nil 'table)))
 
 (defun org-odt-table-cell--get-paragraph-styles (table-cell info)
   "Get paragraph style for TABLE-CELL.
@@ -4577,7 +4624,7 @@ then a table cell can have one of the following 8 styles:
 You need to define the styles \"MyOrgTableContents\" and
 \"MyOrgTableHeading\" as part of your styles file.  Rest of the 6
 styles will be defined *automatically* for you."
-  (let* ((table-cell-address (org-export-table-cell-address table-cell info))
+  (let* ((table-cell-address (org-odt-table-cell-address table-cell info))
 	 (_r (car table-cell-address))
 	 (c (cdr table-cell-address))
 	 (table-row (org-export-get-parent table-cell))
@@ -4623,7 +4670,7 @@ styles will be defined *automatically* for you."
   "Transcode a TABLE-CELL element from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
 channel."
-  (let* ((table-cell-address (org-export-table-cell-address table-cell info))
+  (let* ((table-cell-address (org-odt-table-cell-address table-cell info))
 	 (table-cell-borders (org-export-table-cell-borders table-cell info))
 	 (_r (car table-cell-address))
 	 (c (cdr table-cell-address))
