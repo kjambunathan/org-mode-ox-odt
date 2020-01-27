@@ -45,7 +45,7 @@ ul.no-bullet {list-style: none}
 Next: <a href="Main-Index.html" accesskey="n" rel="next">Main Index</a>, Previous: <a href="Bibliography-and-Citations-in-ODT-export.html#Bibliography-and-Citations-in-ODT-export" accesskey="p" rel="prev">Bibliography and Citations in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
-<span id="Advanced-topics-in-ODT-export-1"></span><h2 class="chapter">14 Advanced topics in ODT export</h2>
+<span id="Advanced-topics-in-ODT-export-1"></span><h2 class="chapter">15 Advanced topics in ODT export</h2>
 
 <p>If you rely heavily on ODT export, you may want to exploit the full
 set of features that the exporter offers. This section describes
@@ -53,7 +53,7 @@ features that would be of interest to power users.
 </p>
 
 <hr>
-<span id="Configuring-a-document-converter"></span><span id="Configuring-a-document-converter-1"></span><h3 class="section">14.1 Configuring a document converter</h3>
+<span id="Configuring-a-document-converter"></span><span id="Configuring-a-document-converter-1"></span><h3 class="section">15.1 Configuring a document converter</h3>
 
 <p>The ODT exporter can work with popular converters with little or no
 extra configuration from your side. See <a href="Extending-ODT-export.html#Extending-ODT-export">Extending ODT export</a>. If you
@@ -88,7 +88,7 @@ customizing the variable &lsquo;<samp>org-odt-convert-process</samp>&rsquo;.
 </p></li></ol>
 
 <hr>
-<span id="Working-with-OpenDocument-style-files"></span><span id="Working-with-OpenDocument-style-files-1"></span><h3 class="section">14.2 Working with OpenDocument style files</h3>
+<span id="Working-with-OpenDocument-style-files"></span><span id="Working-with-OpenDocument-style-files-1"></span><h3 class="section">15.2 Working with OpenDocument style files</h3>
 
 <p>This section explores the internals of the ODT exporter and the means
 by which it produces styled documents. Read this section if you are
@@ -97,7 +97,7 @@ used by the exporter.
 </p>
 
 <hr>
-<span id="Factory-styles"></span><span id="Factory-styles-1"></span><h4 class="subsection">14.2.1 Factory styles</h4>
+<span id="Factory-styles"></span><span id="Factory-styles-1"></span><h4 class="subsection">15.2.1 Factory styles</h4>
 
 <span id="index-org_002dodt_002dstyles_002ddir"></span>
 <p>The ODT exporter relies on two files for generating its output. These
@@ -139,7 +139,7 @@ numbered.
 </dl>
 
 <hr>
-<span id="Overriding-factory-styles"></span><span id="Overriding-factory-styles-1"></span><h4 class="subsection">14.2.2 Overriding factory styles</h4>
+<span id="Overriding-factory-styles"></span><span id="Overriding-factory-styles-1"></span><h4 class="subsection">15.2.2 Overriding factory styles</h4>
 
 <p>The following two variables control the location from which the ODT
 exporter picks up the custom styles and content template files. You
@@ -184,7 +184,7 @@ used in the final output.
 </dl>
 
 <hr>
-<span id="Creating-one_002doff-styles"></span><span id="Creating-one_002doff-styles-1"></span><h3 class="section">14.3 Creating one-off styles</h3>
+<span id="Creating-one_002doff-styles"></span><span id="Creating-one_002doff-styles-1"></span><h3 class="section">15.3 Creating one-off styles</h3>
 
 <p>There are times when you would want one-off formatting in the exported
 document. You can achieve this by embedding raw OpenDocument XML in
@@ -251,7 +251,7 @@ This paragraph is specially formatted and uses bold text.
 </li></ol>
 
 <hr>
-<span id="Customizing-tables-in-ODT-export"></span><span id="Customizing-tables-in-ODT-export-1"></span><h3 class="section">14.4 Customizing tables in ODT export</h3>
+<span id="Customizing-tables-in-ODT-export"></span><span id="Customizing-tables-in-ODT-export-1"></span><h3 class="section">15.4 Customizing tables in ODT export</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-4"></span>
 <p>You can override the default formatting of the table by specifying a
@@ -263,7 +263,7 @@ OpenDocument-v1.2 specification.<a id="DOCF18" href="#FOOT18"><sup>18</sup></a>
 </p>
 
 <hr>
-<span id="Custom-table-styles-_002d-an-illustration"></span><span id="Custom-table-styles-_002d-an-illustration-1"></span><h4 class="subsection">14.4.1 Custom table styles - an illustration</h4>
+<span id="Custom-table-styles-_002d-an-illustration"></span><span id="Custom-table-styles-_002d-an-illustration-1"></span><h4 class="subsection">15.4.1 Custom table styles - an illustration</h4>
 
 <p>To have a quick preview of this feature, install the below setting and
 export the table that follows.
@@ -295,7 +295,7 @@ Template&rsquo; in OrgOdtContentTemplate.xml (see <a href="#Factory-styles">Fact
 need additional templates you have to define these styles yourselves.
 </p>
 <hr>
-<span id="Custom-table-styles-_002d-the-nitty_002dgritty"></span><span id="Custom-table-styles-_002d-the-nitty_002dgritty-1"></span><h4 class="subsection">14.4.2 Custom table styles - the nitty-gritty</h4>
+<span id="Custom-table-styles-_002d-the-nitty_002dgritty"></span><span id="Custom-table-styles-_002d-the-nitty_002dgritty-1"></span><h4 class="subsection">15.4.2 Custom table styles - the nitty-gritty</h4>
 
 <p>To use this feature proceed as follows:
 </p>
@@ -385,7 +385,7 @@ the &lsquo;<samp>ATTR_ODT</samp>&rsquo; line as shown below.
 </li></ol>
 
 <hr>
-<span id="Validating-OpenDocument-XML"></span><span id="Validating-OpenDocument-XML-1"></span><h3 class="section">14.5 Validating OpenDocument XML</h3>
+<span id="Validating-OpenDocument-XML"></span><span id="Validating-OpenDocument-XML-1"></span><h3 class="section">15.5 Validating OpenDocument XML</h3>
 
 <p>Occasionally, you will discover that the document created by the ODT
 exporter cannot be opened by your favorite application. One of the

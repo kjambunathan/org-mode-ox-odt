@@ -23,18 +23,19 @@ _exclusive_ to this fork jump right to *note What is New:: section.
 * Menu:
 
 * Project Summary::
+* Structure of ELPA tar::
 * Getting Started with ODT export:: What packages ODT exporter relies on
 * ODT export commands::          How to invoke ODT export
 * Extending ODT export::         How to produce ’doc’, ’pdf’ files
 * Applying custom styles::       How to apply custom styles to the output
 * Links in ODT export::          How links will be interpreted and formatted
-* List Tables in ODT export::    How Tables are exported
+* List Tables in ODT export::    How to create Tables with multi-paragraph content
 * Tables in ODT export::         How Tables are exported
 * Images in ODT export::         How to insert images
 * Math formatting in ODT export:: How LaTeX fragments are formatted
 * Labels and captions in ODT export:: How captions are rendered
 * Literal examples in ODT export:: How source and example blocks are formatted
-* Bibliography and Citations in ODT export::
+* Bibliography and Citations in ODT export:: Use JabRef to produce ODT documents with Citation and Bibliography
 * Advanced topics in ODT export:: Read this if you are a power user
 * Main Index::                   Index of concepts related to OpenDocumentText format
 * Key Index::                    Key bindings used for export
@@ -67,6 +68,9 @@ Applying custom styles
 List Tables in ODT export
 
 * Examples::
+* A list table with rules, column size and alignments: A list table with rules column size and alignments.
+* List table with table and figures::
+* List table can contain other tables::
 
 Images in ODT export
 
@@ -106,7 +110,7 @@ Customizing tables in ODT export
 
 
 
-File: org-odt,  Node: Project Summary,  Next: Getting Started with ODT export,  Prev: Top,  Up: Top
+File: org-odt,  Node: Project Summary,  Next: Structure of ELPA tar,  Prev: Top,  Up: Top
 
 1 Project Summary
 *****************
@@ -146,9 +150,77 @@ Downloads
           <https://kjambunathan.github.io/org-mode-ox-odt/>
 
 
-File: org-odt,  Node: Getting Started with ODT export,  Next: ODT export commands,  Prev: Project Summary,  Up: Top
+File: org-odt,  Node: Structure of ELPA tar,  Next: Getting Started with ODT export,  Prev: Project Summary,  Up: Top
 
-2 Getting Started with ODT export
+2 Structure of ELPA tar
+***********************
+
+./
+     ox-jabref.el
+     ox-odt-pkg.el
+     ox-odt.el
+
+etc/styles/
+     OrgOdtContentTemplate.xml
+     OrgOdtStyles.xml
+     README
+
+LibreOffice
+     LibreOffice/OrgModeUtilities.oxt
+
+docs/
+     index.html
+     org-odt
+     org-odt.pdf
+     style.css
+
+etc/schema/
+     od-manifest-schema.rnc
+     od-schema.rnc
+     schemas.xml
+
+etc/schema/libreoffice/
+     OpenDocument-dsig-schema-v1.3+libreoffice.rnc
+     OpenDocument-manifest-schema-v1.3+libreoffice.rnc
+     OpenDocument-schema-v1.3+libreoffice.rnc
+     OpenDocument-schema-v1.3.rnc
+
+etc/schema/odf1.0/
+     OpenDocument-manifest-schema-v1.0-os.rnc
+     OpenDocument-schema-v1.0-os.rnc
+     OpenDocument-strict-schema-v1.0-os.rnc
+
+etc/schema/odf1.1/
+     OpenDocument-manifest-schema-v1.1.rnc
+     OpenDocument-schema-v1.1.rnc
+     OpenDocument-strict-schema-v1.1.rnc
+
+etc/schema/odf1.2/
+     OpenDocument-v1.2-os-dsig-schema.rnc
+     OpenDocument-v1.2-os-manifest-schema.rnc
+     OpenDocument-v1.2-os-schema.rnc
+
+etc/schema/odf1.3/
+     OpenDocument-dsig-schema-v1.3.rnc
+     OpenDocument-manifest-schema-v1.3.rnc
+     OpenDocument-schema-v1.3.rnc
+
+samples/biblatex-examples/
+     README.org
+     biblatex-examples.bib
+
+samples/
+     masterdocument.org
+     org-mode-unicorn.png
+     pagebreak.odt
+     pagebreak.org
+     subdocument1.odt
+     subdocument1.org
+
+
+File: org-odt,  Node: Getting Started with ODT export,  Next: ODT export commands,  Prev: Structure of ELPA tar,  Up: Top
+
+3 Getting Started with ODT export
 *********************************
 
 * Menu:
@@ -160,7 +232,7 @@ File: org-odt,  Node: Getting Started with ODT export,  Next: ODT export command
 
 File: org-odt,  Node: Pre-requisites for ODT export,  Next: Installation,  Up: Getting Started with ODT export
 
-2.1 Pre-requisites for ODT export
+3.1 Pre-requisites for ODT export
 =================================
 
 The ODT backend depends on the following programs
@@ -205,7 +277,7 @@ Program               Purpose
 
 File: org-odt,  Node: Installation,  Next: Configuration,  Prev: Pre-requisites for ODT export,  Up: Getting Started with ODT export
 
-2.2 Installation
+3.2 Installation
 ================
 
 You can install the OpenDocument Text export backend using the Emacs
@@ -229,7 +301,7 @@ below
 
 File: org-odt,  Node: Configuration,  Prev: Installation,  Up: Getting Started with ODT export
 
-2.3 Configuration
+3.3 Configuration
 =================
 
 Here is a sample configuration.
@@ -248,13 +320,23 @@ Here is a sample configuration.
            "soffice" "--norestore" "--invisible" "--headless"
            "macro:///OrgMode.Utilities.Reload(%I)")))
       '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n"))
-      '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+      '(org-latex-to-mathml-convert-command
+        "java -jar %j -unicode -force -df %o %I")
       '(org-latex-to-mathml-jar-file
-        "/home/kjambunathan/src/org-mode-ox-odt/contrib/odt/mathtoweb/mathtoweb.jar"))
+        "/home/kjambunathan/Downloads/mathtoweb.jar"))
 
-     (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
-
+     (require 'ox-odt)
      (require 'ox-jabref)
+
+     ;; (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
+     (setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
+
+     (advice-add 'org-open-file :around
+                 (lambda (orig-fun &rest args)
+                   ;; Work around a weird problem with xdg-open.
+                   (let ((process-connection-type nil))
+                     (apply orig-fun args))))
+
 
    Above configuration sets up the ODT backend as follows:
 
@@ -277,7 +359,7 @@ Here is a sample configuration.
 
 File: org-odt,  Node: ODT export commands,  Next: Extending ODT export,  Prev: Getting Started with ODT export,  Up: Top
 
-3 ODT export commands
+4 ODT export commands
 *********************
 
 * Menu:
@@ -287,7 +369,7 @@ File: org-odt,  Node: ODT export commands,  Next: Extending ODT export,  Prev: G
 
 File: org-odt,  Node: Exporting to ODT,  Up: ODT export commands
 
-3.1 Exporting to ODT
+4.1 Exporting to ODT
 ====================
 
 ‘C-c C-e o o’ (‘org-odt-export-to-odt’)
@@ -307,7 +389,7 @@ File: org-odt,  Node: Exporting to ODT,  Up: ODT export commands
 
 File: org-odt,  Node: Extending ODT export,  Next: Applying custom styles,  Prev: ODT export commands,  Up: Top
 
-4 Extending ODT export
+5 Extending ODT export
 **********************
 
 The ODT exporter can interface with a variety of document converters and
@@ -331,7 +413,7 @@ document converter::.
 
 File: org-odt,  Node: Automatically exporting to other formats,  Next: Converting between document formats,  Up: Extending ODT export
 
-4.1 Automatically exporting to other formats
+5.1 Automatically exporting to other formats
 ============================================
 
 Very often, you will find yourself exporting to ODT format, only to
@@ -345,7 +427,7 @@ of immediate interest to you.
 
 File: org-odt,  Node: Converting between document formats,  Prev: Automatically exporting to other formats,  Up: Extending ODT export
 
-4.2 Converting between document formats
+5.2 Converting between document formats
 =======================================
 
 There are many document converters in the wild which support conversion
@@ -361,7 +443,7 @@ following command.
 
 File: org-odt,  Node: Applying custom styles,  Next: Links in ODT export,  Prev: Extending ODT export,  Up: Top
 
-5 Applying custom styles
+6 Applying custom styles
 ************************
 
 The ODT exporter ships with a set of OpenDocument styles (see *note
@@ -380,7 +462,7 @@ non-expert users alike, and is described here.
 
 File: org-odt,  Node: Applying custom styles - the easy way,  Next: Using third-party styles and templates,  Up: Applying custom styles
 
-5.1 Applying custom styles - the easy way
+6.1 Applying custom styles - the easy way
 =========================================
 
   1. Create a sample ‘example.org’ file with the below settings and
@@ -411,7 +493,7 @@ File: org-odt,  Node: Applying custom styles - the easy way,  Next: Using third-
 
 File: org-odt,  Node: Using third-party styles and templates,  Prev: Applying custom styles - the easy way,  Up: Applying custom styles
 
-5.2 Using third-party styles and templates
+6.2 Using third-party styles and templates
 ==========================================
 
 You can use third-party styles and templates for customizing your
@@ -424,7 +506,7 @@ directly derived from the factory settings.
 
 File: org-odt,  Node: Links in ODT export,  Next: List Tables in ODT export,  Prev: Applying custom styles,  Up: Top
 
-6 Links in ODT export
+7 Links in ODT export
 *********************
 
 ODT exporter creates native cross-references for internal links.  It
@@ -441,7 +523,7 @@ with a cross-reference and sequence number of the labeled entity.  See
 
 File: org-odt,  Node: List Tables in ODT export,  Next: Tables in ODT export,  Prev: Links in ODT export,  Up: Top
 
-7 List Tables in ODT export
+8 List Tables in ODT export
 ***************************
 
 A ‘List Table’, in simple terms, is a list that is typeset as a table.
@@ -467,77 +549,164 @@ tables.  They will be rendered as a table within the exported document.
 * Menu:
 
 * Examples::
+* A list table with rules, column size and alignments: A list table with rules column size and alignments.
+* List table with table and figures::
+* List table can contain other tables::
 
 
-File: org-odt,  Node: Examples,  Up: List Tables in ODT export
+File: org-odt,  Node: Examples,  Next: A list table with rules column size and alignments,  Up: List Tables in ODT export
 
-7.1 Examples
+8.1 Examples
 ============
 
 A simple list table
 
    Consider an example.  The following list table
 
-   •    • Row 1, Col 1
-        • Row 1, Col 2
-        • Row 1, Col 3
-        • Row 1, Col 4
-   • —–
-        • Row 2, Col 1
-        • Row 2, Col 2
-        • Row 2, Col 3
-        • Row 2, Col 4
+     #+ATTR_ODT: :rel-width 80
+     #+ATTR_ODT: :list-table t
+     -
+       - Row 1, Col 1
+       - Row 1, Col 2
+       - Row 1, Col 3
+       - Row 1, Col 4
+     - -----
+       - Row 2, Col 1
+       - Row 2, Col 2
+       - Row 2, Col 3
+       - Row 2, Col 4
 
    will be exported as though it were an Org table like the one show
 below.
 
-Row 1, Col 1   Row 1, Col 2   Row 1, Col 3   Row 1, Col 4
-Row 2, Col 1   Row 2, Col 2   Row 2, Col 3   Row 2, Col 4
+     | Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+     | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 
-   List tables can contain hrule (see example above).  They can also
-contain table specific attributes.  Except for column alignment (i.e.,
-lrc spec), all other attributes (column sizing and grouping) are honored
-on export.
+ [image src="./list-table-1.png" ]
 
-A list table with rules, column size and alignments
+
+File: org-odt,  Node: A list table with rules column size and alignments,  Next: List table with table and figures,  Prev: Examples,  Up: List Tables in ODT export
 
-   • | / | < | > | |
-   • | <l8> | <r4> | <c2> | <l1> |
-   • ——–
-        • Row 1
-        • Row 1.1
-             • Subitem under 1.1
-             • Yet another subitem under 1.1
-        • Row 1.2
-        • Row 1.3
-   • ——–
-        • Row 2
-        • Row 2.1
+8.2 A list table with rules, column size and alignments
+=======================================================
 
-          Subtext for 2.1
-        • Row 2.2
-        • Row 2.3
-   • ——–
+List tables honor all attributes save for the column alignments.
 
-   you could get, the following table, in to the exported document.
+     #+ATTR_ODT: :list-table t
+     - | /    | <    | >    |      |
+     - | <l2> | <l1> | <l1> | <l8> |
+     -
+       - Row 1, Col 1
+       - Row 1, Col 2
+       - Row 1, Col 3
+       - Row 1, Col 4
+     - ----------------
+       - Row 2, Col 1
+       - Row 2, Col 2
+       - Row 2, Col 3
+       - Row 2, Col 4
 
-Row 1   - Row 1.1                         Row 1.2   Row 1.3
---------------------------------------------------------------
-        - Subitem under 1.1
---------------------------------------------------------------
-        - Yet another subitem under 1.1
---------------------------------------------------------------
-Row 2   Row 2.1                           Row 2.2   Row 2.3
-        Subtext for 2.1
+   Above list table will be exported as if it were an Org table like the
+one below
 
-List table with table and figures
+     | /            | <            | >            |              |
+     | <l2>         | <l1>         | <l1>         | <l8>         |
+     | Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+     |--------------+--------------+--------------+--------------|
+     | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 
-   MOTIVATION:
+ [image src="./list-table-2.png" ]
+
+   Here is a real-world table that uses the same template as the one
+above
+
+     #+ATTR_ODT: :list-table t
+     - | /    | <    | >    |      |
+     - | <l2> | <l1> | <l1> | <l8> |
+     -
+       - Day
+       - Min Temp
+       - Max Temp
+       - Summary
+     - ----------------
+       - Monday
+       - 11C
+       - 22C
+       -
+         1. A clear day with lots of sunshine.
+         2. Late in the day, a strong breeze will bring down the temperatures.
+     - ----------------
+       - Tuesday
+       - 9C
+       - 19C
+       -
+         1. Cloudy with rain, across many northern regions.
+         2. Clear spells across most of Scotland and Northern Ireland, but
+            rain reaching the far northwest.
+
+ [image src="./list-table-3.png" ]
+
+
+File: org-odt,  Node: List table with table and figures,  Next: List table can contain other tables,  Prev: A list table with rules column size and alignments,  Up: List Tables in ODT export
+
+8.3 List table with table and figures
+=====================================
+
+List tables are particularly well-suited for creating captioned
+side-by-side images.  Note that with conventional ‘org’ tables, even
+though you can place images side-by-side using a table, you cannot
+caption them.
+
+     #+ATTR_ODT: :list-table t
+     -
+       -
+         #+CAPTION: A Unicorn
+         [[./org-mode-unicorn.png]]
+       -
+         #+CAPTION: Yet another Unicorn
+         [[./org-mode-unicorn.png]]
+
+ [image src="./list-table-4.png" ]
+
+
+File: org-odt,  Node: List table can contain other tables,  Prev: List table with table and figures,  Up: List Tables in ODT export
+
+8.4 List table can contain other tables
+=======================================
+
+     #+ATTR_ODT: :list-table t
+     -
+       - Comments
+       - A Dog & A Cat
+     - --------
+       - This table contains
+         - A Dog
+         - A cat
+
+         | Animal | What it does |
+         |--------+--------------|
+         | Dog    | Barks        |
+         | Cat    | News         |
+
+       -
+         #+ATTR_ODT: :list-table t
+         -
+           -
+             #+CAPTION: A Dog
+             #+ATTR_ODT: :scale .8
+             [[./org-mode-unicorn.png]]
+           -
+             #+CAPTION: A Cat
+             #+ATTR_ODT: :scale .8
+             [[./org-mode-unicorn.png]]
+     - --------
+
+ [image src="./list-table-6.png" ]
 
 
 File: org-odt,  Node: Tables in ODT export,  Next: Images in ODT export,  Prev: List Tables in ODT export,  Up: Top
 
-8 Tables in ODT export
+9 Tables in ODT export
 **********************
 
 Export of native Org mode tables (See *note (org)Tables::) and simple
@@ -587,8 +756,8 @@ create custom table styles and associate them with a table using the
 
 File: org-odt,  Node: Images in ODT export,  Next: Math formatting in ODT export,  Prev: Tables in ODT export,  Up: Top
 
-9 Images in ODT export
-**********************
+10 Images in ODT export
+***********************
 
 * Menu:
 
@@ -600,8 +769,8 @@ File: org-odt,  Node: Images in ODT export,  Next: Math formatting in ODT export
 
 File: org-odt,  Node: Embedding images,  Next: Embedding clickable images,  Up: Images in ODT export
 
-9.1 Embedding images
-====================
+10.1 Embedding images
+=====================
 
 You can embed images within the exported document by providing a link to
 the desired image file with no link description.  For example, to embed
@@ -614,8 +783,8 @@ the desired image file with no link description.  For example, to embed
 
 File: org-odt,  Node: Embedding clickable images,  Next: Sizing and scaling of embedded images,  Prev: Embedding images,  Up: Images in ODT export
 
-9.2 Embedding clickable images
-==============================
+10.2 Embedding clickable images
+===============================
 
 You can create clickable images by providing a link whose description is
 a link to an image file.  For example, to embed a image
@@ -627,8 +796,8 @@ website, do the following
 
 File: org-odt,  Node: Sizing and scaling of embedded images,  Next: Anchoring of images,  Prev: Embedding clickable images,  Up: Images in ODT export
 
-9.3 Sizing and scaling of embedded images
-=========================================
+10.3 Sizing and scaling of embedded images
+==========================================
 
 You can control the size and scale of the embedded images using the
 ‘#+ATTR_ODT’ attribute.
@@ -680,8 +849,8 @@ is mandatory.
 
 File: org-odt,  Node: Anchoring of images,  Prev: Sizing and scaling of embedded images,  Up: Images in ODT export
 
-9.4 Anchoring of images
-=======================
+10.4 Anchoring of images
+========================
 
 You can control the manner in which an image is anchored by setting the
 ‘:anchor’ property of it’s ‘#+ATTR_ODT’ line.  You can specify one of
@@ -696,7 +865,7 @@ the the following three values for the ‘:anchor’ property - ‘"as-char"’,
 
 File: org-odt,  Node: Math formatting in ODT export,  Next: Labels and captions in ODT export,  Prev: Images in ODT export,  Up: Top
 
-10 Math formatting in ODT export
+11 Math formatting in ODT export
 ********************************
 
 The ODT exporter has special support for handling math.
@@ -709,7 +878,7 @@ The ODT exporter has special support for handling math.
 
 File: org-odt,  Node: Working with LaTeX math snippets,  Next: Working with MathML or OpenDocument formula files,  Up: Math formatting in ODT export
 
-10.1 Working with LaTeX math snippets
+11.1 Working with LaTeX math snippets
 =====================================
 
 LaTeX math snippets (See *note (org)LaTeX fragments::) can be embedded
@@ -769,7 +938,7 @@ in the ODT document in one of the following ways:
 
 File: org-odt,  Node: Working with MathML or OpenDocument formula files,  Prev: Working with LaTeX math snippets,  Up: Math formatting in ODT export
 
-10.2 Working with MathML or OpenDocument formula files
+11.2 Working with MathML or OpenDocument formula files
 ======================================================
 
 For various reasons, you may find embedding LaTeX math snippets in an
@@ -786,7 +955,7 @@ formula (‘.odf’) file as shown below:
 
 File: org-odt,  Node: Labels and captions in ODT export,  Next: Literal examples in ODT export,  Prev: Math formatting in ODT export,  Up: Top
 
-11 Labels and captions in ODT export
+12 Labels and captions in ODT export
 ************************************
 
 You can label and caption various category of objects - an inline image,
@@ -824,7 +993,7 @@ document.
 
 File: org-odt,  Node: Literal examples in ODT export,  Next: Bibliography and Citations in ODT export,  Prev: Labels and captions in ODT export,  Up: Top
 
-12 Literal examples in ODT export
+13 Literal examples in ODT export
 *********************************
 
 Export of literal examples (See *note (org)Literal examples::) with full
@@ -849,7 +1018,7 @@ levels for fontification to be turned on.
 
 File: org-odt,  Node: Bibliography and Citations in ODT export,  Next: Advanced topics in ODT export,  Prev: Literal examples in ODT export,  Up: Top
 
-13 Bibliography and Citations in ODT export
+14 Bibliography and Citations in ODT export
 *******************************************
 
 The ODT export back-end uses JabRef to produce Bibliography and
@@ -952,7 +1121,7 @@ How to cite?
 
 File: org-odt,  Node: Configure JabRef with ChicagoODF custom export,  Next: Example,  Up: Bibliography and Citations in ODT export
 
-13.1 Configure JabRef with ‘Chicago.ODF’ custom export
+14.1 Configure JabRef with ‘Chicago.ODF’ custom export
 ======================================================
 
 Set up JabRef with ‘Chicago.ODF’ custom export
@@ -976,7 +1145,7 @@ Chicago.ODF.note            <whatever>/Chicago.ODF.note.layout            xml
 Chicago.ODF.reference       <whatever>/Chicago.ODF.reference.layout       xml
 Chicago.ODF.text            <whatever>/Chicago.ODF.text.layout            xml
 
-Table 13.1: How to setup JabRef-5.0’s ‘Manage custom exports’
+Table 14.1: How to setup JabRef-5.0’s ‘Manage custom exports’
 
  [image src="./JabRefCustomizeExportFormats.png" ]
 
@@ -1028,7 +1197,7 @@ of Jabref’s Plugin for export to Chicago Manual of Style in ‘RTF’ format
 
 File: org-odt,  Node: Example,  Next: Sample Outputs,  Prev: Configure JabRef with ChicagoODF custom export,  Up: Bibliography and Citations in ODT export
 
-13.2 Example
+14.2 Example
 ============
 
      @book{goossens94,
@@ -1086,7 +1255,7 @@ File: org-odt,  Node: Example,  Next: Sample Outputs,  Prev: Configure JabRef wi
 
 File: org-odt,  Node: Sample Outputs,  Prev: Example,  Up: Bibliography and Citations in ODT export
 
-13.3 Sample Outputs
+14.3 Sample Outputs
 ===================
 
 Sample output with ‘#+ODT_JABREF_CITATION_STYLE: "Numeric"’
@@ -1104,7 +1273,7 @@ Sample output with ‘#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"’
 
 File: org-odt,  Node: Advanced topics in ODT export,  Next: Main Index,  Prev: Bibliography and Citations in ODT export,  Up: Top
 
-14 Advanced topics in ODT export
+15 Advanced topics in ODT export
 ********************************
 
 If you rely heavily on ODT export, you may want to exploit the full set
@@ -1122,7 +1291,7 @@ that would be of interest to power users.
 
 File: org-odt,  Node: Configuring a document converter,  Next: Working with OpenDocument style files,  Up: Advanced topics in ODT export
 
-14.1 Configuring a document converter
+15.1 Configuring a document converter
 =====================================
 
 The ODT exporter can work with popular converters with little or no
@@ -1155,7 +1324,7 @@ would like to tweak the default converter settings, proceed as below.
 
 File: org-odt,  Node: Working with OpenDocument style files,  Next: Creating one-off styles,  Prev: Configuring a document converter,  Up: Advanced topics in ODT export
 
-14.2 Working with OpenDocument style files
+15.2 Working with OpenDocument style files
 ==========================================
 
 This section explores the internals of the ODT exporter and the means by
@@ -1171,7 +1340,7 @@ used by the exporter.
 
 File: org-odt,  Node: Factory styles,  Next: Overriding factory styles,  Up: Working with OpenDocument style files
 
-14.2.1 Factory styles
+15.2.1 Factory styles
 ---------------------
 
 The ODT exporter relies on two files for generating its output.  These
@@ -1205,7 +1374,7 @@ by the variable ‘org-odt-styles-dir’.  The two files are:
 
 File: org-odt,  Node: Overriding factory styles,  Prev: Factory styles,  Up: Working with OpenDocument style files
 
-14.2.2 Overriding factory styles
+15.2.2 Overriding factory styles
 --------------------------------
 
 The following two variables control the location from which the ODT
@@ -1247,7 +1416,7 @@ exporter.
 
 File: org-odt,  Node: Creating one-off styles,  Next: Customizing tables in ODT export,  Prev: Working with OpenDocument style files,  Up: Advanced topics in ODT export
 
-14.3 Creating one-off styles
+15.3 Creating one-off styles
 ============================
 
 There are times when you would want one-off formatting in the exported
@@ -1305,7 +1474,7 @@ examples.
 
 File: org-odt,  Node: Customizing tables in ODT export,  Next: Validating OpenDocument XML,  Prev: Creating one-off styles,  Up: Advanced topics in ODT export
 
-14.4 Customizing tables in ODT export
+15.4 Customizing tables in ODT export
 =====================================
 
 You can override the default formatting of the table by specifying a
@@ -1328,7 +1497,7 @@ the OpenDocument-v1.2 specification.(1)
 
 File: org-odt,  Node: Custom table styles - an illustration,  Next: Custom table styles - the nitty-gritty,  Up: Customizing tables in ODT export
 
-14.4.1 Custom table styles - an illustration
+15.4.1 Custom table styles - an illustration
 --------------------------------------------
 
 To have a quick preview of this feature, install the below setting and
@@ -1360,7 +1529,7 @@ yourselves.
 
 File: org-odt,  Node: Custom table styles - the nitty-gritty,  Prev: Custom table styles - an illustration,  Up: Customizing tables in ODT export
 
-14.4.2 Custom table styles - the nitty-gritty
+15.4.2 Custom table styles - the nitty-gritty
 ---------------------------------------------
 
 To use this feature proceed as follows:
@@ -1452,7 +1621,7 @@ of the ‘<table:table>’ element in the OpenDocument-v1.2 specification
 
 File: org-odt,  Node: Validating OpenDocument XML,  Prev: Customizing tables in ODT export,  Up: Advanced topics in ODT export
 
-14.5 Validating OpenDocument XML
+15.5 Validating OpenDocument XML
 ================================
 
 Occasionally, you will discover that the document created by the ODT
@@ -1477,7 +1646,7 @@ take care of updating the ‘rng-schema-locating-files’ for you.
 
 File: org-odt,  Node: Main Index,  Next: Key Index,  Prev: Advanced topics in ODT export,  Up: Top
 
-15 Main Index
+16 Main Index
 *************
 
  [index ]
@@ -1505,7 +1674,7 @@ File: org-odt,  Node: Main Index,  Next: Key Index,  Prev: Advanced topics in OD
 
 File: org-odt,  Node: Key Index,  Next: Command and Function Index,  Prev: Main Index,  Up: Top
 
-16 Key Index
+17 Key Index
 ************
 
  [index ]
@@ -1517,7 +1686,7 @@ File: org-odt,  Node: Key Index,  Next: Command and Function Index,  Prev: Main 
 
 File: org-odt,  Node: Command and Function Index,  Next: Variable Index,  Prev: Key Index,  Up: Top
 
-17 Command and Function Index
+18 Command and Function Index
 *****************************
 
  [index ]
@@ -1534,7 +1703,7 @@ File: org-odt,  Node: Command and Function Index,  Next: Variable Index,  Prev: 
 
 File: org-odt,  Node: Variable Index,  Next: What is New,  Prev: Command and Function Index,  Up: Top
 
-18 Variable Index
+19 Variable Index
 *****************
 
  [index ]
@@ -1570,83 +1739,90 @@ File: org-odt,  Node: Variable Index,  Next: What is New,  Prev: Command and Fun
 
 File: org-odt,  Node: What is New,  Prev: Variable Index,  Up: Top
 
-19 What is New
+20 What is New
 **************
 
-   • *note Bibliography and Citations in ODT export::
+*note Bibliography and Citations in ODT export::
+     Use JabRef to produce ODT documents with Citation and Bibliography
+*note List Tables in ODT export::
+     Create a table with multi-paragraph content using a ‘List table’
 
 
 
 Tag Table:
 Node: Top70
-Node: Project Summary3729
-Node: Getting Started with ODT export4414
-Node: Pre-requisites for ODT export4718
-Ref: Pre-requisites for ODT export-Footnote-15750
-Ref: Pre-requisites for ODT export-Footnote-25794
-Ref: Pre-requisites for ODT export-Footnote-35838
-Ref: Pre-requisites for ODT export-Footnote-45884
-Ref: Pre-requisites for ODT export-Footnote-55931
-Ref: Pre-requisites for ODT export-Footnote-65978
-Ref: Pre-requisites for ODT export-Footnote-76025
-Ref: Pre-requisites for ODT export-Footnote-86071
-Ref: Pre-requisites for ODT export-Footnote-96119
-Ref: Pre-requisites for ODT export-Footnote-106190
-Node: Installation6232
-Node: Configuration7077
-Node: ODT export commands9123
-Node: Exporting to ODT9323
-Node: Extending ODT export9949
-Node: Automatically exporting to other formats10945
-Node: Converting between document formats11618
-Node: Applying custom styles12293
-Node: Applying custom styles - the easy way13017
-Node: Using third-party styles and templates14172
-Node: Links in ODT export14793
-Node: List Tables in ODT export15426
-Node: Examples16366
-Node: Tables in ODT export18119
-Ref: Tables in ODT export-Footnote-120285
-Node: Images in ODT export20360
-Node: Embedding images20658
-Node: Embedding clickable images21036
-Node: Sizing and scaling of embedded images21528
-Ref: Sizing and scaling of embedded images-Footnote-123258
-Node: Anchoring of images23487
-Node: Math formatting in ODT export24045
-Node: Working with LaTeX math snippets24480
-Ref: Working with LaTeX math snippets-Footnote-126489
-Node: Working with MathML or OpenDocument formula files26564
-Node: Labels and captions in ODT export27140
-Node: Literal examples in ODT export28577
-Ref: Literal examples in ODT export-Footnote-129495
-Node: Bibliography and Citations in ODT export29610
-Ref: Bibliography and Citations in ODT export-Footnote-133201
-Node: Configure JabRef with ChicagoODF custom export33288
-Ref: orgdbb777633891
-Ref: Configure JabRef with ChicagoODF custom export-Footnote-135862
-Ref: Configure JabRef with ChicagoODF custom export-Footnote-235910
-Node: Example36234
-Node: Sample Outputs38158
-Node: Advanced topics in ODT export38631
-Node: Configuring a document converter39385
-Node: Working with OpenDocument style files40773
-Node: Factory styles41322
-Node: Overriding factory styles42715
-Node: Creating one-off styles44195
-Node: Customizing tables in ODT export46413
-Ref: Customizing tables in ODT export-Footnote-147099
-Node: Custom table styles - an illustration47203
-Node: Custom table styles - the nitty-gritty48604
-Ref: Custom table styles - the nitty-gritty-Footnote-152264
-Ref: Custom table styles - the nitty-gritty-Footnote-252356
-Node: Validating OpenDocument XML52703
-Ref: Validating OpenDocument XML-Footnote-153745
-Node: Main Index53805
-Node: Key Index55326
-Node: Command and Function Index55620
-Node: Variable Index56326
-Node: What is New58430
+Node: Project Summary4033
+Node: Structure of ELPA tar4708
+Node: Getting Started with ODT export6198
+Node: Pre-requisites for ODT export6508
+Ref: Pre-requisites for ODT export-Footnote-17540
+Ref: Pre-requisites for ODT export-Footnote-27584
+Ref: Pre-requisites for ODT export-Footnote-37628
+Ref: Pre-requisites for ODT export-Footnote-47674
+Ref: Pre-requisites for ODT export-Footnote-57721
+Ref: Pre-requisites for ODT export-Footnote-67768
+Ref: Pre-requisites for ODT export-Footnote-77815
+Ref: Pre-requisites for ODT export-Footnote-87861
+Ref: Pre-requisites for ODT export-Footnote-97909
+Ref: Pre-requisites for ODT export-Footnote-107980
+Node: Installation8022
+Node: Configuration8867
+Node: ODT export commands11232
+Node: Exporting to ODT11432
+Node: Extending ODT export12058
+Node: Automatically exporting to other formats13054
+Node: Converting between document formats13727
+Node: Applying custom styles14402
+Node: Applying custom styles - the easy way15126
+Node: Using third-party styles and templates16281
+Node: Links in ODT export16902
+Node: List Tables in ODT export17535
+Node: Examples18660
+Node: A list table with rules column size and alignments19393
+Node: List table with table and figures21259
+Node: List table can contain other tables21986
+Node: Tables in ODT export22848
+Ref: Tables in ODT export-Footnote-125014
+Node: Images in ODT export25089
+Node: Embedding images25389
+Node: Embedding clickable images25769
+Node: Sizing and scaling of embedded images26263
+Ref: Sizing and scaling of embedded images-Footnote-127995
+Node: Anchoring of images28224
+Node: Math formatting in ODT export28784
+Node: Working with LaTeX math snippets29219
+Ref: Working with LaTeX math snippets-Footnote-131228
+Node: Working with MathML or OpenDocument formula files31303
+Node: Labels and captions in ODT export31879
+Node: Literal examples in ODT export33316
+Ref: Literal examples in ODT export-Footnote-134234
+Node: Bibliography and Citations in ODT export34349
+Ref: Bibliography and Citations in ODT export-Footnote-137940
+Node: Configure JabRef with ChicagoODF custom export38027
+Ref: org979540d38630
+Ref: Configure JabRef with ChicagoODF custom export-Footnote-140601
+Ref: Configure JabRef with ChicagoODF custom export-Footnote-240649
+Node: Example40973
+Node: Sample Outputs42897
+Node: Advanced topics in ODT export43370
+Node: Configuring a document converter44124
+Node: Working with OpenDocument style files45512
+Node: Factory styles46061
+Node: Overriding factory styles47454
+Node: Creating one-off styles48934
+Node: Customizing tables in ODT export51152
+Ref: Customizing tables in ODT export-Footnote-151838
+Node: Custom table styles - an illustration51942
+Node: Custom table styles - the nitty-gritty53343
+Ref: Custom table styles - the nitty-gritty-Footnote-157003
+Ref: Custom table styles - the nitty-gritty-Footnote-257095
+Node: Validating OpenDocument XML57442
+Ref: Validating OpenDocument XML-Footnote-158484
+Node: Main Index58544
+Node: Key Index60065
+Node: Command and Function Index60359
+Node: Variable Index61065
+Node: What is New63169
 
 End Tag Table
 

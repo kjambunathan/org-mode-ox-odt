@@ -45,7 +45,7 @@ ul.no-bullet {list-style: none}
 Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT export</a>, Previous: <a href="Links-in-ODT-export.html" accesskey="p" rel="prev">Links in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
-<span id="List-Tables-in-ODT-export-1"></span><h2 class="chapter">7 List Tables in ODT export</h2>
+<span id="List-Tables-in-ODT-export-1"></span><h2 class="chapter">8 List Tables in ODT export</h2>
 
 <p>A &lsquo;<samp>List Table</samp>&rsquo;, in simple terms, is a list that is typeset as a table.
 Use it to create tables with multi-paragraph content.
@@ -74,7 +74,7 @@ document.
 </p>
 
 <hr>
-<span id="Examples"></span><span id="Examples-1"></span><h3 class="section">7.1 Examples</h3>
+<span id="Examples"></span><span id="Examples-1"></span><h3 class="section">8.1 Examples</h3>
 
 <dl compact="compact">
 <dt>A simple list table</dt>
@@ -82,87 +82,157 @@ document.
 
 <p>Consider an example.  The following list table
 </p>
-<ul>
-<li> <ul>
-<li> Row 1, Col 1 
-</li><li> Row 1, Col 2 
-</li><li> Row 1, Col 3 
-</li><li> Row 1, Col 4 
-</li></ul>
-</li><li> &mdash;&ndash;
-<ul>
-<li> Row 2, Col 1 
-</li><li> Row 2, Col 2 
-</li><li> Row 2, Col 3 
-</li><li> Row 2, Col 4 
-</li></ul>
-</li></ul>
+<div class="example">
+<pre class="example">#+ATTR_ODT: :rel-width 80
+#+ATTR_ODT: :list-table t
+-
+  - Row 1, Col 1 
+  - Row 1, Col 2 
+  - Row 1, Col 3 
+  - Row 1, Col 4 
+- -----
+  - Row 2, Col 1 
+  - Row 2, Col 2 
+  - Row 2, Col 3 
+  - Row 2, Col 4 
+</pre></div>
+
 
 <p>will be exported as though it were an Org table like the one show
 below.
 </p>
-<table>
-<tr><td>Row 1, Col 1</td><td>Row 1, Col 2</td><td>Row 1, Col 3</td><td>Row 1, Col 4</td></tr>
-<tr><td>Row 2, Col 1</td><td>Row 2, Col 2</td><td>Row 2, Col 3</td><td>Row 2, Col 4</td></tr>
-</table>
 
-<p>List tables can contain hrule (see example above).  They can also
-contain table specific attributes.  Except for column alignment
-(i.e., lrc spec), all other attributes (column sizing and grouping)
-are honored on export.
+<div class="example">
+<pre class="example">| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+</pre></div>
+
+<img src="./list-table-1.png" alt="./list-table-1">
+
+<hr>
+<span id="A-list-table-with-rules-column-size-and-alignments"></span><span id="A-list-table-with-rules_002c-column-size-and-alignments"></span><h3 class="section">8.2 A list table with rules, column size and alignments</h3>
+
+<p>List tables honor all attributes save for the column alignments.
 </p>
-<dl compact="compact">
-<dt>A list table with rules, column size and alignments</dt>
-</dl>
+<div class="example">
+<pre class="example">#+ATTR_ODT: :list-table t
+- | /    | &lt;    | &gt;    |      |
+- | &lt;l2&gt; | &lt;l1&gt; | &lt;l1&gt; | &lt;l8&gt; |
+- 
+  - Row 1, Col 1
+  - Row 1, Col 2
+  - Row 1, Col 3
+  - Row 1, Col 4
+- ----------------
+  - Row 2, Col 1
+  - Row 2, Col 2
+  - Row 2, Col 3
+  - Row 2, Col 4
+</pre></div>
 
-<ul>
-<li> | /    | &lt;    |    &gt; |       |
-</li><li> | &lt;l8&gt; | &lt;r4&gt; | &lt;c2&gt; | &lt;l1&gt;  |
-</li><li> &mdash;&mdash;&ndash;
-<ul>
-<li> Row 1
-</li><li> Row 1.1
-<ul>
-<li> Subitem under 1.1
-</li><li> Yet another subitem under 1.1
-</li></ul>
-</li><li> Row 1.2
-</li><li> Row 1.3
-</li></ul>
-</li><li> &mdash;&mdash;&ndash;
-<ul>
-<li> Row 2
-</li><li> Row 2.1
-
-<p>Subtext for 2.1
-</p></li><li> Row 2.2
-</li><li> Row 2.3
-</li></ul>
-</li><li> &mdash;&mdash;&ndash;
-</li></ul>
-
-<p>you could get, the following table, in to the exported document.
+<p>Above list table will be exported as if it were an Org table like the
+one below
 </p>
-<table>
-<thead><tr><th>Row 1</th><th>- Row 1.1</th><th>Row 1.2</th><th>Row 1.3</th></tr></thead>
-<thead><tr><th></th><th>- Subitem under 1.1</th><th></th><th></th></tr></thead>
-<thead><tr><th></th><th>- Yet another subitem under 1.1</th><th></th><th></th></tr></thead>
-<tr><td>Row 2</td><td>Row 2.1</td><td>Row 2.2</td><td>Row 2.3</td></tr>
-<tr><td></td><td></td><td></td><td></td></tr>
-<tr><td></td><td>Subtext for 2.1</td><td></td><td></td></tr>
-</table>
+<div class="example">
+<pre class="example">| /            | &lt;            | &gt;            |              |
+| &lt;l2&gt;         | &lt;l1&gt;         | &lt;l1&gt;         | &lt;l8&gt;         |
+| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+|--------------+--------------+--------------+--------------|
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+</pre></div>
 
+<img src="./list-table-2.png" alt="./list-table-2">
 
-<dl compact="compact">
-<dt>List table with table and figures</dt>
-</dl>
-
-<p>MOTIVATION:
+<p>Here is a real-world table that uses the same template as the one
+above
 </p>
+<div class="example">
+<pre class="example">#+ATTR_ODT: :list-table t
+- | /    | &lt;    | &gt;    |      |
+- | &lt;l2&gt; | &lt;l1&gt; | &lt;l1&gt; | &lt;l8&gt; |
+- 
+  - Day
+  - Min Temp
+  - Max Temp
+  - Summary
+- ----------------
+  - Monday
+  - 11C
+  - 22C
+  - 
+    1. A clear day with lots of sunshine.
+    2. Late in the day, a strong breeze will bring down the temperatures.
+- ----------------
+  - Tuesday
+  - 9C
+  - 19C
+  - 
+    1. Cloudy with rain, across many northern regions.
+    2. Clear spells across most of Scotland and Northern Ireland, but
+       rain reaching the far northwest.
+</pre></div>
+
+<img src="./list-table-3.png" alt="./list-table-3">
+
+<hr>
+<span id="List-table-with-table-and-figures"></span><span id="List-table-with-table-and-figures-1"></span><h3 class="section">8.3 List table with table and figures</h3>
+
+<p>List tables are particularly well-suited for creating captioned
+side-by-side images.  Note that with conventional &lsquo;<samp>org</samp>&rsquo; tables, even
+though you can place images side-by-side using a table, you cannot
+caption them.
+</p>
+<div class="example">
+<pre class="example">#+ATTR_ODT: :list-table t
+- 
+  - 
+    #+CAPTION: A Unicorn
+    [[./org-mode-unicorn.png]]
+  - 
+    #+CAPTION: Yet another Unicorn
+    [[./org-mode-unicorn.png]]
+</pre></div>
+
+<img src="./list-table-4.png" alt="./list-table-4">
+
+<hr>
+<span id="List-table-can-contain-other-tables"></span><span id="List-table-can-contain-other-tables-1"></span><h3 class="section">8.4 List table can contain other tables</h3>
+
+<div class="example">
+<pre class="example">#+ATTR_ODT: :list-table t
+- 
+  - Comments
+  - A Dog &amp; A Cat
+- --------
+  - This table contains
+    - A Dog
+    - A cat
+
+    | Animal | What it does |
+    |--------+--------------|
+    | Dog    | Barks        |
+    | Cat    | News         |
+
+  - 
+    #+ATTR_ODT: :list-table t
+    - 
+      - 
+        #+CAPTION: A Dog
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
+      - 
+        #+CAPTION: A Cat
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
+- --------
+</pre></div>
+
+<img src="./list-table-6.png" alt="./list-table-6">
+
 <hr>
 <div class="header">
 <p>
-Up: <a href="#List-Tables-in-ODT-export" accesskey="u" rel="up">List Tables in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Previous: <a href="#List-table-with-table-and-figures" accesskey="p" rel="prev">List table with table and figures</a>, Up: <a href="#List-Tables-in-ODT-export" accesskey="u" rel="up">List Tables in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 
