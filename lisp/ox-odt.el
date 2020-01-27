@@ -1827,7 +1827,13 @@ holding export options."
 		 file (file-name-directory (plist-get info :input-file)))))))
 	 (styles-file-type (file-name-extension styles-file))
 	 (extra-images (plist-get info :odt-extra-images)))
+
+    ;; Complain if the styles file doesn't exist.
+    (unless (file-readable-p styles-file)
+      (user-error "Cannot read styles file: %s" styles-file))
+
     (message "ox-odt: Styles file is %s" styles-file)
+    
     ;; Check the type of styles file.
     (pcase styles-file-type
       ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
