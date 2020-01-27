@@ -1,0 +1,30 @@
+#+CAPTION: A =org= table and a =list table= within a table
+#+ATTR_ODT: :list-table t
+-
+  - 
+
+    #+CAPTION: Org snippet for a =list-table=
+    #+begin_example
+    #+ATTR_ODT: :list-table t
+    - 
+      - Row 1, Col 1
+      - Row 1, Col 2
+    - 
+      - Row 2, Col 1
+      - Row 2, Col 2
+    #+end_example
+  - 
+
+    #+CAPTION: The equivalent Org table
+    | Row 1, Col 1 | Row 1, Col 2 |
+    | Row 2, Col 1 | Row 2, Col 2 |
+
+  - 
+    #+CAPTION: How the list table is rendered in ODT
+    #+ATTR_ODT: :list-table t
+    - 
+      - Row 1, Col 1
+      - Row 1, Col 2
+    - 
+      - Row 2, Col 1
+      - Row 2, Col 2
