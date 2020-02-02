@@ -1,0 +1,53 @@
+#+ODT_STYLES_FILE: a5landscape.ott
+#+ODT_PREFERRED_OUTPUT_FORMAT: png
+
+#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 		   style:page-usage="mirrored">
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:page-layout-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width="21.001cm" fo:page-height="11.10cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format="1"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation="landscape"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top="2cm" fo:margin-bottom="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left="2cm" fo:margin-right="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode="lr-tb"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color="#c0c0c0"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines="20"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height="0.706cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height="0.353cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode="none"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height="0cm">
+#+ODT_EXTRA_AUTOMATIC_STYLES:     <style:footnote-sep
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:width="0.018cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-before-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-after-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:line-style="solid"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:adjustment="left" style:rel-width="25%"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:color="#000000"/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   </style:page-layout-properties>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-style/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footer-style/>
+#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+#+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps"
+#+ODT_AUTOMATIC_STYLES: 	     style:family="paragraph"
+#+ODT_AUTOMATIC_STYLES: 	     style:parent-style-name="Text_20_body">
+#+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+#+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+#+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+#+ODT_AUTOMATIC_STYLES: </style:style>
+
+*** A regular paragraph
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+*** Same paragraph, but with =Drop Caps=
+
+#+ATTR_ODT: :style "DropCaps"
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.

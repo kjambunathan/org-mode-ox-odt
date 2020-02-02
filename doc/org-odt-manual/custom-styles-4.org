@@ -1,0 +1,120 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+options: author:nil broken-links:nil c:nil creator:nil
+#+options: d:(not "LOGBOOK") date:nil e:t email:t f:t inline:t num:t
+#+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+options: timestamp:t title:t toc:nil todo:t |:t
+#+title: State of the Unicorn 2020
+
+#+ODT_PREFERRED_OUTPUT_FORMAT: png
+
+#+ODT_EXTRA_IMAGES: Pictures/org-mode-unicorn.png
+
+#+ODT_EXTRA_STYLES: <style:style style:name="Header"
+#+ODT_EXTRA_STYLES: 	     style:family="paragraph">
+#+ODT_EXTRA_STYLES:   <loext:graphic-properties draw:fill="none"/>
+#+ODT_EXTRA_STYLES:   <style:paragraph-properties
+#+ODT_EXTRA_STYLES:       fo:margin-left="2.499cm"
+#+ODT_EXTRA_STYLES:       fo:margin-right="2.499cm"
+#+ODT_EXTRA_STYLES:       fo:margin-top="0cm"
+#+ODT_EXTRA_STYLES:       fo:margin-bottom="0.499cm"
+#+ODT_EXTRA_STYLES:       fo:text-align="center"
+#+ODT_EXTRA_STYLES:       style:justify-single-word="false"
+#+ODT_EXTRA_STYLES:       fo:text-indent="0cm"
+#+ODT_EXTRA_STYLES:       style:auto-text-indent="false"
+#+ODT_EXTRA_STYLES:       fo:background-color="transparent"
+#+ODT_EXTRA_STYLES:       fo:padding-left="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-right="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-top="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-bottom="0.199cm"
+#+ODT_EXTRA_STYLES:       fo:border-left="none"
+#+ODT_EXTRA_STYLES:       fo:border-right="none"
+#+ODT_EXTRA_STYLES:       fo:border-top="none"
+#+ODT_EXTRA_STYLES:       fo:border-bottom="0.06pt solid #000000"/>
+#+ODT_EXTRA_STYLES:   <style:text-properties
+#+ODT_EXTRA_STYLES:       fo:font-size="18pt" fo:font-style="italic"
+#+ODT_EXTRA_STYLES:       style:font-size-asian="18pt"
+#+ODT_EXTRA_STYLES:       style:font-style-asian="italic"
+#+ODT_EXTRA_STYLES:       style:font-size-complex="18pt"
+#+ODT_EXTRA_STYLES:       style:font-style-complex="italic"/>
+#+ODT_EXTRA_STYLES: </style:style>
+
+#+ODT_EXTRA_STYLES:  <style:style style:name="Logo" style:family="graphic"
+#+ODT_EXTRA_STYLES:  	     style:parent-style-name="Graphics">
+#+ODT_EXTRA_STYLES:    <style:graphic-properties
+#+ODT_EXTRA_STYLES:        svg:width="2.311cm" fo:min-height="2.499cm"
+#+ODT_EXTRA_STYLES:        svg:x="0cm" svg:y="-0.9cm" fo:margin-left="0cm"
+#+ODT_EXTRA_STYLES:        fo:margin-right="0cm" fo:margin-top="0cm"
+#+ODT_EXTRA_STYLES:        fo:margin-bottom="0cm" style:wrap="none"
+#+ODT_EXTRA_STYLES:        style:vertical-pos="middle"
+#+ODT_EXTRA_STYLES:        style:vertical-rel="paragraph-content"
+#+ODT_EXTRA_STYLES:        style:horizontal-pos="left"
+#+ODT_EXTRA_STYLES:        style:horizontal-rel="page-content"
+#+ODT_EXTRA_STYLES:        fo:background-color="transparent"
+#+ODT_EXTRA_STYLES:        draw:fill="none"/>
+#+ODT_EXTRA_STYLES:  </style:style>
+
+#+ODT_MASTER_STYLES: <style:master-page
+#+ODT_MASTER_STYLES:     style:name="Standard"
+#+ODT_MASTER_STYLES:     style:page-layout-name="Mpm1">
+#+ODT_MASTER_STYLES:   <style:header>
+#+ODT_MASTER_STYLES:     <text:p text:style-name="Header">
+#+ODT_MASTER_STYLES:       <draw:frame
+#+ODT_MASTER_STYLES: 	  draw:style-name="Logo"
+#+ODT_MASTER_STYLES: 	  draw:name="Image1"
+#+ODT_MASTER_STYLES: 	  text:anchor-type="paragraph"
+#+ODT_MASTER_STYLES: 	  svg:width="2.311cm"
+#+ODT_MASTER_STYLES: 	  svg:height="2.499cm"
+#+ODT_MASTER_STYLES: 	  draw:z-index="0">
+#+ODT_MASTER_STYLES: 	<draw:image
+#+ODT_MASTER_STYLES: 	    xlink:href="Pictures/org-mode-unicorn.png"
+#+ODT_MASTER_STYLES: 	    xlink:type="simple"
+#+ODT_MASTER_STYLES: 	    xlink:show="embed"
+#+ODT_MASTER_STYLES: 	    xlink:actuate="onLoad"
+#+ODT_MASTER_STYLES: 	    loext:mime-type="image/png"/>
+#+ODT_MASTER_STYLES:     </draw:frame>Friends of the Unicorn</text:p>
+#+ODT_MASTER_STYLES:   </style:header>
+#+ODT_MASTER_STYLES: </style:master-page>
+
+#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 		   style:page-usage="mirrored">
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:page-layout-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width="21.001cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-height="11.10cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format="1"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation="landscape"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-bottom="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-right="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode="lr-tb"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color="#c0c0c0"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines="20"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height="0.706cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height="0.353cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode="none"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height="0cm">
+#+ODT_EXTRA_AUTOMATIC_STYLES:     <style:footnote-sep
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:width="0.018cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-before-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-after-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:line-style="solid"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:adjustment="left"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:rel-width="25%"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	style:color="#000000"/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   </style:page-layout-properties>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-style>
+#+ODT_EXTRA_AUTOMATIC_STYLES:     <style:header-footer-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:min-height="0.499cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-left="0cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-right="0cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-bottom="0cm"/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   </style:header-style>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footer-style/>
+#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
