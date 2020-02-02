@@ -1,6 +1,6 @@
 ;;; org-agenda.el --- Dynamic task and appointment lists for Org
 
-;; Copyright (C) 2004-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -2199,7 +2199,6 @@ The following commands are available:
   (interactive)
   (let ((agenda-local-vars-to-keep
 	 '(text-scale-mode-amount
-	   text-scale-mode
 	   text-scale-mode-lighter
 	   face-remapping-alist))
 	(save (buffer-local-variables)))
@@ -7926,7 +7925,7 @@ tags in the FILTER if any of the tags in FILTER are grouptags."
 		     filter)))
       (dolist (x filter)
 	(push (org-agenda-filter-effort-form x) f))))
-    (cons 'and (nreverse f))))
+    (cons (if (eq type 'category) 'or 'and) (nreverse f))))
 
 (defun org-agenda-filter-make-matcher-tag-exp (tags op)
   "Return a form associated to tag-expression TAGS.

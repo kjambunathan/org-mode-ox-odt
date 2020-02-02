@@ -1,12 +1,12 @@
 ;;; org.el --- Outline-based notes management and organizer -*- lexical-binding: t; -*-
 
 ;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
-;; Version: 9.3.1
+;; Version: 9.3.2
 ;;
 ;; This file is part of GNU Emacs.
 ;;
@@ -7865,7 +7865,7 @@ with the original repeater."
 	   (nmin 1)
 	   (nmax n)
 	   (n-no-remove -1)
-	   (idprop (org-entry-get nil "ID")))
+	   (idprop (org-entry-get beg "ID")))
       (when (and doshift
 		 (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
 				 template))
@@ -8681,31 +8681,31 @@ a link."
        ;; a link, a footnote reference.
        ((memq type '(headline inlinetask))
 	(org-match-line org-complex-heading-regexp)
-	(if (and (match-beginning 5)
-		 (>= (point) (match-beginning 5))
-		 (< (point) (match-end 5)))
-	    ;; On tags.
-	    (org-tags-view
-	     arg
-	     (save-excursion
-	       (let* ((beg (match-beginning 5))
-		      (end (match-end 5))
-		      (beg-tag (or (search-backward ":" beg 'at-limit) (point)))
-		      (end-tag (search-forward ":" end nil 2)))
-		 (buffer-substring (1+ beg-tag) (1- end-tag)))))
-	  ;; Not on tags.
-	  (pcase (org-offer-links-in-entry (current-buffer) (point) arg)
-	    (`(nil . ,_)
-	     (require 'org-attach)
-	     (message "Opening attachment-dir")
-	     (if (equal arg '(4))
-		 (org-attach-reveal-in-emacs)
-	       (org-attach-reveal)))
-	    (`(,links . ,links-end)
-	     (dolist (link (if (stringp links) (list links) links))
-	       (search-forward link nil links-end)
-	       (goto-char (match-beginning 0))
-	       (org-open-at-point arg))))))
+	(let ((tags-beg (match-beginning 5))
+	      (tags-end (match-end 5))
+	      (tags-str (match-string 5)))
+	  (if (and tags-beg (>= (point) tags-beg) (< (point) tags-end))
+	      ;; On tags.
+	      (org-tags-view
+	       arg
+	       (save-excursion
+		 (let* ((beg-tag (or (search-backward ":" tags-beg 'at-limit) (point)))
+			(end-tag (search-forward ":" tags-end nil 2)))
+		   (buffer-substring (1+ beg-tag) (1- end-tag)))))
+	    ;; Not on tags.
+	    (pcase (org-offer-links-in-entry (current-buffer) (point) arg)
+	      (`(nil . ,_)
+	       (require 'org-attach)
+	       (when (org-attach-dir)
+		 (message "Opening attachment")
+		 (if (equal arg '(4))
+		     (org-attach-reveal-in-emacs)
+		   (org-attach-reveal))))
+	      (`(,links . ,links-end)
+	       (dolist (link (if (stringp links) (list links) links))
+		 (search-forward link nil links-end)
+		 (goto-char (match-beginning 0))
+		 (org-open-at-point arg)))))))
        ;; On a footnote reference or at definition's label.
        ((or (eq type 'footnote-reference)
 	    (and (eq type 'footnote-definition)
@@ -16804,7 +16804,9 @@ buffer boundaries with possible narrowing."
 			      (overlay-put
 			       ov 'modification-hooks
 			       (list 'org-display-inline-remove-overlay))
-			      (overlay-put ov 'keymap image-map)
+			      (when (<= 26 emacs-major-version)
+				(cl-assert (boundp 'image-map))
+				(overlay-put ov 'keymap image-map))
 			      (push ov org-inline-image-overlays))))))))))))))))
 
 (defun org-display-inline-remove-overlay (ov after _beg _end &optional _len)
@@ -17620,17 +17622,6 @@ this numeric value."
    ((org-at-table-p) (call-interactively 'org-table-hline-and-move))
    (t (call-interactively 'org-insert-heading))))
 
-(defun org-find-visible ()
-  (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
-		(get-char-property s 'invisible)))
-    s))
-(defun org-find-invisible ()
-  (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
-		(not (get-char-property s 'invisible))))
-    s))
-
 (defun org-copy-visible (beg end)
   "Copy the visible parts of the region."
   (interactive "r")
@@ -18006,13 +17997,17 @@ Move point to the beginning of first heading or end of buffer."
 (defun org-kill-note-or-show-branches ()
   "Abort storing current note, or show just branches."
   (interactive)
-  (if org-finish-function
-      (let ((org-note-abort t))
-        (funcall org-finish-function))
-    (if (org-before-first-heading-p)
-        (org-show-branches-buffer)
-      (outline-hide-subtree)
-      (outline-show-branches))))
+  (cond (org-finish-function
+	 (let ((org-note-abort t)) (funcall org-finish-function)))
+	((org-before-first-heading-p)
+	 (org-show-branches-buffer)
+	 (org-hide-archived-subtrees (point-min) (point-max)))
+	(t
+	 (let ((beg (progn (org-back-to-heading) (point)))
+	       (end (save-excursion (org-end-of-subtree t t) (point))))
+	   (outline-hide-subtree)
+	   (outline-show-branches)
+	   (org-hide-archived-subtrees beg end)))))
 
 (defun org-delete-indentation (&optional arg)
   "Join current line to previous and fix whitespace at join.
