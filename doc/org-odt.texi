@@ -1,0 +1,2096 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename org-odt.info
+@settitle OpenDocument Text Exporter for Emacs' Org Mode
+@documentencoding UTF-8
+@documentlanguage en
+@c %**end of header
+
+@finalout
+@titlepage
+@title OpenDocument Text Exporter for Emacs' Org Mode
+@author Jambunathan K
+@end titlepage
+
+@ifnottex
+@node Top
+@top OpenDocument Text Exporter for Emacs' Org Mode
+
+@defindex wn
+
+This manual documents @samp{ox-odt}, an Emacs Lisp library that exports
+@uref{https://orgmode.org/, Org mode} files to
+@uref{http://www.oasis-open.org/committees/office, OpenDocument format}
+format. Office Documents produced by this backend are compliant with
+@uref{http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html, OpenDocument-v1.2
+Specification}, and can be opened with
+@uref{http://www.libreoffice.org/, LibreOffice} or any other compliant
+OpenDocument application.
+
+This manual is for a @emph{fork} of the @ref{OpenDocument Text export,,,org,} engine that ships with stock Emacs.  If you are an existing
+user of the stock Emacs backend, and want to learn about new features
+@emph{exclusive} to this fork jump right to @ref{What is New} section.
+
+@contents
+@end ifnottex
+
+@menu
+* Project Summary::
+* Structure of ELPA tar::
+* Getting Started with ODT export:: What packages ODT exporter relies on
+* ODT export commands::          How to invoke ODT export
+* Extending ODT export::         How to produce 'doc', 'pdf' files
+* Applying custom styles::       How to apply custom styles to the output
+* Links in ODT export::          How links will be interpreted and formatted
+* List Tables in ODT export::    How to create Tables with multi-paragraph content
+* Tables in ODT export::         How Tables are exported
+* Images in ODT export::         How to insert images
+* Math formatting in ODT export:: How LaTeX fragments are formatted
+* Labels and captions in ODT export:: How captions are rendered
+* Literal examples in ODT export:: How source and example blocks are formatted
+* Bibliography and Citations in ODT export:: Use JabRef to produce ODT documents with Citation and Bibliography
+* Advanced topics in ODT export:: Read this if you are a power user
+* Main Index::                   Index of concepts related to OpenDocumentText format
+* Key Index::                    Key bindings used for export
+* Command and Function Index::   Commands used for export
+* Variable Index::               Options that control the exporter
+* What is New::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+Getting Started with ODT export
+
+* Pre-requisites for ODT export:: What packages ODT exporter relies on
+* Installation::
+* Configuration::
+
+ODT export commands
+
+* Exporting to ODT::
+
+Extending ODT export
+
+* Automatically exporting to other formats::
+* Converting between document formats::
+
+Applying custom styles
+
+* Applying custom styles through keywords::
+* Applying custom styles through a style template::
+
+Applying custom styles through keywords
+
+* Skeletal structure of @samp{styles.xml}: Skeletal structure of @samp{stylesxml}. 
+* Skeletal structure of @samp{contents.xml}: Skeletal structure of @samp{contentsxml}. 
+* @samp{ODT_EXTRA_STYLES}::
+* @samp{ODT_AUTOMATIC_STYLES}::
+* @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}::
+
+Applying custom styles through a style template
+
+* Applying custom styles - the easy way::
+* Using third-party styles and templates::
+
+List Tables in ODT export
+
+* Examples::
+* A list table with rules, column size and alignments: A list table with rules column size and alignments. 
+* List table with table and figures::
+* List table can contain other tables::
+
+Images in ODT export
+
+* Embedding images::
+* Embedding clickable images::
+* Sizing and scaling of embedded images::
+* Anchoring of images::
+
+Math formatting in ODT export
+
+* Working with @LaTeX{} math snippets:: How to embed LaTeX math fragments
+* Working with MathML or OpenDocument formula files:: How to embed equations in native format
+
+Bibliography and Citations in ODT export
+
+* Configure JabRef with @samp{Chicago.ODF} custom export: Configure JabRef with @samp{ChicagoODF} custom export. 
+* Example::
+* Sample Outputs::
+
+Advanced topics in ODT export
+
+* Configuring a document converter:: How to register a document converter
+* Working with OpenDocument style files:: Explore the internals
+* Creating one-off styles::      How to produce custom highlighting etc
+* Customizing tables in ODT export:: How to define and use Table templates
+* Validating OpenDocument XML::  How to debug corrupt OpenDocument files
+
+Working with OpenDocument style files
+
+* Factory styles::
+* Overriding factory styles::
+
+Customizing tables in ODT export
+
+* Custom table styles - an illustration::
+* Custom table styles - the nitty-gritty::
+
+@end detailmenu
+@end menu
+
+@node Project Summary
+@chapter Project Summary
+
+@table @asis
+@item Description
+The Authoritative fork of Org mode's ODT exporter
+
+@item URL
+@uref{https://github.com/kjambunathan/org-mode-ox-odt}
+
+@item Version
+
+
+@item Depends on
+
+
+@item Suggests
+
+
+@item Enhances
+
+
+@item Published
+
+
+@item Author
+Jambunathan K <kjambuanthan at gmail.com>
+
+@item Maintainer
+Jambunathan K <kjambuanthan at gmail.com>
+
+@item BugReports
+@uref{https://github.com/kjambunathan/org-mode-ox-odt/issues}
+
+@item License
+
+
+@item Downloads
+@table @asis
+@item ELPA URL
+@uref{https://kjambunathan.github.io/elpa/}
+
+@item User Manual (online HTML)
+@uref{https://kjambunathan.github.io/org-mode-ox-odt/}
+@end table
+@end table
+
+@node Structure of ELPA tar
+@chapter Structure of ELPA tar
+
+@table @asis
+@item ./
+ox-jabref.el                                      @*
+ox-odt-pkg.el                                     @*
+ox-odt.el                                         @*
+
+@item etc/styles/
+OrgOdtContentTemplate.xml                         @*
+OrgOdtStyles.xml                                  @*
+README                                            @*
+
+@item LibreOffice
+LibreOffice/OrgModeUtilities.oxt
+
+@item docs/
+index.html                                        @*
+org-odt                                           @*
+org-odt.pdf                                       @*
+style.css                                         @*
+
+@item etc/schema/
+od-manifest-schema.rnc                            @*
+od-schema.rnc                                     @*
+schemas.xml                                       @*
+
+@item etc/schema/libreoffice/
+OpenDocument-dsig-schema-v1.3+libreoffice.rnc     @*
+OpenDocument-manifest-schema-v1.3+libreoffice.rnc @*
+OpenDocument-schema-v1.3+libreoffice.rnc          @*
+OpenDocument-schema-v1.3.rnc                      @*
+
+@item etc/schema/odf1.0/
+OpenDocument-manifest-schema-v1.0-os.rnc          @*
+OpenDocument-schema-v1.0-os.rnc                   @*
+OpenDocument-strict-schema-v1.0-os.rnc            @*
+
+@item etc/schema/odf1.1/
+OpenDocument-manifest-schema-v1.1.rnc             @*
+OpenDocument-schema-v1.1.rnc                      @*
+OpenDocument-strict-schema-v1.1.rnc               @*
+
+@item etc/schema/odf1.2/
+OpenDocument-v1.2-os-dsig-schema.rnc              @*
+OpenDocument-v1.2-os-manifest-schema.rnc          @*
+OpenDocument-v1.2-os-schema.rnc                   @*
+
+@item etc/schema/odf1.3/
+OpenDocument-dsig-schema-v1.3.rnc                 @*
+OpenDocument-manifest-schema-v1.3.rnc             @*
+OpenDocument-schema-v1.3.rnc                      @*
+
+@item samples/biblatex-examples/
+README.org                                        @*
+biblatex-examples.bib                             @*
+
+@item samples/
+masterdocument.org                                @*
+org-mode-unicorn.png                              @*
+pagebreak.odt                                     @*
+pagebreak.org                                     @*
+subdocument1.odt                                  @*
+subdocument1.org                                  @*
+@end table
+
+@node Getting Started with ODT export
+@chapter Getting Started with ODT export
+
+@menu
+* Pre-requisites for ODT export:: What packages ODT exporter relies on
+* Installation::
+* Configuration::
+@end menu
+
+@node Pre-requisites for ODT export
+@section Pre-requisites for ODT export
+
+The ODT backend depends on the following programs
+
+@multitable {aaaaaaaaaaaaaaaaaaa} {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+@headitem Program
+@tab Purpose
+@item @samp{zip}@footnote{@uref{http://www.info-zip.org/, Info-ZIP}}
+@tab To produce OpenDocument files
+@item @samp{unzip}@footnote{@uref{http://www.info-zip.org/, Info-ZIP}}
+@tab To unzip  custom styles
+@item @samp{identify}@footnote{@uref{https://imagemagick.org, ImageMagick}}
+@tab To identify the size of an inline image
+@item @samp{latex}@footnote{@uref{http://www.tug.org/texlive/, @TeX{} Live}}
+@tab To compile @LaTeX{} fragments to @samp{dvi} images
+@item @samp{dvisgm}@footnote{@uref{http://www.tug.org/texlive/, @TeX{} Live}}
+@tab To convert @samp{dvi} images to @samp{svg}
+@item @samp{dvipng}@footnote{@uref{http://www.nongnu.org/dvipng/, dvipng}}
+@tab To convert @samp{dvi} images to @samp{png}
+@item @samp{convert}@footnote{@uref{https://imagemagick.org, ImageMagick}}
+@tab To convert inline @samp{pdf} to @samp{png}
+@item @samp{latexmlmath}@footnote{@uref{http://dlmf.nist.gov/LaTeXML/, @LaTeX{}ML}}
+@tab To convert @LaTeX{} math snippets to MathML
+@item @samp{mathtoweb}@footnote{@uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}}
+@tab 〃
+@item @samp{jabref}@footnote{@uref{https://www.jabref.org/, JabRef}}
+@tab To handle bibliography and citations
+@end multitable
+
+
+Of these, @samp{zip} is essential.  Rest are optional.
+
+@node Installation
+@section Installation
+
+You can install the OpenDocument Text export backend using the Emacs
+package manager.  The archive URL for the package is
+@uref{https://kjambunathan.github.io/elpa/}.
+
+A typical configuration look like this
+
+@lisp
+(custom-set-variables
+ '(package-archives
+   (quote
+    (("gnu" . "https://elpa.gnu.org/packages/")
+     ("ox-odt" . "https://kjambunathan.github.io/elpa/")))))
+@end lisp
+
+In the @samp{*Packages*} buffer, packages from this archive show up as below
+
+@example
+JabrefExportChicagoODF 1.2.2      ... Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat
+ox-odt                 9.2.6.263  ... OpenDocument Text Exporter for Org Mode
+@end example
+
+@node Configuration
+@section Configuration
+
+Here is a sample configuration.
+
+@example
+(custom-set-variables
+ '(org-odt-convert-process "LibreOffice")
+ '(org-odt-preferred-output-format "docx")
+ '(org-odt-transform-processes
+   '(("Optimize Column Width of all Tables"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)")
+     ("Update All"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.UpdateAll(%I)")
+     ("Reload"
+      "soffice" "--norestore" "--invisible" "--headless"
+      "macro:///OrgMode.Utilities.Reload(%I)")))
+ '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n"))
+ '(org-latex-to-mathml-convert-command
+   "java -jar %j -unicode -force -df %o %I")
+ '(org-latex-to-mathml-jar-file
+   "/home/kjambunathan/Downloads/mathtoweb.jar"))
+
+(require 'ox-odt)
+(require 'ox-jabref)
+
+;; (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
+(setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
+
+(advice-add 'org-open-file :around
+            (lambda (orig-fun &rest args)
+              ;; Work around a weird problem with xdg-open.
+              (let ((process-connection-type nil))
+                (apply orig-fun args))))
+
+@end example
+
+Above configuration sets up the ODT backend as follows:
+
+@enumerate
+@item
+Use @samp{"LibreOffice"} (i.e., @samp{soffice} executable) as the document converter
+@item
+Generate a @samp{docx} document for every @samp{odt} document
+@item
+Process the @samp{odt} document with a set of LibreOffice Basic Macros to
+@itemize
+@item
+Optimize the column width of all tables
+@item
+Update cross-references, table of contents etc.
+@item
+(if you are already viewing a past version of a @samp{odt} file),
+re-load the new file in the same application window.
+@end itemize
+@item
+Tell where your @samp{JabRef} and @samp{mathtoweb} executables are located, and how they are invoked.
+@item
+(if you are using a GNU system) open the @samp{odt} document with your
+preferred OpenDocument viewer, presumably @samp{LibreOffice}.
+@item
+Load @samp{ox-jabref} so as to produce documents with bibliography and citations .
+@end enumerate
+
+@node ODT export commands
+@chapter ODT export commands
+
+@menu
+* Exporting to ODT::
+@end menu
+
+@node Exporting to ODT
+@section Exporting to ODT
+
+@table @asis
+@item @kbd{C-c C-e o o} (@samp{org-odt-export-to-odt})
+@kindex C-c C-e o
+@findex org-odt-export-to-odt
+Export as OpenDocument Text file.
+
+@vindex org-odt-preferred-output-format
+If @samp{org-odt-preferred-output-format} is specified, automatically
+convert the exported file to that format. See @ref{Automatically exporting to other formats}.
+
+@item @kbd{C-c C-e o O}
+@kindex C-c C-e O
+Export as OpenDocument Text file and open the resulting file.
+
+@vindex org-odt-preferred-output-format
+If @samp{org-odt-preferred-output-format} is specified, open the
+converted file instead. See @ref{Automatically exporting to other formats}.
+@end table
+
+@node Extending ODT export
+@chapter Extending ODT export
+
+The ODT exporter can interface with a variety of document converters
+and supports popular converters out of the box. As a result, you can
+use it to export to formats like @samp{doc} or convert a document from one
+format (say @samp{csv}) to another format (say @samp{ods} or @samp{xls}).
+
+@cindex @file{unconv}
+@vindex org-odt-convert-process
+If you have a working installation of LibreOffice, a document
+converter is pre-configured for you and you can use it right away. If
+you would like to use @samp{unoconv} as your preferred converter, customize
+the variable @samp{org-odt-convert-process} to point to @samp{unoconv}. You can
+also use your own favorite converter or tweak the default settings of
+the LibreOffice and @samp{unoconv} converters. See @ref{Configuring a document converter}.
+
+@menu
+* Automatically exporting to other formats::
+* Converting between document formats::
+@end menu
+
+@node Automatically exporting to other formats
+@section Automatically exporting to other formats
+
+@vindex org-odt-preferred-output-format
+Very often, you will find yourself exporting to ODT format, only to
+immediately save the exported document to other formats like @samp{doc},
+@samp{docx}, @samp{rtf}, @samp{pdf} etc. In such cases, you can specify your
+preferred output format by customizing the variable
+@samp{org-odt-preferred-output-format}. This way, the export commands (see
+@ref{Exporting to ODT}) can be extended to export to a format that is of
+immediate interest to you.
+
+@node Converting between document formats
+@section Converting between document formats
+
+There are many document converters in the wild which support
+conversion to and from various file formats, including, but not
+limited to the ODT format. LibreOffice converter, mentioned above, is
+one such converter.  Once a converter is configured, you can interact
+with it using the following command.
+
+@table @asis
+@item @kbd{M-x org-odt-convert}
+@findex org-odt-convert
+Convert an existing document from one format to another. With a
+prefix argument, also open the newly produced file.
+@end table
+
+@node Applying custom styles
+@chapter Applying custom styles
+
+@menu
+* Applying custom styles through keywords::
+* Applying custom styles through a style template::
+@end menu
+
+@node Applying custom styles through keywords
+@section Applying custom styles through keywords
+
+@menu
+* Skeletal structure of @samp{styles.xml}: Skeletal structure of @samp{stylesxml}. 
+* Skeletal structure of @samp{contents.xml}: Skeletal structure of @samp{contentsxml}. 
+* @samp{ODT_EXTRA_STYLES}::
+* @samp{ODT_AUTOMATIC_STYLES}::
+* @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}::
+@end menu
+
+@node Skeletal structure of @samp{stylesxml}
+@subsection Skeletal structure of @samp{styles.xml}
+
+@example
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document-styles>
+  <office:font-face-decls>
+    <!-- Stuff from your default styles file -->
+  </office:font-face-decls>
+
+  <office:styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_EXTRA_STYLES goes here -->
+  </office:styles>
+
+  <office:automatic-styles>
+    <!-- ODT_EXTRA_AUTOMATIC_STYLES goes here -->
+    <!-- Stuff from your regular styles file -->    
+  </office:automatic-styles>
+
+  <office:master-styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_MASTER_STYLES goes here -->
+  </office:master-styles>
+</office:document-styles>
+@end example
+
+@node Skeletal structure of @samp{contentsxml}
+@subsection Skeletal structure of @samp{contents.xml}
+
+@example
+<office:document-content>
+  <office:scripts/>
+  <office:font-face-decls>
+    <!-- Stuff from your default styles file -->
+  </office:font-face-decls>
+
+  <office:automatic-styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_AUTOMATIC_STYLES goes here -->
+  </office:automatic-styles>
+
+  <office:body>
+    <office:text>
+      <!-- Stuff from your default styles file -->
+    </office:text>
+  </office:body>
+</office:document-content>
+@end example
+
+@node @samp{ODT_EXTRA_STYLES}
+@subsection @samp{ODT_EXTRA_STYLES}
+
+@cindex @samp{ODT_EXTRA_STYLES}, keyword
+@table @asis
+@item ODT@math{_EXTRA}@math{_STYLES}
+@end table
+
+@example
+
+#+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_large"
+#+ODT_EXTRA_STYLES:              style:family="paragraph"
+#+ODT_EXTRA_STYLES:              style:parent-style-name="Text_20_body">
+#+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="150%"/>
+#+ODT_EXTRA_STYLES: </style:style>
+
+*** A regular paragraph
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+*** Same paragraph, in a larger font
+
+#+ATTR_ODT: :style "Text_20_body_large"
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+@end example
+
+
+
+@image{./custom-styles-1,15cm,,,png}
+
+@node @samp{ODT_AUTOMATIC_STYLES}
+@subsection @samp{ODT_AUTOMATIC_STYLES}
+
+@cindex @samp{ODT_AUTOMATIC_STYLES}, keyword
+@table @asis
+@item ODT@math{_AUTOMATIC}@math{_STYLES}
+@end table
+
+@example
+
+#+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps"
+#+ODT_AUTOMATIC_STYLES:              style:family="paragraph"
+#+ODT_AUTOMATIC_STYLES:              style:parent-style-name="Text_20_body">
+#+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+#+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+#+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+#+ODT_AUTOMATIC_STYLES: </style:style>
+
+*** A regular paragraph
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+*** Same paragraph, but with =Drop Caps=
+
+#+ATTR_ODT: :style "DropCaps"
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+@end example
+
+
+
+@image{./custom-styles-2,15cm,,,png}
+
+@node @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}
+@subsection @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}
+
+@cindex @samp{ODT_EXTRA_IMAGES}, keyword
+@cindex @samp{ODT_MASTER_STYLES}, keyword
+@cindex @samp{ODT_EXTRA_AUTOMATIC_STYLES}, keyword
+@table @asis
+@item ODT@math{_EXTRA}@math{_IMAGES}
+
+@item ODT@math{_MASTER}@math{_STYLES}
+
+@item ODT@math{_EXTRA}@math{_AUTOMATIC}@math{_STYLES}
+@end table
+
+@example
+
+#+ODT_EXTRA_IMAGES: Pictures/org-mode-unicorn.png
+
+#+ODT_EXTRA_STYLES: <style:style style:name="Header"
+#+ODT_EXTRA_STYLES:              style:family="paragraph">
+#+ODT_EXTRA_STYLES:   <loext:graphic-properties draw:fill="none"/>
+#+ODT_EXTRA_STYLES:   <style:paragraph-properties
+#+ODT_EXTRA_STYLES:       fo:margin-left="2.499cm"
+#+ODT_EXTRA_STYLES:       fo:margin-right="2.499cm"
+#+ODT_EXTRA_STYLES:       fo:margin-top="0cm"
+#+ODT_EXTRA_STYLES:       fo:margin-bottom="0.499cm"
+#+ODT_EXTRA_STYLES:       fo:text-align="center"
+#+ODT_EXTRA_STYLES:       style:justify-single-word="false"
+#+ODT_EXTRA_STYLES:       fo:text-indent="0cm"
+#+ODT_EXTRA_STYLES:       style:auto-text-indent="false"
+#+ODT_EXTRA_STYLES:       fo:background-color="transparent"
+#+ODT_EXTRA_STYLES:       fo:padding-left="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-right="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-top="0cm"
+#+ODT_EXTRA_STYLES:       fo:padding-bottom="0.199cm"
+#+ODT_EXTRA_STYLES:       fo:border-left="none"
+#+ODT_EXTRA_STYLES:       fo:border-right="none"
+#+ODT_EXTRA_STYLES:       fo:border-top="none"
+#+ODT_EXTRA_STYLES:       fo:border-bottom="0.06pt solid #000000"/>
+#+ODT_EXTRA_STYLES:   <style:text-properties
+#+ODT_EXTRA_STYLES:       fo:font-size="18pt" fo:font-style="italic"
+#+ODT_EXTRA_STYLES:       style:font-size-asian="18pt"
+#+ODT_EXTRA_STYLES:       style:font-style-asian="italic"
+#+ODT_EXTRA_STYLES:       style:font-size-complex="18pt"
+#+ODT_EXTRA_STYLES:       style:font-style-complex="italic"/>
+#+ODT_EXTRA_STYLES: </style:style>
+
+#+ODT_EXTRA_STYLES:  <style:style style:name="Logo" style:family="graphic"
+#+ODT_EXTRA_STYLES:               style:parent-style-name="Graphics">
+#+ODT_EXTRA_STYLES:    <style:graphic-properties
+#+ODT_EXTRA_STYLES:        svg:width="2.311cm" fo:min-height="2.499cm"
+#+ODT_EXTRA_STYLES:        svg:x="0cm" svg:y="-0.9cm" fo:margin-left="0cm"
+#+ODT_EXTRA_STYLES:        fo:margin-right="0cm" fo:margin-top="0cm"
+#+ODT_EXTRA_STYLES:        fo:margin-bottom="0cm" style:wrap="none"
+#+ODT_EXTRA_STYLES:        style:vertical-pos="middle"
+#+ODT_EXTRA_STYLES:        style:vertical-rel="paragraph-content"
+#+ODT_EXTRA_STYLES:        style:horizontal-pos="left"
+#+ODT_EXTRA_STYLES:        style:horizontal-rel="page-content"
+#+ODT_EXTRA_STYLES:        fo:background-color="transparent"
+#+ODT_EXTRA_STYLES:        draw:fill="none"/>
+#+ODT_EXTRA_STYLES:  </style:style>
+
+#+ODT_MASTER_STYLES: <style:master-page
+#+ODT_MASTER_STYLES:     style:name="Standard"
+#+ODT_MASTER_STYLES:     style:page-layout-name="Mpm1">
+#+ODT_MASTER_STYLES:   <style:header>
+#+ODT_MASTER_STYLES:     <text:p text:style-name="Header">
+#+ODT_MASTER_STYLES:       <draw:frame
+#+ODT_MASTER_STYLES:           draw:style-name="Logo"
+#+ODT_MASTER_STYLES:           draw:name="Image1"
+#+ODT_MASTER_STYLES:           text:anchor-type="paragraph"
+#+ODT_MASTER_STYLES:           svg:width="2.311cm"
+#+ODT_MASTER_STYLES:           svg:height="2.499cm"
+#+ODT_MASTER_STYLES:           draw:z-index="0">
+#+ODT_MASTER_STYLES:         <draw:image
+#+ODT_MASTER_STYLES:             xlink:href="Pictures/org-mode-unicorn.png"
+#+ODT_MASTER_STYLES:             xlink:type="simple"
+#+ODT_MASTER_STYLES:             xlink:show="embed"
+#+ODT_MASTER_STYLES:             xlink:actuate="onLoad"
+#+ODT_MASTER_STYLES:             loext:mime-type="image/png"/>
+#+ODT_MASTER_STYLES:     </draw:frame>Friends of the Unicorn</text:p>
+#+ODT_MASTER_STYLES:   </style:header>
+#+ODT_MASTER_STYLES: </style:master-page>
+
+#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1"
+#+ODT_EXTRA_AUTOMATIC_STYLES:                    style:page-usage="mirrored">
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:page-layout-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width="21.001cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-height="11.10cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format="1"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation="landscape"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-bottom="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-right="2cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode="lr-tb"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color="#c0c0c0"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines="20"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height="0.706cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height="0.353cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode="none"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display="false"
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height="0cm">
+#+ODT_EXTRA_AUTOMATIC_STYLES:     <style:footnote-sep
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:width="0.018cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-before-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-after-sep="0.101cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:line-style="solid"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:adjustment="left"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:rel-width="25%"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:color="#000000"/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   </style:page-layout-properties>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-style>
+#+ODT_EXTRA_AUTOMATIC_STYLES:     <style:header-footer-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:min-height="0.499cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-left="0cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-right="0cm"
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-bottom="0cm"/>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   </style:header-style>
+#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footer-style/>
+#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+@end example
+
+
+
+@image{./custom-styles-4,15cm,,,png}
+
+@node Applying custom styles through a style template
+@section Applying custom styles through a style template
+
+The ODT exporter ships with a set of OpenDocument styles (see @ref{Working with OpenDocument style files}) that ensure a well-formatted
+output. These factory styles, however, may not cater to your specific
+tastes. To customize the output, you can either modify the above
+styles files directly, or generate the required styles using an
+application like LibreOffice. The latter method is suitable for expert
+and non-expert users alike, and is described here.
+
+@menu
+* Applying custom styles - the easy way::
+* Using third-party styles and templates::
+@end menu
+
+@node Applying custom styles - the easy way
+@subsection Applying custom styles - the easy way
+
+@enumerate
+@item
+Create a sample @samp{example.org} file with the below settings and
+export it to ODT format.
+
+@example
+#+OPTIONS: H:10 num:t
+@end example
+
+@item
+Open the above @samp{example.odt} using LibreOffice. Use the Stylist to
+locate the target styles - these typically have the @samp{Org} prefix -
+and modify those to your taste. Save the modified file either as an
+OpenDocument Text (@samp{.odt}) or OpenDocument Template (@samp{.ott}) file.
+
+@item
+@vindex org-odt-styles-file
+Customize the variable @samp{org-odt-styles-file} and point it to the
+newly created file. For additional configuration options see
+@ref{Overriding factory styles}.
+
+@cindex @samp{ODT_STYLES_FILE}, keyword
+If you would like to choose a style on a per-file basis, you can
+use the @samp{#+ODT_STYLES_FILE} option. A typical setting will look
+like
+
+@example
+#+ODT_STYLES_FILE: "/path/to/example.ott"
+@end example
+
+or
+
+@example
+#+ODT_STYLES_FILE: ("/path/to/file.ott" ("styles.xml" "image/hdr.png"))
+@end example
+@end enumerate
+
+@node Using third-party styles and templates
+@subsection Using third-party styles and templates
+
+You can use third-party styles and templates for customizing your
+output. This will produce the desired output only if the template
+provides all style names that the @samp{ODT} exporter relies on. Unless
+this condition is met, the output is going to be less than
+satisfactory. So it is highly recommended that you only work with
+templates that are directly derived from the factory settings.
+
+@node Links in ODT export
+@chapter Links in ODT export
+
+ODT exporter creates native cross-references for internal links. It
+creates Internet-style links for all other links.
+
+A link with no description and destined to a regular (un-itemized)
+outline heading is replaced with a cross-reference and section number
+of the heading.
+
+A @samp{\ref@{label@}}-style reference to an image, table etc. is replaced
+with a cross-reference and sequence number of the labeled entity. See
+@ref{Labels and captions in ODT export}.
+
+@node List Tables in ODT export
+@chapter List Tables in ODT export
+
+A @samp{List Table}, in simple terms, is a list that is typeset as a table.
+Use it to create tables with multi-paragraph content.
+
+@table @asis
+@item Why a @samp{List Table}?
+@end table
+
+Org mode's tables are line-oriented i.e., each row (and hence a cell)
+cannot span multiple lines.  This choice has serious limitations.
+Specifically, 
+
+@itemize
+@item
+a table cell cannot have more than a single paragraph
+
+@item
+if the sole paragraph has copious text, the table will overflow your
+display screen, and editing or reviewing such tables is very
+cumbersome and annoying.
+@end itemize
+
+A list table overcomes the above problem.
+
+Lists that are marked with attribute `:list-table' are called as
+list tables.  They will be rendered as a table within the exported
+document.
+
+@menu
+* Examples::
+* A list table with rules, column size and alignments: A list table with rules column size and alignments. 
+* List table with table and figures::
+* List table can contain other tables::
+@end menu
+
+@node Examples
+@section Examples
+
+@table @asis
+@item A simple list table
+@end table
+
+Consider an example.  The following list table
+
+@example
+#+ATTR_ODT: :rel-width 80
+#+ATTR_ODT: :list-table t
+-
+  - Row 1, Col 1 
+  - Row 1, Col 2 
+  - Row 1, Col 3 
+  - Row 1, Col 4 
+- -----
+  - Row 2, Col 1 
+  - Row 2, Col 2 
+  - Row 2, Col 3 
+  - Row 2, Col 4 
+@end example
+
+
+will be exported as though it were an Org table like the one show
+below.
+
+
+@example
+| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+@end example
+
+@image{./list-table-1,15cm,,,png}
+
+@node A list table with rules column size and alignments
+@section A list table with rules, column size and alignments
+
+List tables honor all attributes save for the column alignments.
+
+@example
+#+ATTR_ODT: :list-table t
+- | /    | <    | >    |      |
+- | <l2> | <l1> | <l1> | <l8> |
+- 
+  - Row 1, Col 1
+  - Row 1, Col 2
+  - Row 1, Col 3
+  - Row 1, Col 4
+- ----------------
+  - Row 2, Col 1
+  - Row 2, Col 2
+  - Row 2, Col 3
+  - Row 2, Col 4
+@end example
+
+Above list table will be exported as if it were an Org table like the
+one below
+
+@example
+| /            | <            | >            |              |
+| <l2>         | <l1>         | <l1>         | <l8>         |
+| Row 1, Col 1 | Row 1, Col 2 | Row 1, Col 3 | Row 1, Col 4 |
+|--------------+--------------+--------------+--------------|
+| Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
+@end example
+
+@image{./list-table-2,15cm,,,png}
+
+Here is a real-world table that uses the same template as the one
+above
+
+@example
+#+ATTR_ODT: :list-table t
+- | /    | <    | >    |      |
+- | <l2> | <l1> | <l1> | <l8> |
+- 
+  - Day
+  - Min Temp
+  - Max Temp
+  - Summary
+- ----------------
+  - Monday
+  - 11C
+  - 22C
+  - 
+    1. A clear day with lots of sunshine.
+    2. Late in the day, a strong breeze will bring down the temperatures.
+- ----------------
+  - Tuesday
+  - 9C
+  - 19C
+  - 
+    1. Cloudy with rain, across many northern regions.
+    2. Clear spells across most of Scotland and Northern Ireland, but
+       rain reaching the far northwest.
+@end example
+
+@image{./list-table-3,15cm,,,png}
+
+@node List table with table and figures
+@section List table with table and figures
+
+List tables are particularly well-suited for creating captioned
+side-by-side images.  Note that with conventional @samp{org} tables, even
+though you can place images side-by-side using a table, you cannot
+caption them.
+
+@example
+#+ATTR_ODT: :list-table t
+- 
+  - 
+    #+CAPTION: A Unicorn
+    [[./org-mode-unicorn.png]]
+  - 
+    #+CAPTION: Yet another Unicorn
+    [[./org-mode-unicorn.png]]
+@end example
+
+@image{./list-table-4,15cm,,,png}
+
+@node List table can contain other tables
+@section List table can contain other tables
+
+@example
+#+ATTR_ODT: :list-table t
+- 
+  - Comments
+  - A Dog & A Cat
+- --------
+  - This table contains
+    - A Dog
+    - A cat
+
+    | Animal | What it does |
+    |--------+--------------|
+    | Dog    | Barks        |
+    | Cat    | News         |
+
+  - 
+    #+ATTR_ODT: :list-table t
+    - 
+      - 
+        #+CAPTION: A Dog
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
+      - 
+        #+CAPTION: A Cat
+        #+ATTR_ODT: :scale .8
+        [[./org-mode-unicorn.png]]
+- --------
+@end example
+
+@image{./list-table-6,15cm,,,png}
+
+@node Tables in ODT export
+@chapter Tables in ODT export
+
+Export of native Org mode tables (See @ref{Tables,,,org,}) and simple
+@samp{table.el} tables is supported. However, export of complex @samp{table.el}
+tables - tables that have column or row spans - is not supported. Such
+tables are stripped from the exported document.
+
+By default, a table is exported with top and bottom frames and with
+rules separating row and column groups (See @ref{Column Groups,,,org,}). Furthermore, all tables are typeset to occupy the same width.
+If the table specifies alignment and relative width for its columns
+(See @ref{Column Width and Alignment,,,org,}) then these are honored on
+export.@footnote{See @uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}}
+
+@cindex @samp{ATTR_ODT}, keyword
+You can control the width of the table by specifying @samp{:rel-width}
+property using an @samp{#+ATTR_ODT} line.
+
+For example, consider the following table which makes use of all the
+rules mentioned above.
+
+@example
+#+ATTR_ODT: :rel-width 50
+| Area/Month    |   Jan |   Feb |   Mar |   Sum |
+|---------------+-------+-------+-------+-------|
+| /             |     < |       |       |     < |
+| <l13>         |  <r5> |  <r5> |  <r5> |  <r6> |
+| North America |     1 |    21 |   926 |   948 |
+| Middle East   |     6 |    75 |   844 |   925 |
+| Asia Pacific  |     9 |    27 |   790 |   826 |
+|---------------+-------+-------+-------+-------|
+| Sum           |    16 |   123 |  2560 |  2699 |
+@end example
+
+On export, the table will occupy 50% of text area. The columns will be
+sized (roughly) in the ratio of 13:5:5:5:6. The first column will be
+left-aligned and rest of the columns will be right-aligned. There will
+be vertical rules after separating the header and last columns from
+other columns. There will be horizontal rules separating the header
+and last rows from other rows.
+
+@cindex @samp{ATTR_ODT}, keyword
+If you are not satisfied with the above formatting options, you can
+create custom table styles and associate them with a table using the
+@samp{#+ATTR_ODT} line. See @ref{Customizing tables in ODT export}.
+
+@node Images in ODT export
+@chapter Images in ODT export
+
+@menu
+* Embedding images::
+* Embedding clickable images::
+* Sizing and scaling of embedded images::
+* Anchoring of images::
+@end menu
+
+@node Embedding images
+@section Embedding images
+
+You can embed images within the exported document by providing a link
+to the desired image file with no link description. For example, to
+embed @samp{img.png} do either of the following:
+
+@example
+[[file:img.png]]
+@end example
+
+@example
+[[./img.png]]
+@end example
+
+@node Embedding clickable images
+@section Embedding clickable images
+
+You can create clickable images by providing a link whose description
+is a link to an image file. For example, to embed a image
+org-mode-unicorn.png which when clicked jumps to @uref{http://Orgmode.org}
+website, do the following
+
+@example
+[[http://orgmode.org][./org-mode-unicorn.png]]
+@end example
+
+@node Sizing and scaling of embedded images
+@section Sizing and scaling of embedded images
+
+@cindex @samp{ATTR_ODT}, keyword
+You can control the size and scale of the embedded images using the
+@samp{#+ATTR_ODT} attribute.
+
+@vindex org-odt-pixels-per-inch
+The exporter specifies the desired size of the image in the final
+document in units of centimeters. In order to scale the embedded
+images, the exporter queries for pixel dimensions of the images using
+one of a) ImageMagick's identify program or b) Emacs @samp{create-image}
+and @samp{image-size} APIs.@footnote{Use of ImageMagick is only desirable. However, if you routinely
+produce documents that have large images or you export your Org files
+that has images using a Emacs batch script, then the use of
+ImageMagick is mandatory.} The pixel dimensions are subsequently
+converted in to units of centimeters using
+@samp{org-odt-pixels-per-inch}. The default value of this variable is set
+to @samp{display-pixels-per-inch}. You can tweak this variable to achieve
+the best results.
+
+The examples below illustrate the various possibilities.
+
+@table @asis
+@item Explicitly size the image
+To embed @samp{img.png} as a 10 cm x 10 cm image, do the following:
+
+@example
+#+ATTR_ODT: :width 10 :height 10
+[[./img.png]]
+@end example
+
+@item Scale the image
+To embed @samp{img.png} at half its size, do the following:
+
+@example
+#+ATTR_ODT: :scale 0.5
+[[./img.png]]
+@end example
+
+@item Scale the image to a specific width
+To embed @samp{img.png} with a width of 10 cm while retaining the
+original height:width ratio, do the following:
+
+@example
+#+ATTR_ODT: :width 10
+[[./img.png]]
+@end example
+
+@item Scale the image to a specific height
+To embed @samp{img.png} with a height of 10 cm while retaining the
+original height:width ratio, do the following
+
+@example
+#+ATTR_ODT: :height 10
+[[./img.png]]
+@end example
+@end table
+
+@node Anchoring of images
+@section Anchoring of images
+
+@cindex @samp{ATTR_ODT}, keyword
+You can control the manner in which an image is anchored by setting
+the @samp{:anchor} property of it's @samp{#+ATTR_ODT} line. You can specify one
+of the the following three values for the @samp{:anchor} property -
+@samp{"as-char"}, @samp{"paragraph"} and @samp{"page"}.
+
+To create an image that is anchored to a page, do the following:
+
+@example
+#+ATTR_ODT: :anchor "page"
+[[./img.png]]
+@end example
+
+@node Math formatting in ODT export
+@chapter Math formatting in ODT export
+
+The ODT exporter has special support for handling math.
+
+@menu
+* Working with @LaTeX{} math snippets:: How to embed LaTeX math fragments
+* Working with MathML or OpenDocument formula files:: How to embed equations in native format
+@end menu
+
+@node Working with @LaTeX{} math snippets
+@section Working with @LaTeX{} math snippets
+
+@LaTeX{} math snippets (See @ref{LaTeX fragments,,,org,}) can be embedded in the
+ODT document in one of the following ways:
+
+@enumerate
+@item
+MathML
+
+This option is activated on a per-file basis with
+
+@example
+#+OPTIONS: LaTeX:t
+@end example
+
+With this option, @LaTeX{} fragments are first converted into MathML
+fragments using an external @LaTeX{}-to-MathML converter program. The
+resulting MathML fragments are then embedded as an OpenDocument
+Formula in the exported document.
+
+@vindex org-latex-to-mathml-convert-command
+@vindex org-latex-to-mathml-jar-file
+You can specify the @LaTeX{}-to-MathML converter by customizing the
+variables @samp{org-latex-to-mathml-convert-command} and
+@samp{org-latex-to-mathml-jar-file}.
+
+If you prefer to use MathToWeb@footnote{See @uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}} as your converter, you can
+configure the above variables as shown below.
+
+@lisp
+(setq org-latex-to-mathml-convert-command
+      "java -jar %j -unicode -force -df %o %I"
+      org-latex-to-mathml-jar-file
+      "/path/to/mathtoweb.jar")
+@end lisp
+
+You can use the following commands to quickly verify the
+reliability of the @LaTeX{}-to-MathML converter.
+
+@table @asis
+@item @kbd{M-x org-export-as-odf}
+@findex org-export-as-odf
+Convert a @LaTeX{} math snippet to OpenDocument formula (@samp{.odf})
+file.
+
+@item @kbd{M-x org-export-as-odf-and-open}
+@findex org-export-as-odf-and-open
+Convert a @LaTeX{} math snippet to OpenDocument formula (@samp{.odf})
+file and open the formula file with the system-registered
+application.
+@end table
+
+@item
+PNG images
+
+This option is activated on a per-file basis with
+
+@example
+#+OPTIONS: LaTeX:dvipng
+@end example
+
+With this option, @LaTeX{} fragments are processed into PNG images and
+the resulting images are embedded in the exported document. This
+method requires that the dvipng program be available on your
+system.
+@end enumerate
+
+@node Working with MathML or OpenDocument formula files
+@section Working with MathML or OpenDocument formula files
+
+For various reasons, you may find embedding @LaTeX{} math snippets in an
+ODT document less than reliable. In that case, you can embed a math
+equation by linking to its MathML (@samp{.mml}) source or its OpenDocument
+formula (@samp{.odf}) file as shown below:
+
+@example
+[[./equation.mml]]
+@end example
+
+or
+
+@example
+[[./equation.odf]]
+@end example
+
+@node Labels and captions in ODT export
+@chapter Labels and captions in ODT export
+
+You can label and caption various category of objects - an inline
+image, a table, a @LaTeX{} fragment or a Math formula - using @samp{#+LABEL}
+and @samp{#+CAPTION} lines. See @ref{File Archives,,,emacs,}. ODT exporter
+enumerates each labeled or captioned object of a given category
+separately. As a result, each such object is assigned a sequence
+number based on order of it's appearance in the Org file.
+
+In the exported document, a user-provided caption is augmented with
+the category and sequence number. Consider the following inline image
+in an Org file.
+
+@example
+#+CAPTION: Bell curve
+#+LABEL:   fig:SED-HR4049
+[[./img/a.png]]
+@end example
+
+It could be rendered as shown below in the exported document.
+
+@example
+Figure 2: Bell curve
+@end example
+
+@vindex org-odt-category-strings
+You can modify the category component of the caption by customizing
+the variable @samp{org-odt-category-strings}. For example, to tag all
+embedded images with the string @samp{Illustration} (instead of the default
+@samp{Figure}) use the following setting.
+
+@lisp
+(setq org-odt-category-strings
+      '(("en" "Table" "Illustration" "Equation" "Equation")))
+@end lisp
+
+With this, previous image will be captioned as below in the exported
+document.
+
+@example
+Illustration 2: Bell curve
+@end example
+
+@node Literal examples in ODT export
+@chapter Literal examples in ODT export
+
+Export of literal examples (See @ref{Literal examples,,,org,}) with full
+fontification is supported. Internally, the exporter relies on
+@samp{htmlfontify.el} to generate all style definitions needed for a fancy
+listing.@footnote{Your @samp{htmlfontify.el} library must at least be at Emacs 24.1
+levels for fontification to be turned on.} The auto-generated styles have @samp{OrgSrc} as prefix and
+inherit their color from the faces used by Emacs @samp{font-lock} library
+for the source language.
+
+@vindex org-odt-create-custom-styles-for-srcblocks
+If you prefer to use your own custom styles for fontification, you can
+do so by customizing the variable
+@samp{org-odt-create-custom-styles-for-srcblocks}.
+
+@vindex org-odt-fontify-srcblocks
+You can turn off fontification of literal examples by customizing the
+variable @samp{org-odt-fontify-srcblocks}.
+
+@node Bibliography and Citations in ODT export
+@chapter Bibliography and Citations in ODT export
+
+The ODT export back-end uses JabRef to produce Bibliography and
+Citations.
+
+@samp{org} doesn't have a @emph{standard} markup for bibliography and citation
+references.  This is true for this export backend as well.  So, the
+syntax described in the next section is @emph{specific} to the ODT backend,
+and doesn't carry over to other backends.
+
+
+@table @asis
+@item Bibliography and Citation-specific Keywords in ODT export
+An @samp{org} file with bibliography and citations look like
+
+@example
+#+BIB_FILE: "novices.bib"
+#+ODT_JABREF_CITATION_STYLE: "Numeric" 
+
+Some text content
+
+#+BIBLIOGRAPHY: 
+@end example
+
+
+@table @asis
+@item @samp{BIB_FILE}
+@cindex @samp{BIB_FILE}, keyword
+Path to the bibliography file
+
+@item @samp{ODT_JABREF_CITATION_STYLE}
+@cindex @samp{ODT_JABREF_CITATION_STYLE}, keyword
+Citation style to use.  You can choose one of the following
+options
+
+@itemize
+@item
+@samp{"Numeric"}
+@item
+@samp{"Chicago (full-note)"}
+@item
+@samp{"Chicago (author-date)"}
+@end itemize
+
+@item @samp{BIBLIOGRAPHY} -
+@cindex @samp{BIBLIOGRAPHY}, keyword
+Bibliography is inserted here.
+@end table
+@end table
+
+
+@table @asis
+@item How to cite?
+The ODT backend recognizes following citation references
+
+@table @asis
+@item @samp{\cite@{@}} snippets
+
+
+@item Pandoc's Berkeley-style Citations@footnote{See section titled @emph{Berkeley-style citations} at @uref{https://pandoc.org/org.html}}
+The semi-official Org-mode citation syntax was designed by Richard
+Lawrence with additions by contributors on the emacs-orgmode mailing
+list. It is based on John MacFarlane’s pandoc Markdown syntax. It’s
+dubbed Berkeley syntax due the place of activity of its creators, both
+philosophers at UC Berkeley.  
+
+@table @asis
+@item Simple in-text citation
+This is the simplest form of
+citation. It consists of the citation ID prefixed by ‘@@’.
+
+@table @asis
+@item Example
+@example
+@@WatsonCrick1953 showed that DNA forms a double-helix.
+@end example
+@end table
+
+@item In-text citation list
+Citations presented in the text
+unparenthesized are called in-text citations. The syntax for
+these citations is
+
+@example
+[cite: =PREFIX=; =INDIVIDUAL-REFERENCE=; ... =INDIVIDUAL-REFERENCE=; =SUFFIX=]
+@end example
+
+where the initial @samp{PREFIX} and final @samp{SUFFIX} are optional. At least one
+@samp{INDIVIDUAL-REFERENCE} must be present. The colon and semicolons here
+are literal and indicate the end of the @samp{TAG} and the end of a @samp{PREFIX} or
+@samp{INDIVIDUAL-REFERENCE} respectively.
+
+An @samp{INDIVIDUAL-REFERENCE} has the format:
+
+@samp{PREFIX} @samp{KEY} @samp{SUFFIX}
+
+The @samp{KEY} is obligatory, and the prefix and suffix are optional.
+
+A @samp{PREFIX} or @samp{SUFFIX} is arbitrary text (except ;, ], and citation keys).
+
+@table @asis
+@item Example
+@example
+[cite: See; @@Mandelkern1981; and @@Watson1953]
+@end example
+@end table
+
+@item Parenthetical citation
+Citations surrounded by parantheses. The
+syntax is identical to in-text citations, except for the
+additional parentheses enclosing the initial cite tag.
+
+@table @asis
+@item Example
+@example
+[(cite): See; @@Mandelkern1981; and @@Watson1953]     
+@end example
+@end table
+@end table
+@end table
+@end table
+
+@menu
+* Configure JabRef with @samp{Chicago.ODF} custom export: Configure JabRef with @samp{ChicagoODF} custom export. 
+* Example::
+* Sample Outputs::
+@end menu
+
+@node Configure JabRef with @samp{ChicagoODF} custom export
+@section Configure JabRef with @samp{Chicago.ODF} custom export
+
+@table @asis
+@item Set up JabRef with @samp{Chicago.ODF} custom export
+@end table
+
+Install Jabref@footnote{@uref{http://dlmf.nist.gov/LaTeXML/, @LaTeX{}ML}}.
+
+Navigate to @samp{package-user-dir}, and locate the
+@samp{JabrefExportChicagoODF-1.2.2.tar}@footnote{See
+@uref{https://github.com/kjambunathan/JabRefChicagoForOrgmode, Jabref
+Plugin for export to Chicago Manual of Style in @code{OpenDocument}
+format}.  This a port of
+@uref{https://github.com/JabRef/layouts.jabref.org/tree/master/Chicago%20(English), Jabref's
+Plugin for export to Chicago Manual of Style in @code{RTF} format}.}.  Extract it to get a set of
+@samp{layout} files.
+
+Launch JabRef GUI@.  Navigate to @samp{Options -> Manage custom exports},
+and add an entry for each of the layout files as below.
+
+@float Table,org2971cad
+@multitable {aaaaaaaaaaaaaaaaaaaaaaaaa} {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa} {aaaaaaaaa}
+@headitem Export name
+@tab Main layout file
+@tab Extension
+@item Chicago.ODF.abstract
+@tab <whatever>/Chicago.ODF.abstract.layout
+@tab xml
+@item Chicago.ODF.biblio
+@tab <whatever>/Chicago.ODF.biblio.layout
+@tab xml
+@item Chicago.ODF.footend
+@tab <whatever>/Chicago.ODF.footend.layout
+@tab xml
+@item Chicago.ODF.footend.short
+@tab <whatever>/Chicago.ODF.footend.short.layout
+@tab xml
+@item Chicago.ODF.note
+@tab <whatever>/Chicago.ODF.note.layout
+@tab xml
+@item Chicago.ODF.reference
+@tab <whatever>/Chicago.ODF.reference.layout
+@tab xml
+@item Chicago.ODF.text
+@tab <whatever>/Chicago.ODF.text.layout
+@tab xml
+@end multitable
+@caption{How to setup JabRef-5.0's @samp{Manage custom exports}}
+@shortcaption{}
+@end float
+
+
+@float Figure
+@image{./JabRefCustomizeExportFormats,15cm,,,png}
+@caption{Screenshot of JabRef-5.0's @samp{Manage custom exports}}
+@shortcaption{}
+@end float
+
+Verify that the Chicago ODF plugin is successfully registered.  In a
+terminal, do
+
+@example
+/opt/jabref/bin//JabRef -n -h
+@end example
+
+Ensure that the @samp{Available export formats} mentions the @samp{Chicago.ODF}.
+
+@example
+Available export formats: html, simplehtml, docbook5, docbook4, din1505,
+bibordf, tablerefs, listrefs, tablerefsabsbib, harvard, iso690rtf,
+iso690txt, endnote, oocsv, ris, misq, bibtexml, oocalc, ods, MSBib,
+mods, xmp, pdf, Chicago.ODF.abstract, Chicago.ODF.biblio,
+Chicago.ODF.footend, Chicago.ODF.footend.short, Chicago.ODF.note,
+Chicago.ODF.reference, Chicago.ODF.text
+@end example
+
+@table @asis
+@item Configure Emacs
+@end table
+
+Tell Emacs about @samp{JabRef}'s executable.
+
+Use this if you have @samp{JabRef} executable.
+
+@example
+(custom-set-variables
+ '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n")))
+
+(require 'ox-jabref)
+@end example
+
+Use this if you have JabRef as a @samp{jar} file.
+
+@example
+(custom-set-variables
+ '(org-jabref-command '("java -jar ~/Downloads/JabRef-2.9.2.jar" "-n")))
+
+(require 'ox-jabref)
+@end example
+
+@node Example
+@section Example
+
+@example
+@@book@{goossens94,
+  author = "Michel Goossens and Frank Mittelbach and Alexander Samarin",
+  title = "The @{\LaTeX@}\space companion",
+  publisher = "Addison-Wesley",
+  year = 1994
+@}
+
+@@book@{kopka95,
+  author = "Helmut Kopka and Patrick W. Daly",
+  title = "A guide to @{\LaTeXe@}: document preparation
+           for beginners and advanced users",
+  publisher = "Addison-Wesley",
+  year = 1995
+@}
+
+@@book@{novices,
+  author = "Nicola L. C. Talbot",
+  title = "@{\LaTeX@}\space for Complete Novices",
+  volume = 1,
+  publisher = "Dickmaw Books",
+  series = "Dickimaw @{\LaTeX@}\space Series",
+  note = "\url@{\baseurl/latex/novices/@}",
+  isbn="978-1-909440-00-5",
+  year = 2012
+@}
+
+@@book@{thesis,
+  author = "Nicola L. C. Talbot",
+  title = "Using @{\LaTeX@}\space to Write a Ph.D. Thesis",
+  volume = 2,
+  publisher = "Dickmaw Books",
+  series = "The Dickimaw @{\LaTeX@}\space Series",
+  note = "\url@{\baseurl/latex/thesis/@}",
+  year = 2012
+@}
+@end example
+
+@example
+#+bib_file: "./biblatex-examples/novices.bib"
+#+odt_jabref_citation_style: "Chicago (author-date)"
+
+: Nicola L. C. Talbot in his book [cite:@@novices; p. 97] says,
+
+#+begin_quote
+"If you have a large number of citations in your document, it's best
+to use an external bibliographic application, such as =bibtex= or
+=biber=. However, that is beyond the scope of this book.  See,
+instead, /A Guide to LaTeX/ \cite@{kopka95@}, /The LaTeX Companion/
+\cite@{goossens94@} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
+[cite:@@thesis]."
+#+end_quote
+
+#+bibliography:
+@end example
+
+@node Sample Outputs
+@section Sample Outputs
+
+@table @asis
+@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Numeric"}
+@end table
+
+@image{./citation-1,15cm,,,png}
+
+@table @asis
+@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"}
+@end table
+
+@image{./citation-2,15cm,,,png}
+
+@table @asis
+@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"}
+@end table
+
+@image{./citation-3,15cm,,,png}
+
+@node Advanced topics in ODT export
+@chapter Advanced topics in ODT export
+
+If you rely heavily on ODT export, you may want to exploit the full
+set of features that the exporter offers. This section describes
+features that would be of interest to power users.
+
+@menu
+* Configuring a document converter:: How to register a document converter
+* Working with OpenDocument style files:: Explore the internals
+* Creating one-off styles::      How to produce custom highlighting etc
+* Customizing tables in ODT export:: How to define and use Table templates
+* Validating OpenDocument XML::  How to debug corrupt OpenDocument files
+@end menu
+
+@node Configuring a document converter
+@section Configuring a document converter
+
+The ODT exporter can work with popular converters with little or no
+extra configuration from your side. See @ref{Extending ODT export}. If you
+are using a converter that is not supported by default or if you would
+like to tweak the default converter settings, proceed as below.
+
+@enumerate
+@item
+Register the converter
+
+@vindex org-odt-convert-processes
+Name your converter and add it to the list of known converters by
+customizing the variable @samp{org-odt-convert-processes}. Also specify
+how the converter can be invoked via command-line to effect the
+conversion.
+
+@item
+Configure its capabilities
+
+@vindex org-odt-convert-capabilities
+Specify the set of formats the converter can handle by customizing
+the variable @samp{org-odt-convert-capabilities}. Use the default value
+for this variable as a guide for configuring your converter. As
+suggested by the default setting, you can specify the full set of
+formats supported by the converter and not limit yourself to
+specifying formats that are related to just the OpenDocument Text
+format.
+
+@item
+Choose the converter
+
+@vindex org-odt-convert-process
+Select the newly added converter as the preferred one by
+customizing the variable @samp{org-odt-convert-process}.
+@end enumerate
+
+@node Working with OpenDocument style files
+@section Working with OpenDocument style files
+
+This section explores the internals of the ODT exporter and the means
+by which it produces styled documents. Read this section if you are
+interested in exploring the automatic and custom OpenDocument styles
+used by the exporter.
+
+@menu
+* Factory styles::
+* Overriding factory styles::
+@end menu
+
+@node Factory styles
+@subsection Factory styles
+
+@vindex org-odt-styles-dir
+The ODT exporter relies on two files for generating its output. These
+files are bundled with the distribution under the directory pointed to
+by the variable @samp{org-odt-styles-dir}. The two files are:
+
+@table @asis
+@item @samp{OrgOdtStyles.xml}
+This file contributes to the @samp{styles.xml} file of the final @samp{ODT}
+document. This file gets modified for the following purposes:
+
+@enumerate
+@item
+To control outline numbering based on user settings.
+
+@item
+To add styles generated by @samp{htmlfontify.el} for
+fontification of code blocks.
+@end enumerate
+
+@item @samp{OrgOdtContentTemplate.xml}
+   This file contributes to the @samp{content.xml} file of the final
+@samp{ODT} document. The contents of the Org outline are inserted
+between the @samp{<office:text>} @dots{} @samp{</office:text>} elements of this
+file.
+
+        Apart from serving as a template file for the final
+@samp{content.xml}, the file serves the following purposes:
+
+@enumerate
+@item
+It contains automatic styles for formatting of tables which
+are referenced by the exporter.
+
+@item
+It contains @samp{<text:sequence-decl>}
+@dots{} @samp{</text:sequence-decl>} elements that control how
+various entities - tables, images, equations etc - are
+numbered.
+@end enumerate
+@end table
+
+@node Overriding factory styles
+@subsection Overriding factory styles
+
+The following two variables control the location from which the ODT
+exporter picks up the custom styles and content template files. You
+can customize these variables to override the factory styles used by
+the exporter.
+
+@table @asis
+@item @samp{org-odt-styles-file}
+Use this variable to specify the @samp{styles.xml} that will be used
+in the final output. You can specify one of the following values:
+
+@enumerate
+@item
+A @samp{styles.xml} file
+
+Use this file instead of the default @samp{styles.xml}
+
+@item
+A @samp{.odt} or @samp{.ott} file
+
+Use the @samp{styles.xml} contained in the specified OpenDocument
+Text or Template file
+
+@item
+A @samp{.odt} or @samp{.ott} file and a subset of files contained within
+them
+
+     Use the @samp{styles.xml} contained in the specified OpenDocument
+Text or Template file. Additionally extract the specified
+member files and embed those within the final @samp{ODT} document.
+
+     Use this option if the @samp{styles.xml} file references additional
+files like header and footer images.
+
+@item
+@samp{nil}
+
+Use the default @samp{styles.xml}
+@end enumerate
+
+@item @samp{org-odt-content-template-file}
+Use this variable to specify the blank @samp{content.xml} that will be
+used in the final output.
+@end table
+
+@node Creating one-off styles
+@section Creating one-off styles
+
+There are times when you would want one-off formatting in the exported
+document. You can achieve this by embedding raw OpenDocument XML in
+the Org file. The use of this feature is better illustrated with
+couple of examples.
+
+@enumerate
+@item
+Embedding ODT tags as part of regular text
+
+You can include simple OpenDocument tags by prefixing them with
+@samp{@@}.  For example, to highlight a region of text do the following:
+
+@example
+@@<text:span text:style-name="Highlight">This is a
+highlighted text@@</text:span>.  But this is a
+regular text.
+@end example
+
+@strong{Hint:} To see the above example in action, edit your @samp{styles.xml}
+(see @ref{Factory styles}) and add a custom @samp{Highlight} style as shown
+below.
+
+@example
+<style:style style:name="Highlight" style:family="text">
+  <style:text-properties fo:background-color="#ff0000"/>
+</style:style>
+@end example
+
+@item
+Embedding a one-line OpenDocument XML
+
+You can add a simple OpenDocument one-liner using the @samp{#+ODT:}
+directive. For example, to force a page break do the following:
+
+@example
+#+ODT: <text:p text:style-name="PageBreak"/>
+@end example
+
+@strong{Hint:} To see the above example in action, edit your @samp{styles.xml}
+(see @ref{Factory styles}) and add a custom @samp{PageBreak} style as shown
+below.
+
+@example
+<style:style style:name="PageBreak" style:family="paragraph"
+         style:parent-style-name="Text_20_body">
+  <style:paragraph-properties fo:break-before="page"/>
+</style:style>
+@end example
+
+@item
+Embedding a block of OpenDocument XML
+
+You can add a large block of OpenDocument XML using the
+@samp{#+BEGIN_ODT} @dots{} @samp{#+END_ODT} construct.
+
+For example, to create a one-off paragraph that uses bold text, do
+the following:
+
+@example
+#++BEGIN_EXPORT ODT
+<text:p text:style-name="Text_20_body_20_bold">
+This paragraph is specially formatted and uses bold text.
+</text:p>
+#++END_EXPORT ODT
+@end example
+@end enumerate
+
+@node Customizing tables in ODT export
+@section Customizing tables in ODT export
+
+@cindex @samp{ATTR_ODT}, keyword
+You can override the default formatting of the table by specifying a
+custom table style with the @samp{#+ATTR_ODT} line. For a discussion on
+default formatting of tables see @ref{Tables in ODT export}.
+
+This feature closely mimics the way table templates are defined in the
+OpenDocument-v1.2 specification.@footnote{@uref{http://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2.html, OpenDocument-v1.2 Specification}}
+
+@menu
+* Custom table styles - an illustration::
+* Custom table styles - the nitty-gritty::
+@end menu
+
+@node Custom table styles - an illustration
+@subsection Custom table styles - an illustration
+
+To have a quick preview of this feature, install the below setting and
+export the table that follows.
+
+@lisp
+(setq org-odt-table-styles
+      (append org-odt-table-styles
+              '(("TableWithHeaderRowAndColumn" "Custom"
+                 ((use-first-row-styles . t)
+                  (use-first-column-styles . t)))
+                ("TableWithFirstRowandLastRow" "Custom"
+                 ((use-first-row-styles . t)
+                  (use-last-row-styles . t))))))
+@end lisp
+
+@example
+#+ATTR_ODT: :style "TableWithHeaderRowAndColumn"
+| Name  | Phone | Age |
+| Peter |  1234 |  17 |
+| Anna  |  4321 |  25 |
+@end example
+
+In the above example, you used a template named @samp{Custom} and installed
+two table styles with the names @samp{TableWithHeaderRowAndColumn} and
+@samp{TableWithFirstRowandLastRow}. (@strong{Important:} The OpenDocument styles
+needed for producing the above template have been pre-defined for you.
+These styles are available under the section marked ‘Custom Table
+Template' in OrgOdtContentTemplate.xml (see @ref{Factory styles}). If you
+need additional templates you have to define these styles yourselves.
+
+@node Custom table styles - the nitty-gritty
+@subsection Custom table styles - the nitty-gritty
+
+To use this feature proceed as follows:
+
+@enumerate
+@item
+Create a table template@footnote{See the @samp{<table:table-template>} element of the
+OpenDocument-v1.2 specification}
+
+A table template is nothing but a set of @samp{table-cell} and
+@samp{paragraph} styles for each of the following table cell categories:
+
+@itemize
+@item
+Body
+@item
+First column
+@item
+Last column
+@item
+First row
+@item
+Last row
+@item
+Even row
+@item
+Odd row
+@item
+Even column
+@item
+Odd Column
+@end itemize
+
+The names for the above styles must be chosen based on the name of
+the table template using a well-defined convention.
+
+The naming convention is better illustrated with an example. For a
+table template with the name @samp{Custom}, the needed style names are
+listed in the following table.
+
+@multitable {aaaaaaaaaaaaaaa} {aaaaaaaaaaaaaaaaaaaaaaaaaaaa} {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+@headitem Table cell type
+@tab @samp{table-cell} style
+@tab @samp{paragraph} style
+@item 
+@tab 
+@tab 
+@item Body
+@tab @samp{CustomTableCell}
+@tab @samp{CustomTableParagraph}
+@item First column
+@tab @samp{CustomFirstColumnTableCell}
+@tab @samp{CustomFirstColumnTableParagraph}
+@item Last column
+@tab @samp{CustomLastColumnTableCell}
+@tab @samp{CustomLastColumnTableParagraph}
+@item First row
+@tab @samp{CustomFirstRowTableCell}
+@tab @samp{CustomFirstRowTableParagraph}
+@item Last row
+@tab @samp{CustomLastRowTableCell}
+@tab @samp{CustomLastRowTableParagraph}
+@item Even row
+@tab @samp{CustomEvenRowTableCell}
+@tab @samp{CustomEvenRowTableParagraph}
+@item Odd row
+@tab @samp{CustomOddRowTableCell}
+@tab @samp{CustomOddRowTableParagraph}
+@item Even column
+@tab @samp{CustomEvenColumnTableCell}
+@tab @samp{CustomEvenColumnTableParagraph}
+@item Odd column
+@tab @samp{CustomOddColumnTableCell}
+@tab @samp{CustomOddColumnTableParagraph}
+@end multitable
+
+To create a table template with the name @samp{Custom}, define the above
+styles in the @samp{<office:automatic-styles>}
+@dots{} @samp{</office:automatic-styles>} element of the content template
+file (see @ref{Factory styles}).
+
+@item
+Define a table style@footnote{See the attributes @samp{table:template-name},
+@samp{table:use-first-row-styles}, @samp{table:use-last-row-styles},
+@samp{table:use-first-column-styles}, @samp{table:use-last-column-styles},
+@samp{table:use-banding-rows-styles}, and @samp{table:use-banding-column-styles}
+of the @samp{<table:table>} element in the OpenDocument-v1.2 specification}
+
+To define a table style, create an entry for the style in the
+variable @samp{org-odt-table-styles} and specify the following:
+
+@itemize
+@item
+the name of the table template created in step (1)
+@item
+the set of cell styles in that template that are to be activated
+@end itemize
+
+For example, the entry below defines two different table styles
+@samp{TableWithHeaderRowAndColumn} and @samp{TableWithFirstRowandLastRow}
+based on the same template @samp{Custom}. The styles achieve their
+intended effect by selectively activating the individual cell
+styles in that template.
+
+@lisp
+(setq org-odt-table-styles
+      (append org-odt-table-styles
+              '(("TableWithHeaderRowAndColumn" "Custom"
+                 ((use-first-row-styles . t)
+                  (use-first-column-styles . t)))
+                ("TableWithFirstRowandLastRow" "Custom"
+                 ((use-first-row-styles . t)
+                  (use-last-row-styles . t))))))
+@end lisp
+
+@item
+Associate a table with the table style
+
+@cindex @samp{ATTR_ODT}, keyword
+To do this, specify the table style created in step (2) as part of
+the @samp{ATTR_ODT} line as shown below.
+
+@example
+#+ATTR_ODT: :style "TableWithHeaderRowAndColumn"
+| Name  | Phone | Age |
+| Peter |  1234 |  17 |
+| Anna  |  4321 |  25 |
+@end example
+@end enumerate
+
+@node Validating OpenDocument XML
+@section Validating OpenDocument XML
+
+Occasionally, you will discover that the document created by the ODT
+exporter cannot be opened by your favorite application. One of the
+common reasons for this is that the @samp{.odt} file is corrupt. In such
+cases, you may want to validate the document against the OpenDocument
+RELAX NG Compact Syntax (RNC) schema.
+
+For de-compressing the @samp{.odt} file@footnote{@samp{.odt} files are nothing but @samp{zip} archives}: See @ref{File Archives,,,emacs,}. For general help with validation (and schema-sensitive
+editing) of XML files: See @ref{Introduction,,,nxml-mode,}.
+
+If you have ready access to OpenDocument @samp{.rnc} files and the needed
+schema-locating rules in a single folder, you can customize the
+variable @samp{org-odt-schema-dir} to point to that directory. The ODT
+exporter will take care of updating the @samp{rng-schema-locating-files}
+for you.
+
+@node Main Index
+@chapter Main Index
+
+@printindex cp
+
+@node Key Index
+@chapter Key Index
+
+@printindex ky
+
+@node Command and Function Index
+@chapter Command and Function Index
+
+@printindex fn
+
+@node Variable Index
+@chapter Variable Index
+
+@printindex vr
+
+@node What is New
+@chapter What is New
+
+@table @asis
+@item @ref{Bibliography and Citations in ODT export}
+Use JabRef to produce ODT documents with Citation and Bibliography
+@item @ref{List Tables in ODT export}
+Create a table with multi-paragraph content using a @samp{List table}
+@item @ref{Applying custom styles through keywords}
+@end table
+
+@bye

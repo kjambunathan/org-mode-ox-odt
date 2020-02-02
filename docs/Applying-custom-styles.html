@@ -47,6 +47,271 @@ Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT e
 <hr>
 <span id="Applying-custom-styles-1"></span><h2 class="chapter">6 Applying custom styles</h2>
 
+
+<hr>
+<span id="Applying-custom-styles-through-keywords"></span><span id="Applying-custom-styles-through-keywords-1"></span><h3 class="section">6.1 Applying custom styles through keywords</h3>
+
+
+<hr>
+<span id="Skeletal-structure-of-stylesxml"></span><span id="Skeletal-structure-of-styles_002exml"></span><h4 class="subsection">6.1.1 Skeletal structure of &lsquo;<samp>styles.xml</samp>&rsquo;</h4>
+
+<div class="example">
+<pre class="example">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;office:document-styles&gt;
+  &lt;office:font-face-decls&gt;
+    &lt;!-- Stuff from your default styles file --&gt;
+  &lt;/office:font-face-decls&gt;
+
+  &lt;office:styles&gt;
+    &lt;!-- Stuff from your default styles file --&gt;
+    &lt;!-- ODT_EXTRA_STYLES goes here --&gt;
+  &lt;/office:styles&gt;
+
+  &lt;office:automatic-styles&gt;
+    &lt;!-- ODT_EXTRA_AUTOMATIC_STYLES goes here --&gt;
+    &lt;!-- Stuff from your regular styles file --&gt;    
+  &lt;/office:automatic-styles&gt;
+
+  &lt;office:master-styles&gt;
+    &lt;!-- Stuff from your default styles file --&gt;
+    &lt;!-- ODT_MASTER_STYLES goes here --&gt;
+  &lt;/office:master-styles&gt;
+&lt;/office:document-styles&gt;
+</pre></div>
+
+<hr>
+<span id="Skeletal-structure-of-contentsxml"></span><span id="Skeletal-structure-of-contents_002exml"></span><h4 class="subsection">6.1.2 Skeletal structure of &lsquo;<samp>contents.xml</samp>&rsquo;</h4>
+
+<div class="example">
+<pre class="example">&lt;office:document-content&gt;
+  &lt;office:scripts/&gt;
+  &lt;office:font-face-decls&gt;
+    &lt;!-- Stuff from your default styles file --&gt;
+  &lt;/office:font-face-decls&gt;
+
+  &lt;office:automatic-styles&gt;
+    &lt;!-- Stuff from your default styles file --&gt;
+    &lt;!-- ODT_AUTOMATIC_STYLES goes here --&gt;
+  &lt;/office:automatic-styles&gt;
+
+  &lt;office:body&gt;
+    &lt;office:text&gt;
+      &lt;!-- Stuff from your default styles file --&gt;
+    &lt;/office:text&gt;
+  &lt;/office:body&gt;
+&lt;/office:document-content&gt;
+</pre></div>
+
+<hr>
+<span id="ODT_005fEXTRA_005fSTYLES"></span><span id="ODT_005fEXTRA_005fSTYLES-1"></span><h4 class="subsection">6.1.3 &lsquo;<samp>ODT_EXTRA_STYLES</samp>&rsquo;</h4>
+
+<span id="index-ODT_005fEXTRA_005fSTYLES_002c-keyword"></span>
+<dl compact="compact">
+<dt>ODT<em>_EXTRA</em><em>_STYLES</em></dt>
+</dl>
+
+<div class="example">
+<pre class="example">
+
+#+ODT_EXTRA_STYLES: &lt;style:style style:name=&quot;Text_20_body_large&quot;
+#+ODT_EXTRA_STYLES:              style:family=&quot;paragraph&quot;
+#+ODT_EXTRA_STYLES:              style:parent-style-name=&quot;Text_20_body&quot;&gt;
+#+ODT_EXTRA_STYLES:   &lt;style:text-properties fo:font-size=&quot;150%&quot;/&gt;
+#+ODT_EXTRA_STYLES: &lt;/style:style&gt;
+
+*** A regular paragraph
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+*** Same paragraph, in a larger font
+
+#+ATTR_ODT: :style &quot;Text_20_body_large&quot;
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+</pre></div>
+
+
+
+<img src="./custom-styles-1.png" alt="./custom-styles-1">
+
+<hr>
+<span id="ODT_005fAUTOMATIC_005fSTYLES"></span><span id="ODT_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.4 &lsquo;<samp>ODT_AUTOMATIC_STYLES</samp>&rsquo;</h4>
+
+<span id="index-ODT_005fAUTOMATIC_005fSTYLES_002c-keyword"></span>
+<dl compact="compact">
+<dt>ODT<em>_AUTOMATIC</em><em>_STYLES</em></dt>
+</dl>
+
+<div class="example">
+<pre class="example">
+
+#+ODT_AUTOMATIC_STYLES: &lt;style:style style:name=&quot;DropCaps&quot;
+#+ODT_AUTOMATIC_STYLES:              style:family=&quot;paragraph&quot;
+#+ODT_AUTOMATIC_STYLES:              style:parent-style-name=&quot;Text_20_body&quot;&gt;
+#+ODT_AUTOMATIC_STYLES:  &lt;style:paragraph-properties&gt;
+#+ODT_AUTOMATIC_STYLES:   &lt;style:drop-cap style:lines=&quot;3&quot;/&gt;
+#+ODT_AUTOMATIC_STYLES:  &lt;/style:paragraph-properties&gt;
+#+ODT_AUTOMATIC_STYLES: &lt;/style:style&gt;
+
+*** A regular paragraph
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+*** Same paragraph, but with =Drop Caps=
+
+#+ATTR_ODT: :style &quot;DropCaps&quot;
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+</pre></div>
+
+
+
+<img src="./custom-styles-2.png" alt="./custom-styles-2">
+
+<hr>
+<span id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES"></span><span id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.5 &lsquo;<samp>ODT_MASTER_STYLES</samp>&rsquo; and &lsquo;<samp>ODT_EXTRA_AUTOMATIC_STYLES</samp>&rsquo;</h4>
+
+<span id="index-ODT_005fEXTRA_005fIMAGES_002c-keyword"></span>
+<span id="index-ODT_005fMASTER_005fSTYLES_002c-keyword"></span>
+<span id="index-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES_002c-keyword"></span>
+<dl compact="compact">
+<dt>ODT<em>_EXTRA</em><em>_IMAGES</em></dt>
+<dt>ODT<em>_MASTER</em><em>_STYLES</em></dt>
+<dt>ODT<em>_EXTRA</em><em>_AUTOMATIC</em><em>_STYLES</em></dt>
+</dl>
+
+<div class="example">
+<pre class="example">
+
+#+ODT_EXTRA_IMAGES: Pictures/org-mode-unicorn.png
+
+#+ODT_EXTRA_STYLES: &lt;style:style style:name=&quot;Header&quot;
+#+ODT_EXTRA_STYLES:              style:family=&quot;paragraph&quot;&gt;
+#+ODT_EXTRA_STYLES:   &lt;loext:graphic-properties draw:fill=&quot;none&quot;/&gt;
+#+ODT_EXTRA_STYLES:   &lt;style:paragraph-properties
+#+ODT_EXTRA_STYLES:       fo:margin-left=&quot;2.499cm&quot;
+#+ODT_EXTRA_STYLES:       fo:margin-right=&quot;2.499cm&quot;
+#+ODT_EXTRA_STYLES:       fo:margin-top=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:       fo:margin-bottom=&quot;0.499cm&quot;
+#+ODT_EXTRA_STYLES:       fo:text-align=&quot;center&quot;
+#+ODT_EXTRA_STYLES:       style:justify-single-word=&quot;false&quot;
+#+ODT_EXTRA_STYLES:       fo:text-indent=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:       style:auto-text-indent=&quot;false&quot;
+#+ODT_EXTRA_STYLES:       fo:background-color=&quot;transparent&quot;
+#+ODT_EXTRA_STYLES:       fo:padding-left=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:       fo:padding-right=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:       fo:padding-top=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:       fo:padding-bottom=&quot;0.199cm&quot;
+#+ODT_EXTRA_STYLES:       fo:border-left=&quot;none&quot;
+#+ODT_EXTRA_STYLES:       fo:border-right=&quot;none&quot;
+#+ODT_EXTRA_STYLES:       fo:border-top=&quot;none&quot;
+#+ODT_EXTRA_STYLES:       fo:border-bottom=&quot;0.06pt solid #000000&quot;/&gt;
+#+ODT_EXTRA_STYLES:   &lt;style:text-properties
+#+ODT_EXTRA_STYLES:       fo:font-size=&quot;18pt&quot; fo:font-style=&quot;italic&quot;
+#+ODT_EXTRA_STYLES:       style:font-size-asian=&quot;18pt&quot;
+#+ODT_EXTRA_STYLES:       style:font-style-asian=&quot;italic&quot;
+#+ODT_EXTRA_STYLES:       style:font-size-complex=&quot;18pt&quot;
+#+ODT_EXTRA_STYLES:       style:font-style-complex=&quot;italic&quot;/&gt;
+#+ODT_EXTRA_STYLES: &lt;/style:style&gt;
+
+#+ODT_EXTRA_STYLES:  &lt;style:style style:name=&quot;Logo&quot; style:family=&quot;graphic&quot;
+#+ODT_EXTRA_STYLES:               style:parent-style-name=&quot;Graphics&quot;&gt;
+#+ODT_EXTRA_STYLES:    &lt;style:graphic-properties
+#+ODT_EXTRA_STYLES:        svg:width=&quot;2.311cm&quot; fo:min-height=&quot;2.499cm&quot;
+#+ODT_EXTRA_STYLES:        svg:x=&quot;0cm&quot; svg:y=&quot;-0.9cm&quot; fo:margin-left=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:        fo:margin-right=&quot;0cm&quot; fo:margin-top=&quot;0cm&quot;
+#+ODT_EXTRA_STYLES:        fo:margin-bottom=&quot;0cm&quot; style:wrap=&quot;none&quot;
+#+ODT_EXTRA_STYLES:        style:vertical-pos=&quot;middle&quot;
+#+ODT_EXTRA_STYLES:        style:vertical-rel=&quot;paragraph-content&quot;
+#+ODT_EXTRA_STYLES:        style:horizontal-pos=&quot;left&quot;
+#+ODT_EXTRA_STYLES:        style:horizontal-rel=&quot;page-content&quot;
+#+ODT_EXTRA_STYLES:        fo:background-color=&quot;transparent&quot;
+#+ODT_EXTRA_STYLES:        draw:fill=&quot;none&quot;/&gt;
+#+ODT_EXTRA_STYLES:  &lt;/style:style&gt;
+
+#+ODT_MASTER_STYLES: &lt;style:master-page
+#+ODT_MASTER_STYLES:     style:name=&quot;Standard&quot;
+#+ODT_MASTER_STYLES:     style:page-layout-name=&quot;Mpm1&quot;&gt;
+#+ODT_MASTER_STYLES:   &lt;style:header&gt;
+#+ODT_MASTER_STYLES:     &lt;text:p text:style-name=&quot;Header&quot;&gt;
+#+ODT_MASTER_STYLES:       &lt;draw:frame
+#+ODT_MASTER_STYLES:           draw:style-name=&quot;Logo&quot;
+#+ODT_MASTER_STYLES:           draw:name=&quot;Image1&quot;
+#+ODT_MASTER_STYLES:           text:anchor-type=&quot;paragraph&quot;
+#+ODT_MASTER_STYLES:           svg:width=&quot;2.311cm&quot;
+#+ODT_MASTER_STYLES:           svg:height=&quot;2.499cm&quot;
+#+ODT_MASTER_STYLES:           draw:z-index=&quot;0&quot;&gt;
+#+ODT_MASTER_STYLES:         &lt;draw:image
+#+ODT_MASTER_STYLES:             xlink:href=&quot;Pictures/org-mode-unicorn.png&quot;
+#+ODT_MASTER_STYLES:             xlink:type=&quot;simple&quot;
+#+ODT_MASTER_STYLES:             xlink:show=&quot;embed&quot;
+#+ODT_MASTER_STYLES:             xlink:actuate=&quot;onLoad&quot;
+#+ODT_MASTER_STYLES:             loext:mime-type=&quot;image/png&quot;/&gt;
+#+ODT_MASTER_STYLES:     &lt;/draw:frame&gt;Friends of the Unicorn&lt;/text:p&gt;
+#+ODT_MASTER_STYLES:   &lt;/style:header&gt;
+#+ODT_MASTER_STYLES: &lt;/style:master-page&gt;
+
+#+ODT_EXTRA_AUTOMATIC_STYLES: &lt;style:page-layout style:name=&quot;Mpm1&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:                    style:page-usage=&quot;mirrored&quot;&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:   &lt;style:page-layout-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width=&quot;21.001cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-height=&quot;11.10cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format=&quot;1&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation=&quot;landscape&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top=&quot;2cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-bottom=&quot;2cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left=&quot;2cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-right=&quot;2cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode=&quot;lr-tb&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color=&quot;#c0c0c0&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines=&quot;20&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height=&quot;0.706cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height=&quot;0.353cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode=&quot;none&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below=&quot;false&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print=&quot;false&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display=&quot;false&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height=&quot;0cm&quot;&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:     &lt;style:footnote-sep
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:width=&quot;0.018cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-before-sep=&quot;0.101cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-after-sep=&quot;0.101cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:line-style=&quot;solid&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:adjustment=&quot;left&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:rel-width=&quot;25%&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         style:color=&quot;#000000&quot;/&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:   &lt;/style:page-layout-properties&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:   &lt;style:header-style&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:     &lt;style:header-footer-properties
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:min-height=&quot;0.499cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-left=&quot;0cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-right=&quot;0cm&quot;
+#+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-bottom=&quot;0cm&quot;/&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:   &lt;/style:header-style&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES:   &lt;style:footer-style/&gt;
+#+ODT_EXTRA_AUTOMATIC_STYLES: &lt;/style:page-layout&gt;
+
+Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+</pre></div>
+
+
+
+<img src="./custom-styles-4.png" alt="./custom-styles-4">
+
+<hr>
+<span id="Applying-custom-styles-through-a-style-template"></span><span id="Applying-custom-styles-through-a-style-template-1"></span><h3 class="section">6.2 Applying custom styles through a style template</h3>
+
 <p>The ODT exporter ships with a set of OpenDocument styles (see <a href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">Working with OpenDocument style files</a>) that ensure a well-formatted
 output. These factory styles, however, may not cater to your specific
 tastes. To customize the output, you can either modify the above
@@ -56,7 +321,7 @@ and non-expert users alike, and is described here.
 </p>
 
 <hr>
-<span id="Applying-custom-styles-_002d-the-easy-way"></span><span id="Applying-custom-styles-_002d-the-easy-way-1"></span><h3 class="section">6.1 Applying custom styles - the easy way</h3>
+<span id="Applying-custom-styles-_002d-the-easy-way"></span><span id="Applying-custom-styles-_002d-the-easy-way-1"></span><h4 class="subsection">6.2.1 Applying custom styles - the easy way</h4>
 
 <ol>
 <li> Create a sample &lsquo;<samp>example.org</samp>&rsquo; file with the below settings and
@@ -93,7 +358,7 @@ like
 </li></ol>
 
 <hr>
-<span id="Using-third_002dparty-styles-and-templates"></span><span id="Using-third_002dparty-styles-and-templates-1"></span><h3 class="section">6.2 Using third-party styles and templates</h3>
+<span id="Using-third_002dparty-styles-and-templates"></span><span id="Using-third_002dparty-styles-and-templates-1"></span><h4 class="subsection">6.2.2 Using third-party styles and templates</h4>
 
 <p>You can use third-party styles and templates for customizing your
 output. This will produce the desired output only if the template
@@ -105,7 +370,7 @@ templates that are directly derived from the factory settings.
 <hr>
 <div class="header">
 <p>
-Previous: <a href="#Applying-custom-styles-_002d-the-easy-way" accesskey="p" rel="prev">Applying custom styles - the easy way</a>, Up: <a href="#Applying-custom-styles" accesskey="u" rel="up">Applying custom styles</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Previous: <a href="#Applying-custom-styles-_002d-the-easy-way" accesskey="p" rel="prev">Applying custom styles - the easy way</a>, Up: <a href="#Applying-custom-styles-through-a-style-template" accesskey="u" rel="up">Applying custom styles through a style template</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

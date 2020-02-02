@@ -62,6 +62,19 @@ Extending ODT export
 
 Applying custom styles
 
+* Applying custom styles through keywords::
+* Applying custom styles through a style template::
+
+Applying custom styles through keywords
+
+* Skeletal structure of ‘styles.xml’: Skeletal structure of stylesxml.
+* Skeletal structure of ‘contents.xml’: Skeletal structure of contentsxml.
+* ODT_EXTRA_STYLES::
+* ODT_AUTOMATIC_STYLES::
+* ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES::
+
+Applying custom styles through a style template
+
 * Applying custom styles - the easy way::
 * Using third-party styles and templates::
 
@@ -446,6 +459,275 @@ File: org-odt,  Node: Applying custom styles,  Next: Links in ODT export,  Prev:
 6 Applying custom styles
 ************************
 
+* Menu:
+
+* Applying custom styles through keywords::
+* Applying custom styles through a style template::
+
+
+File: org-odt,  Node: Applying custom styles through keywords,  Next: Applying custom styles through a style template,  Up: Applying custom styles
+
+6.1 Applying custom styles through keywords
+===========================================
+
+* Menu:
+
+* Skeletal structure of ‘styles.xml’: Skeletal structure of stylesxml.
+* Skeletal structure of ‘contents.xml’: Skeletal structure of contentsxml.
+* ODT_EXTRA_STYLES::
+* ODT_AUTOMATIC_STYLES::
+* ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES::
+
+
+File: org-odt,  Node: Skeletal structure of stylesxml,  Next: Skeletal structure of contentsxml,  Up: Applying custom styles through keywords
+
+6.1.1 Skeletal structure of ‘styles.xml’
+----------------------------------------
+
+     <?xml version="1.0" encoding="UTF-8"?>
+     <office:document-styles>
+       <office:font-face-decls>
+         <!-- Stuff from your default styles file -->
+       </office:font-face-decls>
+
+       <office:styles>
+         <!-- Stuff from your default styles file -->
+         <!-- ODT_EXTRA_STYLES goes here -->
+       </office:styles>
+
+       <office:automatic-styles>
+         <!-- ODT_EXTRA_AUTOMATIC_STYLES goes here -->
+         <!-- Stuff from your regular styles file -->
+       </office:automatic-styles>
+
+       <office:master-styles>
+         <!-- Stuff from your default styles file -->
+         <!-- ODT_MASTER_STYLES goes here -->
+       </office:master-styles>
+     </office:document-styles>
+
+
+File: org-odt,  Node: Skeletal structure of contentsxml,  Next: ODT_EXTRA_STYLES,  Prev: Skeletal structure of stylesxml,  Up: Applying custom styles through keywords
+
+6.1.2 Skeletal structure of ‘contents.xml’
+------------------------------------------
+
+     <office:document-content>
+       <office:scripts/>
+       <office:font-face-decls>
+         <!-- Stuff from your default styles file -->
+       </office:font-face-decls>
+
+       <office:automatic-styles>
+         <!-- Stuff from your default styles file -->
+         <!-- ODT_AUTOMATIC_STYLES goes here -->
+       </office:automatic-styles>
+
+       <office:body>
+         <office:text>
+           <!-- Stuff from your default styles file -->
+         </office:text>
+       </office:body>
+     </office:document-content>
+
+
+File: org-odt,  Node: ODT_EXTRA_STYLES,  Next: ODT_AUTOMATIC_STYLES,  Prev: Skeletal structure of contentsxml,  Up: Applying custom styles through keywords
+
+6.1.3 ‘ODT_EXTRA_STYLES’
+------------------------
+
+ODT_EXTRA_STYLES
+
+
+     #+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_large"
+     #+ODT_EXTRA_STYLES:              style:family="paragraph"
+     #+ODT_EXTRA_STYLES:              style:parent-style-name="Text_20_body">
+     #+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="150%"/>
+     #+ODT_EXTRA_STYLES: </style:style>
+
+     *** A regular paragraph
+
+     Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+     Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+     Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+     *** Same paragraph, in a larger font
+
+     #+ATTR_ODT: :style "Text_20_body_large"
+     Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+     Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+     Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+
+ [image src="./custom-styles-1.png" ]
+
+
+File: org-odt,  Node: ODT_AUTOMATIC_STYLES,  Next: ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES,  Prev: ODT_EXTRA_STYLES,  Up: Applying custom styles through keywords
+
+6.1.4 ‘ODT_AUTOMATIC_STYLES’
+----------------------------
+
+ODT_AUTOMATIC_STYLES
+
+
+     #+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps"
+     #+ODT_AUTOMATIC_STYLES:              style:family="paragraph"
+     #+ODT_AUTOMATIC_STYLES:              style:parent-style-name="Text_20_body">
+     #+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+     #+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+     #+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+     #+ODT_AUTOMATIC_STYLES: </style:style>
+
+     *** A regular paragraph
+
+     Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+     Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+     Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+     *** Same paragraph, but with =Drop Caps=
+
+     #+ATTR_ODT: :style "DropCaps"
+     Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+     Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+     Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+
+ [image src="./custom-styles-2.png" ]
+
+
+File: org-odt,  Node: ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES,  Prev: ODT_AUTOMATIC_STYLES,  Up: Applying custom styles through keywords
+
+6.1.5 ‘ODT_MASTER_STYLES’ and ‘ODT_EXTRA_AUTOMATIC_STYLES’
+----------------------------------------------------------
+
+ODT_EXTRA_IMAGES
+
+ODT_MASTER_STYLES
+
+ODT_EXTRA_AUTOMATIC_STYLES
+
+
+     #+ODT_EXTRA_IMAGES: Pictures/org-mode-unicorn.png
+
+     #+ODT_EXTRA_STYLES: <style:style style:name="Header"
+     #+ODT_EXTRA_STYLES:              style:family="paragraph">
+     #+ODT_EXTRA_STYLES:   <loext:graphic-properties draw:fill="none"/>
+     #+ODT_EXTRA_STYLES:   <style:paragraph-properties
+     #+ODT_EXTRA_STYLES:       fo:margin-left="2.499cm"
+     #+ODT_EXTRA_STYLES:       fo:margin-right="2.499cm"
+     #+ODT_EXTRA_STYLES:       fo:margin-top="0cm"
+     #+ODT_EXTRA_STYLES:       fo:margin-bottom="0.499cm"
+     #+ODT_EXTRA_STYLES:       fo:text-align="center"
+     #+ODT_EXTRA_STYLES:       style:justify-single-word="false"
+     #+ODT_EXTRA_STYLES:       fo:text-indent="0cm"
+     #+ODT_EXTRA_STYLES:       style:auto-text-indent="false"
+     #+ODT_EXTRA_STYLES:       fo:background-color="transparent"
+     #+ODT_EXTRA_STYLES:       fo:padding-left="0cm"
+     #+ODT_EXTRA_STYLES:       fo:padding-right="0cm"
+     #+ODT_EXTRA_STYLES:       fo:padding-top="0cm"
+     #+ODT_EXTRA_STYLES:       fo:padding-bottom="0.199cm"
+     #+ODT_EXTRA_STYLES:       fo:border-left="none"
+     #+ODT_EXTRA_STYLES:       fo:border-right="none"
+     #+ODT_EXTRA_STYLES:       fo:border-top="none"
+     #+ODT_EXTRA_STYLES:       fo:border-bottom="0.06pt solid #000000"/>
+     #+ODT_EXTRA_STYLES:   <style:text-properties
+     #+ODT_EXTRA_STYLES:       fo:font-size="18pt" fo:font-style="italic"
+     #+ODT_EXTRA_STYLES:       style:font-size-asian="18pt"
+     #+ODT_EXTRA_STYLES:       style:font-style-asian="italic"
+     #+ODT_EXTRA_STYLES:       style:font-size-complex="18pt"
+     #+ODT_EXTRA_STYLES:       style:font-style-complex="italic"/>
+     #+ODT_EXTRA_STYLES: </style:style>
+
+     #+ODT_EXTRA_STYLES:  <style:style style:name="Logo" style:family="graphic"
+     #+ODT_EXTRA_STYLES:               style:parent-style-name="Graphics">
+     #+ODT_EXTRA_STYLES:    <style:graphic-properties
+     #+ODT_EXTRA_STYLES:        svg:width="2.311cm" fo:min-height="2.499cm"
+     #+ODT_EXTRA_STYLES:        svg:x="0cm" svg:y="-0.9cm" fo:margin-left="0cm"
+     #+ODT_EXTRA_STYLES:        fo:margin-right="0cm" fo:margin-top="0cm"
+     #+ODT_EXTRA_STYLES:        fo:margin-bottom="0cm" style:wrap="none"
+     #+ODT_EXTRA_STYLES:        style:vertical-pos="middle"
+     #+ODT_EXTRA_STYLES:        style:vertical-rel="paragraph-content"
+     #+ODT_EXTRA_STYLES:        style:horizontal-pos="left"
+     #+ODT_EXTRA_STYLES:        style:horizontal-rel="page-content"
+     #+ODT_EXTRA_STYLES:        fo:background-color="transparent"
+     #+ODT_EXTRA_STYLES:        draw:fill="none"/>
+     #+ODT_EXTRA_STYLES:  </style:style>
+
+     #+ODT_MASTER_STYLES: <style:master-page
+     #+ODT_MASTER_STYLES:     style:name="Standard"
+     #+ODT_MASTER_STYLES:     style:page-layout-name="Mpm1">
+     #+ODT_MASTER_STYLES:   <style:header>
+     #+ODT_MASTER_STYLES:     <text:p text:style-name="Header">
+     #+ODT_MASTER_STYLES:       <draw:frame
+     #+ODT_MASTER_STYLES:           draw:style-name="Logo"
+     #+ODT_MASTER_STYLES:           draw:name="Image1"
+     #+ODT_MASTER_STYLES:           text:anchor-type="paragraph"
+     #+ODT_MASTER_STYLES:           svg:width="2.311cm"
+     #+ODT_MASTER_STYLES:           svg:height="2.499cm"
+     #+ODT_MASTER_STYLES:           draw:z-index="0">
+     #+ODT_MASTER_STYLES:         <draw:image
+     #+ODT_MASTER_STYLES:             xlink:href="Pictures/org-mode-unicorn.png"
+     #+ODT_MASTER_STYLES:             xlink:type="simple"
+     #+ODT_MASTER_STYLES:             xlink:show="embed"
+     #+ODT_MASTER_STYLES:             xlink:actuate="onLoad"
+     #+ODT_MASTER_STYLES:             loext:mime-type="image/png"/>
+     #+ODT_MASTER_STYLES:     </draw:frame>Friends of the Unicorn</text:p>
+     #+ODT_MASTER_STYLES:   </style:header>
+     #+ODT_MASTER_STYLES: </style:master-page>
+
+     #+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:                    style:page-usage="mirrored">
+     #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:page-layout-properties
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width="21.001cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-height="11.10cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format="1"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation="landscape"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top="2cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-bottom="2cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left="2cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-right="2cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode="lr-tb"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color="#c0c0c0"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines="20"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height="0.706cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height="0.353cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode="none"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below="false"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print="false"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display="false"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height="0cm">
+     #+ODT_EXTRA_AUTOMATIC_STYLES:     <style:footnote-sep
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:width="0.018cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-before-sep="0.101cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:distance-after-sep="0.101cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:line-style="solid"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:adjustment="left"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:rel-width="25%"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         style:color="#000000"/>
+     #+ODT_EXTRA_AUTOMATIC_STYLES:   </style:page-layout-properties>
+     #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-style>
+     #+ODT_EXTRA_AUTOMATIC_STYLES:     <style:header-footer-properties
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         fo:min-height="0.499cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-left="0cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-right="0cm"
+     #+ODT_EXTRA_AUTOMATIC_STYLES:         fo:margin-bottom="0cm"/>
+     #+ODT_EXTRA_AUTOMATIC_STYLES:   </style:header-style>
+     #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footer-style/>
+     #+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+
+     Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+     Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+     Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+
+
+ [image src="./custom-styles-4.png" ]
+
+
+File: org-odt,  Node: Applying custom styles through a style template,  Prev: Applying custom styles through keywords,  Up: Applying custom styles
+
+6.2 Applying custom styles through a style template
+===================================================
+
 The ODT exporter ships with a set of OpenDocument styles (see *note
 Working with OpenDocument style files::) that ensure a well-formatted
 output.  These factory styles, however, may not cater to your specific
@@ -460,10 +742,10 @@ non-expert users alike, and is described here.
 * Using third-party styles and templates::
 
 
-File: org-odt,  Node: Applying custom styles - the easy way,  Next: Using third-party styles and templates,  Up: Applying custom styles
+File: org-odt,  Node: Applying custom styles - the easy way,  Next: Using third-party styles and templates,  Up: Applying custom styles through a style template
 
-6.1 Applying custom styles - the easy way
-=========================================
+6.2.1 Applying custom styles - the easy way
+-------------------------------------------
 
   1. Create a sample ‘example.org’ file with the below settings and
      export it to ODT format.
@@ -491,10 +773,10 @@ File: org-odt,  Node: Applying custom styles - the easy way,  Next: Using third-
           #+ODT_STYLES_FILE: ("/path/to/file.ott" ("styles.xml" "image/hdr.png"))
 
 
-File: org-odt,  Node: Using third-party styles and templates,  Prev: Applying custom styles - the easy way,  Up: Applying custom styles
+File: org-odt,  Node: Using third-party styles and templates,  Prev: Applying custom styles - the easy way,  Up: Applying custom styles through a style template
 
-6.2 Using third-party styles and templates
-==========================================
+6.2.2 Using third-party styles and templates
+--------------------------------------------
 
 You can use third-party styles and templates for customizing your
 output.  This will produce the desired output only if the template
@@ -1665,8 +1947,16 @@ File: org-odt,  Node: Main Index,  Next: Key Index,  Prev: Advanced topics in OD
                                                                (line 36)
 * BIB_FILE, keyword:                     Bibliography and Citations in ODT export.
                                                                (line 25)
+* ODT_AUTOMATIC_STYLES, keyword:         ODT_AUTOMATIC_STYLES. (line  6)
+* ODT_EXTRA_AUTOMATIC_STYLES, keyword:   ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES.
+                                                               (line  6)
+* ODT_EXTRA_IMAGES, keyword:             ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES.
+                                                               (line  6)
+* ODT_EXTRA_STYLES, keyword:             ODT_EXTRA_STYLES.     (line  6)
 * ODT_JABREF_CITATION_STYLE, keyword:    Bibliography and Citations in ODT export.
                                                                (line 28)
+* ODT_MASTER_STYLES, keyword:            ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES.
+                                                               (line  6)
 * ODT_STYLES_FILE, keyword:              Applying custom styles - the easy way.
                                                                (line 21)
 * unconv:                                Extending ODT export. (line 11)
@@ -1746,83 +2036,91 @@ File: org-odt,  Node: What is New,  Prev: Variable Index,  Up: Top
      Use JabRef to produce ODT documents with Citation and Bibliography
 *note List Tables in ODT export::
      Create a table with multi-paragraph content using a ‘List table’
+*note Applying custom styles through keywords::
 
 
 
 Tag Table:
 Node: Top70
-Node: Project Summary4033
-Node: Structure of ELPA tar4708
-Node: Getting Started with ODT export6198
-Node: Pre-requisites for ODT export6508
-Ref: Pre-requisites for ODT export-Footnote-17540
-Ref: Pre-requisites for ODT export-Footnote-27584
-Ref: Pre-requisites for ODT export-Footnote-37628
-Ref: Pre-requisites for ODT export-Footnote-47674
-Ref: Pre-requisites for ODT export-Footnote-57721
-Ref: Pre-requisites for ODT export-Footnote-67768
-Ref: Pre-requisites for ODT export-Footnote-77815
-Ref: Pre-requisites for ODT export-Footnote-87861
-Ref: Pre-requisites for ODT export-Footnote-97909
-Ref: Pre-requisites for ODT export-Footnote-107980
-Node: Installation8022
-Node: Configuration8867
-Node: ODT export commands11232
-Node: Exporting to ODT11432
-Node: Extending ODT export12058
-Node: Automatically exporting to other formats13054
-Node: Converting between document formats13727
-Node: Applying custom styles14402
-Node: Applying custom styles - the easy way15126
-Node: Using third-party styles and templates16281
-Node: Links in ODT export16902
-Node: List Tables in ODT export17535
-Node: Examples18660
-Node: A list table with rules column size and alignments19393
-Node: List table with table and figures21259
-Node: List table can contain other tables21986
-Node: Tables in ODT export22848
-Ref: Tables in ODT export-Footnote-125014
-Node: Images in ODT export25089
-Node: Embedding images25389
-Node: Embedding clickable images25769
-Node: Sizing and scaling of embedded images26263
-Ref: Sizing and scaling of embedded images-Footnote-127995
-Node: Anchoring of images28224
-Node: Math formatting in ODT export28784
-Node: Working with LaTeX math snippets29219
-Ref: Working with LaTeX math snippets-Footnote-131228
-Node: Working with MathML or OpenDocument formula files31303
-Node: Labels and captions in ODT export31879
-Node: Literal examples in ODT export33316
-Ref: Literal examples in ODT export-Footnote-134234
-Node: Bibliography and Citations in ODT export34349
-Ref: Bibliography and Citations in ODT export-Footnote-137940
-Node: Configure JabRef with ChicagoODF custom export38027
-Ref: org979540d38630
-Ref: Configure JabRef with ChicagoODF custom export-Footnote-140601
-Ref: Configure JabRef with ChicagoODF custom export-Footnote-240649
-Node: Example40973
-Node: Sample Outputs42897
-Node: Advanced topics in ODT export43370
-Node: Configuring a document converter44124
-Node: Working with OpenDocument style files45512
-Node: Factory styles46061
-Node: Overriding factory styles47454
-Node: Creating one-off styles48934
-Node: Customizing tables in ODT export51152
-Ref: Customizing tables in ODT export-Footnote-151838
-Node: Custom table styles - an illustration51942
-Node: Custom table styles - the nitty-gritty53343
-Ref: Custom table styles - the nitty-gritty-Footnote-157003
-Ref: Custom table styles - the nitty-gritty-Footnote-257095
-Node: Validating OpenDocument XML57442
-Ref: Validating OpenDocument XML-Footnote-158484
-Node: Main Index58544
-Node: Key Index60065
-Node: Command and Function Index60359
-Node: Variable Index61065
-Node: What is New63169
+Node: Project Summary4474
+Node: Structure of ELPA tar5149
+Node: Getting Started with ODT export6639
+Node: Pre-requisites for ODT export6949
+Ref: Pre-requisites for ODT export-Footnote-17981
+Ref: Pre-requisites for ODT export-Footnote-28025
+Ref: Pre-requisites for ODT export-Footnote-38069
+Ref: Pre-requisites for ODT export-Footnote-48115
+Ref: Pre-requisites for ODT export-Footnote-58162
+Ref: Pre-requisites for ODT export-Footnote-68209
+Ref: Pre-requisites for ODT export-Footnote-78256
+Ref: Pre-requisites for ODT export-Footnote-88302
+Ref: Pre-requisites for ODT export-Footnote-98350
+Ref: Pre-requisites for ODT export-Footnote-108421
+Node: Installation8463
+Node: Configuration9308
+Node: ODT export commands11673
+Node: Exporting to ODT11873
+Node: Extending ODT export12499
+Node: Automatically exporting to other formats13495
+Node: Converting between document formats14168
+Node: Applying custom styles14843
+Node: Applying custom styles through keywords15115
+Node: Skeletal structure of stylesxml15617
+Node: Skeletal structure of contentsxml16560
+Node: ODT_EXTRA_STYLES17347
+Node: ODT_AUTOMATIC_STYLES18450
+Node: ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES19692
+Node: Applying custom styles through a style template26758
+Node: Applying custom styles - the easy way27571
+Node: Using third-party styles and templates28755
+Node: Links in ODT export29405
+Node: List Tables in ODT export30038
+Node: Examples31163
+Node: A list table with rules column size and alignments31896
+Node: List table with table and figures33762
+Node: List table can contain other tables34489
+Node: Tables in ODT export35351
+Ref: Tables in ODT export-Footnote-137517
+Node: Images in ODT export37592
+Node: Embedding images37892
+Node: Embedding clickable images38272
+Node: Sizing and scaling of embedded images38766
+Ref: Sizing and scaling of embedded images-Footnote-140498
+Node: Anchoring of images40727
+Node: Math formatting in ODT export41287
+Node: Working with LaTeX math snippets41722
+Ref: Working with LaTeX math snippets-Footnote-143731
+Node: Working with MathML or OpenDocument formula files43806
+Node: Labels and captions in ODT export44382
+Node: Literal examples in ODT export45819
+Ref: Literal examples in ODT export-Footnote-146737
+Node: Bibliography and Citations in ODT export46852
+Ref: Bibliography and Citations in ODT export-Footnote-150443
+Node: Configure JabRef with ChicagoODF custom export50530
+Ref: org72b458051133
+Ref: Configure JabRef with ChicagoODF custom export-Footnote-153104
+Ref: Configure JabRef with ChicagoODF custom export-Footnote-253152
+Node: Example53476
+Node: Sample Outputs55400
+Node: Advanced topics in ODT export55873
+Node: Configuring a document converter56627
+Node: Working with OpenDocument style files58015
+Node: Factory styles58564
+Node: Overriding factory styles59957
+Node: Creating one-off styles61437
+Node: Customizing tables in ODT export63655
+Ref: Customizing tables in ODT export-Footnote-164341
+Node: Custom table styles - an illustration64445
+Node: Custom table styles - the nitty-gritty65846
+Ref: Custom table styles - the nitty-gritty-Footnote-169506
+Ref: Custom table styles - the nitty-gritty-Footnote-269598
+Node: Validating OpenDocument XML69945
+Ref: Validating OpenDocument XML-Footnote-170987
+Node: Main Index71047
+Node: Key Index73206
+Node: Command and Function Index73500
+Node: Variable Index74206
+Node: What is New76310
 
 End Tag Table
 
