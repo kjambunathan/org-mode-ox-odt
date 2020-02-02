@@ -327,10 +327,275 @@ with it using the following command.
      Convert an existing document from one format to another. With a
      prefix argument, also open the newly produced file.
 
+
 * Applying custom styles
 :PROPERTIES:
 :DESCRIPTION: How to apply custom styles to the output
 :END:
+
+** Applying custom styles through keywords
+
+*** Skeletal structure of =styles.xml=
+
+#+begin_example
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document-styles>
+  <office:font-face-decls>
+    <!-- Stuff from your default styles file -->
+  </office:font-face-decls>
+
+  <office:styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_EXTRA_STYLES goes here -->
+  </office:styles>
+
+  <office:automatic-styles>
+    <!-- ODT_EXTRA_AUTOMATIC_STYLES goes here -->
+    <!-- Stuff from your regular styles file -->    
+  </office:automatic-styles>
+
+  <office:master-styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_MASTER_STYLES goes here -->
+  </office:master-styles>
+</office:document-styles>
+#+end_example
+
+*** Skeletal structure of =contents.xml=
+
+#+begin_example
+<office:document-content>
+  <office:scripts/>
+  <office:font-face-decls>
+    <!-- Stuff from your default styles file -->
+  </office:font-face-decls>
+
+  <office:automatic-styles>
+    <!-- Stuff from your default styles file -->
+    <!-- ODT_AUTOMATIC_STYLES goes here -->
+  </office:automatic-styles>
+
+  <office:body>
+    <office:text>
+      <!-- Stuff from your default styles file -->
+    </office:text>
+  </office:body>
+</office:document-content>
+#+end_example
+
+*** =ODT_EXTRA_STYLES=
+
+#+cindex: @samp{ODT_EXTRA_STYLES}, keyword
+- ODT_EXTRA_STYLES ::
+
+# Define *common* styles through #+ODT_EXTRA_STYLES: ...
+
+# "<office:styles>...</office:styles>".
+
+# Use this option to define common styles.  When using
+# LibreOffice, these styles are visible via the stylist.
+
+# For example, the snippet below first defines a *common* style
+# named "Text_20_body_small".  Subsequently, it applies that
+# style to a paragraph.
+
+:
+: #+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_large"
+: #+ODT_EXTRA_STYLES: 	     style:family="paragraph"
+: #+ODT_EXTRA_STYLES: 	     style:parent-style-name="Text_20_body">
+: #+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="150%"/>
+: #+ODT_EXTRA_STYLES: </style:style>
+: 
+: *** A regular paragraph
+: 
+: Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+: Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+: Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+: 
+: *** Same paragraph, in a larger font
+: 
+: #+ATTR_ODT: :style "Text_20_body_large"
+: Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+: Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+: Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+:
+
+
+#+ATTR_TEXINFO: :width 15cm
+[[./custom-styles-1.png]]
+
+
+*** =ODT_AUTOMATIC_STYLES=
+
+#+cindex: @samp{ODT_AUTOMATIC_STYLES}, keyword
+- ODT_AUTOMATIC_STYLES ::
+
+# lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
+
+# * lisp/ox-odt.el (ODT_AUTOMATIC_STYLES): New option.
+# (org-odt-template): Append above value to
+# "<office:automatic-styles>...</office:automatic-styles>".
+
+# For example, the following snippet defines a custom paragraph
+# style that uses drop caps and applies that style to a paragraph,
+# presumably the first one in a chapter.
+
+: 
+: #+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps"
+: #+ODT_AUTOMATIC_STYLES: 	     style:family="paragraph"
+: #+ODT_AUTOMATIC_STYLES: 	     style:parent-style-name="Text_20_body">
+: #+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+: #+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+: #+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+: #+ODT_AUTOMATIC_STYLES: </style:style>
+: 
+: *** A regular paragraph
+: 
+: Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+: Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+: Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+: 
+: *** Same paragraph, but with =Drop Caps=
+: 
+: #+ATTR_ODT: :style "DropCaps"
+: Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+: Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+: Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+:
+
+
+#+ATTR_TEXINFO: :width 15cm
+[[./custom-styles-2.png]]
+
+
+*** =ODT_MASTER_STYLES= and =ODT_EXTRA_AUTOMATIC_STYLES=
+
+#+cindex: @samp{ODT_EXTRA_IMAGES}, keyword
+#+cindex: @samp{ODT_MASTER_STYLES}, keyword
+#+cindex: @samp{ODT_EXTRA_AUTOMATIC_STYLES}, keyword
+- ODT_EXTRA_IMAGES ::
+- ODT_MASTER_STYLES ::
+- ODT_EXTRA_AUTOMATIC_STYLES :: 
+
+:
+: #+ODT_EXTRA_IMAGES: Pictures/org-mode-unicorn.png
+: 
+: #+ODT_EXTRA_STYLES: <style:style style:name="Header"
+: #+ODT_EXTRA_STYLES: 	     style:family="paragraph">
+: #+ODT_EXTRA_STYLES:   <loext:graphic-properties draw:fill="none"/>
+: #+ODT_EXTRA_STYLES:   <style:paragraph-properties
+: #+ODT_EXTRA_STYLES:       fo:margin-left="2.499cm"
+: #+ODT_EXTRA_STYLES:       fo:margin-right="2.499cm"
+: #+ODT_EXTRA_STYLES:       fo:margin-top="0cm"
+: #+ODT_EXTRA_STYLES:       fo:margin-bottom="0.499cm"
+: #+ODT_EXTRA_STYLES:       fo:text-align="center"
+: #+ODT_EXTRA_STYLES:       style:justify-single-word="false"
+: #+ODT_EXTRA_STYLES:       fo:text-indent="0cm"
+: #+ODT_EXTRA_STYLES:       style:auto-text-indent="false"
+: #+ODT_EXTRA_STYLES:       fo:background-color="transparent"
+: #+ODT_EXTRA_STYLES:       fo:padding-left="0cm"
+: #+ODT_EXTRA_STYLES:       fo:padding-right="0cm"
+: #+ODT_EXTRA_STYLES:       fo:padding-top="0cm"
+: #+ODT_EXTRA_STYLES:       fo:padding-bottom="0.199cm"
+: #+ODT_EXTRA_STYLES:       fo:border-left="none"
+: #+ODT_EXTRA_STYLES:       fo:border-right="none"
+: #+ODT_EXTRA_STYLES:       fo:border-top="none"
+: #+ODT_EXTRA_STYLES:       fo:border-bottom="0.06pt solid #000000"/>
+: #+ODT_EXTRA_STYLES:   <style:text-properties
+: #+ODT_EXTRA_STYLES:       fo:font-size="18pt" fo:font-style="italic"
+: #+ODT_EXTRA_STYLES:       style:font-size-asian="18pt"
+: #+ODT_EXTRA_STYLES:       style:font-style-asian="italic"
+: #+ODT_EXTRA_STYLES:       style:font-size-complex="18pt"
+: #+ODT_EXTRA_STYLES:       style:font-style-complex="italic"/>
+: #+ODT_EXTRA_STYLES: </style:style>
+: 
+: #+ODT_EXTRA_STYLES:  <style:style style:name="Logo" style:family="graphic"
+: #+ODT_EXTRA_STYLES:  	     style:parent-style-name="Graphics">
+: #+ODT_EXTRA_STYLES:    <style:graphic-properties
+: #+ODT_EXTRA_STYLES:        svg:width="2.311cm" fo:min-height="2.499cm"
+: #+ODT_EXTRA_STYLES:        svg:x="0cm" svg:y="-0.9cm" fo:margin-left="0cm"
+: #+ODT_EXTRA_STYLES:        fo:margin-right="0cm" fo:margin-top="0cm"
+: #+ODT_EXTRA_STYLES:        fo:margin-bottom="0cm" style:wrap="none"
+: #+ODT_EXTRA_STYLES:        style:vertical-pos="middle"
+: #+ODT_EXTRA_STYLES:        style:vertical-rel="paragraph-content"
+: #+ODT_EXTRA_STYLES:        style:horizontal-pos="left"
+: #+ODT_EXTRA_STYLES:        style:horizontal-rel="page-content"
+: #+ODT_EXTRA_STYLES:        fo:background-color="transparent"
+: #+ODT_EXTRA_STYLES:        draw:fill="none"/>
+: #+ODT_EXTRA_STYLES:  </style:style>
+: 
+: #+ODT_MASTER_STYLES: <style:master-page
+: #+ODT_MASTER_STYLES:     style:name="Standard"
+: #+ODT_MASTER_STYLES:     style:page-layout-name="Mpm1">
+: #+ODT_MASTER_STYLES:   <style:header>
+: #+ODT_MASTER_STYLES:     <text:p text:style-name="Header">
+: #+ODT_MASTER_STYLES:       <draw:frame
+: #+ODT_MASTER_STYLES: 	  draw:style-name="Logo"
+: #+ODT_MASTER_STYLES: 	  draw:name="Image1"
+: #+ODT_MASTER_STYLES: 	  text:anchor-type="paragraph"
+: #+ODT_MASTER_STYLES: 	  svg:width="2.311cm"
+: #+ODT_MASTER_STYLES: 	  svg:height="2.499cm"
+: #+ODT_MASTER_STYLES: 	  draw:z-index="0">
+: #+ODT_MASTER_STYLES: 	<draw:image
+: #+ODT_MASTER_STYLES: 	    xlink:href="Pictures/org-mode-unicorn.png"
+: #+ODT_MASTER_STYLES: 	    xlink:type="simple"
+: #+ODT_MASTER_STYLES: 	    xlink:show="embed"
+: #+ODT_MASTER_STYLES: 	    xlink:actuate="onLoad"
+: #+ODT_MASTER_STYLES: 	    loext:mime-type="image/png"/>
+: #+ODT_MASTER_STYLES:     </draw:frame>Friends of the Unicorn</text:p>
+: #+ODT_MASTER_STYLES:   </style:header>
+: #+ODT_MASTER_STYLES: </style:master-page>
+: 
+: #+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 		   style:page-usage="mirrored">
+: #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:page-layout-properties
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-width="21.001cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:page-height="11.10cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:num-format="1"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:print-orientation="landscape"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-top="2cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-bottom="2cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-left="2cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       fo:margin-right="2cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:writing-mode="lr-tb"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-color="#c0c0c0"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-lines="20"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-base-height="0.706cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-height="0.353cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-mode="none"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-ruby-below="false"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-print="false"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:layout-grid-display="false"
+: #+ODT_EXTRA_AUTOMATIC_STYLES:       style:footnote-max-height="0cm">
+: #+ODT_EXTRA_AUTOMATIC_STYLES:     <style:footnote-sep
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:width="0.018cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-before-sep="0.101cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:distance-after-sep="0.101cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:line-style="solid"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:adjustment="left"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:rel-width="25%"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	style:color="#000000"/>
+: #+ODT_EXTRA_AUTOMATIC_STYLES:   </style:page-layout-properties>
+: #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-style>
+: #+ODT_EXTRA_AUTOMATIC_STYLES:     <style:header-footer-properties
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:min-height="0.499cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-left="0cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-right="0cm"
+: #+ODT_EXTRA_AUTOMATIC_STYLES: 	fo:margin-bottom="0cm"/>
+: #+ODT_EXTRA_AUTOMATIC_STYLES:   </style:header-style>
+: #+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footer-style/>
+: #+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+: 
+: Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+: Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+: Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+:
+
+
+#+ATTR_TEXINFO: :width 15cm
+[[./custom-styles-4.png]]
+
+** Applying custom styles through a style template
 
 The ODT exporter ships with a set of OpenDocument styles (see [[*Working
 with OpenDocument style files]]) that ensure a well-formatted
@@ -340,7 +605,7 @@ styles files directly, or generate the required styles using an
 application like LibreOffice. The latter method is suitable for expert
 and non-expert users alike, and is described here.
 
-** Applying custom styles - the easy way
+*** Applying custom styles - the easy way
 
 1. Create a sample =example.org= file with the below settings and
    export it to ODT format.
@@ -375,7 +640,7 @@ and non-expert users alike, and is described here.
        #+ODT_STYLES_FILE: ("/path/to/file.ott" ("styles.xml" "image/hdr.png"))
    #+END_EXAMPLE
 
-** Using third-party styles and templates
+*** Using third-party styles and templates
 
 You can use third-party styles and templates for customizing your
 output. This will produce the desired output only if the template
@@ -1516,6 +1781,7 @@ for you.
 
 - [[*Bibliography and Citations in ODT export]] :: Use JabRef to produce ODT documents with Citation and Bibliography
 - [[*List Tables in ODT export]] :: Create a table with multi-paragraph content using a =List table=
+- [[*Applying custom styles through keywords]] :: 
 
 # * What is New
 # :PROPERTIES:
