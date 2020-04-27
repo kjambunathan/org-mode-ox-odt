@@ -10,7 +10,7 @@
 :copying:  t
 :END:
 
-Copyright \copy 2004--2019  Free Software Foundation, Inc.
+Copyright \copy 2004--2020  Free Software Foundation, Inc.
 
 #+begin_quote
 Permission is granted to copy, distribute and/or modify this document
@@ -72,16 +72,14 @@ the following command to generate autoload information.
 :UNNUMBERED: notoc
 :END:
 
-Add the following lines to your Emacs init file.  The last four lines
-define /global/ keys for some commands---please choose suitable keys
-yourself.
+Add the following lines to your Emacs init file to define /global/
+keys for three commands that are useful in any Emacs buffer, not just
+Org buffers.  Please choose suitable keys yourself.
 
 #+begin_src emacs-lisp
-;; The following lines are always needed.  Choose your own keys.
-(global-set-key (kbd "C-l") 'org-store-link)
-(global-set-key (kbd "C-a") 'org-agenda)
-(global-set-key (kbd "C-c") 'org-capture)
-(global-set-key (kbd "C-b") 'org-switchb)
+(global-set-key (kbd "C-c l") 'org-store-link)
+(global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
 #+end_src
 
 Files with extension =.org= will be put into Org mode automatically.
@@ -2618,7 +2616,7 @@ support in a file, use
 
 #+export_file_name: orgguide.texi
 
-#+texinfo_dir_category: Emacs
+#+texinfo_dir_category: Emacs editing modes
 #+texinfo_dir_title: Org Guide: (orgguide)
 #+texinfo_dir_desc: Abbreviated Org mode manual
 

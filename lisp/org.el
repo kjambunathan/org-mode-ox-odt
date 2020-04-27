@@ -1,12 +1,13 @@
 ;;; org.el --- Outline-based notes management and organizer -*- lexical-binding: t; -*-
 
 ;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Maintainer: Bastien Guerry <bzg@gnu.org>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
-;; Version: 9.3.1
+;; Version: 9.3.6
 ;;
 ;; This file is part of GNU Emacs.
 ;;
@@ -215,7 +216,8 @@ and then loads the resulting file using `load-file'.  With
 optional prefix argument COMPILE, the tangled Emacs Lisp file is
 byte-compiled before it is loaded."
   (interactive "fFile to load: \nP")
-  (let* ((tangled-file (concat (file-name-sans-extension file) ".el")))
+  (let* ((file (file-truename file))
+	 (tangled-file (concat (file-name-sans-extension file) ".el")))
     ;; Tangle only if the Org file is newer than the Elisp file.
     (unless (org-file-newer-than-p
 	     tangled-file
@@ -413,7 +415,7 @@ Matched keyword is in group 1.")
 
 (defconst org-deadline-time-hour-regexp
   (concat "\\<" org-deadline-string
-	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy \t.-]*\\)>")
+	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy/ \t.-]*\\)>")
   "Matches the DEADLINE keyword together with a time-and-hour stamp.")
 
 (defconst org-deadline-line-regexp
@@ -429,7 +431,7 @@ Matched keyword is in group 1.")
 
 (defconst org-scheduled-time-hour-regexp
   (concat "\\<" org-scheduled-string
-	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy \t.-]*\\)>")
+	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy/ \t.-]*\\)>")
   "Matches the SCHEDULED keyword together with a time-and-hour stamp.")
 
 (defconst org-closed-time-regexp
@@ -5077,9 +5079,10 @@ stacked delimiters is N.  Escaping delimiters is not possible."
 		   ;; Do not span over cells in table rows.
 		   (not (and (save-match-data (org-match-line "[ \t]*|"))
 			     (string-match-p "|" (match-string 4))))))
-	    (pcase-let ((`(,_ ,face ,_) (assoc marker org-emphasis-alist)))
+	    (pcase-let ((`(,_ ,face ,_) (assoc marker org-emphasis-alist))
+			(m (if org-hide-emphasis-markers 4 2)))
 	      (font-lock-prepend-text-property
-	       (match-beginning 2) (match-end 2) 'face face)
+	       (match-beginning m) (match-end m) 'face face)
 	      (when verbatim?
 		(org-remove-flyspell-overlays-in
 		 (match-beginning 0) (match-end 0))
@@ -6402,13 +6405,15 @@ Use `\\[org-edit-special]' to edit table.el tables"))
 	(setq eos (save-excursion (org-end-of-subtree t t)
 				  (when (bolp) (backward-char)) (point)))
 	(setq has-children
-	      (or (save-excursion
-		    (let ((level (funcall outline-level)))
-		      (outline-next-heading)
-		      (and (org-at-heading-p t)
-			   (> (funcall outline-level) level))))
-		  (save-excursion
-		    (org-list-search-forward (org-item-beginning-re) eos t)))))
+	      (or
+	       (save-excursion
+		 (let ((level (funcall outline-level)))
+		   (outline-next-heading)
+		   (and (org-at-heading-p t)
+			(> (funcall outline-level) level))))
+	       (and (eq org-cycle-include-plain-lists 'integrate)
+		    (save-excursion
+		      (org-list-search-forward (org-item-beginning-re) eos t))))))
       ;; Determine end invisible part of buffer (EOL)
       (beginning-of-line 2)
       (while (and (not (eobp)) ;This is like `next-line'.
@@ -7865,7 +7870,7 @@ with the original repeater."
 	   (nmin 1)
 	   (nmax n)
 	   (n-no-remove -1)
-	   (idprop (org-entry-get nil "ID")))
+	   (idprop (org-entry-get beg "ID")))
       (when (and doshift
 		 (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
 				 template))
@@ -8306,7 +8311,7 @@ the value of the drawer property."
 (defun org-refresh-property (tprop p &optional inherit)
   "Refresh the buffer text property TPROP from the drawer property P.
 The refresh happens only for the current headline, or the whole
-sub-tree if optional argument INHERIT is non-nil."
+subtree if optional argument INHERIT is non-nil."
   (unless (org-before-first-heading-p)
     (save-excursion
       (org-back-to-heading t)
@@ -8349,7 +8354,7 @@ sub-tree if optional argument INHERIT is non-nil."
 		(throw 'buffer-category
 		       (org-element-property :value element)))))
 	  default-category))
-       ;; Set sub-tree specific categories.
+       ;; Set subtree specific categories.
        (goto-char (point-min))
        (let ((regexp (org-re-property "CATEGORY")))
 	 (while (re-search-forward regexp nil t)
@@ -8681,31 +8686,30 @@ a link."
        ;; a link, a footnote reference.
        ((memq type '(headline inlinetask))
 	(org-match-line org-complex-heading-regexp)
-	(if (and (match-beginning 5)
-		 (>= (point) (match-beginning 5))
-		 (< (point) (match-end 5)))
-	    ;; On tags.
-	    (org-tags-view
-	     arg
-	     (save-excursion
-	       (let* ((beg (match-beginning 5))
-		      (end (match-end 5))
-		      (beg-tag (or (search-backward ":" beg 'at-limit) (point)))
-		      (end-tag (search-forward ":" end nil 2)))
-		 (buffer-substring (1+ beg-tag) (1- end-tag)))))
-	  ;; Not on tags.
-	  (pcase (org-offer-links-in-entry (current-buffer) (point) arg)
-	    (`(nil . ,_)
-	     (require 'org-attach)
-	     (message "Opening attachment-dir")
-	     (if (equal arg '(4))
-		 (org-attach-reveal-in-emacs)
-	       (org-attach-reveal)))
-	    (`(,links . ,links-end)
-	     (dolist (link (if (stringp links) (list links) links))
-	       (search-forward link nil links-end)
-	       (goto-char (match-beginning 0))
-	       (org-open-at-point arg))))))
+	(let ((tags-beg (match-beginning 5))
+	      (tags-end (match-end 5)))
+	  (if (and tags-beg (>= (point) tags-beg) (< (point) tags-end))
+	      ;; On tags.
+	      (org-tags-view
+	       arg
+	       (save-excursion
+		 (let* ((beg-tag (or (search-backward ":" tags-beg 'at-limit) (point)))
+			(end-tag (search-forward ":" tags-end nil 2)))
+		   (buffer-substring (1+ beg-tag) (1- end-tag)))))
+	    ;; Not on tags.
+	    (pcase (org-offer-links-in-entry (current-buffer) (point) arg)
+	      (`(nil . ,_)
+	       (require 'org-attach)
+	       (when (org-attach-dir)
+		 (message "Opening attachment")
+		 (if (equal arg '(4))
+		     (org-attach-reveal-in-emacs)
+		   (org-attach-reveal))))
+	      (`(,links . ,links-end)
+	       (dolist (link (if (stringp links) (list links) links))
+		 (search-forward link nil links-end)
+		 (goto-char (match-beginning 0))
+		 (org-open-at-point arg)))))))
        ;; On a footnote reference or at definition's label.
        ((or (eq type 'footnote-reference)
 	    (and (eq type 'footnote-definition)
@@ -11578,8 +11582,6 @@ from the `before-change-functions' in the current buffer."
 (defvar org-priority-regexp ".*?\\(\\[#\\([A-Z0-9]\\)\\] ?\\)"
   "Regular expression matching the priority indicator.")
 
-(defvar org-remove-priority-next-time nil)
-
 (defun org-priority-up ()
   "Increase the priority of the current item."
   (interactive)
@@ -13022,6 +13024,10 @@ variables is set."
 			(not (get-text-property 0 'org-unrestricted
 						(caar allowed))))))
 	      (completing-read "Effort: " allowed nil must-match))))))
+    ;; Test whether the value can be interpreted as a duration before
+    ;; inserting it in the buffer:
+    (org-duration-to-minutes value)
+    ;; Maybe update the effort value:
     (unless (equal current value)
       (org-entry-put nil org-effort-property value))
     (org-refresh-property '((effort . identity)
@@ -16804,7 +16810,9 @@ buffer boundaries with possible narrowing."
 			      (overlay-put
 			       ov 'modification-hooks
 			       (list 'org-display-inline-remove-overlay))
-			      (overlay-put ov 'keymap image-map)
+			      (when (<= 26 emacs-major-version)
+				(cl-assert (boundp 'image-map))
+				(overlay-put ov 'keymap image-map))
 			      (push ov org-inline-image-overlays))))))))))))))))
 
 (defun org-display-inline-remove-overlay (ov after _beg _end &optional _len)
@@ -17620,17 +17628,6 @@ this numeric value."
    ((org-at-table-p) (call-interactively 'org-table-hline-and-move))
    (t (call-interactively 'org-insert-heading))))
 
-(defun org-find-visible ()
-  (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
-		(get-char-property s 'invisible)))
-    s))
-(defun org-find-invisible ()
-  (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
-		(not (get-char-property s 'invisible))))
-    s))
-
 (defun org-copy-visible (beg end)
   "Copy the visible parts of the region."
   (interactive "r")
@@ -18006,13 +18003,17 @@ Move point to the beginning of first heading or end of buffer."
 (defun org-kill-note-or-show-branches ()
   "Abort storing current note, or show just branches."
   (interactive)
-  (if org-finish-function
-      (let ((org-note-abort t))
-        (funcall org-finish-function))
-    (if (org-before-first-heading-p)
-        (org-show-branches-buffer)
-      (outline-hide-subtree)
-      (outline-show-branches))))
+  (cond (org-finish-function
+	 (let ((org-note-abort t)) (funcall org-finish-function)))
+	((org-before-first-heading-p)
+	 (org-show-branches-buffer)
+	 (org-hide-archived-subtrees (point-min) (point-max)))
+	(t
+	 (let ((beg (progn (org-back-to-heading) (point)))
+	       (end (save-excursion (org-end-of-subtree t t) (point))))
+	   (outline-hide-subtree)
+	   (outline-show-branches)
+	   (org-hide-archived-subtrees beg end)))))
 
 (defun org-delete-indentation (&optional arg)
   "Join current line to previous and fix whitespace at join.
@@ -18708,13 +18709,14 @@ With prefix arg UNCOMPILED, load the uncompiled versions."
 			      (and (string= org-dir contrib-dir)
 				   (org-load-noerror-mustsuffix (concat contrib-dir f)))
 			      (and (org-load-noerror-mustsuffix (concat (org-find-library-dir f) f))
-				   (add-to-list 'load-uncore f 'append)
+				   (push f load-uncore)
 				   't)
 			      f))
 			lfeat)))
     (when load-uncore
       (message "The following feature%s found in load-path, please check if that's correct:\n%s"
-	       (if (> (length load-uncore) 1) "s were" " was") load-uncore))
+	       (if (> (length load-uncore) 1) "s were" " was")
+               (reverse load-uncore)))
     (if load-misses
 	(message "Some error occurred while reloading Org feature%s\n%s\nPlease check *Messages*!\n%s"
 		 (if (> (length load-misses) 1) "s" "") load-misses (org-version nil 'full))

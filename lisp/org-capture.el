@@ -1,6 +1,6 @@
 ;;; org-capture.el --- Fast note taking in Org       -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2020 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -236,15 +236,15 @@ properties are:
 
  :jump-to-captured   When set, jump to the captured entry when finished.
 
- :empty-lines        Set this to the number of lines the should be inserted
+ :empty-lines        Set this to the number of lines that should be inserted
                      before and after the new item.  Default 0, only common
                      other value is 1.
 
- :empty-lines-before Set this to the number of lines the should be inserted
+ :empty-lines-before Set this to the number of lines that should be inserted
                      before the new item.  Overrides :empty-lines for the
                      number lines inserted before.
 
- :empty-lines-after  Set this to the number of lines the should be inserted
+ :empty-lines-after  Set this to the number of lines that should be inserted
                      after the new item.  Overrides :empty-lines for the
                      number of lines inserted after.
 
@@ -1148,14 +1148,13 @@ may have been stored before."
 	  (when insert-here? (narrow-to-region beg beg))
 	  (org-paste-subtree level template 'for-yank))
 	(org-capture-position-for-last-stored beg)
-	(let ((end (if (org-at-heading-p) (line-end-position 0) (point))))
-	  (org-capture-empty-lines-after)
-	  (unless (org-at-heading-p) (outline-next-heading))
-	  (org-capture-mark-kill-region origin (point))
-	  (org-capture-narrow beg end)
-	  (when (or (search-backward "%?" beg t)
-		    (search-forward "%?" end t))
-	    (replace-match "")))))))
+	(org-capture-empty-lines-after)
+	(unless (org-at-heading-p) (outline-next-heading))
+	(org-capture-mark-kill-region origin (point))
+	(org-capture-narrow beg (point))
+	(when (or (search-backward "%?" beg t)
+		  (search-forward "%?" nil t))
+	  (replace-match ""))))))
 
 (defun org-capture-place-item ()
   "Place the template as a new plain list item."

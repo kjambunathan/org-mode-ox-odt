@@ -1,6 +1,6 @@
 ;;; ob-clojure.el --- Babel Functions for Clojure    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
 ;; Author: Joel Boehland, Eric Schulte, Oleh Krehel, Frederick Giasson
 ;;
@@ -104,6 +104,8 @@ If the value is nil, timeout is disabled."
 	 (result-params (cdr (assq :result-params params)))
 	 (print-level nil)
 	 (print-length nil)
+	 ;; Remove comments, they break (let [...] ...) bindings
+	 (body (replace-regexp-in-string "^[ 	]*;+.*$" "" body))
 	 (body (org-trim
 		(concat
 		 ;; Source block specified namespace :ns.
@@ -113,7 +115,7 @@ If the value is nil, timeout is disabled."
 		   (format "(let [%s]\n%s)"
 			   (mapconcat
 			    (lambda (var)
-			      (format "%S (quote %S)" (car var) (cdr var)))
+			      (format "%S %S" (car var) (cdr var)))
 			    vars
 			    "\n      ")
 			   body))))))

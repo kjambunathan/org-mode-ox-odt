@@ -1,6 +1,6 @@
 ;;; org-clock.el --- The time clocking code for Org mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -808,6 +808,7 @@ If PLAY-SOUND is non-nil, it overrides `org-clock-sound'."
   "Show notification.
 Use `org-show-notification-handler' if defined,
 use libnotify if available, or fall back on a message."
+  (ignore-errors (require 'notifications))
   (cond ((functionp org-show-notification-handler)
 	 (funcall org-show-notification-handler notification))
 	((stringp org-show-notification-handler)

@@ -1,6 +1,6 @@
 ;;; ob-core.el --- Working with Code Blocks          -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
 
 ;; Authors: Eric Schulte
 ;;	Dan Davison
@@ -2764,11 +2764,12 @@ block but are passed literally to the \"example-block\"."
 			    (lambda (s)
 			      ;; Comment, according to LANG mode,
 			      ;; string S.  Return new string.
-			      (with-temp-buffer
-				(funcall (org-src-get-lang-mode lang))
-				(comment-region (point)
-						(progn (insert s) (point)))
-				(org-trim (buffer-string)))))
+			      (unless org-babel-tangle-uncomment-comments
+				(with-temp-buffer
+				  (funcall (org-src-get-lang-mode lang))
+				  (comment-region (point)
+						  (progn (insert s) (point)))
+				  (org-trim (buffer-string))))))
 			   (expand-body
 			    (lambda (i)
 			      ;; Expand body of code blocked

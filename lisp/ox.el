@@ -1,6 +1,6 @@
 ;;; ox.el --- Export Framework for Org Mode          -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -3461,15 +3461,16 @@ Move point after the link."
 	(goto-char (org-element-property :end link))
       (let ((new-path (file-relative-name (expand-file-name path file-dir)
 					  includer-dir))
-	    (new-link (org-element-copy link))
-	    (contents (and (org-element-property :contents-begin link)
-			   (buffer-substring
-			    (org-element-property :contents-begin link)
-			    (org-element-property :contents-end link)))))
+	    (new-link (org-element-copy link)))
 	(org-element-put-property new-link :path new-path)
+	(when (org-element-property :contents-begin link)
+	  (org-element-adopt-elements new-link
+	    (buffer-substring
+	     (org-element-property :contents-begin link)
+	     (org-element-property :contents-end link))))
 	(delete-region (org-element-property :begin link)
 		       (org-element-property :end link))
-	(insert (org-element-link-interpreter new-link contents))))))
+	(insert (org-element-interpret-data new-link))))))
 
 (defun org-export--prepare-file-contents
     (file &optional lines ind minlevel id footnotes includer)
