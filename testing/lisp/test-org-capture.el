@@ -197,7 +197,7 @@
 	(org-capture-kill))
       (buffer-string)))))
 
-(ert-deftest test-org-caputre/entry ()
+(ert-deftest test-org-capture/entry ()
   "Test `entry' type in capture template."
   ;; Do not break next headline.
   (should
@@ -208,7 +208,6 @@
 	     (org-capture-templates
 	      `(("t" "Todo" entry (file+headline ,file "A") "** H1 %?"))))
 	(org-capture nil "t")
-	(goto-char (point-max))
 	(insert "Capture text")
 	(org-capture-finalize))
       (buffer-string))))

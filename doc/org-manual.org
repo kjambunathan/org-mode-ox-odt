@@ -142,7 +142,7 @@ You can clone Org's repository and install Org like this:
 
 #+begin_example
 $ cd ~/src/
-$ git clone git@code.orgmode.org:bzg/org-mode.git
+$ git clone https://code.orgmode.org/bzg/org-mode.git
 $ cd org-mode/
 $ make autoloads
 #+end_example
@@ -9725,12 +9725,6 @@ the other commands, point needs to be in the desired line.
   priority character.  If you reply with {{{kbd(SPC)}}}, the priority
   cookie is removed from the entry.
 
-- {{{kbd(P)}}} (~org-agenda-show-priority~) ::
-
-  #+kindex: P
-  #+findex: org-agenda-show-priority
-  Display weighted priority of current item.
-
 - {{{kbd(+)}}} or {{{kbd(S-UP)}}} (~org-agenda-priority-up~) ::
 
   #+kindex: +
@@ -16186,6 +16180,19 @@ Here is an example source code block in the Emacs Lisp language:
 ,#+END_SRC
 #+end_example
 
+Source code blocks are one of many Org block types, which also include
+"center", "comment", "dynamic", "example", "export", "quote",
+"special", and "verse".  This section pertains to blocks between
+=#+BEGIN_SRC= and =#+END_SRC=.
+
+Details of Org's facilities for working with source code are described
+in the following sections.
+
+** Features
+:PROPERTIES:
+:DESCRIPTION: Enjoy the versatility of source blocks.
+:END:
+
 Org can manage the source code in the block delimited by =#+BEGIN_SRC=
 ... =#+END_SRC= in several ways that can simplify housekeeping tasks
 essential to modern source code maintenance.  Org can edit, format,
@@ -16194,14 +16201,8 @@ and execute a source code block, then capture the results.  The Org
 mode literature sometimes refers to source code blocks as /live code/
 blocks because they can alter the content of the Org document or the
 material that it exports.  Users can control how live they want each
-source code block by tweaking the header arguments (see [[*Using
-Header Arguments]]) for compiling, execution, extraction, and
-exporting.
-
-Source code blocks are one of many Org block types, which also include
-"center", "comment", "dynamic", "example", "export", "quote",
-"special", and "verse".  This section pertains to blocks between
-=#+BEGIN_SRC= and =#+END_SRC=.
+source code block by tweaking the header arguments (see [[*Using Header
+Arguments]]) for compiling, execution, extraction, and exporting.
 
 For editing and formatting a source code block, Org uses an
 appropriate Emacs major mode that includes features specifically
@@ -16238,9 +16239,6 @@ publishing reproducible research by keeping text, data, code,
 configuration settings of the execution environment, the results of
 the execution, and associated narratives, claims, references, and
 internal and external links in a single Org document.
-
-Details of Org's facilities for working with source code are described
-in the following sections.
 
 ** Structure of Code Blocks
 :PROPERTIES:
@@ -17377,13 +17375,13 @@ follows from the type specified above.
 
 - =link=, =graphics= ::
 
-  Result is a link to the file specified in =:file= header argument.
-  However, unlike plain =:file=, nothing is written to the disk.  The
-  block is used for its side-effects only, as in the following
-  example:
+  When used along with =file= type, the result is a link to the file
+  specified in =:file= header argument.  However, unlike plain =file=
+  type, nothing is written to the disk.  The block is used for its
+  side-effects only, as in the following example:
 
   #+begin_example
-  ,#+begin_src shell :results link :file "download.tar.gz"
+  ,#+begin_src shell :results file link :file "download.tar.gz"
   wget -c "http://example.com/download.tar.gz"
   ,#+end_src
   #+end_example
@@ -21062,7 +21060,7 @@ modify this GNU manual."
 
 #+export_file_name: org.texi
 
-#+texinfo_dir_category: Emacs
+#+texinfo_dir_category: Emacs editing modes
 #+texinfo_dir_title: Org Mode: (org)
 #+texinfo_dir_desc: Outline-based notes management and organizer
 

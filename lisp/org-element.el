@@ -4191,7 +4191,8 @@ When PARSE is non-nil, values from keywords belonging to
 			     (skip-chars-backward " \t")
 			     (point))))
 		  (if parsed?
-		      (org-element--parse-objects beg end nil restrict)
+		      (save-match-data
+			(org-element--parse-objects beg end nil restrict))
 		    (org-trim (buffer-substring-no-properties beg end)))))
 	       ;; If KWD is a dual keyword, find its secondary value.
 	       ;; Maybe parse it.
@@ -5992,7 +5993,7 @@ element.
 
 Possible types are defined in `org-element-all-elements'.
 Properties depend on element or object type, but always include
-`:begin', `:end', `:parent' and `:post-blank' properties.
+`:begin', `:end', and `:post-blank' properties.
 
 As a special case, if point is at the very beginning of the first
 item in a list or sub-list, returned element will be that list

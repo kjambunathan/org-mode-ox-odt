@@ -1156,6 +1156,11 @@ argument, a calendar-style date list like (month day year)."
 	  (string :tag "Format string")
 	  (function :tag "Function")))
 
+(defun org-agenda-end-of-line ()
+  "Go to the end of visible line."
+  (interactive)
+  (goto-char (line-end-position)))
+
 (defun org-agenda-format-date-aligned (date)
   "Format a DATE string for display in the daily/weekly agenda.
 This function makes sure that dates are aligned for easy reading."
@@ -2101,6 +2106,8 @@ evaluate to a string."
 (defvar org-agenda-mode-map (make-sparse-keymap)
   "Keymap for `org-agenda-mode'.")
 
+(org-remap org-agenda-mode-map 'move-end-of-line 'org-agenda-end-of-line)
+
 (defvar org-agenda-menu) ; defined later in this file.
 (defvar org-agenda-restrict nil) ; defined later in this file.
 (defvar org-agenda-follow-mode nil)
@@ -2197,8 +2204,10 @@ The following commands are available:
 
 \\{org-agenda-mode-map}"
   (interactive)
+  (ignore-errors (require 'face-remap))
   (let ((agenda-local-vars-to-keep
 	 '(text-scale-mode-amount
+	   text-scale-mode
 	   text-scale-mode-lighter
 	   face-remapping-alist))
 	(save (buffer-local-variables)))
@@ -4364,7 +4373,7 @@ items if they have an hour specification like [h]h:mm."
 	  (insert tbl)))
       (goto-char (point-min))
       (or org-agenda-multi (org-agenda-fit-window-to-buffer))
-      (unless (or (not (get-buffer-window))
+      (unless (or (not (get-buffer-window org-agenda-buffer-name))
 		  (and (pos-visible-in-window-p (point-min))
 		       (pos-visible-in-window-p (point-max))))
 	(goto-char (1- (point-max)))
@@ -6273,6 +6282,10 @@ scheduled items with an hour specification like [h]h:mm."
 			    (org-agenda--timestamp-to-absolute deadline))
 			 org-scheduled-delay-days))
 		   (t 0))))
+	       (diff-r (abs (- repeat current)))
+	       (ddays-once (or (and (string-match "--\\([0-9]+\\)[hdwmy]" s)
+				    (string-to-number (match-string 1 s)))
+			       0))
 	       (ddays
 		(cond
 		 ;; Nullify delay when a repeater triggered already
@@ -6291,13 +6304,25 @@ scheduled items with an hour specification like [h]h:mm."
 	  (unless (and todayp
 		       habitp
 		       (bound-and-true-p org-habit-show-all-today))
-	    (when (or (and (> ddays 0) (< diff ddays))
-		      (> diff (or (and habitp org-habit-scheduled-past-days)
-				  org-scheduled-past-days))
-		      (> schedule current)
-		      (and (/= current schedule)
-			   (/= current today)
-			   (/= current repeat)))
+	    (when (or
+		   ;; no one-time delay, not repeated delay
+		   (and (not ddays-once) (not (= ddays diff-r)))
+		   ;; one-time delay, but not for today
+		   (and ddays-once
+			(not (= diff diff-r))
+			(= ddays-once diff-r))
+		   ;; normal delay, but already in the past
+		   (and (> ddays 0) (< diff ddays))
+		   ;; a habit, but past `org-habit-scheduled-past-days'
+		   (> diff (or (and habitp org-habit-scheduled-past-days)
+			       org-scheduled-past-days))
+		   ;; schedule in the future
+		   (> schedule current)
+		   ;; no delay, not scheduled today, no deadline for today
+		   (and (= ddays 0)
+			(/= current schedule)
+			(/= current today)
+			(/= current repeat)))
 	      (throw :skip nil)))
 	  ;; Possibly skip done tasks.
 	  (when (and donep
@@ -6457,7 +6482,6 @@ scheduled items with an hour specification like [h]h:mm."
 			  (and (eq org-agenda-show-inherited-tags t)
 			       (or (eq org-agenda-use-tag-inheritance t)
 				   (memq 'agenda org-agenda-use-tag-inheritance))))
-
 		      tags (org-get-tags nil (not inherited-tags)))
 		(setq level (make-string (org-reduced-level (org-outline-level)) ? ))
 		(looking-at "\\*+[ \t]+\\(.*\\)")
@@ -6475,12 +6499,19 @@ scheduled items with an hour specification like [h]h:mm."
 				   org-agenda-timerange-leaders)
 			      (1+ (- d0 d1)) (1+ (- d2 d1)))
 			     head level category tags
-			     (cond ((and (= d1 d0) (= d2 d0))
-				    (concat "<" start-time ">--<" end-time ">"))
-                                   ((= d1 d0)
-				    (concat "<" start-time ">"))
-				   ((= d2 d0)
-				    (concat "<" end-time ">")))
+			     (save-match-data
+			       (let ((hhmm1 (and (string-match org-ts-regexp1 s1)
+						 (match-string 6 s1)))
+				     (hhmm2 (and (string-match org-ts-regexp1 s2)
+						 (match-string 6 s2))))
+				 (cond ((string= hhmm1 hhmm2)
+					(concat "<" start-time ">--<" end-time ">"))
+				       ((and (= d1 d0) (= d2 d0))
+					(concat "<" start-time ">--<" end-time ">"))
+                                       ((= d1 d0)
+					(concat "<" start-time ">"))
+				       ((= d2 d0)
+					(concat "<" end-time ">")))))
 			     remove-re))))
 	      (org-add-props txt props
 		'org-marker marker 'org-hd-marker hdmarker
@@ -7709,11 +7740,10 @@ the variable `org-agenda-auto-exclude-function'."
       (and fe (org-agenda-filter-apply
 	       (setq org-agenda-effort-filter fe) 'effort))
       (and fr (org-agenda-filter-apply
-	       (setq org-agenda-regexp-filter fr) 'regexp))
-      )))
+	       (setq org-agenda-regexp-filter fr) 'regexp)))))
 
 (defun org-agenda-filter-completion-function (string _predicate &optional flag)
-  "Complete a complex filter string
+  "Complete a complex filter string.
 FLAG specifies the type of completion operation to perform.  This
 function is passed as a collection function to `completing-read',
 which see."
@@ -8035,7 +8065,8 @@ tags in the FILTER if any of the tags in FILTER are grouptags."
 
 (defun org-agenda-filter-hide-line (type)
   "Hide lines with TYPE in the agenda buffer."
-  (let* ((b (max (point-min) (1- (point-at-bol))))
+  (let* (buffer-invisibility-spec
+	 (b (max (point-min) (1- (point-at-bol))))
 	 (e (point-at-eol)))
     (let ((inhibit-read-only t))
       (add-text-properties
@@ -8893,11 +8924,14 @@ It also looks at the text of the entry itself."
 		  (setq trg (and (string-match org-link-bracket-re l)
 				 (match-string 1 l)))
 		  (if (or (not trg) (string-match org-link-any-re trg))
-		      (org-with-wide-buffer
-		       (goto-char marker)
-		       (when (search-forward l nil lkend)
-			 (goto-char (match-beginning 0))
-			 (org-open-at-point)))
+		      ;; Don't use `org-with-wide-buffer' here as
+		      ;; opening the link may result in moving the point
+		      (save-restriction
+			(widen)
+			(goto-char marker)
+			(when (search-forward l nil lkend)
+			  (goto-char (match-beginning 0))
+			  (org-open-at-point)))
 		    ;; This is an internal link, widen the buffer
 		    (switch-to-buffer-other-window buffer)
 		    (widen)
@@ -8981,7 +9015,6 @@ fold drawers."
 	 (narrow-to-region (org-entry-beginning-position)
 			   (org-entry-end-position))
 	 (org-show-all '(drawers))))
-      (when arg )
       (setq org-agenda-show-window (selected-window)))
     (select-window win)))
 
@@ -9541,8 +9574,11 @@ Called with a universal prefix arg, show the priority instead of setting it."
       (goto-char (point-max))
       (while (not (bobp))
 	(when (equal marker (org-get-at-bol 'org-marker))
-          (remove-text-properties (point-at-bol) (point-at-eol) '(display nil))
-	  (org-move-to-column (- (window-width) (length stamp)) t)
+          (remove-text-properties (line-beginning-position)
+				  (line-end-position)
+				  '(display nil))
+	  (org-move-to-column
+	   (- (/ (window-width nil t) (window-font-width)) (length stamp)) t)
           (add-text-properties
 	   (1- (point)) (point-at-eol)
 	   (list 'display (org-add-props stamp nil
@@ -10062,13 +10098,13 @@ When ARG is greater than one mark ARG lines."
       (goto-char (point-min))
       (goto-char (next-single-property-change (point) 'org-hd-marker))
       (while (and (re-search-forward regexp nil t)
-		  (setq txt-at-point (get-text-property (point) 'txt)))
+		  (setq txt-at-point
+			(get-text-property (match-beginning 0) 'txt)))
 	(if (get-char-property (point) 'invisible)
 	    (beginning-of-line 2)
-	  (when (string-match regexp txt-at-point)
+	  (when (string-match-p regexp txt-at-point)
 	    (setq entries-marked (1+ entries-marked))
 	    (call-interactively 'org-agenda-bulk-mark)))))
-
     (unless entries-marked
       (message "No entry matching this regexp."))))
 

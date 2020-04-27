@@ -4,9 +4,10 @@
 ;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Maintainer: Bastien Guerry <bzg@gnu.org>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
-;; Version: 9.3.2
+;; Version: 9.3.6
 ;;
 ;; This file is part of GNU Emacs.
 ;;
@@ -215,7 +216,8 @@ and then loads the resulting file using `load-file'.  With
 optional prefix argument COMPILE, the tangled Emacs Lisp file is
 byte-compiled before it is loaded."
   (interactive "fFile to load: \nP")
-  (let* ((tangled-file (concat (file-name-sans-extension file) ".el")))
+  (let* ((file (file-truename file))
+	 (tangled-file (concat (file-name-sans-extension file) ".el")))
     ;; Tangle only if the Org file is newer than the Elisp file.
     (unless (org-file-newer-than-p
 	     tangled-file
@@ -413,7 +415,7 @@ Matched keyword is in group 1.")
 
 (defconst org-deadline-time-hour-regexp
   (concat "\\<" org-deadline-string
-	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy \t.-]*\\)>")
+	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy/ \t.-]*\\)>")
   "Matches the DEADLINE keyword together with a time-and-hour stamp.")
 
 (defconst org-deadline-line-regexp
@@ -429,7 +431,7 @@ Matched keyword is in group 1.")
 
 (defconst org-scheduled-time-hour-regexp
   (concat "\\<" org-scheduled-string
-	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy \t.-]*\\)>")
+	  " *<\\([^>]+[0-9]\\{1,2\\}:[0-9]\\{2\\}[0-9+:hdwmy/ \t.-]*\\)>")
   "Matches the SCHEDULED keyword together with a time-and-hour stamp.")
 
 (defconst org-closed-time-regexp
@@ -5077,9 +5079,10 @@ stacked delimiters is N.  Escaping delimiters is not possible."
 		   ;; Do not span over cells in table rows.
 		   (not (and (save-match-data (org-match-line "[ \t]*|"))
 			     (string-match-p "|" (match-string 4))))))
-	    (pcase-let ((`(,_ ,face ,_) (assoc marker org-emphasis-alist)))
+	    (pcase-let ((`(,_ ,face ,_) (assoc marker org-emphasis-alist))
+			(m (if org-hide-emphasis-markers 4 2)))
 	      (font-lock-prepend-text-property
-	       (match-beginning 2) (match-end 2) 'face face)
+	       (match-beginning m) (match-end m) 'face face)
 	      (when verbatim?
 		(org-remove-flyspell-overlays-in
 		 (match-beginning 0) (match-end 0))
@@ -6402,13 +6405,15 @@ Use `\\[org-edit-special]' to edit table.el tables"))
 	(setq eos (save-excursion (org-end-of-subtree t t)
 				  (when (bolp) (backward-char)) (point)))
 	(setq has-children
-	      (or (save-excursion
-		    (let ((level (funcall outline-level)))
-		      (outline-next-heading)
-		      (and (org-at-heading-p t)
-			   (> (funcall outline-level) level))))
-		  (save-excursion
-		    (org-list-search-forward (org-item-beginning-re) eos t)))))
+	      (or
+	       (save-excursion
+		 (let ((level (funcall outline-level)))
+		   (outline-next-heading)
+		   (and (org-at-heading-p t)
+			(> (funcall outline-level) level))))
+	       (and (eq org-cycle-include-plain-lists 'integrate)
+		    (save-excursion
+		      (org-list-search-forward (org-item-beginning-re) eos t))))))
       ;; Determine end invisible part of buffer (EOL)
       (beginning-of-line 2)
       (while (and (not (eobp)) ;This is like `next-line'.
@@ -8306,7 +8311,7 @@ the value of the drawer property."
 (defun org-refresh-property (tprop p &optional inherit)
   "Refresh the buffer text property TPROP from the drawer property P.
 The refresh happens only for the current headline, or the whole
-sub-tree if optional argument INHERIT is non-nil."
+subtree if optional argument INHERIT is non-nil."
   (unless (org-before-first-heading-p)
     (save-excursion
       (org-back-to-heading t)
@@ -8349,7 +8354,7 @@ sub-tree if optional argument INHERIT is non-nil."
 		(throw 'buffer-category
 		       (org-element-property :value element)))))
 	  default-category))
-       ;; Set sub-tree specific categories.
+       ;; Set subtree specific categories.
        (goto-char (point-min))
        (let ((regexp (org-re-property "CATEGORY")))
 	 (while (re-search-forward regexp nil t)
@@ -8682,8 +8687,7 @@ a link."
        ((memq type '(headline inlinetask))
 	(org-match-line org-complex-heading-regexp)
 	(let ((tags-beg (match-beginning 5))
-	      (tags-end (match-end 5))
-	      (tags-str (match-string 5)))
+	      (tags-end (match-end 5)))
 	  (if (and tags-beg (>= (point) tags-beg) (< (point) tags-end))
 	      ;; On tags.
 	      (org-tags-view
@@ -11578,8 +11582,6 @@ from the `before-change-functions' in the current buffer."
 (defvar org-priority-regexp ".*?\\(\\[#\\([A-Z0-9]\\)\\] ?\\)"
   "Regular expression matching the priority indicator.")
 
-(defvar org-remove-priority-next-time nil)
-
 (defun org-priority-up ()
   "Increase the priority of the current item."
   (interactive)
@@ -13022,6 +13024,10 @@ variables is set."
 			(not (get-text-property 0 'org-unrestricted
 						(caar allowed))))))
 	      (completing-read "Effort: " allowed nil must-match))))))
+    ;; Test whether the value can be interpreted as a duration before
+    ;; inserting it in the buffer:
+    (org-duration-to-minutes value)
+    ;; Maybe update the effort value:
     (unless (equal current value)
       (org-entry-put nil org-effort-property value))
     (org-refresh-property '((effort . identity)
@@ -18703,13 +18709,14 @@ With prefix arg UNCOMPILED, load the uncompiled versions."
 			      (and (string= org-dir contrib-dir)
 				   (org-load-noerror-mustsuffix (concat contrib-dir f)))
 			      (and (org-load-noerror-mustsuffix (concat (org-find-library-dir f) f))
-				   (add-to-list 'load-uncore f 'append)
+				   (push f load-uncore)
 				   't)
 			      f))
 			lfeat)))
     (when load-uncore
       (message "The following feature%s found in load-path, please check if that's correct:\n%s"
-	       (if (> (length load-uncore) 1) "s were" " was") load-uncore))
+	       (if (> (length load-uncore) 1) "s were" " was")
+               (reverse load-uncore)))
     (if load-misses
 	(message "Some error occurred while reloading Org feature%s\n%s\nPlease check *Messages*!\n%s"
 		 (if (> (length load-misses) 1) "s" "") load-misses (org-version nil 'full))
