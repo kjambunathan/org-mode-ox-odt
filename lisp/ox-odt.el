@@ -2116,7 +2116,10 @@ holding export options."
 		(with-output-to-string
 		  (setq exitcode
 			(apply 'call-process (car cmd)
-			       nil standard-output nil (cdr cmd)))))
+			       nil standard-output nil
+                               (mapcar (lambda (elt)
+                                         (encode-coding-string elt file-name-coding-system))
+                                       (cdr cmd))))))
 	  (or (zerop exitcode)
 	      (error (concat "Unable to create OpenDocument file."
 			     "  Zip failed with error (%s)")
@@ -5841,14 +5844,15 @@ format, `org-odt-preferred-output-format' or XML format."
 IN-FILE is an OpenDocument Text document, usually created as part
 of `org-odt-export-as-odf'."
   (require 'browse-url)
-  (let* ((in-file (expand-file-name in-file)))
+  (let* ((in-file (expand-file-name in-file))
+         (in-file-cmd (encode-coding-string in-file file-name-coding-system)))
     (cl-loop for (purpose cmd . args) in org-odt-transform-processes
 	     with err-string
 	     with exit-code do
 	     (setq cmd (cons cmd
 			     (mapcar (lambda (arg)
-				       (format-spec arg `((?i . ,in-file)
-							  (?I . ,(browse-url-file-url in-file)))))
+				       (format-spec arg `((?i . ,in-file-cmd)
+							  (?I . ,(browse-url-file-url in-file-cmd)))))
 				     args)))
 
 	     (message "Applying Transformation: %s" purpose)
@@ -5975,14 +5979,14 @@ non-nil."
 			     (?f . ,out-fmt)
 			     (?o . ,out-file)
 			     (?O . ,(browse-url-file-url out-file))
-			     (?d . , (shell-quote-argument out-dir))
+			     (?d . ,(shell-quote-argument out-dir))
 			     (?D . ,(browse-url-file-url out-dir))
 			     (?x . ,extra-options)))))
     (when (file-exists-p out-file)
       (delete-file out-file))
 
     (message "Executing %s" cmd)
-    (let ((cmd-output (shell-command-to-string cmd)))
+    (let ((cmd-output (shell-command-to-string (encode-coding-string cmd file-name-coding-system))))
       (message "%s" cmd-output))
 
     (cond
