@@ -3681,7 +3681,7 @@ INFO is a plist holding contextual information.  See
 	 (path
 	  (cond
 	   ((member type '("http" "https" "ftp" "mailto"))
-	    (url-encode-url (org-link-unescape (concat type ":" raw-path))))
+	    (xml-escape-string (org-link-unescape (concat type ":" raw-path))))
 	   ((string= type "file")
 	    (cond
 	     ;; If file path is absolute, prepend it with protocol
