@@ -3949,8 +3949,9 @@ the plist used as a communication channel."
 			       ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-08/msg00586.html
 			       (org-odt--read-attribute el :p-style))
 			      (quote-block
-			       (if footnote-definition-p "OrgFootnoteQuotations"
-				 "Quotations"))
+			       (or (org-odt--read-attribute el :style)
+				   (if footnote-definition-p "OrgFootnoteQuotations"
+				     "Quotations")))
 			      (special-block
 			       (let ((type (downcase (org-element-property :type el))))
 				 (cond
