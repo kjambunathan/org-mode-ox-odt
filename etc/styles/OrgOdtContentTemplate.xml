@@ -56,6 +56,15 @@
       </style:section-properties>
     </style:style>
 
+    <!-- Emit endnotes at the end of section     -->
+    <!-- <style:style style:name="OrgSection" style:family="section"> -->
+    <!--   <style:section-properties fo:background-color="transparent" style:editable="true"> -->
+    <!-- 	<style:columns fo:column-count="1" fo:column-gap="0cm"/> -->
+    <!-- 	<style:background-image/> -->
+    <!-- 	<text:notes-configuration text:note-class="endnote"/> -->
+    <!--   </style:section-properties> -->
+    <!-- </style:style> -->
+
     <!-- Other handy section styles -->
     <style:style style:name="OrgTwoColumnSection" style:family="section">
       <style:section-properties style:editable="true">
@@ -84,7 +93,7 @@
 	</style:columns>
       </style:section-properties>
     </style:style>
-    
+
     <style:style style:name="OrgTwoColumnSection-2-1" style:family="section">
       <style:section-properties style:editable="true">
 	<style:columns fo:column-count="2">
