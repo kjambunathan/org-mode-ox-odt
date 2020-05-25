@@ -123,6 +123,18 @@
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
+
+    ;; Keys associated with Endnotes
+    (:odt-endnote-anchor-format nil nil org-odt-endnote-anchor-format t)
+    (:odt-endnote-braces nil nil org-odt-endnote-braces t)
+    (:odt-endnote-regexp "ODT_ENDNOTE_REGEXP" nil org-odt-endnote-regexp t)
+    (:odt-endnote-separator nil nil org-odt-endnote-separator t)
+
+    ;; Keys associated with Footnotes
+    (:odt-footnote-anchor-format nil nil org-odt-footnote-anchor-format t)
+    (:odt-footnote-braces nil nil org-odt-footnote-braces t)
+    (:odt-footnote-separator nil nil org-odt-footnote-separator t)
+
     ;; Org has no *native* support Bibliographies and Citations .  So,
     ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
     ;; and should be prefixed with "ODT_".  However, since the
@@ -789,6 +801,250 @@ The default value simply returns the value of CONTENTS."
   :package-version '(Org . "8.3")
   :type 'function)
 
+;;;; Footnotes / Endnotes
+
+;;;;; Endnotes
+
+(defcustom org-odt-endnote-regexp "^$"
+  "A footnote whose label matches this regexp is exported as an endnote.
+
+    |---------+-----------------------------------+-----------------------------------------------|
+    | REGEXP  | COMMENTS                          | BEHAVIOUR                                     |
+    |---------+-----------------------------------+-----------------------------------------------|
+    | \".\"   | Match all footnote labels         | Typeset all footnotes  as endnotes              |
+    |---------+-----------------------------------+-----------------------------------------------|
+    | \"^$\"  | Match none of the footnote labels | Typeset none of the footnotes as endnotes       |
+    |         |                                   | i.e., typeset all footnotes  as footnotes     |
+    |         |                                   |                                               |
+    |---------+-----------------------------------+-----------------------------------------------|
+    | \"^en\" | Match all footnote labels         | A footnote labeled with [fn:en1] etc            |
+    |         | that start with \"en\"            | will be typeset as a endnote, but those         |
+    |         |                                   | like [fn:1] etc will be typeset as footnotes. |
+    |---------+-----------------------------------+-----------------------------------------------|
+
+By default, typeset all footnotes as footnotes.
+."
+
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "All footnotes as footnotes" "^$")
+	  (const :tag "All footnotes as endnotes" ".")
+	  (regexp :tag "Footnotes matching this regexp as endnotes" "^en")))
+
+(defcustom org-odt-endnote-anchor-format
+  (format "<text:span text:style-name=\"%s\">%%s</text:span>" "OrgSuperscript")
+  "Format string to typeset a endnote numeral in text area.
+%s-specifier in the format string is replaced with the endnote numeral.
+
+For example, if you want to enclose each endnote numeral in
+square braces, and embolden it, you need to set this variable to
+
+    \"<text:span text:style-name=\"Bold\">[%s]</text:span>\"
+
+  or
+
+    #+BIND: org-odt-endnote-anchor-format \"<text:span text:style-name=\\\"Bold\\\">[%s]</text:span>\"
+
+
+Note that this variable doesn't affect the style of the endnote
+numeral in the notes area.  In order to control the style of the
+endnote numeral in notes area, you need to tweak
+\"text:notes-configuration\" element of the endnote note-class.
+
+For example, if you want the style in the notes area to match
+with the style in text area as defined in in the preceding
+example, you need to do the following:
+
+
+    #+odt_extra_styles: <style:style style:name=\"Endnote_20_Symbol\"
+    #+odt_extra_styles: 	     style:display-name=\"Endnote Symbol\" style:family=\"text\">
+    #+odt_extra_styles:   <style:text-properties fo:font-weight=\"bold\"/>
+    #+odt_extra_styles: </style:style>
+
+    #+odt_extra_styles: <text:notes-configuration
+    #+odt_extra_styles:     text:note-class=\"endnote\"
+    #+odt_extra_styles:     text:default-style-name=\"Endnote\"
+    #+odt_extra_styles:     text:citation-style-name=\"Endnote_20_Symbol\"
+    #+odt_extra_styles:     text:citation-body-style-name=\"Endnote_20_anchor\"
+    #+odt_extra_styles:     text:master-page-name=\"Endnote\"
+    #+odt_extra_styles:     style:num-prefix=\"[\" style:num-suffix=\"] \"
+    #+odt_extra_styles:     style:num-format=\"1\" text:start-value=\"0\"/>
+."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "As superscript" "<text:span text:style-name=\"OrgSuperscript\">%s</text:span>")
+	  (const :tag "Within Square Brackets" "[%s]")
+	  (string :tag "Other")))
+
+(defcustom org-odt-endnote-separator
+  (format "<text:span text:style-name=\"%s\">, </text:span>" "OrgSuperscript")
+  "String that separates individual endnote anchor in a cluster.
+
+A cluster of endnotes is a sequence of two or more endnotes
+appearing back-to-back in body text.
+
+For example, when you export the following org snippet
+
+    #+odt_endnote_regexp: ^en
+
+    Body text[fn:en1][fn:en2]
+
+    [fn:en1] Endnote one 
+    [fn:en2] Endnote two 
+
+    #+BIND: org-odt-endnote-separator \", \"
+    #+BIND: org-odt-endnote-braces (\"<text:span text:style-name=\\\"Bold\\\">[\" . \"]</text:span>\")
+    #+BIND: org-odt-endnote-anchor-format \"%s\"
+
+you will get
+
+    Body text*[1, 2]*
+
+with the text between asterisks typeset in bold.
+
+See also `org-odt-endnote-anchor-format',
+`org-odt-endnote-braces' and `org-odt-endnote-regexp'."
+  :group 'org-export-odt
+  :type '(string :tag "Endnote separator"))
+
+(defcustom org-odt-endnote-braces '("" . "")
+  "Braces to enclose a cluster of endnotes.
+
+A cluster of endnotes is a sequence of two or more endnotes
+appearing back-to-back in body text.
+
+For example, when you export the following org snippet
+
+    #+odt_endnote_regexp: ^en
+
+    Body text[fn:en1][fn:en2]
+
+    [fn:en1] Endnote one 
+    [fn:en2] Endnote two 
+
+    #+BIND: org-odt-endnote-separator \", \"
+    #+BIND: org-odt-endnote-braces (\"<text:span text:style-name=\\\"Bold\\\">[\" . \"]</text:span>\")
+    #+BIND: org-odt-endnote-anchor-format \"%s\"
+
+you will get
+
+    Body text*[1, 2]*
+
+with the text between asterisks typeset in bold.
+
+See also `org-odt-endnote-anchor-format' and
+`org-odt-endnote-separator' and `org-odt-endnote-regexp'."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "None" ("" . ""))
+	  (const :tag "Square Brackets" ("[" . "]"))
+	  (string :tag "Other")))
+
+;;;;; Footnotes
+
+(defcustom org-odt-footnote-anchor-format
+  (format "<text:span text:style-name=\"%s\">%%s</text:span>" "OrgSuperscript")
+  "Format string to typeset a footnote numeral in text area.
+%s-specifier in the format string is replaced with the footnote numeral.
+
+For example, if you want to enclose each footnote numeral in
+square braces, and embolden it, you need to set this variable to
+
+    \"<text:span text:style-name=\"Bold\">[%s]</text:span>\"
+
+  or
+
+    #+BIND: org-odt-footnote-anchor-format \"<text:span text:style-name=\\\"Bold\\\">[%s]</text:span>\"
+
+
+Note that this variable doesn't affect the style of the footnote
+numeral in the notes area.  In order to control the style of the
+footnote numeral in notes area, you need to tweak
+\"text:notes-configuration\" element of the footnote note-class.
+
+For example, if you want the style in the notes area to match
+with the style in text area as defined in the previous example,
+you need to do the following:
+
+    #+odt_extra_styles: <style:style style:name=\"Footnote_20_Symbol\"
+    #+odt_extra_styles: 	     style:display-name=\"Footnote Symbol\" style:family=\"text\">
+    #+odt_extra_styles:   <style:text-properties fo:font-weight=\"bold\"/>
+    #+odt_extra_styles: </style:style>
+
+    #+odt_extra_styles: <text:notes-configuration
+    #+odt_extra_styles:     text:note-class=\"footnote\"
+    #+odt_extra_styles:     text:default-style-name=\"Footnote\"
+    #+odt_extra_styles:     text:citation-style-name=\"Footnote_20_Symbol\"
+    #+odt_extra_styles:     text:citation-body-style-name=\"Footnote_20_anchor\"
+    #+odt_extra_styles:     text:master-page-name=\"Footnote\" style:num-prefix=\"[\"
+    #+odt_extra_styles:     style:num-suffix=\"] \" style:num-format=\"1\" text:start-value=\"0\"
+    #+odt_extra_styles:     text:footnotes-position=\"page\" text:start-numbering-at=\"document\"/>
+
+See also `org-odt-footnote-braces' and `org-odt-footnote-separator'."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "As superscript" "<text:span text:style-name=\"OrgSuperscript\">%s</text:span>")
+	  (const :tag "Within Square Brackets" "[%s]")
+	  (string :tag "Other")))
+
+
+(defcustom org-odt-footnote-separator
+  (format "<text:span text:style-name=\"%s\">, </text:span>" "OrgSuperscript")
+  "String that separates individual footnote anchor in a cluster.
+
+A cluster of footnotes is a sequence of two or more footnotes
+appearing back-to-back in body text.
+
+For example, when you export the following org snippet
+
+    Body text[fn:1][fn:2]
+
+    [fn:1] Footnote one 
+    [fn:2] Footnote two 
+
+    #+BIND: org-odt-footnote-separator \", \"
+    #+BIND: org-odt-footnote-braces (\"<text:span text:style-name=\\\"Bold\\\">[\" . \"]</text:span>\")
+    #+BIND: org-odt-footnote-anchor-format \"%s\"
+
+you will get
+
+    Body text*[1, 2]*
+
+with the text between asterisks typeset in bold.
+
+See also `org-odt-footnote-anchor-format' and `org-odt-footnote-braces'."
+  :group 'org-export-odt
+  :type '(string :tag "Footnote separator"))
+
+(defcustom org-odt-footnote-braces '("" . "")
+  "Braces to enclose a cluster of footnotes.
+
+A cluster of footnotes is a sequence of two or more footnotes
+appearing back-to-back in body text.
+
+For example, when you export the following org snippet
+
+    Body text[fn:1][fn:2]
+
+    [fn:1] Footnote one 
+    [fn:2] Footnote two 
+
+    #+BIND: org-odt-footnote-separator \", \"
+    #+BIND: org-odt-footnote-braces (\"<text:span text:style-name=\\\"Bold\\\">[\" . \"]</text:span>\")
+    #+BIND: org-odt-footnote-anchor-format \"%s\"
+
+you will get
+
+    Body text*[1, 2]*
+
+with the text between asterisks typeset in bold.
+
+See also `org-odt-footnote-anchor-format' and `org-odt-footnote-separator'."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "None" ("" . ""))
+	  (const :tag "Square Brackets" ("[" . "]"))
+	  (string :tag "Other")))
 
 ;;;; Headline
 
@@ -1662,8 +1918,9 @@ holding export options."
       ;; Write automatic styles.
       ;; - Position the cursor.
       (goto-char (point-min))
-      (re-search-forward "  </office:automatic-styles>" nil t)
-      (goto-char (match-beginning 0))
+      (re-search-forward "<office:automatic-styles>" nil t)
+      (goto-char (match-end 0))
+      (newline)
 
       ;; - Dump these automatic styles:
       ;;   1. styles specified with "#+ODT_AUTOMATIC_STYLES: ..."
@@ -1833,7 +2090,7 @@ holding export options."
       (user-error "Cannot read styles file: %s" styles-file))
 
     (message "ox-odt: Styles file is %s" styles-file)
-    
+
     ;; Check the type of styles file.
     (pcase styles-file-type
       ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
@@ -2320,6 +2577,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 CONTENTS is nil.  INFO is a plist holding contextual information."
   (org-odt-do-format-code (org-element-property :value fixed-width) info))
 
+(defun org-odt--endnote-p (footnote-reference info)
+  (string-match-p (plist-get info :odt-endnote-regexp)
+		  (org-element-property :label footnote-reference)))
 
 ;;;; Footnote Definition
 
@@ -2328,43 +2588,53 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 
 ;;;; Footnote Reference
 
-(defun org-odt--format-footnote-definition (n def)
-  (let ((note-class "footnote")
-	(_par-style "Footnote")
-	(id (if n (format "text:id=\"fn%d\"" n) "")))
-    (format
-     "<text:note %s text:note-class=\"%s\">%s</text:note>"
-     id note-class
-     (concat
-      (format "<text:note-citation>%d</text:note-citation>" (or n 0))
-      (format "<text:note-body>%s</text:note-body>" def)))))
+(defun org-odt--format-footnote-definition (n def &optional note-class)
+  (format
+   "<text:note %s text:note-class=\"%s\">%s</text:note>"
+   (if n (format "text:id=\"fn%d\"" n) "")
+   (or note-class 'footnote)
+   (concat
+    (format "<text:note-citation>%d</text:note-citation>" (or n 0))
+    (format "<text:note-body>%s</text:note-body>" def))))
 
 (defun org-odt-footnote-reference (footnote-reference _contents info)
   "Transcode a FOOTNOTE-REFERENCE element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
-  (let ((--format-footnote-reference
-	 (lambda (n)
-	   (setq n (format "%d" n))
-	   (let ((note-class "footnote")
-		 (ref-format "text")
-		 (ref-name (concat "fn" n)))
-	     (format
-	      "<text:span text:style-name=\"%s\">%s</text:span>"
-	      "OrgSuperscript"
-	      (format "<text:note-ref text:note-class=\"%s\" text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:note-ref>"
-		      note-class ref-format ref-name n))))))
+  (let* ((--format-footnote-anchor
+	  (lambda (anchor note-class)
+	    (format (plist-get info (cl-case note-class
+				      (footnote :odt-footnote-anchor-format)
+				      (endnote :odt-endnote-anchor-format)))
+		    anchor)))
+	 (--format-footnote-reference
+	  (lambda (n note-class)
+	    (setq n (format "%d" n))
+	    (let ((ref-format "text")
+		  (ref-name (concat "fn" n)))
+	      (funcall --format-footnote-anchor
+		       (format "<text:note-ref text:note-class=\"%s\" text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:note-ref>"
+			       note-class ref-format ref-name n)
+		       note-class))))
+	 (note-class (if (org-odt--endnote-p footnote-reference info) 'endnote 'footnote))
+	 (prevp (eq (org-element-type (org-export-get-previous-element footnote-reference info)) 'footnote-reference))
+	 (nextp (eq (org-element-type (org-export-get-next-element footnote-reference info)) 'footnote-reference)))
     (concat
+     ;; Insert a opening brace before the first footnote reference in a cluster.
+     (and (not prevp) ; not preceded by a footnote reference
+	  (car (plist-get info (cl-case note-class
+				 (footnote :odt-footnote-braces)
+				 (endnote :odt-endnote-braces)))))
      ;; Insert separator between two footnotes in a row.
-     (let ((prev (org-export-get-previous-element footnote-reference info)))
-       (and (eq (org-element-type prev) 'footnote-reference)
-	    (format "<text:span text:style-name=\"%s\">%s</text:span>"
-		    "OrgSuperscript" ",")))
+     (and prevp			; preceded by a footnote reference
+	  (plist-get info (cl-case note-class
+			    (footnote :odt-footnote-separator)
+			    (endnote :odt-endnote-separator))))
      ;; Transcode footnote reference.
      (let ((n (org-export-get-footnote-number footnote-reference info nil t)))
        (cond
 	((not
 	  (org-export-footnote-first-reference-p footnote-reference info nil t))
-	 (funcall --format-footnote-reference n))
+	 (funcall --format-footnote-reference n note-class))
 	;; Inline definitions are secondary strings.
 	;; Non-inline footnotes definitions are full Org data.
 	(t
@@ -2376,8 +2646,17 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			   'element)
 		       def
 		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			     "Footnote" def)))))
-	   (org-odt--format-footnote-definition n def))))))))
+			     (assoc-default note-class '((endnote . "Endnote")
+							 (footnote . "Footnote")))
+			     def)))))
+	   (funcall --format-footnote-anchor
+		    (org-odt--format-footnote-definition n def note-class)
+		    note-class)))))
+     ;; Insert a closing brace after the last footnote reference in a cluster.
+     (and (not nextp) ; not followed by a footnote reference
+	  (cdr (plist-get info (cl-case note-class
+				 (footnote :odt-footnote-braces)
+				 (endnote :odt-endnote-braces))))))))
 
 
 ;;;; Citation Reference
@@ -3913,7 +4192,7 @@ the plist used as a communication channel."
 	    (cl-loop for el in data
 		     ;; Fallback style.
 		     with style = "Text_20_body"
-		     with footnote-definition-p = nil do
+		     with within-note-definition-p = nil do
 		     (setq style
 			   (or
 			    ;; Case 1: Does this node IMPLICITLY or
@@ -3924,11 +4203,18 @@ the plist used as a communication channel."
 				   "OrgVerse"))
 			      (center-block
 			       (or (org-odt--read-attribute el :style)
-				   (if footnote-definition-p "OrgFootnoteCenter"
-				     "OrgCenter")))
+				   (cl-case within-note-definition-p
+				     (footnote "OrgFootnoteCenter")
+				     (endnote "OrgEndnoteCenter")
+				     (_ "OrgCenter"))))
 			      (footnote-definition
-			       (setq footnote-definition-p t)
-			       (or (org-odt--read-attribute el :style) "Footnote"))
+			       (setq within-note-definition-p
+				     (if (org-odt--endnote-p el info) 'endnote 'footnote))
+			       (or (org-odt--read-attribute el :style)
+				   (cl-case within-note-definition-p
+				     (footnote "Footnote")
+				     (endnote "Endnote")
+				     (_ (error "This shouldn't happen")))))
 			      (paragraph
 			       (or
 				;; Case 1: Some paragraphs are "created"
@@ -3950,8 +4236,10 @@ the plist used as a communication channel."
 			       (org-odt--read-attribute el :p-style))
 			      (quote-block
 			       (or (org-odt--read-attribute el :style)
-				   (if footnote-definition-p "OrgFootnoteQuotations"
-				     "Quotations")))
+				   (cl-case within-note-definition-p
+				     (footnote "OrgFootnoteQuotations")
+				     (endnote "OrgEndnoteQuotations")
+				     (_ "Quotations"))))
 			      (special-block
 			       (let ((type (downcase (org-element-property :type el))))
 				 (cond
@@ -4128,8 +4416,7 @@ holding contextual information."
 	    (special-block
 	     (or (org-odt--read-attribute element :style) "OrgSection"))
 	    (table (format "OrgIndentedSection-Level-%d" indentation-level))
-	    (_ (error "Cannot determine section style for object type `%s'"
-		      (org-element-type element))))
+	    (t "OrgSection"))
 	  contents))
 
 (defun org-odt-section (_section contents _info) ; FIXME
