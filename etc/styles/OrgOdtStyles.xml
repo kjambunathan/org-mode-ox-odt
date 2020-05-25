@@ -278,9 +278,6 @@
   <style:style style:name="Quotations" style:family="paragraph" style:parent-style-name="Standard" style:class="html">
    <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0cm" fo:margin-bottom="0.499cm" fo:text-indent="0cm" style:auto-text-indent="false"/>
   </style:style>
-  <style:style style:name="OrgFootnoteQuotations" style:family="paragraph" style:parent-style-name="Footnote" style:class="html">
-   <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0cm" fo:margin-bottom="0.499cm" fo:text-indent="0cm" style:auto-text-indent="false"/>
-  </style:style>
   <style:style style:name="Preformatted_20_Text" style:display-name="Preformatted Text" style:family="paragraph" style:parent-style-name="Standard" style:class="html">
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm"/>
    <style:text-properties style:font-name="Courier New" fo:font-size="10pt" style:font-name-asian="NSimSun" style:font-size-asian="10pt" style:font-name-complex="Courier New" style:font-size-complex="10pt"/>
@@ -321,9 +318,6 @@
   <style:style style:name="OrgCenter" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
   </style:style>
-  <style:style style:name="OrgFootnoteCenter" style:family="paragraph" style:parent-style-name="Footnote">
-   <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
-  </style:style>
   <style:style style:name="OrgTableContents" style:family="paragraph" style:parent-style-name="Text_20_body"/>
   <style:style style:name="OrgTableHeading" style:family="paragraph" style:parent-style-name="OrgTableContents" style:class="extra">
     <style:paragraph-properties fo:text-align="center" style:justify-single-word="false" text:number-lines="false" text:line-number="0"/>
@@ -351,10 +345,6 @@
   </style:style>
   <style:style style:name="Text_20_body_20_bold" style:display-name="Text body bold" style:family="paragraph" style:parent-style-name="Text_20_body" style:next-style-name="Text_20_body">
    <style:text-properties fo:font-weight="bold"/>
-  </style:style>
-  <style:style style:name="Footnote" style:family="paragraph" style:parent-style-name="Standard" style:class="extra">
-   <style:paragraph-properties fo:margin-left="0.499cm" fo:margin-right="0cm" fo:text-indent="-0.499cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
-   <style:text-properties fo:font-size="10pt" style:font-size-asian="10pt" style:font-size-complex="10pt"/>
   </style:style>
   <style:style style:name="Figure" style:family="paragraph" style:parent-style-name="Caption"/>
   <style:style style:name="Illustration_20_Index_20_Heading" style:display-name="Illustration Index Heading" style:family="paragraph" style:parent-style-name="Heading" style:class="index">
@@ -436,10 +426,6 @@
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="Numbering_20_Symbols" style:display-name="Numbering Symbols" style:family="text"/>
-  <style:style style:name="Footnote_20_Symbol" style:display-name="Footnote Symbol" style:family="text"/>
-  <style:style style:name="Footnote_20_anchor" style:display-name="Footnote anchor" style:family="text">
-   <style:text-properties style:text-position="super 58%"/>
-  </style:style>
   <style:style style:name="OrgSuperscript" style:family="text">
    <style:text-properties style:text-position="super 58%"/>
   </style:style>
@@ -762,7 +748,7 @@
   <text:list-style style:name="OrgSrcBlockNumberedLine">
    <text:list-level-style-number text:level="1" style:num-format="1">
     <style:list-level-properties text:space-before="0.000cm" text:min-label-width="0.635cm" text:min-label-distance="0.101cm" fo:text-align="end"/>
-   </text:list-level-style-number>    
+   </text:list-level-style-number>
    <text:list-level-style-number text:level="2" style:num-format="1">
     <style:list-level-properties text:space-before="0.635cm" text:min-label-width="0.635cm" text:min-label-distance="0.101cm" fo:text-align="end"/>
    </text:list-level-style-number>
@@ -792,8 +778,58 @@
    </text:list-level-style-number>
   </text:list-style>
 
+  <!-- Footnote: Character styles -->
+  <style:style style:name="Footnote_20_Symbol" style:display-name="Footnote Symbol" style:family="text"/>
+  <style:style style:name="Footnote_20_anchor" style:display-name="Footnote anchor" style:family="text"/>
+
+  <!-- Footnote: Paragraph styles   -->
+  <style:style style:name="Footnote" style:family="paragraph" style:parent-style-name="Standard" style:class="extra">
+   <style:paragraph-properties fo:margin-left="0.499cm" fo:margin-right="0cm" fo:text-indent="-0.499cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
+   <style:text-properties fo:font-size="10pt" style:font-size-asian="10pt" style:font-size-complex="10pt"/>
+  </style:style>
+
+  <style:style style:name="OrgFootnoteQuotations" style:family="paragraph" style:parent-style-name="Footnote">
+   <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0cm" fo:margin-bottom="0.499cm" fo:text-indent="0cm" style:auto-text-indent="false"/>
+  </style:style>
+  <style:style style:name="OrgFootnoteCenter" style:family="paragraph" style:parent-style-name="Footnote">
+   <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
+  </style:style>
+
+  <!-- Footnotes: Notes configuration -->
   <text:notes-configuration text:note-class="footnote" text:citation-style-name="Footnote_20_Symbol" text:citation-body-style-name="Footnote_20_anchor" style:num-format="1" text:start-value="0" text:footnotes-position="page" text:start-numbering-at="document"/>
-  <text:notes-configuration text:note-class="endnote" style:num-format="i" text:start-value="0"/>
+
+  <!-- Footnotes: Notes configuration - Footnote at end of document, Numbering (is always) per-document -->
+  <!-- <text:notes-configuration text:note-class="footnote" text:default-style-name="Footnote" text:citation-style-name="Footnote_20_Symbol" text:citation-body-style-name="Footnote_20_anchor" text:master-page-name="Footnote" style:num-format="1" text:start-value="0" text:footnotes-position="document" text:start-numbering-at="document"/> -->
+
+  <!-- Footnotes: Notes configuration - Footnote at end of page, Numbering per-chapter  -->
+  <!-- <text:notes-configuration text:note-class="footnote" text:default-style-name="Footnote" text:citation-style-name="Footnote_20_Symbol" text:citation-body-style-name="Footnote_20_anchor" text:master-page-name="Footnote" style:num-format="1" text:start-value="0" text:footnotes-position="page" text:start-numbering-at="chapter"/> -->
+
+  <!-- Footnotes: Notes configuration - Footnote at end of page, Numbering per-page  -->
+  <!-- <text:notes-configuration text:note-class="footnote" text:default-style-name="Footnote" text:citation-style-name="Footnote_20_Symbol" text:citation-body-style-name="Footnote_20_anchor" text:master-page-name="Footnote" style:num-format="1" text:start-value="0" text:footnotes-position="page" text:start-numbering-at="page"/> -->
+
+  <!-- Endnotes: Character styles -->
+  <style:style style:name="Endnote_20_Symbol" style:display-name="Endnote Symbol" style:family="text"/>
+  <style:style style:name="Endnote_20_anchor" style:display-name="Endnote anchor" style:family="text"/>
+
+  <style:style style:name="OrgEndnoteAnchor" style:family="text" style:parent-style-name="Endnote_20_anchor">
+   <style:text-properties style:text-position="0% 100%"/>
+  </style:style>
+
+  <!-- Endnotes: Paragraph styles -->
+  <style:style style:name="Endnote" style:family="paragraph" style:parent-style-name="Standard" style:class="extra">
+   <style:paragraph-properties fo:margin-left="0.499cm" fo:margin-right="0cm" fo:text-indent="-0.499cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
+   <style:text-properties fo:font-size="10pt" style:font-size-asian="10pt" style:font-size-complex="10pt"/>
+  </style:style>
+  <style:style style:name="OrgEndnoteQuotations" style:family="paragraph" style:parent-style-name="Endnote">
+   <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0cm" fo:margin-bottom="0.499cm" fo:text-indent="0cm" style:auto-text-indent="false"/>
+  </style:style>
+  <style:style style:name="OrgEndnoteCenter" style:family="paragraph" style:parent-style-name="Endnote">
+   <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
+  </style:style>
+
+  <!-- Endnotes: Notes configuration -->
+  <text:notes-configuration text:note-class="endnote" text:default-style-name="Endnote" text:citation-style-name="Endnote_20_Symbol" text:citation-body-style-name="Endnote_20_anchor" text:master-page-name="Endnote" style:num-suffix=". " style:num-format="1" text:start-value="0"/>
+
   <text:linenumbering-configuration text:number-lines="false" text:offset="0.499cm" style:num-format="1" text:number-position="left" text:increment="5"/>
 
   <!-- Bibliography -->
@@ -893,14 +929,13 @@
       </style:list-level-properties>
     </text:list-level-style-number>
   </text:list-style>
-  
 
   <style:style style:name="OrgCite" style:family="text"/>
 
   <!-- Styles for displaying Indices of Figures, Tables, Listings etc -->
 
   <style:style style:name="Index_20_Link" style:display-name="Index Link" style:family="text"/>
-  
+
   <style:style style:name="Org_20_Index_20_Heading" style:display-name="Org Index Heading" style:family="paragraph" style:parent-style-name="Heading" style:class="index">
     <style:paragraph-properties fo:margin-left="0cm" fo:margin-right="0cm" fo:text-indent="0cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
     <style:text-properties fo:font-size="16pt" fo:font-weight="bold" style:font-size-asian="16pt" style:font-weight-asian="bold" style:font-size-complex="16pt" style:font-weight-complex="bold"/>
@@ -913,7 +948,6 @@
       </style:tab-stops>
     </style:paragraph-properties>
   </style:style>
-
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
@@ -963,6 +997,14 @@
     <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
    </style:footer-style>
   </style:page-layout>
+  <!-- Footnotes & Endnotes: Page layouts -->
+  <style:page-layout style:name="Mpm6">
+   <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
+    <style:footnote-sep style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+   </style:page-layout-properties>
+   <style:header-style/>
+   <style:footer-style/>
+  </style:page-layout>
  </office:automatic-styles>
  <office:master-styles>
   <style:master-page style:name="Standard" style:page-layout-name="Mpm1">
@@ -986,5 +1028,8 @@
     <text:p text:style-name="MP1"><text:page-number text:select-page="current"/></text:p>
    </style:footer>
   </style:master-page>
+  <!-- Endnotes & Footnotes: Page styles -->
+  <style:master-page style:name="Footnote" style:page-layout-name="Mpm6"/>
+  <style:master-page style:name="Endnote" style:page-layout-name="Mpm6"/>
  </office:master-styles>
 </office:document-styles>
