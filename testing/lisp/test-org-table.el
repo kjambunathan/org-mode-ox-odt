@@ -2341,6 +2341,50 @@ See also `test-org-table/copy-field'."
 	 (char-after)))))
 
 
+;;; Deleting columns
+(ert-deftest test-org-table/delete-column ()
+  "Test `org-table-delete-column'."
+  ;; Error when outside a table.
+  (should-error
+   (org-test-with-temp-text "Paragraph"
+     (org-table-delete-column)))
+  ;; Delete first column.
+  (should
+   (equal "| a |\n"
+	  (org-test-with-temp-text
+	      "| <point>  | a |\n"
+	    (org-table-delete-column)
+	    (buffer-string))))
+  ;; Delete column and check location of point.
+  (should
+   (= 2
+      (org-test-with-temp-text
+	  "| a | <point>b  | c |"
+	(org-table-delete-column)
+	(org-table-current-column))))
+  ;; Delete column when at end of line and after a "|".
+  (should
+   (equal "| a |\n"
+	  (org-test-with-temp-text
+	      "| a | b |<point>\n"
+	    (org-table-delete-column)
+	    (buffer-string))))
+  (should
+   (equal "| a |\n"
+	  (org-test-with-temp-text
+	      "| a | b |   <point>\n"
+	    (org-table-delete-column)
+	    (buffer-string))))
+  ;; Delete two columns starting with the last column.
+  (should
+   (equal "| a |\n"
+	  (org-test-with-temp-text
+	      "| a | b  | c<point> |"
+	    (org-table-delete-column)
+	    (org-table-delete-column)
+	    (buffer-string)))))
+
+
 ;;; Inserting rows, inserting columns
 
 (ert-deftest test-org-table/insert-column ()
@@ -2351,49 +2395,59 @@ See also `test-org-table/copy-field'."
      (org-table-insert-column)))
   ;; Insert new column after current one.
   (should
-   (equal "| a |   |\n"
+   (equal "|   | a |\n"
 	  (org-test-with-temp-text "| a |"
 	    (org-table-insert-column)
 	    (buffer-string))))
   (should
-   (equal "| a |   | b |\n"
+   (equal "|   | a | b |\n"
 	  (org-test-with-temp-text "| <point>a | b |"
 	    (org-table-insert-column)
 	    (buffer-string))))
   ;; Move point into the newly created column.
   (should
-   (equal "  |"
+   (equal "  | a |"
 	  (org-test-with-temp-text "| <point>a |"
 	    (org-table-insert-column)
 	    (buffer-substring-no-properties (point) (line-end-position)))))
   (should
-   (equal "  | b |"
+   (equal "  | a | b |"
 	  (org-test-with-temp-text "| <point>a | b |"
 	    (org-table-insert-column)
 	    (buffer-substring-no-properties (point) (line-end-position)))))
   ;; Handle missing vertical bar in the last column.
   (should
-   (equal "| a |   |\n"
+   (equal "|   | a |\n"
 	  (org-test-with-temp-text "| a"
 	    (org-table-insert-column)
 	    (buffer-string))))
   (should
-   (equal "  |"
+   (equal "  | a |"
 	  (org-test-with-temp-text "| <point>a"
 	    (org-table-insert-column)
 	    (buffer-substring-no-properties (point) (line-end-position)))))
   ;; Handle column insertion when point is before first column.
   (should
-   (equal " | a |   |\n"
+   (equal " |   | a |\n"
 	  (org-test-with-temp-text " | a |"
 	    (org-table-insert-column)
 	    (buffer-string))))
   (should
-   (equal " | a |   | b |\n"
+   (equal " |   | a | b |\n"
 	  (org-test-with-temp-text " | a | b |"
 	    (org-table-insert-column)
 	    (buffer-string)))))
 
+(ert-deftest test-org-table/insert-column-with-formula ()
+  "Test `org-table-insert-column' with a formula in place."
+  (should
+   (equal "|   | 1 | 1 | 2 |
+#+TBLFM: $4=$2+$3"
+	  (org-test-with-temp-text
+	   "| 1<point> | 1 | 2 |
+#+TBLFM: $3=$1+$2"
+	   (org-table-insert-column)
+	   (buffer-substring-no-properties (point-min) (point-max))))))
 
 
 ;;; Moving single cells

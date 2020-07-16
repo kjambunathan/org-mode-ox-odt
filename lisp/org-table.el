@@ -1290,17 +1290,13 @@ However, when FORCE is non-nil, create new columns if necessary."
       (while (< (point) end)
 	(unless (org-at-table-hline-p)
 	  (org-table-goto-column col t)
-	  (unless (search-forward "|" (line-end-position) t 2)
-	    ;; Add missing vertical bar at the end of the row.
-	    (end-of-line)
-	    (insert "|"))
-	  (insert "  |"))
+	  (insert "|"))
 	(forward-line)))
-    (org-table-goto-column (1+ col))
+    (org-table-goto-column col)
     (org-table-align)
     ;; Shift appropriately stored shrunk column numbers, then hide the
     ;; columns again.
-    (org-table--shrink-columns (mapcar (lambda (c) (if (<= c col) c (1+ c)))
+    (org-table--shrink-columns (mapcar (lambda (c) (if (< c col) c (1+ c)))
 				       shrunk-columns)
 			       beg end)
     (set-marker end nil)
@@ -1431,6 +1427,8 @@ Swap with anything in target cell."
   (interactive)
   (unless (org-at-table-p) (user-error "Not at a table"))
   (org-table-find-dataline)
+  (when (save-excursion (skip-chars-forward " \t") (eolp))
+    (search-backward "|"))		;snap into last column
   (org-table-check-inside-data-field nil t)
   (let* ((col (org-table-current-column))
 	 (beg (org-table-begin))
@@ -1446,7 +1444,6 @@ Swap with anything in target cell."
 	 (and (looking-at "|[^|\n]+|")
 	      (replace-match "|")))
        (forward-line)))
-    (org-table-goto-column (max 1 (1- col)))
     (org-table-align)
     ;; Shift appropriately stored shrunk column numbers, then hide the
     ;; columns again.

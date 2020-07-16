@@ -122,6 +122,8 @@ Stars are put in group 1 and the trimmed body in group 2.")
 (declare-function org-archive-subtree-default "org-archive" ())
 (declare-function org-archive-to-archive-sibling "org-archive" ())
 (declare-function org-attach "org-attach" ())
+(declare-function org-attach-dir "org-attach"
+		  (&optional create-if-not-exists-p no-fs-check))
 (declare-function org-babel-do-in-edit-buffer "ob-core" (&rest body) t)
 (declare-function org-babel-tangle-file "ob-tangle" (file &optional target-file lang))
 (declare-function org-beamer-mode "ox-beamer" (&optional prefix) t)
@@ -190,6 +192,7 @@ Stars are put in group 1 and the trimmed body in group 2.")
 (defvar org-radio-target-regexp)
 (defvar org-target-link-regexp)
 (defvar org-target-regexp)
+(defvar org-id-overriding-file-name)
 
 ;; load languages based on value of `org-babel-load-languages'
 (defvar org-babel-load-languages)
@@ -216,12 +219,12 @@ and then loads the resulting file using `load-file'.  With
 optional prefix argument COMPILE, the tangled Emacs Lisp file is
 byte-compiled before it is loaded."
   (interactive "fFile to load: \nP")
-  (let* ((file (file-truename file))
-	 (tangled-file (concat (file-name-sans-extension file) ".el")))
+  (let ((tangled-file (concat (file-name-sans-extension file) ".el")))
     ;; Tangle only if the Org file is newer than the Elisp file.
     (unless (org-file-newer-than-p
 	     tangled-file
-	     (file-attribute-modification-time (file-attributes file)))
+	     (file-attribute-modification-time
+	      (file-attributes (file-truename file))))
       (org-babel-tangle-file file tangled-file "emacs-lisp"))
     (if compile
 	(progn
@@ -854,6 +857,7 @@ cursor keys will then execute Org commands in the following contexts:
 - in a plain list item, changing the bullet type
 - in a property definition line, switching between allowed values
 - in the BEGIN line of a clock table (changing the time block).
+- in a table, moving the cell in the specified direction.
 Outside these contexts, the commands will throw an error.
 
 When this variable is t and the cursor is not in a special
@@ -863,9 +867,9 @@ cycling will no longer happen anywhere in an item line, but only
 if the cursor is exactly on the bullet.
 
 If you set this variable to the symbol `always', then the keys
-will not be special in headlines, property lines, and item lines,
-to make shift selection work there as well.  If this is what you
-want, you can use the following alternative commands:
+will not be special in headlines, property lines, item lines, and
+table cells, to make shift selection work there as well.  If this is
+what you want, you can use the following alternative commands:
 `\\[org-todo]' and `\\[org-priority]' \
 to change TODO state and priority,
 `\\[universal-argument] \\[universal-argument] \\[org-todo]' \
@@ -1575,7 +1579,7 @@ When nil, `C-k' will call the default `kill-line' command.
 When t, the following will happen while the cursor is in the headline:
 
 - When the cursor is at the beginning of a headline, kill the entire
-  line and possible the folded subtree below the line.
+  line and possibly the folded subtree below the line.
 - When in the middle of the headline text, kill the headline up to the tags.
 - When after the headline text, kill the tags."
   :group 'org-edit-structure
@@ -3267,16 +3271,6 @@ scope."
 A nil value means to remove them, after a query, from the list."
   :group 'org-agenda
   :type 'boolean)
-
-(defcustom org-agenda-diary-file 'diary-file
-  "File to which to add new entries with the `i' key in agenda and calendar.
-When this is the symbol `diary-file', the functionality in the Emacs
-calendar will be used to add entries to the `diary-file'.  But when this
-points to a file, `org-agenda-diary-entry' will be used instead."
-  :group 'org-agenda
-  :type '(choice
-	  (const :tag "The standard Emacs diary file" diary-file)
-	  (file :tag "Special Org file diary entries")))
 
 (defgroup org-latex nil
   "Options for embedding LaTeX code into Org mode."
@@ -6402,8 +6396,10 @@ Use `\\[org-edit-special]' to edit table.el tables"))
 	    (setq has-children (org-list-has-child-p (point) struct)))
 	(org-back-to-heading)
 	(setq eoh (save-excursion (outline-end-of-heading) (point)))
-	(setq eos (save-excursion (org-end-of-subtree t t)
-				  (when (bolp) (backward-char)) (point)))
+	(setq eos (save-excursion
+		    (org-end-of-subtree t t)
+		    (unless (eobp) (forward-char -1))
+		    (point)))
 	(setq has-children
 	      (or
 	       (save-excursion
@@ -6416,7 +6412,7 @@ Use `\\[org-edit-special]' to edit table.el tables"))
 		      (org-list-search-forward (org-item-beginning-re) eos t))))))
       ;; Determine end invisible part of buffer (EOL)
       (beginning-of-line 2)
-      (while (and (not (eobp)) ;This is like `next-line'.
+      (while (and (not (eobp))		;this is like `next-line'
 		  (get-char-property (1- (point)) 'invisible))
 	(goto-char (next-single-char-property-change (point) 'invisible))
 	(and (eolp) (beginning-of-line 2)))
@@ -7870,6 +7866,7 @@ with the original repeater."
 	   (nmin 1)
 	   (nmax n)
 	   (n-no-remove -1)
+	   (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
 	   (idprop (org-entry-get beg "ID")))
       (when (and doshift
 		 (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
@@ -9657,15 +9654,18 @@ block of such type."
     (`nil (push (cons type func) org-dynamic-block-alist))
     (def (setcdr def func))))
 
-(defun org-dynamic-block-insert-dblock (type)
+(defun org-dynamic-block-insert-dblock (type &optional interactive-p)
   "Insert a dynamic block of type TYPE.
 When used interactively, select the dynamic block types among
-defined types, per `org-dynamic-block-define'."
+defined types, per `org-dynamic-block-define'.  If INTERACTIVE-P
+is non-nil, call the dynamic block function interactively."
   (interactive (list (completing-read "Dynamic block: "
-				      (org-dynamic-block-types))))
+				      (org-dynamic-block-types))
+		     t))
   (pcase (org-dynamic-block-function type)
     (`nil (error "No such dynamic block: %S" type))
-    ((and f (pred functionp)) (funcall f))
+    ((and f (pred functionp))
+     (if interactive-p (call-interactively f) (funcall f)))
     (_ (error "Invalid function for dynamic block %S" type))))
 
 (defun org-dblock-update (&optional arg)
@@ -12355,7 +12355,12 @@ in Lisp code use `org-set-tags' instead."
 				#'org-tags-completion-function
 				nil nil (org-make-tag-string current-tags)
 				'org-tags-history)))))))
-	  (org-set-tags tags)))))))
+	  (org-set-tags tags)))))
+    ;; `save-excursion' may not replace the point at the right
+    ;; position.
+    (when (and (save-excursion (skip-chars-backward "*") (bolp))
+	       (looking-at-p " "))
+      (forward-char))))
 
 (defun org-align-tags (&optional all)
   "Align tags in current entry.
@@ -14109,16 +14114,16 @@ non-nil."
 (defun org-time-stamp-inactive (&optional arg)
   "Insert an inactive time stamp.
 
-An inactive time stamp is enclosed in square brackets instead of angle
-brackets.  It is inactive in the sense that it does not trigger agenda entries,
-does not link to the calendar and cannot be changed with the S-cursor keys.
-So these are more for recording a certain time/date.
+An inactive time stamp is enclosed in square brackets instead of
+angle brackets.  It is inactive in the sense that it does not
+trigger agenda entries.  So these are more for recording a
+certain time/date.
 
 If the user specifies a time like HH:MM or if this command is called with
 at least one prefix argument, the time stamp contains the date and the time.
 Otherwise, only the date is included.
 
-When called with two universal prefix arguments, insert an active time stamp
+When called with two universal prefix arguments, insert an inactive time stamp
 with the current time without prompting the user."
   (interactive "P")
   (org-time-stamp arg 'inactive))
@@ -16114,7 +16119,10 @@ looks only before point, not after."
   (catch 'exit
     (let ((pos (point))
 	  (dodollar (member "$" (plist-get org-format-latex-options :matchers)))
-	  (lim (save-excursion (org-backward-paragraph) (point)))
+	  (lim (progn
+		 (re-search-backward (concat "^\\(" paragraph-start "\\)") nil
+				     'move)
+		 (point)))
 	  dd-on str (start 0) m re)
       (goto-char pos)
       (when dodollar
@@ -17443,7 +17451,9 @@ individual commands for more information."
    ((and (not org-support-shift-select) (org-at-item-p))
     (call-interactively 'org-previous-item))
    ((org-clocktable-try-shift 'up arg))
-   ((org-at-table-p) (org-table-move-cell-up))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-up))
    ((run-hook-with-args-until-success 'org-shiftup-final-hook))
    (org-support-shift-select
     (org-call-for-shift-select 'previous-line))
@@ -17469,7 +17479,9 @@ individual commands for more information."
    ((and (not org-support-shift-select) (org-at-item-p))
     (call-interactively 'org-next-item))
    ((org-clocktable-try-shift 'down arg))
-   ((org-at-table-p) (org-table-move-cell-down))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-down))
    ((run-hook-with-args-until-success 'org-shiftdown-final-hook))
    (org-support-shift-select
     (org-call-for-shift-select 'next-line))
@@ -17507,7 +17519,9 @@ This does one of the following:
 	 (org-at-property-p))
     (call-interactively 'org-property-next-allowed-value))
    ((org-clocktable-try-shift 'right arg))
-   ((org-at-table-p) (org-table-move-cell-right))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-right))
    ((run-hook-with-args-until-success 'org-shiftright-final-hook))
    (org-support-shift-select
     (org-call-for-shift-select 'forward-char))
@@ -17545,7 +17559,9 @@ This does one of the following:
 	 (org-at-property-p))
     (call-interactively 'org-property-previous-allowed-value))
    ((org-clocktable-try-shift 'left arg))
-   ((org-at-table-p) (org-table-move-cell-left))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-left))
    ((run-hook-with-args-until-success 'org-shiftleft-final-hook))
    (org-support-shift-select
     (org-call-for-shift-select 'backward-char))
@@ -20404,7 +20420,8 @@ depending on context."
       (if (<= end (point))		;on tags part
 	  (kill-region (point) (line-end-position))
 	(kill-region (point) end)))
-    (org-align-tags))
+    ;; Only align tags when we are still on a heading:
+    (if (org-at-heading-p) (org-align-tags)))
    (t (kill-region (point) (line-end-position)))))
 
 (defun org-yank (&optional arg)
@@ -21135,10 +21152,11 @@ ones already marked."
 	(set-mark
 	 (save-excursion
 	   (goto-char (mark))
-	   (goto-char (org-element-property :end (org-element-at-point)))))
+	   (goto-char (org-element-property :end (org-element-at-point)))
+	   (point)))
       (let ((element (org-element-at-point)))
 	(end-of-line)
-	(push-mark (org-element-property :end element) t t)
+	(push-mark (min (point-max) (org-element-property :end element)) t t)
 	(goto-char (org-element-property :begin element))))))
 
 (defun org-narrow-to-element ()
