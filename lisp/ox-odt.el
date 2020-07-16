@@ -33,6 +33,7 @@
   (require 'rx)
   (require 'table nil 'noerror))
 (require 'format-spec)
+(require 'xml)
 (require 'ox)
 (require 'ox-ascii)
 (require 'org-compat)
@@ -3959,7 +3960,7 @@ INFO is a plist holding contextual information.  See
 	 (path
 	  (cond
 	   ((member type '("http" "https" "ftp" "mailto"))
-	    (url-encode-url (org-link-unescape (concat type ":" raw-path))))
+	    (xml-escape-string (url-encode-url (org-link-unescape (concat type ":" raw-path)))))
 	   ((string= type "file")
 	    (cond
 	     ;; If file path is absolute, prepend it with protocol
