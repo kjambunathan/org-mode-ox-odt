@@ -185,7 +185,7 @@ and `org-agenda-entry-text-maxlines'."
   "Non-nil means export org-links as descriptive links in agenda added text.
 This variable applies to the text added to the agenda when
 `org-agenda-add-entry-text-maxlines' is larger than 0.
-When this variable nil, the URL will (also) be shown."
+When this variable is nil, the URL will (also) be shown."
   :group 'org-agenda
   :type 'boolean)
 
@@ -1242,6 +1242,16 @@ in the past."
   :group 'org-agenda-daily/weekly
   :version "24.1"
   :type 'boolean)
+
+(defcustom org-agenda-diary-file 'diary-file
+  "File to which to add new entries with the `i' key in agenda and calendar.
+When this is the symbol `diary-file', the functionality in the Emacs
+calendar will be used to add entries to the `diary-file'.  But when this
+points to a file, `org-agenda-diary-entry' will be used instead."
+  :group 'org-agenda
+  :type '(choice
+	  (const :tag "The standard Emacs diary file" diary-file)
+	  (file :tag "Special Org file diary entries")))
 
 (defcustom org-agenda-include-diary nil
   "If non-nil, include in the agenda entries from the Emacs Calendar's diary.
@@ -3598,8 +3608,7 @@ removed from the entry content.  Currently only `planning' is allowed here."
 	     (when org-agenda-add-entry-text-descriptive-links
 	       (goto-char (point-min))
 	       (while (org-activate-links (point-max))
-		 (add-text-properties (match-beginning 0) (match-end 0)
-				      '(face org-link))))
+		 (goto-char (match-end 0))))
 	     (goto-char (point-min))
 	     (while (re-search-forward org-link-bracket-re (point-max) t)
 	       (set-text-properties (match-beginning 0) (match-end 0)
@@ -3861,8 +3870,7 @@ FILTER-ALIST is an alist of filters we need to apply when
 	(goto-char (point-min))
 	(save-excursion
 	  (while (org-activate-links (point-max))
-	    (add-text-properties (match-beginning 0) (match-end 0)
-				 '(face org-link))))
+	    (goto-char (match-end 0))))
 	(unless (eq org-agenda-remove-tags t)
 	  (org-agenda-align-tags))
 	(unless org-agenda-with-colors
@@ -3901,7 +3909,6 @@ FILTER-ALIST is an alist of filters we need to apply when
 				     'tags
 				     (org-with-point-at mrk
 				       (mapcar #'downcase (org-get-tags)))))))))
-	(run-hooks 'org-agenda-finalize-hook)
 	(setq org-agenda-represented-tags nil
 	      org-agenda-represented-categories nil)
 	(when org-agenda-top-headline-filter
@@ -3927,7 +3934,8 @@ FILTER-ALIST is an alist of filters we need to apply when
 	(when (get 'org-agenda-effort-filter :preset-filter)
 	  (org-agenda-filter-apply
 	   (get 'org-agenda-effort-filter :preset-filter) 'effort))
-	(add-hook 'kill-buffer-hook 'org-agenda-reset-markers 'append 'local)))))
+	(add-hook 'kill-buffer-hook 'org-agenda-reset-markers 'append 'local)
+	(run-hooks 'org-agenda-finalize-hook)))))
 
 (defun org-agenda-mark-clocking-task ()
   "Mark the current clock entry in the agenda if it is present."
@@ -4003,7 +4011,7 @@ dimming them."
   (when (called-interactively-p 'interactive)
     (message "Dim or hide blocked tasks..."))
   (dolist (o (overlays-in (point-min) (point-max)))
-    (when (eq (overlay-get o 'org-type) 'org-blocked-todo)
+    (when (eq (overlay-get o 'face) 'org-agenda-dimmed-todo-face)
       (delete-overlay o)))
   (save-excursion
     (let ((inhibit-read-only t))
@@ -4011,22 +4019,26 @@ dimming them."
       (while (let ((pos (text-property-not-all
 			 (point) (point-max) 'org-todo-blocked nil)))
 	       (when pos (goto-char pos)))
-	(let* ((invisible (eq (org-get-at-bol 'org-todo-blocked) 'invisible))
+	(let* ((invisible
+		(eq (org-get-at-bol 'org-todo-blocked) 'invisible))
+	       (todo-blocked
+		(eq (org-get-at-bol 'org-filter-type) 'todo-blocked))
 	       (ov (make-overlay (if invisible
 				     (line-end-position 0)
 				   (line-beginning-position))
 				 (line-end-position))))
-	  (if invisible
-	      (overlay-put ov 'invisible t)
+	  (when todo-blocked
 	    (overlay-put ov 'face 'org-agenda-dimmed-todo-face))
-	  (overlay-put ov 'org-type 'org-blocked-todo))
-	(forward-line))))
+	  (when invisible
+	    (org-agenda-filter-hide-line 'todo-blocked)))
+	(move-beginning-of-line 2))))
   (when (called-interactively-p 'interactive)
     (message "Dim or hide blocked tasks...done")))
 
 (defun org-agenda--mark-blocked-entry (entry)
-  "For ENTRY a string with the text property `org-hd-marker', if
-the header at `org-hd-marker' is blocked according to
+  "If ENTRY is blocked, mark it for fontification or invisibility.
+
+If the header at `org-hd-marker' is blocked according to
 `org-entry-blocked-p', then if `org-agenda-dim-blocked-tasks' is
 'invisible and the header is not blocked by checkboxes, set the
 text property `org-todo-blocked' to `invisible', otherwise set it
@@ -4050,7 +4062,9 @@ to t."
 	      (put-text-property
 	       0 (length entry) 'org-todo-blocked
 	       (if really-invisible 'invisible t)
-	       entry)))))))
+	       entry)
+	      (put-text-property
+	       0 (length entry) 'org-filter-type 'todo-blocked entry)))))))
   entry)
 
 (defvar org-agenda-skip-function nil
@@ -4074,8 +4088,10 @@ continue from there."
     (when (or
 	   (save-excursion (goto-char p) (looking-at comment-start-skip))
 	   (and org-agenda-skip-archived-trees (not org-agenda-archives-mode)
-		(get-text-property p :org-archived)
-		(org-end-of-subtree t))
+		(or (and (get-text-property p :org-archived)
+			 (org-end-of-subtree t))
+		    (and (member org-archive-tag org-file-tags)
+			 (goto-char (point-max)))))
 	   (and org-agenda-skip-comment-trees
 		(get-text-property p :org-comment)
 		(org-end-of-subtree t))
@@ -6282,10 +6298,6 @@ scheduled items with an hour specification like [h]h:mm."
 			    (org-agenda--timestamp-to-absolute deadline))
 			 org-scheduled-delay-days))
 		   (t 0))))
-	       (diff-r (abs (- repeat current)))
-	       (ddays-once (or (and (string-match "--\\([0-9]+\\)[hdwmy]" s)
-				    (string-to-number (match-string 1 s)))
-			       0))
 	       (ddays
 		(cond
 		 ;; Nullify delay when a repeater triggered already
@@ -6304,25 +6316,13 @@ scheduled items with an hour specification like [h]h:mm."
 	  (unless (and todayp
 		       habitp
 		       (bound-and-true-p org-habit-show-all-today))
-	    (when (or
-		   ;; no one-time delay, not repeated delay
-		   (and (not ddays-once) (not (= ddays diff-r)))
-		   ;; one-time delay, but not for today
-		   (and ddays-once
-			(not (= diff diff-r))
-			(= ddays-once diff-r))
-		   ;; normal delay, but already in the past
-		   (and (> ddays 0) (< diff ddays))
-		   ;; a habit, but past `org-habit-scheduled-past-days'
-		   (> diff (or (and habitp org-habit-scheduled-past-days)
-			       org-scheduled-past-days))
-		   ;; schedule in the future
-		   (> schedule current)
-		   ;; no delay, not scheduled today, no deadline for today
-		   (and (= ddays 0)
-			(/= current schedule)
-			(/= current today)
-			(/= current repeat)))
+	    (when (or (and (> ddays 0) (< diff ddays))
+		      (> diff (or (and habitp org-habit-scheduled-past-days)
+				  org-scheduled-past-days))
+		      (> schedule current)
+		      (and (/= current schedule)
+			   (/= current today)
+			   (/= current repeat)))
 	      (throw :skip nil)))
 	  ;; Possibly skip done tasks.
 	  (when (and donep
@@ -7911,7 +7911,12 @@ These will be lower-case, for filtering."
   "Create the form that tests a line for agenda filter.  Optional
 argument EXPAND can be used for the TYPE tag and will expand the
 tags in the FILTER if any of the tags in FILTER are grouptags."
-  (let (f f1)
+  (let ((multi-pos-cats
+	 (and (eq type 'category)
+	      (string-match-p "\\+.*\\+"
+			      (mapconcat (lambda (cat) (substring cat 0 1))
+					 filter ""))))
+	f f1)
     (cond
      ;; Tag filter
      ((eq type 'tag)
@@ -7955,7 +7960,7 @@ tags in the FILTER if any of the tags in FILTER are grouptags."
 		     filter)))
       (dolist (x filter)
 	(push (org-agenda-filter-effort-form x) f))))
-    (cons (if (eq type 'category) 'or 'and) (nreverse f))))
+    (cons (if multi-pos-cats 'or 'and) (nreverse f))))
 
 (defun org-agenda-filter-make-matcher-tag-exp (tags op)
   "Return a form associated to tag-expression TAGS.
@@ -8064,13 +8069,13 @@ tags in the FILTER if any of the tags in FILTER are grouptags."
 	org-agenda-filtered-by-top-headline t))
 
 (defun org-agenda-filter-hide-line (type)
-  "Hide lines with TYPE in the agenda buffer."
+  "If current line is TYPE, hide it in the agenda buffer."
   (let* (buffer-invisibility-spec
-	 (b (max (point-min) (1- (point-at-bol))))
-	 (e (point-at-eol)))
+	 (beg (max (point-min) (1- (point-at-bol))))
+	 (end (point-at-eol)))
     (let ((inhibit-read-only t))
       (add-text-properties
-       b e `(invisible org-filtered org-filter-type ,type)))))
+       beg end `(invisible org-filtered org-filter-type ,type)))))
 
 (defun org-agenda-remove-filter (type)
   (interactive)

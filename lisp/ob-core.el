@@ -38,6 +38,7 @@
 (defvar org-link-file-path-type)
 (defvar org-src-lang-modes)
 (defvar org-src-preserve-indentation)
+(defvar org-babel-tangle-uncomment-comments)
 
 (declare-function org-at-item-p "org-list" ())
 (declare-function org-at-table-p "org" (&optional table-type))
@@ -2488,7 +2489,7 @@ in the buffer."
 	   (if (memq (org-element-type element)
 		     ;; Possible results types.
 		     '(drawer example-block export-block fixed-width item
-			      plain-list src-block table))
+			      plain-list special-block src-block table))
 	       (save-excursion
 		 (goto-char (min (point-max) ;for narrowed buffers
 				 (org-element-property :end element)))
@@ -2932,8 +2933,10 @@ situations in which is it not appropriate."
 (defun org-babel--string-to-number (string)
   "If STRING represents a number return its value.
 Otherwise return nil."
-  (and (string-match-p "\\`-?\\([0-9]\\|\\([1-9]\\|[0-9]*\\.\\)[0-9]*\\)\\'" string)
-       (string-to-number string)))
+  (unless (string-match-p "\\s-" (org-trim string))
+    (let ((interned-string (ignore-errors (read string))))
+      (when (numberp interned-string)
+	interned-string))))
 
 (defun org-babel-import-elisp-from-file (file-name &optional separator)
   "Read the results located at FILE-NAME into an elisp table.
@@ -3056,7 +3059,9 @@ of `org-babel-temporary-directory'."
 		    (delete-file file)))
 		;; We do not want to delete "." and "..".
 		(directory-files org-babel-temporary-directory 'full
-				 "^\\([^.]\\|\\.\\([^.]\\|\\..\\)\\).*"))
+				 ;; Note: Use `any' for compatibility
+				 ;; with Emacs < 27.
+				 (rx (or (not (any ".")) "..."))))
 	  (delete-directory org-babel-temporary-directory))
       (error
        (message "Failed to remove temporary Org-babel directory %s"

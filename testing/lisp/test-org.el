@@ -2581,6 +2581,27 @@ Foo Bar
 
 ;;; Mark Region
 
+(ert-deftest test-org/mark-element ()
+  "Test `org-mark-element' specifications."
+  ;; Mark beginning and end of element.
+  (should
+   (equal '(t t)
+	  (org-test-with-temp-text "Para<point>graph"
+	    (org-mark-element)
+	    (list (bobp) (= (mark) (point-max))))))
+  (should
+   (equal '(t t)
+	  (org-test-with-temp-text "P1\n\nPara<point>graph\n\nP2"
+	    (org-mark-element)
+	    (list (looking-at "Paragraph")
+		  (org-with-point-at (mark) (looking-at "P2"))))))
+  ;; Do not set mark past (point-max).
+  (should
+   (org-test-with-temp-text "Para<point>graph"
+     (narrow-to-region 2 6)
+     (org-mark-element)
+     (= 6 (mark)))))
+
 (ert-deftest test-org/mark-subtree ()
   "Test `org-mark-subtree' specifications."
   ;; Error when point is before first headline.
@@ -6184,7 +6205,47 @@ Paragraph<point>"
    (equal "* H1 :foo:\n* H2 :bar:"
 	  (org-test-with-temp-text "* H1    :foo:\n* H2    :bar:"
 	    (let ((org-tags-column 1)) (org-set-tags-command '(4)))
-	    (buffer-string)))))
+	    (buffer-string))))
+  ;; Point does not move with empty headline.
+  (should
+   (equal ":foo:"
+	  (org-test-with-temp-text "* <point>"
+	    (cl-letf (((symbol-function 'completing-read)
+		       (lambda (&rest args) ":foo:")))
+	      (let ((org-use-fast-tag-selection nil)
+		    (org-tags-column 1))
+		(org-set-tags-command)))
+	    (buffer-substring (point) (line-end-position)))))
+  ;; Point does not move at start of line.
+  (should
+   (equal "* H1 :foo:"
+	  (org-test-with-temp-text "* H1"
+	    (cl-letf (((symbol-function 'completing-read)
+		       (lambda (&rest args) ":foo:")))
+	      (let ((org-use-fast-tag-selection nil)
+		    (org-tags-column 1))
+		(org-set-tags-command)))
+	    (buffer-substring (point) (line-end-position)))))
+  ;; Point does not move when within *'s.
+  (should
+   (equal "* H1 :foo:"
+	  (org-test-with-temp-text "*<point>* H1"
+	    (cl-letf (((symbol-function 'completing-read)
+		       (lambda (&rest args) ":foo:")))
+	      (let ((org-use-fast-tag-selection nil)
+		    (org-tags-column 1))
+		(org-set-tags-command)))
+	    (buffer-substring (point) (line-end-position)))))
+  ;; Point workaround does not get fooled when looking at a space.
+  (should
+   (equal " b :foo:"
+	  (org-test-with-temp-text "* a<point> b"
+	    (cl-letf (((symbol-function 'completing-read)
+		       (lambda (&rest args) ":foo:")))
+	      (let ((org-use-fast-tag-selection nil)
+		    (org-tags-column 1))
+		(org-set-tags-command)))
+	    (buffer-substring (point) (line-end-position))))))
 
 (ert-deftest test-org/toggle-tag ()
   "Test `org-toggle-tag' specifications."
