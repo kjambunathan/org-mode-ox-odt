@@ -1693,7 +1693,7 @@ See `org-odt--build-date-styles' for implementation details."
 "))
 
 (cl-defun org-odt-format-toc-headline
-    (todo _todo-type priority text tags
+    (todo todo-type priority text tags
 	  &key _level section-number headline-label)
   (setq text
 	(concat
@@ -1701,8 +1701,7 @@ See `org-odt--build-date-styles' for implementation details."
 	 (when section-number (concat section-number ". "))
 	 ;; Todo.
 	 (when todo
-	   (let ((style (if (member todo org-done-keywords)
-			    "OrgDone" "OrgTodo")))
+	   (let ((style (if (eq todo-type 'done) "OrgDone" "OrgTodo")))
 	     (format "<text:span text:style-name=\"%s\">%s</text:span> "
 		     style todo)))
 	 (when priority
@@ -2676,13 +2675,13 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 ;;;; Headline
 
 (defun org-odt-format-headline-default-function
-    (todo _todo-type priority text tags)
+    (todo todo-type priority text tags)
   "Default format function for a headline.
 See `org-odt-format-headline-function' for details."
   (concat
    ;; Todo.
    (when todo
-     (let ((style (if (member todo org-done-keywords) "OrgDone" "OrgTodo")))
+     (let ((style (if (eq todo-type 'done) "OrgDone" "OrgTodo")))
        (format "<text:span text:style-name=\"%s\">%s</text:span> "
 	       style todo)))
    (when priority
