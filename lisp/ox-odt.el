@@ -4206,7 +4206,7 @@ the plist used as a communication channel."
 				   (cl-case within-note-definition-p
 				     (footnote "OrgFootnoteCenter")
 				     (endnote "OrgEndnoteCenter")
-				     (_ "OrgCenter"))))
+				     (t "OrgCenter"))))
 			      (footnote-definition
 			       (setq within-note-definition-p
 				     (if (org-odt--endnote-p el info) 'endnote 'footnote))
@@ -4214,7 +4214,7 @@ the plist used as a communication channel."
 				   (cl-case within-note-definition-p
 				     (footnote "Footnote")
 				     (endnote "Endnote")
-				     (_ (error "This shouldn't happen")))))
+				     (t (error "This shouldn't happen")))))
 			      (paragraph
 			       (or
 				;; Case 1: Some paragraphs are "created"
@@ -4239,7 +4239,7 @@ the plist used as a communication channel."
 				   (cl-case within-note-definition-p
 				     (footnote "OrgFootnoteQuotations")
 				     (endnote "OrgEndnoteQuotations")
-				     (_ "Quotations"))))
+				     (t "Quotations"))))
 			      (special-block
 			       (let ((type (downcase (org-element-property :type el))))
 				 (cond
