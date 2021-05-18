@@ -39,7 +39,7 @@
 ;; "cite_export" keyword.  If you need to use different styles for bibliography
 ;; and citations, you can separate them with "bibstyle/citestyle" syntax.  E.g.,
 ;;
-;;   #+cite_export: natbib authortitle/authortitle-ibid
+;;   #+cite_export: biblatex authortitle/authortitle-ibid
 
 ;; The library supports the following citation styles:
 ;;
