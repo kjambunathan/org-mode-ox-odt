@@ -2743,7 +2743,7 @@ CONTENTS holds the contents of the headline.  INFO is a plist
 holding contextual information."
   ;; Case 1: This is a footnote section: ignore it.
   (unless (org-element-property :footnote-section-p headline)
-    (let* ((_text (org-export-data (org-element-property :title headline) info))
+    (let* (;; (_text (org-export-data (org-element-property :title headline) info))
 	   ;; Create the headline text.
 	   (full-text (org-odt-format-headline--wrap headline nil info))
 	   ;; Get level relative to current parsed data.
