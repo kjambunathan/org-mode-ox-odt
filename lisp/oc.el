@@ -84,6 +84,7 @@
 (declare-function org-export-get-previous-element "org-export" (blob info &optional n))
 (declare-function org-export-raw-string "org-export" (contents))
 
+(defvar org-element-all-objects)
 (defvar org-element-citation-key-re)
 (defvar org-element-citation-prefix-re)
 
@@ -368,11 +369,6 @@ Values are always strings.  Return nil if S is nil."
 
 
 ;;; Generic tools
-(defun org-cite-inside-footnote-p (citation)
-  "Return the closest footnote containing CITATION object.
-Return nil if there is no footnote containing CITATION."
-  (org-element-lineage citation '(footnote-definition footnote-reference)))
-
 (defun org-cite-list-bibliography-files ()
   "List all bibliography files defined in the buffer."
   (delete-dups
@@ -497,6 +493,36 @@ are sorted in order cited."
          (position (cl-position key sorted-keys :test #'string-equal)))
     (and (integerp position)
          (1+ position))))
+
+(defun org-cite-inside-footnote-p (citation info)
+  "Return footnote containing CITATION object and nothing else, or nil.
+Blank strings in the footnote are tolerated.
+
+INFO is the export state, as a property list."
+  (let ((footnote
+         (org-element-lineage citation
+                              '(footnote-definition footnote-reference)))
+        (parent (org-element-property :parent citation)))
+    (and footnote
+         ;; Citation must be directly contained either in the footnote
+         ;; (e.g., when footnote is inline), or in the sole paragraph
+         ;; of the footnote.
+         (or (eq parent footnote)
+             (let ((contents (org-element-contents footnote)))
+               (and (= 1 (length contents)) (eq parent (car contents)))))
+         ;; Check if citation has no other sibling, except some blank
+         ;; strings.
+         (not (org-element-map (org-element-contents parent)
+                  (cons 'plain-text org-element-all-objects)
+                (let ((cite-flag nil))
+                  (lambda (datum)
+                    (pcase (org-element-type datum)
+                      (`citation (or cite-flag (progn (setq cite-flag t) nil)))
+                      (`plain-text (org-string-nw-p datum))
+                      (_ t))))
+                info t '(citation)))
+         ;; Return value.
+         footnote)))
 
 (defun org-cite-wrap-citation (citation info)
   "Wrap an anonymous inline footnote around CITATION object in the parse tree.

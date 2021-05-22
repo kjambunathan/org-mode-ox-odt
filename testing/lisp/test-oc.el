@@ -58,14 +58,35 @@
 (ert-deftest test-org-cite/inside-footnote-p ()
   "Test `org-cite-inside-footnote-p'."
   (should
-   (org-test-with-temp-text "[fn:1] <point>[cite:@key]"
-     (org-cite-inside-footnote-p (org-element-context))))
+   (org-test-with-parsed-data "[fn:1] <point>[cite:@key]"
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info)))
   (should
-   (org-test-with-temp-text "[fn::<point>[cite:@key]]"
-     (org-cite-inside-footnote-p (org-element-context))))
+   (org-test-with-parsed-data "[fn::<point>[cite:@key]]"
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info)))
   (should-not
-   (org-test-with-temp-text "[cite:@key]"
-     (org-cite-inside-footnote-p (org-element-context)))))
+   (org-test-with-parsed-data "[cite:@key]"
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info)))
+  (should-not
+   (org-test-with-parsed-data "[fn:1] Text.<point>[cite:@key]"
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info)))
+  (should-not
+   (org-test-with-parsed-data "[fn:1] <point>[cite:@key]\n: fixed width"
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info)))
+  (should
+   (org-test-with-parsed-data "[fn:1] <point>[cite:@key]  "
+     (org-cite-inside-footnote-p
+      (org-element-map tree 'citation #'identity info t)
+      info))))
 
 (ert-deftest test-org-cite/processor-has-capability-p ()
   "Test `org-cite-processor-has-capability-p'."
@@ -622,7 +643,7 @@
      (org-element-map tree 'citation
        (lambda (c)
          (org-cite-wrap-citation c info)
-         (org-cite-inside-footnote-p c))
+         (org-cite-inside-footnote-p c info))
        info)))
   ;; Created footnote is anonymous.
   (should-not
@@ -630,7 +651,7 @@
      (org-element-map tree 'citation
        (lambda (c)
          (org-cite-wrap-citation c info)
-         (org-element-property :label (org-cite-inside-footnote-p c)))
+         (org-element-property :label (org-cite-inside-footnote-p c info)))
        info)))
   ;; Created footnote is inline.
   (should
@@ -639,7 +660,8 @@
             (org-element-map tree 'citation
               (lambda (c)
                 (org-cite-wrap-citation c info)
-                (org-element-property :type (org-cite-inside-footnote-p c)))
+                (org-element-property :type
+                                      (org-cite-inside-footnote-p c info)))
               info))))
   ;; Preserve `:post-blank' property.
   (should
@@ -649,7 +671,7 @@
               (lambda (c)
                 (org-cite-wrap-citation c info)
                 (org-element-property :post-blank
-                                      (org-cite-inside-footnote-p c)))
+                                      (org-cite-inside-footnote-p c info)))
               info))))
   ;; Set `:post-blank' to 0 in the element before new footnote.
   (should-not
@@ -659,7 +681,7 @@
          (org-cite-wrap-citation c info)
          (let ((previous
                 (org-export-get-previous-element
-                 (org-cite-inside-footnote-p c) info)))
+                 (org-cite-inside-footnote-p c info) info)))
            (string-match (rx blank string-end) previous)))
        info)))
   (should
@@ -670,7 +692,7 @@
                 (org-cite-wrap-citation c info)
                 (let ((previous
                        (org-export-get-previous-element
-                        (org-cite-inside-footnote-p c) info)))
+                        (org-cite-inside-footnote-p c info) info)))
                   (org-element-property :post-blank previous)))
               info))))
   (should
@@ -680,7 +702,7 @@
               (lambda (c)
                 (org-cite-wrap-citation c info)
                 (org-export-get-previous-element
-                 (org-cite-inside-footnote-p c) info))
+                 (org-cite-inside-footnote-p c info) info))
               info)))))
 
 (defun test-org-cite--export-with-rule (text rule &optional punct add-space)
