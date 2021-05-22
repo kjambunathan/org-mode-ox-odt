@@ -340,7 +340,7 @@ export communication channel, as a property list."
       info))
     (`("nocite" . ,_) nil)
     (`("note" . ,_)
-     (unless (org-cite-inside-footnote-p citation)
+     (unless (org-cite-inside-footnote-p citation info)
        (org-cite-wrap-citation citation info))
      ;; Use "text" style in footnote.
      (capitalize
