@@ -1,0 +1,22 @@
+Nicola L. C. Talbot in his book [cite:@novices; p. 97] says,
+
+#+begin_quote
+"If you have a large number of citations in your document, it's best
+to use an external bibliographic application, such as =bibtex= or
+=biber=. However, that is beyond the scope of this book.  See,
+instead, /A Guide to LaTeX/ \cite{kopka95}, /The LaTeX Companion/
+\cite{goossens94} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
+[cite:@thesis]."
+#+end_quote
+
+#+bibliography: ../../../doc/org-odt-manual/novices.bib
+
+#+cite_export: jabref chicago-full-note chicago-full-note
+#+print_bibliography: chicago-full-note
+
+# #+cite_export: jabref chicago-author-date chicago-author-date
+# #+print_bibliography: chicago-author-date
+
+# #+cite_export: jabref numeric numeric
+# #+print_bibliography: numeric
+
