@@ -1,6 +1,6 @@
 ;;; ob-gnuplot.el --- Babel Functions for Gnuplot    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Keywords: literate programming, reproducible research
@@ -277,7 +277,5 @@ Pass PARAMS through to `orgtbl-to-generic' when exporting TABLE."
   data-file)
 
 (provide 'ob-gnuplot)
-
-
 
 ;;; ob-gnuplot.el ends here

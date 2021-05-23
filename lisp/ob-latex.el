@@ -1,6 +1,6 @@
 ;;; ob-latex.el --- Babel Functions for LaTeX        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Keywords: literate programming, reproducible research
@@ -84,7 +84,8 @@
                  (regexp-quote (format "%S" (car pair)))
                  (if (stringp (cdr pair))
                      (cdr pair) (format "%S" (cdr pair)))
-                 body))) (org-babel--get-vars params))
+                 body)))
+	(org-babel--get-vars params))
   (org-trim body))
 
 (defun org-babel-execute:latex (body params)
@@ -224,6 +225,6 @@ This function is called by `org-babel-execute-src-block'."
   "Return an error because LaTeX doesn't support sessions."
   (error "LaTeX does not support sessions"))
 
-
 (provide 'ob-latex)
+
 ;;; ob-latex.el ends here

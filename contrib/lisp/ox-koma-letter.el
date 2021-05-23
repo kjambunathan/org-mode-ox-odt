@@ -1,6 +1,6 @@
 ;;; ox-koma-letter.el --- KOMA Scrlttr2 Back-End for Org Export Engine
 
-;; Copyright (C) 2007-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2007-2021  Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou AT gmail DOT com>
 ;;         Alan Schmitt <alan.schmitt AT polytechnique DOT org>
@@ -482,10 +482,6 @@ e.g. \"title-subject:t\"."
 
 (defvar org-koma-letter-special-contents nil
   "Holds special content temporarily.")
-
-(make-obsolete-variable 'org-koma-letter-use-title
-                        'org-export-with-title
-                        "25.1" 'set)
 
 
 ;;; Define Back-End

@@ -1,6 +1,6 @@
 ;;; ob-exp.el --- Exportation of Babel Source Blocks -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
 
 ;; Authors: Eric Schulte
 ;;	Dan Davison
@@ -33,6 +33,7 @@
 (declare-function org-escape-code-in-string "org-src" (s))
 (declare-function org-export-copy-buffer "ox" ())
 (declare-function org-in-commented-heading-p "org" (&optional no-inheritance))
+(declare-function org-in-archived-heading-p "org" (&optional no-inheritance))
 
 (defvar org-src-preserve-indentation)
 
@@ -157,7 +158,8 @@ this template."
 	      ;; encountered.
 	      (goto-char (point-min))
 	      (while (re-search-forward regexp nil t)
-		(unless (save-match-data (org-in-commented-heading-p))
+		(unless (save-match-data (or (org-in-commented-heading-p)
+					     (org-in-archived-heading-p)))
 		  (let* ((object? (match-end 1))
 			 (element (save-match-data
 				    (if object? (org-element-context)
@@ -214,8 +216,11 @@ this template."
 			     (delete-region begin end)
 			     (insert replacement)))))
 		      ((or `babel-call `inline-babel-call)
-		       (org-babel-exp-do-export (org-babel-lob-get-info element)
-						'lob)
+                       (org-babel-exp-do-export
+                        (or (org-babel-lob-get-info element)
+                            (user-error "Unknown Babel reference: %s"
+                                        (org-element-property :call element)))
+                        'lob)
 		       (let ((rep
 			      (org-fill-template
 			       org-babel-exp-call-line-template
@@ -355,9 +360,12 @@ replaced with its value."
   (org-fill-template
    (if (eq type 'inline)
        org-babel-exp-inline-code-template
-       org-babel-exp-code-template)
+     org-babel-exp-code-template)
    `(("lang"  . ,(nth 0 info))
-     ("body"  . ,(org-escape-code-in-string (nth 1 info)))
+     ;; Inline source code should not be escaped.
+     ("body"  . ,(let ((body (nth 1 info)))
+                   (if (eq type 'inline) body
+                     (org-escape-code-in-string body))))
      ("switches" . ,(let ((f (nth 3 info)))
 		      (and (org-string-nw-p f) (concat " " f))))
      ("flags" . ,(let ((f (assq :flags (nth 2 info))))
@@ -403,9 +411,7 @@ inhibit insertion of results into the buffer."
 	  (`lob
 	   (save-excursion
 	     (goto-char (nth 5 info))
-	     (let (org-confirm-babel-evaluate)
-	       (org-babel-execute-src-block nil info)))))))))
-
+	     (org-babel-execute-src-block nil info))))))))
 
 (provide 'ob-exp)
 

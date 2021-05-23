@@ -1,6 +1,6 @@
 ;;; ox-taskjuggler.el --- TaskJuggler Back-End for Org Export Engine
 ;;
-;; Copyright (C) 2007-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2007-2021 Free Software Foundation, Inc.
 ;;
 ;; Emacs Lisp Archive Entry
 ;; Filename: ox-taskjuggler.el
@@ -137,7 +137,7 @@
 ;;   :END:
 ;;
 ;;;; * TODO
-;;   - Look at org-file-properties, org-global-properties and
+;;   - Look at org-keyword-properties, org-global-properties and
 ;;     org-global-properties-fixed
 ;;   - What about property inheritance and org-property-inherit-p?
 ;;   - Use TYPE_TODO as an way to assign resources
@@ -841,8 +841,8 @@ a unique id will be associated to it."
          (priority
           (let ((pri (org-element-property :priority task)))
             (and pri
-                 (max 1 (/ (* 1000 (- org-lowest-priority pri))
-                           (- org-lowest-priority org-highest-priority)))))))
+                 (max 1 (/ (* 1000 (- org-priority-lowest pri))
+                           (- org-priority-lowest org-priority-highest)))))))
     (concat
      ;; Opening task.
      (format "task %s \"%s\" {\n"

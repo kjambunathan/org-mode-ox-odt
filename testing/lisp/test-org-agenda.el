@@ -111,13 +111,14 @@
 	(buf (get-buffer org-agenda-buffer-name))
         org-agenda-files)
     (when buf (kill-buffer buf))
-    (org-test-with-temp-text "<2017-03-17 Fri>"
-      (org-follow-timestamp-link))	;creates a sticky agenda
-    (org-test-agenda--kill-all-agendas)
-    (org-agenda-list)
-    (should (= 1 (length (org-test-agenda--agenda-buffers))))
-    (should (string= "*Org Agenda*"
-		     (buffer-name (car (org-test-agenda--agenda-buffers))))))
+    (dolist (fn '(org-agenda-list org-todo-list))
+      (org-test-with-temp-text "<2017-03-17 Fri>"
+			       (org-follow-timestamp-link)) ;creates a sticky agenda
+      (org-test-agenda--kill-all-agendas)
+      (funcall fn)
+      (should (= 1 (length (org-test-agenda--agenda-buffers))))
+      (should (string= "*Org Agenda*"
+		       (buffer-name (car (org-test-agenda--agenda-buffers)))))))
   (org-test-agenda--kill-all-agendas))
 
 (ert-deftest test-org-agenda/sticky-agenda-name-after-reload ()
@@ -139,6 +140,18 @@
                        (buffer-name (car (org-test-agenda--agenda-buffers)))))))
   (org-toggle-sticky-agenda)
   (org-test-agenda--kill-all-agendas))
+
+(ert-deftest test-org-agenda/goto-date ()
+  "Test `org-agenda-goto-date'."
+  (unwind-protect
+      (should
+       (equal
+        (time-to-days (org-time-string-to-time "2019-12-30"))
+        (let ((org-agenda-files nil))
+          (org-agenda-list nil nil 'day)
+          (org-agenda-goto-date "2019-12-30")
+          (get-text-property (point) 'day))))
+    (org-test-agenda--kill-all-agendas)))
 
 
 ;; agenda redo

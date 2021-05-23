@@ -1,7 +1,7 @@
 ;;; ob-sclang.el --- SCLang support for Org-mode Babel
 ;;; -*- coding: utf-8 -*-
 
-;; Copyright (C) 2017-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2017-2021 Free Software Foundation, Inc.
 
 ;; Authors: stardiviner <numbchild@gmail.com>
 ;; Package-Version: 0.1
@@ -81,7 +81,7 @@
 	;; TODO: temporary can't find way to let sclang output to stdout for org-babel.
         (:output . "none")))
 
-(eval-after-load "org"
+(eval-after-load 'org
   '(progn
      (add-to-list 'org-src-lang-modes '("sclang" . sclang))))
 

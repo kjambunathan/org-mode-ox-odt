@@ -213,6 +213,14 @@ Here is one at the end of a line. {{{results(=2=)}}}
 		  (org-export-use-babel t))
 	      (org-babel-exp-process-buffer))
 	    (buffer-string))))
+  ;; Do not escape characters in inline source blocks.
+  (should
+   (equal "src_c[]{*a}"
+	  (org-test-with-temp-text "src_c[ :exports code ]{*a}"
+	    (let ((org-babel-inline-result-wrap "=%s=")
+		  (org-export-use-babel t))
+	      (org-babel-exp-process-buffer))
+	    (buffer-string))))
   (should
    (equal "src_emacs-lisp[]{(+ 1 1)} {{{results(=2=)}}}"
 	  (org-test-with-temp-text "src_emacs-lisp[:exports both]{(+ 1 1)}"
@@ -585,6 +593,14 @@ src_emacs-lisp{(+ 1 1)}"
 	      (org-babel-exp-process-buffer))
 	    (buffer-string)))))
 
+(ert-deftest ob-exp/unknown-call-reference ()
+  "Test exporting with a call that references an unknown name."
+  (should-error
+   (org-test-with-temp-text
+       "call_foo()"
+     (let ((org-export-use-babel t))
+       (org-babel-exp-process-buffer)))
+   :type 'user-error))
 
 (provide 'test-ob-exp)
 

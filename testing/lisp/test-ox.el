@@ -163,7 +163,12 @@ num:2 <:active")))
 	  (org-export--parse-option-keyword
 	   "opt:t"
 	   (org-export-create-backend
-	    :options '((:opt1 nil "opt") (:opt2 nil "opt")))))))
+	    :options '((:opt1 nil "opt") (:opt2 nil "opt"))))))
+  ;; Ignore options with a missing value.
+  (should
+   (let ((options (org-export--parse-option-keyword "H: num:t")))
+     (and (not (plist-get options :headline-levels))
+          (plist-get options :section-numbers)))))
 
 (ert-deftest test-org-export/get-inbuffer-options ()
   "Test reading all standard export keywords."
@@ -280,7 +285,12 @@ num:2 <:active")))
   (should-not
    (equal "Mine"
 	  (org-test-with-parsed-data "* COMMENT H1\n** H2\n#+EMAIL: Mine"
-				     (plist-get info :email)))))
+				     (plist-get info :email))))
+  ;; Keywords can be set to an empty value.
+  (should-not
+   (let ((user-full-name "Me"))
+     (org-test-with-parsed-data "#+AUTHOR:"
+				(plist-get info :author)))))
 
 (ert-deftest test-org-export/get-subtree-options ()
   "Test setting options from headline's properties."
@@ -2971,7 +2981,7 @@ Para2"
    (string-match
     "success"
     (progn
-      (org-link-set-parameters "foo" :export (lambda (p d f) "success"))
+      (org-link-set-parameters "foo" :export (lambda (p d f i) "success"))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -2980,14 +2990,14 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c 'test)
+		    (or (org-export-custom-protocol-maybe l c 'test i)
 			"failure")))))))))
   (should-not
    (string-match
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f) (and (eq f 'test) "success")))
+       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -2996,7 +3006,7 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c 'no-test)
+		    (or (org-export-custom-protocol-maybe l c 'no-test i)
 			"failure")))))))))
   ;; Ignore anonymous back-ends.
   (should-not
@@ -3004,7 +3014,7 @@ Para2"
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f) (and (eq f 'test) "success")))
+       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -3012,7 +3022,7 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c nil)
+		    (or (org-export-custom-protocol-maybe l c nil i)
 			"failure"))))))))))
 
 (ert-deftest test-org-export/get-coderef-format ()
@@ -4121,6 +4131,16 @@ Another text. (ref:text)
 | a | b |
 |---+---|
 | c | d |"
+     (org-export-table-has-header-p
+      (org-element-map tree 'table 'identity info 'first-match)
+      info)))
+  ;; With a multi-line header.
+  (should
+   (org-test-with-parsed-data "
+| a | b |
+| 0 | 1 |
+|---+---|
+| a | w |"
      (org-export-table-has-header-p
       (org-element-map tree 'table 'identity info 'first-match)
       info)))

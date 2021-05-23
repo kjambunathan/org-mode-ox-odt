@@ -1,6 +1,6 @@
 ;;; ol-info.el --- Links to Info Nodes               -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten at orgmode dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -56,10 +56,10 @@
 			"#" Info-current-node)))
       (org-link-store-props :type "info" :file Info-current-file
 			    :node Info-current-node
-			    :link link :desc desc)
+			    :link link :description desc)
       link)))
 
-(defun org-info-open (path)
+(defun org-info-open (path _)
   "Follow an Info file and node link specified by PATH."
   (org-info-follow-link path))
 

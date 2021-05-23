@@ -1,6 +1,6 @@
 ;;; ob-picolisp.el --- Babel Functions for Picolisp  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2021 Free Software Foundation, Inc.
 
 ;; Authors: Thorsten Jolitz
 ;;	 Eric Schulte
@@ -111,11 +111,11 @@ This function is called by `org-babel-execute-src-block'."
           (cond
            ((or (member "code" result-params)
                 (member "pp" result-params))
-            (format "(pretty (out \"/dev/null\" %s))" full-body))
+            (format "(pretty (out \"%s\" %s))" null-device full-body))
            ((and (member "value" result-params) (not session))
-            (format "(print (out \"/dev/null\" %s))" full-body))
+            (format "(print (out \"%s\" %s))" null-device full-body))
            ((member "value" result-params)
-            (format "(out \"/dev/null\" %s)" full-body))
+            (format "(out \"%s\" %s)" null-device full-body))
            (t full-body)))
          (result
           (if (not (string= session-name "none"))
@@ -181,7 +181,5 @@ then create.  Return the initialized session."
           (current-buffer))))))
 
 (provide 'ob-picolisp)
-
-
 
 ;;; ob-picolisp.el ends here

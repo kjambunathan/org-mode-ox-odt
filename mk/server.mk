@@ -15,7 +15,7 @@ help helpall helpserver::
 	$(info release             - clean up, create the distribution archives)
 	$(info elpa                - clean up, create the org-*.tar ELPA archive)
 	$(info elpaplus            - clean up, create the org-plus-contrib-*.tar ELPA archive)
-	$(info upload-release      - clean up, populate the server with arhives)
+	$(info upload-release      - clean up, populate the server with archives)
 	$(info upload-elpa         - clean up, populate the server with org-*.tar)
 	$(info upload-elpaplus     - clean up, populate the server with org-plus-contrib-*.tar)
 	$(info upload-doc          - clean up, populate the server with docs)
@@ -38,7 +38,7 @@ ORGFULL   = README COPYING lisp/ \
 		etc/ contrib/ doc/ testing/
 ORGFULL  := $(ORGFULL:%/=%/*)
 ORGELPA   = README_ELPA COPYING etc/ORG-NEWS lisp/ \
-		doc/dir doc/org doc/orgguide doc/orgcard.pdf \
+		doc/dir doc/org.info doc/orgguide.info doc/orgcard.pdf \
 		etc/styles/ org-pkg.el
 ORGELPA  := $(ORGELPA:%/=%/*)
 ORGELPAPLUS := $(ORGELPA:org-pkg%=org-plus-contrib-pkg%)

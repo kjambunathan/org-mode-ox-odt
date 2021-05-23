@@ -199,6 +199,7 @@ otherwise place the point at the beginning of the inserted text."
 	       (goto-char (1+ (match-beginning 0))))
 	   (insert inside-text)
 	   (goto-char (point-min))))
+       (font-lock-ensure (point-min) (point-max))
        ,@body)))
 (def-edebug-spec org-test-with-temp-text (form body))
 
@@ -456,8 +457,8 @@ TIME can be a non-nil Lisp time value, or a string specifying a date and time."
 	       (apply ,(symbol-function 'current-time-zone)
 		      (or time ,at) args)))
 	    ((symbol-function 'decode-time)
-	     (lambda (&optional time) (funcall ,(symbol-function 'decode-time)
-					       (or time ,at))))
+	     (lambda (&optional time zone form) (funcall ,(symbol-function 'decode-time)
+					            (or time ,at) zone form)))
 	    ((symbol-function 'encode-time)
 	     (lambda (time &rest args)
 	       (apply ,(symbol-function 'encode-time) (or time ,at) args)))
