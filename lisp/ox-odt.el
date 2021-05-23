@@ -2707,8 +2707,11 @@ See `org-odt-format-headline-function' for details."
 					       &optional format-function)
   "Transcode a HEADLINE element using BACKEND.
 INFO is a plist holding contextual information."
-  (setq backend (or backend (plist-get info :back-end)))
-  (let* ((level (+ (org-export-get-relative-level headline info)))
+  (let* ((export-data (lambda (data backend info)
+			(if backend
+			    (org-export-data-with-backend data backend info)
+			  (org-export-data data info))))
+	 (level (+ (org-export-get-relative-level headline info)))
 	 (headline-number (org-export-get-headline-number headline info))
 	 (section-number (and (org-export-numbered-headline-p headline info)
 			      (mapconcat 'number-to-string
@@ -2716,11 +2719,11 @@ INFO is a plist holding contextual information."
 	 (todo (and (plist-get info :with-todo-keywords)
 		    (let ((todo (org-element-property :todo-keyword headline)))
 		      (and todo
-			   (org-export-data-with-backend todo backend info)))))
+			   (funcall export-data todo backend info)))))
 	 (todo-type (and todo (org-element-property :todo-type headline)))
 	 (priority (and (plist-get info :with-priority)
 			(org-element-property :priority headline)))
-	 (text (org-export-data-with-backend
+	 (text (funcall export-data
 		(org-element-property :title headline) backend info))
 	 (tags (and (plist-get info :with-tags)
 		    (org-export-get-tags headline info)))
