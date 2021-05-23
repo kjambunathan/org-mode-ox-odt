@@ -296,18 +296,18 @@ to see all available export formats.")
 
 (defcustom org-jabref-citation-styles
   `(("odt"
-     ("Numeric"
+     ("numeric"
       :in-text
       (:jabref-format "Numeric" :formatter "Simple")
       :bibliography
       (:jabref-format "Chicago.ODF.reference" :formatter "Bibliography (Numbered)"))
-     ("Chicago (full-note)"
+     ("chicago-full-note"
       :in-text
       (:jabref-format ("Chicago.ODF.footend" .
 		       "Chicago.ODF.footend.short") :formatter "Footnote")
       :bibliography
       (:jabref-format "Chicago.ODF.biblio" :formatter "Bibliography"))
-     ("Chicago (author-date)"
+     ("chicago-author-date"
       :in-text
       (:jabref-format "Chicago.ODF.text" :formatter "Simple (but strip braces)")
       :bibliography
@@ -384,76 +384,79 @@ For a list of export formats registered with JabRef use:
 
 (defvar org-jabref-org-export-backends '(odt))
 
-(defvar org-jabref--stock-backends
-  (mapcar
-   (lambda (backend)
-     (cons backend (org-export-get-backend backend)))
-   org-jabref-org-export-backends)
-  "Backend definition of stock ODT exporter.")
+;; (defvar org-jabref--stock-backends
+;;   (mapcar
+;;    (lambda (backend)
+;;      (cons backend (org-export-get-backend backend)))
+;;    org-jabref-org-export-backends)
+;;   "Backend definition of stock ODT exporter.")
 
-(defvar org-jabref--enhanced-backends
-  (mapcar
-   (lambda (backend)
-     (cons backend
-	   (let* ((enhanced-backend
-		   ;; Copy over the stock backend.
-		   (let ((stock-backend (assoc-default backend org-jabref--stock-backends)))
-		     (org-export-create-backend
-		      :name (copy-tree (org-export-backend-name stock-backend))
-		      :parent (copy-tree (org-export-backend-parent stock-backend))
-		      :transcoders (copy-tree (org-export-backend-transcoders stock-backend))
-		      :options (copy-tree (org-export-backend-options stock-backend))
-		      :filters (copy-tree (org-export-backend-filters stock-backend))
-		      :blocks (copy-tree (org-export-backend-blocks stock-backend))
-		      :menu (copy-tree (org-export-backend-menu stock-backend))))))
-	     ;; Override default citation transcoders with our own.
-	     (setf (org-export-backend-transcoders enhanced-backend)
-		   (append
-		    '((keyword . org-jabref-keyword)
-		      (citation . org-jabref-citation))
-		    (org-export-backend-transcoders enhanced-backend)))
-	     ;; Override default export options with our own.
-	     (setf (org-export-backend-options enhanced-backend)
-		   (append (org-export-backend-options enhanced-backend)
-			   '((:jabref-citation-style
-			      "ODT_JABREF_CITATION_STYLE" nil
-			      ;; For the default value, use *all*
-			      ;; supported Citation styles.  Once a
-			      ;; user inserts the template with `C-C
-			      ;; C-e # odt', he can edit this line to
-			      ;; his needs.
-			      (mapconcat (lambda (s)
-					   (format "\"%s\"" (car s)))
-					 (assoc-default "odt" org-jabref-citation-styles) " | ")
-			      t))))	     
-	     ;; Modify the menu description.
-	     (let ((menu (org-export-backend-menu enhanced-backend)))
-	       (setf (cadr menu) (concat (cadr menu) " (With Jabref Processing)")))
-	     ;; Replace the existing ODT backend.
-	     (org-export-register-backend enhanced-backend)
-	     ;; Return the enhanced backend.
-	     enhanced-backend)))
-   org-jabref-org-export-backends)
-  "Backend definition of ODT exporter with JabRef processing.")
+;; (defvar org-jabref--enhanced-backends
+;;   (mapcar
+;;    (lambda (backend)
+;;      (cons backend
+;; 	   (let* ((enhanced-backend
+;; 		   ;; Copy over the stock backend.
+;; 		   (let ((stock-backend (assoc-default backend org-jabref--stock-backends)))
+;; 		     (org-export-create-backend
+;; 		      :name (copy-tree (org-export-backend-name stock-backend))
+;; 		      :parent (copy-tree (org-export-backend-parent stock-backend))
+;; 		      :transcoders (copy-tree (org-export-backend-transcoders stock-backend))
+;; 		      :options (copy-tree (org-export-backend-options stock-backend))
+;; 		      :filters (copy-tree (org-export-backend-filters stock-backend))
+;; 		      :blocks (copy-tree (org-export-backend-blocks stock-backend))
+;; 		      :menu (copy-tree (org-export-backend-menu stock-backend))))))
+;; 	     ;; Override default citation transcoders with our own.
+;; 	     (setf (org-export-backend-transcoders enhanced-backend)
+;; 		   (append
+;; 		    '((keyword . org-jabref-keyword)
+;; 		      (citation . org-jabref-citation))
+;; 		    (org-export-backend-transcoders enhanced-backend)))
+;; 	     ;; Override default export options with our own.
+;; 	     (setf (org-export-backend-options enhanced-backend)
+;; 		   (append (org-export-backend-options enhanced-backend)
+;; 			   '((:jabref-citation-style
+;; 			      "ODT_JABREF_CITATION_STYLE" nil
+;; 			      ;; For the default value, use *all*
+;; 			      ;; supported Citation styles.  Once a
+;; 			      ;; user inserts the template with `C-C
+;; 			      ;; C-e # odt', he can edit this line to
+;; 			      ;; his needs.
+;; 			      (mapconcat (lambda (s)
+;; 					   (format "\"%s\"" (car s)))
+;; 					 (assoc-default "odt" org-jabref-citation-styles) " | ")
+;; 			      t))))	     
+;; 	     ;; Modify the menu description.
+;; 	     (let ((menu (org-export-backend-menu enhanced-backend)))
+;; 	       (setf (cadr menu) (concat (cadr menu) " (With Jabref Processing)")))
+;; 	     ;; Replace the existing ODT backend.
+;; 	     (org-export-register-backend enhanced-backend)
+;; 	     ;; Return the enhanced backend.
+;; 	     enhanced-backend)))
+;;    org-jabref-org-export-backends)
+;;   "Backend definition of ODT exporter with JabRef processing.")
 
-(defun ox-jabref-unload-function ()
-  "Restore the stock ODT backend."
-  (prog1 nil
-    (ad-deactivate 'org-export--collect-tree-properties)
-    (dolist (backend org-jabref-org-export-backends)
-      (org-export-register-backend
-       (assoc-default backend org-jabref--stock-backends)))
-    (message "ox-jabref: Unloaded")))
+;; (defun ox-jabref-unload-function ()
+;;   "Restore the stock ODT backend."
+;;   (prog1 nil
+;;     (ad-deactivate 'org-export--collect-tree-properties)
+;;     (dolist (backend org-jabref-org-export-backends)
+;;       (org-export-register-backend
+;;        (assoc-default backend org-jabref--stock-backends)))
+;;     (message "ox-jabref: Unloaded")))
 
 
 ;;; Internal functions
 
 (defun org-jabref--sanitize-options (info)
   ;; Sanitize value of #+BIB_FILE.
-  (let ((bib-file (plist-get info :bib-file)))
+  (let* (;; (bib-file (plist-get info :bib-file))
+         (bib-files (org-cite-list-bibliography-files))
+         (bib-file (car (org-cite-list-bibliography-files))))
+    (message "bib-files: %S" bib-files)
     (when bib-file
       ;; Parse value.
-      (setq bib-file (ignore-errors (read bib-file)))
+      ;; (setq bib-file (ignore-errors (read bib-file)))
       ;; Does bibfile exists?
       (unless (and (stringp bib-file)
 		   (file-regular-p bib-file)
@@ -463,10 +466,12 @@ For a list of export formats registered with JabRef use:
       (plist-put info :bib-file (and bib-file (expand-file-name bib-file)))))
 
   ;; Sanitize value of #+ODT_JABREF_CITATION_STYLE.
-  (let ((citation-style (plist-get info :jabref-citation-style)))
+  (let (;; (citation-style (plist-get info :jabref-citation-style))
+        (citation-style (org-cite-bibliography-style info))
+        )
     (when citation-style
-      ;; Parse value.
-      (setq citation-style (ignore-errors (read citation-style)))
+      ;; ;; Parse value.
+      ;; (setq citation-style (ignore-errors (read citation-style)))
       ;; Can I handle the requested Citation Style?
       (let* ((backend (plist-get info :back-end))
 	     (backend-name (symbol-name (org-export-backend-name backend)))
@@ -654,14 +659,12 @@ Return the XML representation as a string. Specifically,
 
 ;;;; Export Filters :: Read-in and Write-out of caches
 
-(defadvice org-export--collect-tree-properties
-    (around org-jabref-load-citation-cache activate)
+(defun org-jabref-do-load-citation-cache (info)
   "Add `:citation-cache' property to INFO."
 
   (org-jabref--sanitize-options info)
   
-  (let* ((info ad-do-it)
-	 (bib-file (plist-get info :bib-file)))
+  (let* ((bib-file (plist-get info :bib-file)))
     (if (not bib-file) info
       ;; A #+BIB_FILE file is specified.
       (let* ((in-text-jabref-format
@@ -733,7 +736,12 @@ Return the XML representation as a string. Specifically,
 
 	;; Stash the cache in to INFO for later use by the
 	;; transcoders.
-	(setq ad-return-value (nconc info (list :citation-cache citation-cache)))))))
+	(nconc info (list :citation-cache citation-cache))))))
+
+(defun org-jabref-load-citation-cache (info)
+  "Add `:citation-cache' property to INFO."
+  (if (plist-get info :jabref-citation-style) info
+    (org-jabref-do-load-citation-cache info)))
 
 
 ;;; Transcoders
@@ -846,24 +854,24 @@ separators."
 
 ;;;; Keyword
 
-(defun org-jabref-keyword (keyword contents info)
-  "Transcode a KEYWORD element from Org to ODT.
-CONTENTS is nil.  INFO is a plist holding contextual information.
+;; (defun org-jabref-keyword (keyword contents info)
+;;   "Transcode a KEYWORD element from Org to ODT.
+;; CONTENTS is nil.  INFO is a plist holding contextual information.
 
-If KEYWORD is a BIBLIOGRAPHY element, use
-`org-jabref-bibliography'.  Otherwise, call the standard
-transcoder for KEYWORD element."
-  (let ((key (org-element-property :key keyword)))
-    (cond
-     ;; Handle BIBLIOGRAPHY code.
-     ((string= key "BIBLIOGRAPHY")
-      (org-jabref-bibliography keyword contents info))
-     ;; Keyword is other than BIBLIOGRAPHY.  Use the stock transcoder.
-     (t (let* ((backend (org-export-backend-name (plist-get info :back-end)))
-	       (stock-backend (assoc-default backend org-jabref--stock-backends))
-	       (transcoder (assoc-default 'keyword (org-export-backend-transcoders
-						    stock-backend))))
-	  (funcall transcoder keyword contents info))))))
+;; If KEYWORD is a BIBLIOGRAPHY element, use
+;; `org-jabref-bibliography'.  Otherwise, call the standard
+;; transcoder for KEYWORD element."
+;;   (let ((key (org-element-property :key keyword)))
+;;     (cond
+;;      ;; Handle BIBLIOGRAPHY code.
+;;      ((string= key "BIBLIOGRAPHY")
+;;       (org-jabref-bibliography keyword contents info))
+;;      ;; Keyword is other than BIBLIOGRAPHY.  Use the stock transcoder.
+;;      (t (let* ((backend (org-export-backend-name (plist-get info :back-end)))
+;; 	       (stock-backend (assoc-default backend org-jabref--stock-backends))
+;; 	       (transcoder (assoc-default 'keyword (org-export-backend-transcoders
+;; 						    stock-backend))))
+;; 	  (funcall transcoder keyword contents info))))))
 
 ;;; Jabref Citation Formatters (for ODT)
 
@@ -916,7 +924,37 @@ transcoder for KEYWORD element."
 	       (org-jabref--strip-and-add-pre/post-notes
 		text pre-note post-note formatter-info))))
 
-;;; Interactive function
+;;; Citation Processor
+
+
+;;;; Citation Processor :: Citation Renderer
+
+(defun org-cite-jabref-export-citation (citation style _ info)
+  "Export CITATION object.
+STYLE is the expected citation style, as a pair of strings or nil.  INFO is the
+export communication channel, as a property list."
+  (let* ((contents nil))
+    (org-jabref-load-citation-cache info)
+    (org-jabref-citation citation contents info)))
+
+
+;;;; Citation Processor :: Bibliography Renderer
+
+(defun org-cite-jabref-export-bibliography (keys _files _style _props _backend info)
+  "Generate bibliography.
+KEYS is the list of cited keys, as strings.  STYLE is the expected bibliography
+style, as a string.  BACKEND is the export back-end, as a symbol. INFO is the
+export state, as a property list."
+  (let* ((bibliography nil)
+         (contents nil))
+    (org-jabref-bibliography bibliography contents info)))
+
+
+;;;; Register as Citation Processor
+
+(org-cite-register-processor 'jabref
+  :export-citation #'org-cite-jabref-export-citation
+  :export-bibliography #'org-cite-jabref-export-bibliography)
 
 (provide 'ox-jabref)
 
