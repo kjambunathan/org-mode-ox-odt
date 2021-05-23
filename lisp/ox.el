@@ -3,6 +3,7 @@
 ;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
+;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 
 ;; This file is part of GNU Emacs.
@@ -73,6 +74,7 @@
 
 (require 'cl-lib)
 (require 'ob-exp)
+(require 'oc)
 (require 'ol)
 (require 'org-element)
 (require 'org-macro)
@@ -139,7 +141,9 @@
     (:with-tasks nil "tasks" org-export-with-tasks)
     (:with-timestamps nil "<" org-export-with-timestamps)
     (:with-title nil "title" org-export-with-title)
-    (:with-todo-keywords nil "todo" org-export-with-todo-keywords))
+    (:with-todo-keywords nil "todo" org-export-with-todo-keywords)
+    ;; Citations processing.
+    (:cite-export "CITE_EXPORT" nil org-cite-export-processor))
   "Alist between export properties and ways to set them.
 
 The key of the alist is the property name, and the value is a list
@@ -1571,7 +1575,7 @@ process."
 		 plist
 		 prop
 		 ;; Evaluate default value provided.
-		 (let ((value (eval (nth 3 cell))))
+		 (let ((value (eval (nth 3 cell) t)))
 		   (if (eq (nth 4 cell) 'parse)
 		       (org-element-parse-secondary-string
 			value (org-element-restriction 'keyword))
@@ -1880,6 +1884,8 @@ Return a string."
 		(cond
 		 ;; Ignored element/object.
 		 ((memq data (plist-get info :ignore-list)) nil)
+                 ;; Raw code.
+                 ((eq type 'raw) (car (org-element-contents data)))
 		 ;; Plain text.
 		 ((eq type 'plain-text)
 		  (org-export-filter-apply-functions
@@ -1946,7 +1952,7 @@ Return a string."
 	   data
 	   (cond
 	    ((not results) "")
-	    ((memq type '(org-data plain-text nil)) results)
+	    ((memq type '(nil org-data plain-text raw)) results)
 	    ;; Append the same white space between elements or objects
 	    ;; as in the original buffer, and call appropriate filters.
 	    (t
@@ -2561,16 +2567,16 @@ another buffer, effectively cloning the original buffer there.
 
 The function assumes BUFFER's major mode is `org-mode'."
   (with-current-buffer buffer
-    `(lambda ()
-       (let ((inhibit-modification-hooks t))
-	 ;; Set major mode. Ignore `org-mode-hook' as it has been run
-	 ;; already in BUFFER.
-	 (let ((org-mode-hook nil) (org-inhibit-startup t)) (org-mode))
-	 ;; Copy specific buffer local variables and variables set
-	 ;; through BIND keywords.
-	 ,@(let ((bound-variables (org-export--list-bound-variables))
-		 vars)
-	     (dolist (entry (buffer-local-variables (buffer-base-buffer)) vars)
+    (let ((str (org-with-wide-buffer (buffer-string)))
+          (narrowing
+           (if (org-region-active-p)
+	       (list (region-beginning) (region-end))
+	     (list (point-min) (point-max))))
+	  (pos (point))
+	  (varvals
+	   (let ((bound-variables (org-export--list-bound-variables))
+		 (varvals nil))
+	     (dolist (entry (buffer-local-variables (buffer-base-buffer)))
 	       (when (consp entry)
 		 (let ((var (car entry))
 		       (val (cdr entry)))
@@ -2585,27 +2591,35 @@ The function assumes BUFFER's major mode is `org-mode'."
 			;; Skip unreadable values, as they cannot be
 			;; sent to external process.
 			(or (not val) (ignore-errors (read (format "%S" val))))
-			(push `(set (make-local-variable (quote ,var))
-				    (quote ,val))
-			      vars))))))
-	 ;; Whole buffer contents.
-	 (insert ,(org-with-wide-buffer (buffer-string)))
-	 ;; Narrowing.
-	 ,(if (org-region-active-p)
-	      `(narrow-to-region ,(region-beginning) ,(region-end))
-	    `(narrow-to-region ,(point-min) ,(point-max)))
-	 ;; Current position of point.
-	 (goto-char ,(point))
-	 ;; Overlays with invisible property.
-	 ,@(let (ov-set)
-	     (dolist (ov (overlays-in (point-min) (point-max)) ov-set)
+			(push (cons var val) varvals)))))
+             varvals))
+	  (ols
+	   (let (ov-set)
+	     (dolist (ov (overlays-in (point-min) (point-max)))
 	       (let ((invis-prop (overlay-get ov 'invisible)))
 		 (when invis-prop
-		   (push `(overlay-put
-			   (make-overlay ,(overlay-start ov)
-					 ,(overlay-end ov))
-			   'invisible (quote ,invis-prop))
-			 ov-set)))))))))
+		   (push (list (overlay-start ov) (overlay-end ov)
+			       invis-prop)
+			 ov-set))))
+	     ov-set)))
+      (lambda ()
+	(let ((inhibit-modification-hooks t))
+	  ;; Set major mode. Ignore `org-mode-hook' as it has been run
+	  ;; already in BUFFER.
+	  (let ((org-mode-hook nil) (org-inhibit-startup t)) (org-mode))
+	  ;; Copy specific buffer local variables and variables set
+	  ;; through BIND keywords.
+	  (pcase-dolist (`(,var . ,val) varvals)
+	    (set (make-local-variable var) val))
+	  ;; Whole buffer contents.
+	  (insert str)
+	  ;; Narrowing.
+	  (apply #'narrow-to-region narrowing)
+	  ;; Current position of point.
+	  (goto-char pos)
+	  ;; Overlays with invisible property.
+	  (pcase-dolist (`(,start ,end ,invis) ols)
+	    (overlay-put (make-overlay start end) 'invisible invis)))))))
 
 (defun org-export--delete-comment-trees ()
   "Delete commented trees and commented inlinetasks in the buffer.
@@ -2708,9 +2722,9 @@ a list of footnote definitions or in the widened buffer."
 	       (and (or (eq (org-element-type f) 'footnote-definition)
 			(eq (org-element-property :type f) 'inline))
 		    (org-element-property :label f)))))
-	  seen)
+	  ) ;; seen
       (dolist (l (funcall list-labels tree))
-	(cond ((member l seen))
+	(cond ;; ((member l seen))
 	      ((member l known-definitions) (push l defined))
 	      (t (push l undefined)))))
     ;; Complete MISSING-DEFINITIONS by finding the definition of every
@@ -2949,10 +2963,8 @@ Return code as a string."
 			     (org-export-backend-name backend))
 	 (org-export-expand-include-keyword)
 	 (org-export--delete-comment-trees)
-	 (org-macro-initialize-templates)
-	 (org-macro-replace-all (append org-macro-templates
-					org-export-global-macros)
-				parsed-keywords)
+	 (org-macro-initialize-templates org-export-global-macros)
+	 (org-macro-replace-all org-macro-templates parsed-keywords)
 	 ;; Refresh buffer properties and radio targets after previous
 	 ;; potentially invasive changes.
 	 (org-set-regexps-and-options)
@@ -2979,6 +2991,10 @@ Return code as a string."
 	 (setq info
 	       (org-combine-plists
 		info (org-export-get-environment backend subtreep ext-plist)))
+         ;; Pre-process citations environment, i.e. install
+	 ;; bibliography list, and citation processor in INFO.
+	 (org-cite-store-bibliography info)
+         (org-cite-store-export-processor info)
 	 ;; De-activate uninterpreted data from parsed keywords.
 	 (dolist (entry (append (org-export-get-all-options backend)
 				org-export-options-alist))
@@ -3012,6 +3028,11 @@ Return code as a string."
 	 ;; Now tree is complete, compute its properties and add them
 	 ;; to communication channel.
 	 (setq info (org-export--collect-tree-properties tree info))
+         ;; Process citations and bibliography.  Replace each citation
+	 ;; and "print_bibliography" keyword in the parse tree with
+	 ;; the output of the selected citation export processor.
+         (org-cite-process-citations info)
+         (org-cite-process-bibliography info)
 	 ;; Eventually transcode TREE.  Wrap the resulting string into
 	 ;; a template.
 	 (let* ((body (org-element-normalize-string
@@ -3024,16 +3045,19 @@ Return code as a string."
 			      (funcall inner-template body info))
 			    info))
 		(template (cdr (assq 'template
-				     (plist-get info :translate-alist)))))
+				     (plist-get info :translate-alist))))
+                (output
+                 (if (or (not (functionp template)) body-only) full-body
+	           (funcall template full-body info))))
+           ;; Call citation export finalizer.
+           (setq output (org-cite-finalize-export output info))
 	   ;; Remove all text properties since they cannot be
 	   ;; retrieved from an external process.  Finally call
 	   ;; final-output filter and return result.
 	   (org-no-properties
 	    (org-export-filter-apply-functions
 	     (plist-get info :filter-final-output)
-	     (if (or (not (functionp template)) body-only) full-body
-	       (funcall template full-body info))
-	     info))))))))
+	     output info))))))))
 
 ;;;###autoload
 (defun org-export-string-as (string backend &optional body-only ext-plist)
@@ -3106,22 +3130,22 @@ locally for the subtree through node properties."
          (keyword (unless (assoc keyword keywords)
                     (let ((value
                            (if (eq (nth 4 entry) 'split)
-                               (mapconcat #'identity (eval (nth 3 entry)) " ")
-                             (eval (nth 3 entry)))))
+                               (mapconcat #'identity (eval (nth 3 entry) t) " ")
+                             (eval (nth 3 entry) t))))
                       (push (cons keyword value) keywords))))
          (option (unless (assoc option options)
-                   (push (cons option (eval (nth 3 entry))) options))))))
+                   (push (cons option (eval (nth 3 entry) t)) options))))))
     ;; Move to an appropriate location in order to insert options.
     (unless subtreep (beginning-of-line))
     ;; First (multiple) OPTIONS lines.  Never go past fill-column.
     (when options
       (let ((items
 	     (mapcar
-	      #'(lambda (opt) (format "%s:%S" (car opt) (cdr opt)))
+              (lambda (opt) (format "%s:%S" (car opt) (cdr opt)))
 	      (sort options (lambda (k1 k2) (string< (car k1) (car k2)))))))
 	(if subtreep
 	    (org-entry-put
-	     node "EXPORT_OPTIONS" (mapconcat 'identity items " "))
+	     node "EXPORT_OPTIONS" (mapconcat #'identity items " "))
 	  (while items
 	    (insert "#+options:")
 	    (let ((width 10))
@@ -3611,7 +3635,7 @@ will become the empty string."
 	 (attributes
 	  (let ((value (org-element-property attribute element)))
 	    (when value
-	      (let ((s (mapconcat 'identity value " ")) result)
+	      (let ((s (mapconcat #'identity value " ")) result)
 		(while (string-match
 			"\\(?:^\\|[ \t]+\\)\\(:[-a-zA-Z0-9_]+\\)\\([ \t]+\\|$\\)"
 			s)
@@ -3661,7 +3685,8 @@ the communication channel used for export, as a plist."
   (when (symbolp backend) (setq backend (org-export-get-backend backend)))
   (org-export-barf-if-invalid-backend backend)
   (let ((type (org-element-type data)))
-    (when (memq type '(nil org-data)) (error "No foreign transcoder available"))
+    (when (memq type '(nil org-data raw))
+      (error "No foreign transcoder available"))
     (let* ((all-transcoders (org-export-get-all-transcoders backend))
 	   (transcoder (cdr (assq type all-transcoders))))
       (unless (functionp transcoder) (error "No foreign transcoder available"))
@@ -4555,6 +4580,17 @@ objects of the same type."
 	    ((funcall predicate el info) (cl-incf counter) nil)))
 	 info 'first-match)))))
 
+;;;; For Raw objects
+;;
+;; `org-export-raw-string' builds a pseudo-object out of a string
+;; that any export back-end returns as-is.
+
+(defun org-export-raw-string (s)
+  "Return a raw object containing string S.
+A raw string is exported as-is, with no additional processing
+from the export back-end."
+  (unless (stringp s) (error "Wrong raw contents type: %S" s))
+  (org-element-create 'raw nil s))
 
 ;;;; For Src-Blocks
 ;;
@@ -4704,7 +4740,7 @@ code."
 	     ;; should start six columns after the widest line of code,
 	     ;; wrapped with parenthesis.
 	     (max-width
-	      (+ (apply 'max (mapcar 'length code-lines))
+	      (+ (apply #'max (mapcar #'length code-lines))
 		 (if (not num-start) 0 (length (format num-fmt num-start))))))
 	(org-export-format-code
 	 code
@@ -5485,7 +5521,7 @@ transcoding it."
      (apostrophe :utf-8 "’" :html "&rsquo;"))
     ("ru"
      ;; https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D0%B2%D1%8B%D1%87%D0%BA%D0%B8#.D0.9A.D0.B0.D0.B2.D1.8B.D1.87.D0.BA.D0.B8.2C_.D0.B8.D1.81.D0.BF.D0.BE.D0.BB.D1.8C.D0.B7.D1.83.D0.B5.D0.BC.D1.8B.D0.B5_.D0.B2_.D1.80.D1.83.D1.81.D1.81.D0.BA.D0.BE.D0.BC_.D1.8F.D0.B7.D1.8B.D0.BA.D0.B5
-     ;; http://www.artlebedev.ru/kovodstvo/sections/104/
+     ;; https://www.artlebedev.ru/kovodstvo/sections/104/
      (primary-opening :utf-8 "«" :html "&laquo;" :latex "{}<<"
 		      :texinfo "@guillemetleft{}")
      (primary-closing :utf-8 "»" :html "&raquo;" :latex ">>{}"
@@ -5747,6 +5783,7 @@ them."
      ("ru" :html "&#1040;&#1074;&#1090;&#1086;&#1088;" :utf-8 "Автор")
      ("sl" :default "Avtor")
      ("sv" :html "F&ouml;rfattare")
+     ("tr" :default "Yazar")
      ("uk" :html "&#1040;&#1074;&#1090;&#1086;&#1088;" :utf-8 "Автор")
      ("zh-CN" :html "&#20316;&#32773;" :utf-8 "作者")
      ("zh-TW" :html "&#20316;&#32773;" :utf-8 "作者"))
@@ -5759,12 +5796,14 @@ them."
      ("it" :default "Continua da pagina precedente")
      ("ja" :default "前ページからの続き")
      ("nl" :default "Vervolg van vorige pagina")
+     ("pl" :default "Ciąg dalszy poprzedniej strony")
      ("pt" :default "Continuação da página anterior")
      ("pt_BR" :html "Continua&ccedil;&atilde;o da p&aacute;gina anterior" :ascii "Continuacao da pagina anterior" :default "Continuação da página anterior")
      ("ro" :default "Continuare de pe pagina precedentă")
      ("ru" :html "(&#1055;&#1088;&#1086;&#1076;&#1086;&#1083;&#1078;&#1077;&#1085;&#1080;&#1077;)"
       :utf-8 "(Продолжение)")
-     ("sl" :default "Nadaljevanje s prejšnje strani"))
+     ("sl" :default "Nadaljevanje s prejšnje strani")
+     ("tr" :default "Önceki sayfadan devam ediyor"))
     ("Continued on next page"
      ("ar" :default "التتمة في الصفحة التالية")
      ("cs" :default "Pokračuje na další stránce")
@@ -5774,18 +5813,21 @@ them."
      ("it" :default "Continua alla pagina successiva")
      ("ja" :default "次ページに続く")
      ("nl" :default "Vervolg op volgende pagina")
+     ("pl" :default "Kontynuacja na następnej stronie")
      ("pt" :default "Continua na página seguinte")
      ("pt_BR" :html "Continua na pr&oacute;xima p&aacute;gina" :ascii "Continua na proxima pagina" :default "Continua na próxima página")
      ("ro" :default "Continuare pe pagina următoare")
      ("ru" :html "(&#1055;&#1088;&#1086;&#1076;&#1086;&#1083;&#1078;&#1077;&#1085;&#1080;&#1077; &#1089;&#1083;&#1077;&#1076;&#1091;&#1077;&#1090;)"
       :utf-8 "(Продолжение следует)")
-     ("sl" :default "Nadaljevanje na naslednji strani"))
+     ("sl" :default "Nadaljevanje na naslednji strani")
+     ("tr" :default "Devamı sonraki sayfada"))
     ("Created"
      ("cs" :default "Vytvořeno")
      ("nl" :default "Gemaakt op")  ;; must be followed by a date or date+time
      ("pt_BR" :default "Criado em")
      ("ro" :default "Creat")
-     ("sl" :default "Ustvarjeno"))
+     ("sl" :default "Ustvarjeno")
+     ("tr" :default "Oluşturuldu"))
     ("Date"
      ("ar" :default "بتاريخ")
      ("ca" :default "Data")
@@ -5810,6 +5852,7 @@ them."
      ("ru" :html "&#1044;&#1072;&#1090;&#1072;" :utf-8 "Дата")
      ("sl" :default "Datum")
      ("sv" :default "Datum")
+     ("tr" :default "Tarih")
      ("uk" :html "&#1044;&#1072;&#1090;&#1072;" :utf-8 "Дата")
      ("zh-CN" :html "&#26085;&#26399;" :utf-8 "日期")
      ("zh-TW" :html "&#26085;&#26399;" :utf-8 "日期"))
@@ -5833,6 +5876,7 @@ them."
       :utf-8 "Уравнение")
      ("sl" :default "Enačba")
      ("sv" :default "Ekvation")
+     ("tr" :default "Eşitlik")
      ("zh-CN" :html "&#26041;&#31243;" :utf-8 "方程"))
     ("Figure"
      ("ar" :default "شكل")
@@ -5852,6 +5896,7 @@ them."
      ("ro" :default "Imaginea")
      ("ru" :html "&#1056;&#1080;&#1089;&#1091;&#1085;&#1086;&#1082;" :utf-8 "Рисунок")
      ("sv" :default "Illustration")
+     ("tr" :default "Şekil")
      ("zh-CN" :html "&#22270;" :utf-8 "图"))
     ("Figure %d:"
      ("ar" :default "شكل %d:")
@@ -5873,6 +5918,7 @@ them."
      ("ru" :html "&#1056;&#1080;&#1089;. %d.:" :utf-8 "Рис. %d.:")
      ("sl" :default "Slika %d")
      ("sv" :default "Illustration %d")
+     ("tr" :default "Şekil %d:")
      ("zh-CN" :html "&#22270;%d&nbsp;" :utf-8 "图%d "))
     ("Footnotes"
      ("ar" :default "الهوامش")
@@ -5899,6 +5945,7 @@ them."
      ("ru" :html "&#1057;&#1085;&#1086;&#1089;&#1082;&#1080;" :utf-8 "Сноски")
      ("sl" :default "Opombe")
      ("sv" :default "Fotnoter")
+     ("tr" :default "Dipnotlar")
      ("uk" :html "&#1055;&#1088;&#1080;&#1084;&#1110;&#1090;&#1082;&#1080;"
       :utf-8 "Примітки")
      ("zh-CN" :html "&#33050;&#27880;" :utf-8 "脚注")
@@ -5919,6 +5966,7 @@ them."
      ("ru" :html "&#1057;&#1087;&#1080;&#1089;&#1086;&#1082; &#1088;&#1072;&#1089;&#1087;&#1077;&#1095;&#1072;&#1090;&#1086;&#1082;"
       :utf-8 "Список распечаток")
      ("sl" :default "Seznam programskih izpisov")
+     ("tr" :default "Program Listesi")
      ("zh-CN" :html "&#20195;&#30721;&#30446;&#24405;" :utf-8 "代码目录"))
     ("List of Tables"
      ("ar" :default "قائمة بالجداول")
@@ -5941,6 +5989,7 @@ them."
       :utf-8 "Список таблиц")
      ("sl" :default "Seznam tabel")
      ("sv" :default "Tabeller")
+     ("tr" :default "Tablo Listesi")
      ("zh-CN" :html "&#34920;&#26684;&#30446;&#24405;" :utf-8 "表格目录"))
     ("Listing"
      ("ar" :default "برنامج")
@@ -5960,6 +6009,7 @@ them."
      ("ru" :html "&#1056;&#1072;&#1089;&#1087;&#1077;&#1095;&#1072;&#1090;&#1082;&#1072;"
       :utf-8 "Распечатка")
      ("sl" :default "Izpis programa")
+     ("tr" :default "Program")
      ("zh-CN" :html "&#20195;&#30721;" :utf-8 "代码"))
     ("Listing %d:"
      ("ar" :default "برنامج %d:")
@@ -5979,6 +6029,7 @@ them."
      ("ru" :html "&#1056;&#1072;&#1089;&#1087;&#1077;&#1095;&#1072;&#1090;&#1082;&#1072; %d.:"
       :utf-8 "Распечатка %d.:")
      ("sl" :default "Izpis programa %d")
+     ("tr" :default "Program %d:")
      ("zh-CN" :html "&#20195;&#30721;%d&nbsp;" :utf-8 "代码%d "))
     ("References"
      ("ar" :default "المراجع")
@@ -5990,7 +6041,8 @@ them."
      ("nl" :default "Bronverwijzingen")
      ("pt_BR" :html "Refer&ecirc;ncias" :default "Referências" :ascii "Referencias")
      ("ro" :default "Bibliografie")
-     ("sl" :default "Reference"))
+     ("sl" :default "Reference")
+     ("tr" :default "Referanslar"))
     ("See figure %s"
      ("cs" :default "Viz obrázek %s")
      ("fr" :default "cf. figure %s"
@@ -6000,7 +6052,8 @@ them."
       :html "Zie figuur&nbsp;%s" :latex "Zie figuur~%s")
      ("pt_BR" :default "Veja a figura %s")
      ("ro" :default "Vezi figura %s")
-     ("sl" :default "Glej sliko %s"))
+     ("sl" :default "Glej sliko %s")
+     ("tr" :default "bkz. şekil %s"))
     ("See listing %s"
      ("cs" :default "Viz program %s")
      ("fr" :default "cf. programme %s"
@@ -6009,7 +6062,8 @@ them."
       :html "Zie programma&nbsp;%s" :latex "Zie programma~%s")
      ("pt_BR" :default "Veja a listagem %s")
      ("ro" :default "Vezi tabelul %s")
-     ("sl" :default "Glej izpis programa %s"))
+     ("sl" :default "Glej izpis programa %s")
+     ("tr" :default "bkz. program %s"))
     ("See section %s"
      ("ar" :default "انظر قسم %s")
      ("cs" :default "Viz sekce %s")
@@ -6028,6 +6082,7 @@ them."
      ("ru" :html "&#1057;&#1084;. &#1088;&#1072;&#1079;&#1076;&#1077;&#1083; %s"
       :utf-8 "См. раздел %s")
      ("sl" :default "Glej poglavje %d")
+     ("tr" :default "bkz. bölüm %s")
      ("zh-CN" :html "&#21442;&#35265;&#31532;%s&#33410;" :utf-8 "参见第%s节"))
     ("See table %s"
      ("cs" :default "Viz tabulka %s")
@@ -6038,7 +6093,8 @@ them."
       :html "Zie tabel&nbsp;%s" :latex "Zie tabel~%s")
      ("pt_BR" :default "Veja a tabela %s")
      ("ro" :default "Vezi tabelul %s")
-     ("sl" :default "Glej tabelo %s"))
+     ("sl" :default "Glej tabelo %s")
+     ("tr" :default "bkz. tablo %s"))
     ("Table"
      ("ar" :default "جدول")
      ("cs" :default "Tabulka")
@@ -6054,6 +6110,7 @@ them."
      ("ro" :default "Tabel")
      ("ru" :html "&#1058;&#1072;&#1073;&#1083;&#1080;&#1094;&#1072;"
       :utf-8 "Таблица")
+     ("tr" :default "Tablo")
      ("zh-CN" :html "&#34920;" :utf-8 "表"))
     ("Table %d:"
      ("ar" :default "جدول %d:")
@@ -6076,6 +6133,7 @@ them."
       :utf-8 "Таблица %d.:")
      ("sl" :default "Tabela %d")
      ("sv" :default "Tabell %d")
+     ("tr" :default "Tablo %d")
      ("zh-CN" :html "&#34920;%d&nbsp;" :utf-8 "表%d "))
     ("Table of Contents"
      ("ar" :default "قائمة المحتويات")
@@ -6103,6 +6161,7 @@ them."
       :utf-8 "Содержание")
      ("sl" :default "Kazalo")
      ("sv" :html "Inneh&aring;ll")
+     ("tr" :default "İçindekiler")
      ("uk" :html "&#1047;&#1084;&#1110;&#1089;&#1090;" :utf-8 "Зміст")
      ("zh-CN" :html "&#30446;&#24405;" :utf-8 "目录")
      ("zh-TW" :html "&#30446;&#37636;" :utf-8 "目錄"))
@@ -6121,6 +6180,7 @@ them."
      ("ru" :html "&#1053;&#1077;&#1080;&#1079;&#1074;&#1077;&#1089;&#1090;&#1085;&#1072;&#1103; &#1089;&#1089;&#1099;&#1083;&#1082;&#1072;"
       :utf-8 "Неизвестная ссылка")
      ("sl" :default "Neznana referenca")
+     ("tr" :default "Bilinmeyen referans")
      ("zh-CN" :html "&#26410;&#30693;&#24341;&#29992;" :utf-8 "未知引用")))
   "Dictionary for export engine.
 
@@ -6178,91 +6238,87 @@ to `:default' encoding.  If it fails, return S."
 ;; For back-ends, `org-export-add-to-stack' add a new source to stack.
 ;; It should be used whenever `org-export-async-start' is called.
 
-(defmacro org-export-async-start  (fun &rest body)
+(defun org-export-async-start  (fun body)
   "Call function FUN on the results returned by BODY evaluation.
 
-FUN is an anonymous function of one argument.  BODY evaluation
-happens in an asynchronous process, from a buffer which is an
-exact copy of the current one.
+FUN is an anonymous function of one argument.  BODY should be a valid
+ELisp source expression.  BODY evaluation happens in an asynchronous process,
+from a buffer which is an exact copy of the current one.
 
 Use `org-export-add-to-stack' in FUN in order to register results
 in the stack.
 
 This is a low level function.  See also `org-export-to-buffer'
 and `org-export-to-file' for more specialized functions."
-  (declare (indent 1) (debug t))
-  (org-with-gensyms (process temp-file copy-fun proc-buffer coding)
-    ;; Write the full sexp evaluating BODY in a copy of the current
-    ;; buffer to a temporary file, as it may be too long for program
-    ;; args in `start-process'.
-    `(with-temp-message "Initializing asynchronous export process"
-       (let ((,copy-fun (org-export--generate-copy-script (current-buffer)))
-             (,temp-file (make-temp-file "org-export-process"))
-             (,coding buffer-file-coding-system))
-         (with-temp-file ,temp-file
-           (insert
-            ;; Null characters (from variable values) are inserted
-            ;; within the file.  As a consequence, coding system for
-            ;; buffer contents will not be recognized properly.  So,
-            ;; we make sure it is the same as the one used to display
-            ;; the original buffer.
-            (format ";; -*- coding: %s; -*-\n%S"
-                    ,coding
-                    `(with-temp-buffer
-                       (when org-export-async-debug '(setq debug-on-error t))
-                       ;; Ignore `kill-emacs-hook' and code evaluation
-                       ;; queries from Babel as we need a truly
-                       ;; non-interactive process.
-                       (setq kill-emacs-hook nil
-                             org-babel-confirm-evaluate-answer-no t)
-                       ;; Initialize export framework.
-                       (require 'ox)
-                       ;; Re-create current buffer there.
-                       (funcall ,,copy-fun)
-                       (restore-buffer-modified-p nil)
-                       ;; Sexp to evaluate in the buffer.
-                       (print (progn ,,@body))))))
-         ;; Start external process.
-         (let* ((process-connection-type nil)
-                (,proc-buffer (generate-new-buffer-name "*Org Export Process*"))
-                (,process
-		 (apply
-		  #'start-process
-		  (append
-		   (list "org-export-process"
-			 ,proc-buffer
-			 (expand-file-name invocation-name invocation-directory)
-			 "--batch")
-		   (if org-export-async-init-file
-		       (list "-Q" "-l" org-export-async-init-file)
-		     (list "-l" user-init-file))
-		   (list "-l" ,temp-file)))))
-           ;; Register running process in stack.
-           (org-export-add-to-stack (get-buffer ,proc-buffer) nil ,process)
-           ;; Set-up sentinel in order to catch results.
-           (let ((handler ,fun))
-             (set-process-sentinel
-              ,process
-              `(lambda (p status)
-                 (let ((proc-buffer (process-buffer p)))
-                   (when (eq (process-status p) 'exit)
-                     (unwind-protect
-                         (if (zerop (process-exit-status p))
-                             (unwind-protect
-                                 (let ((results
-                                        (with-current-buffer proc-buffer
-                                          (goto-char (point-max))
-                                          (backward-sexp)
-                                          (read (current-buffer)))))
-                                   (funcall ,handler results))
-                               (unless org-export-async-debug
-                                 (and (get-buffer proc-buffer)
-                                      (kill-buffer proc-buffer))))
-                           (org-export-add-to-stack proc-buffer nil p)
-                           (ding)
-                           (message "Process `%s' exited abnormally" p))
-                       (unless org-export-async-debug
-                         (delete-file ,,temp-file)))))))))))))
+  (declare (indent 1))
+  ;; Write the full sexp evaluating BODY in a copy of the current
+  ;; buffer to a temporary file, as it may be too long for program
+  ;; args in `start-process'.
+  (with-temp-message "Initializing asynchronous export process"
+    (let ((copy-fun (org-export--generate-copy-script (current-buffer)))
+          (temp-file (make-temp-file "org-export-process")))
+      (let ((coding-system-for-write 'utf-8-emacs-unix))
+        (write-region
+         ;; Null characters (from variable values) are inserted
+         ;; within the file.  As a consequence, coding system for
+         ;; buffer contents could fail to be recognized properly.
+         (format ";; -*- coding: utf-8-emacs-unix; lexical-binding:t -*-\n%S"
+                 `(with-temp-buffer
+                    ,(when org-export-async-debug '(setq debug-on-error t))
+                    ;; Ignore `kill-emacs-hook' and code evaluation
+                    ;; queries from Babel as we need a truly
+                    ;; non-interactive process.
+                    (setq kill-emacs-hook nil
+                          org-babel-confirm-evaluate-answer-no t)
+                    ;; Initialize export framework.
+                    (require 'ox)
+                    ;; Re-create current buffer there.
+                    (funcall ',copy-fun)
+                    (restore-buffer-modified-p nil)
+                    ;; Sexp to evaluate in the buffer.
+                    (print ,body)))
+         nil temp-file nil 'silent))
+      ;; Start external process.
+      (let* ((process-connection-type nil)
+             (proc-buffer (generate-new-buffer-name "*Org Export Process*"))
+             (process
+	      (apply
+	       #'start-process
+	       (append
+		(list "org-export-process"
+		      proc-buffer
+		      (expand-file-name invocation-name invocation-directory)
+		      "--batch")
+		(if org-export-async-init-file
+		    (list "-Q" "-l" org-export-async-init-file)
+		  (list "-l" user-init-file))
+		(list "-l" temp-file)))))
+        ;; Register running process in stack.
+        (org-export-add-to-stack (get-buffer proc-buffer) nil process)
+        ;; Set-up sentinel in order to catch results.
+        (let ((handler fun))
+          (set-process-sentinel
+           process
+           (lambda (p _status)
+             (let ((proc-buffer (process-buffer p)))
+               (when (eq (process-status p) 'exit)
+                 (unwind-protect
+                     (if (zerop (process-exit-status p))
+                         (unwind-protect
+                             (let ((results
+                                    (with-current-buffer proc-buffer
+                                      (goto-char (point-max))
+                                      (backward-sexp)
+                                      (read (current-buffer)))))
+                               (funcall handler results))
+                           (unless org-export-async-debug
+                             (and (get-buffer proc-buffer)
+                                  (kill-buffer proc-buffer))))
+                       (org-export-add-to-stack proc-buffer nil p)
+                       (ding)
+                       (message "Process `%s' exited abnormally" p))
+                   (unless org-export-async-debug
+                     (delete-file temp-file))))))))))))
 
 ;;;###autoload
 (defun org-export-to-buffer
@@ -6303,14 +6359,15 @@ This function returns BUFFER."
   (declare (indent 2))
   (if async
       (org-export-async-start
-	  `(lambda (output)
-	     (with-current-buffer (get-buffer-create ,buffer)
-	       (erase-buffer)
-	       (setq buffer-file-coding-system ',buffer-file-coding-system)
-	       (insert output)
-	       (goto-char (point-min))
-	       (org-export-add-to-stack (current-buffer) ',backend)
-	       (ignore-errors (funcall ,post-process))))
+	  (let ((cs buffer-file-coding-system))
+	    (lambda (output)
+	      (with-current-buffer (get-buffer-create buffer)
+	        (erase-buffer)
+	        (setq buffer-file-coding-system cs)
+	        (insert output)
+	        (goto-char (point-min))
+	        (org-export-add-to-stack (current-buffer) backend)
+	        (ignore-errors (funcall post-process)))))
 	`(org-export-as
 	  ',backend ,subtreep ,visible-only ,body-only ',ext-plist))
     (let ((output
@@ -6366,11 +6423,12 @@ or FILE."
   (declare (indent 2))
   (if (not (file-writable-p file)) (error "Output file not writable")
     (let ((ext-plist (org-combine-plists `(:output-file ,file) ext-plist))
-	  (encoding (or org-export-coding-system buffer-file-coding-system)))
+	  (encoding (or org-export-coding-system buffer-file-coding-system))
+          auto-mode-alist)
       (if async
           (org-export-async-start
-	      `(lambda (file)
-		 (org-export-add-to-stack (expand-file-name file) ',backend))
+	      (lambda (file)
+		(org-export-add-to-stack (expand-file-name file) backend))
 	    `(let ((output
 		    (org-export-as
 		     ',backend ,subtreep ,visible-only ,body-only
@@ -6504,16 +6562,16 @@ within Emacs."
 (defvar org-export-stack-mode-map
   (let ((km (make-sparse-keymap)))
     (set-keymap-parent km tabulated-list-mode-map)
-    (define-key km " " 'next-line)
-    (define-key km "\C-n" 'next-line)
-    (define-key km [down] 'next-line)
-    (define-key km "\C-p" 'previous-line)
-    (define-key km "\C-?" 'previous-line)
-    (define-key km [up] 'previous-line)
-    (define-key km "C" 'org-export-stack-clear)
-    (define-key km "v" 'org-export-stack-view)
-    (define-key km (kbd "RET") 'org-export-stack-view)
-    (define-key km "d" 'org-export-stack-remove)
+    (define-key km " " #'next-line)
+    (define-key km "\C-n" #'next-line)
+    (define-key km [down] #'next-line)
+    (define-key km "\C-p" #'previous-line)
+    (define-key km "\C-?" #'previous-line)
+    (define-key km [up] #'previous-line)
+    (define-key km "C"  #'org-export-stack-clear)
+    (define-key km "v"  #'org-export-stack-view)
+    (define-key km (kbd "RET") #'org-export-stack-view)
+    (define-key km "d" #'org-export-stack-remove)
     km)
   "Keymap for Org Export Stack.")
 
@@ -6711,7 +6769,7 @@ back to standard interface."
 	    ;; on the first key, if any.  A nil value means KEY will
 	    ;; only be activated at first level.
 	    (if (or (eq access-key t) (eq access-key first-key))
-		(propertize key 'face 'org-warning)
+		(propertize key 'face 'org-dispatcher-highlight)
 	      key)))
 	 (fontify-value
 	  (lambda (value)
@@ -6730,16 +6788,16 @@ back to standard interface."
 			  (cond ((and (numberp key-a) (numberp key-b))
 				 (< key-a key-b))
 				((numberp key-b) t)))))
-		'car-less-than-car))
+		#'car-less-than-car))
 	 ;; Compute a list of allowed keys based on the first key
 	 ;; pressed, if any.  Some keys
 	 ;; (?^B, ?^V, ?^S, ?^F, ?^A, ?&, ?# and ?q) are always
 	 ;; available.
 	 (allowed-keys
 	  (nconc (list 2 22 19 6 1)
-		 (if (not first-key) (org-uniquify (mapcar 'car entries))
+		 (if (not first-key) (org-uniquify (mapcar #'car entries))
 		   (let (sub-menu)
-		     (dolist (entry entries (sort (mapcar 'car sub-menu) '<))
+		     (dolist (entry entries (sort (mapcar #'car sub-menu) #'<))
 		       (when (eq (car entry) first-key)
 			 (setq sub-menu (append (nth 2 entry) sub-menu))))))
 		 (cond ((eq first-key ?P) (list ?f ?p ?x ?a))

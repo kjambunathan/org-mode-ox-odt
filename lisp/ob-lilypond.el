@@ -27,9 +27,9 @@
 ;; https://orgmode.org/worg/org-contrib/babel/languages/ob-doc-lilypond.html
 ;;
 ;; Lilypond documentation can be found at
-;; http://lilypond.org/manuals.html
+;; https://lilypond.org/manuals.html
 ;;
-;; This depends on epstopdf --- See http://www.ctan.org/pkg/epstopdf.
+;; This depends on epstopdf --- See https://www.ctan.org/pkg/epstopdf.
 
 ;;; Code:
 (require 'ob)
@@ -43,6 +43,15 @@
 (defvar org-babel-default-header-args:lilypond '()
   "Default header arguments for lilypond code blocks.
 NOTE: The arguments are determined at lilypond compile time.
+See `org-babel-lilypond-set-header-args'
+To configure, see `ob-lilypond-header-args'
+.")
+
+(defvar ob-lilypond-header-args
+  '((:results . "file") (:exports . "results"))
+  "User-configurable header arguments for lilypond code blocks.
+NOTE: The final value used by org-babel is computed at compile-time
+and stored in  `org-babel-default-header-args:lilypond'
 See `org-babel-lilypond-set-header-args'.")
 
 (defvar org-babel-lilypond-compile-post-tangle t
@@ -220,7 +229,7 @@ If error in compilation, attempt to mark the error in lilypond org file."
 FILE-NAME is full path to lilypond (.ly) file."
   (message "Compiling LilyPond...")
   (let ((arg-1 org-babel-lilypond-ly-command) ;program
-        (arg-2 nil)                    ;infile
+        ;; (arg-2 nil)                    ;infile
         (arg-3 "*lilypond*")           ;buffer
 	(arg-4 t)                      ;display
 	(arg-5 (if org-babel-lilypond-gen-png  "--png"  "")) ;&rest...
@@ -231,10 +240,10 @@ FILE-NAME is full path to lilypond (.ly) file."
         (arg-10 (concat "--output=" (file-name-sans-extension file-name)))
         (arg-11 file-name))
     (if test
-        `(,arg-1 ,arg-2 ,arg-3 ,arg-4 ,arg-5 ,arg-6
+        `(,arg-1 ,nil ,arg-3 ,arg-4 ,arg-5 ,arg-6 ;; arg-2
                  ,arg-7 ,arg-8 ,arg-9 ,arg-10 ,arg-11)
       (call-process
-       arg-1 arg-2 arg-3 arg-4 arg-5 arg-6
+       arg-1 nil arg-3 arg-4 arg-5 arg-6 ;; arg-2
        arg-7 arg-8 arg-9 arg-10 arg-11))))
 
 (defun org-babel-lilypond-check-for-compile-error (file-name &optional test)
@@ -404,8 +413,7 @@ These depend upon whether we are in Arrange mode i.e. MODE is t."
            (:cache . "yes")
            (:comments . "yes")))
         (t
-         '((:results . "file")
-           (:exports . "results")))))
+          ob-lilypond-header-args)))
 
 (defun org-babel-lilypond-set-header-args (mode)
   "Set org-babel-default-header-args:lilypond

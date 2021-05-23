@@ -42,6 +42,8 @@
 (declare-function dired-dwim-target-directory "dired-aux")
 (declare-function org-element-property "org-element" (property element))
 (declare-function org-element-type "org-element" (element))
+(declare-function org-inlinetask-goto-beginning "org-inlinetask" ())
+(declare-function org-inlinetask-in-task-p "org-inlinetask" ())
 
 (defgroup org-attach nil
   "Options concerning attachments in Org mode."
@@ -182,7 +184,7 @@ attachment folders based on ID."
   :type '(repeat (function :tag "Function with ID as input")))
 
 (defvar org-attach-after-change-hook nil
-  "Hook to be called when files have been added or removed to the attachment folder.")
+  "Hook called when files have been added or removed to the attachment folder.")
 
 (defvar org-attach-open-hook nil
   "Hook that is invoked by `org-attach-open'.
@@ -256,7 +258,14 @@ Shows a list of commands and prompts for another key to execute a command."
       (unless marker
 	(error "No item in current line")))
     (org-with-point-at marker
-      (org-back-to-heading-or-point-min t)
+      (if (and (featurep 'org-inlinetask)
+	       (not (org-inlinetask-in-task-p)))
+	  (org-with-limited-levels
+	   (org-back-to-heading-or-point-min t))
+        (if (and (featurep 'org-inlinetask)
+		 (org-inlinetask-in-task-p))
+            (org-inlinetask-goto-beginning)
+          (org-back-to-heading-or-point-min t)))
       (save-excursion
 	(save-window-excursion
 	  (unless org-attach-expert

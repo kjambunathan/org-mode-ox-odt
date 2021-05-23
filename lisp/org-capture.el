@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -246,6 +246,10 @@ properties are:
 
  :jump-to-captured   When set, jump to the captured entry when finished.
 
+ :refile-targets     When exiting capture mode via `org-capture-refile', the
+                     variable `org-refile-targets' will be temporarily bound
+                     to the value of this property.
+
  :empty-lines        Set this to the number of lines that should be inserted
                      before and after the new item.  Default 0, only common
                      other value is 1.
@@ -317,6 +321,7 @@ be replaced with content and expanded:
   %a          Annotation, normally the link created with `org-store-link'.
   %A          Like %a, but prompt for the description part.
   %l          Like %a, but only insert the literal link.
+  %L          Like %l, but without brackets (the link content itself).
   %c          Current kill ring head.
   %x          Content of the X clipboard.
   %k          Title of currently clocked task.
@@ -333,6 +338,8 @@ be replaced with content and expanded:
   %^C         Interactive selection of which kill or clip to use.
   %^L         Like %^C, but insert as link.
   %^{prop}p   Prompt the user for a value for property `prop'.
+              A default value can be specified like this:
+              %^{prop|default}p.
   %^{prompt}  Prompt the user for a string and replace this sequence with it.
               A default value and a completion table can be specified like this:
               %^{prompt|default|completion2|completion3|...}.
@@ -363,7 +370,7 @@ calendar                |  %:type %:date
 When you need to insert a literal percent sign in the template,
 you can escape ambiguous cases with a backward slash, e.g., \\%i."
   :group 'org-capture
-  :version "24.1"
+  :package-version '(Org . "9.5")
   :set (lambda (s v) (set s (org-capture-upgrade-templates v)))
   :type
   (let ((file-variants '(choice :tag "Filename       "
@@ -521,7 +528,7 @@ for a capture buffer.")
   "Minor mode for special key bindings in a capture buffer.
 
 Turning on this mode runs the normal hook `org-capture-mode-hook'."
-  nil " Cap" org-capture-mode-map
+  :lighter " Cap"
   (setq-local
    header-line-format
    (substitute-command-keys
@@ -882,7 +889,8 @@ for `entry'-type templates"))
 	 (pos (make-marker))
 	 (org-capture-is-refiling t)
 	 (kill-buffer (org-capture-get :kill-buffer 'local))
-	 (jump-to-captured (org-capture-get :jump-to-captured 'local)))
+	 (jump-to-captured (org-capture-get :jump-to-captured 'local))
+	 (refile-targets (org-capture-get :refile-targets 'local)))
     ;; Since `org-capture-finalize' may alter buffer contents (e.g.,
     ;; empty lines) around entry, use a marker to refer to the
     ;; headline to be refiled.  Place the marker in the base buffer,
@@ -892,11 +900,12 @@ for `entry'-type templates"))
     ;; early.  We want to wait for the refiling to be over, so we
     ;; control when the latter function is called.
     (org-capture-put :kill-buffer nil :jump-to-captured nil)
-    (org-capture-finalize)
-    (save-window-excursion
-      (with-current-buffer base
-	(org-with-point-at pos
-	  (call-interactively 'org-refile))))
+    (let ((org-refile-targets (or refile-targets org-refile-targets)))
+      (org-capture-finalize)
+      (save-window-excursion
+        (with-current-buffer base
+	  (org-with-point-at pos
+	    (call-interactively 'org-refile)))))
     (when kill-buffer
       (with-current-buffer base (save-buffer))
       (kill-buffer base))
@@ -1590,6 +1599,9 @@ The template may still contain \"%?\" for cursor positioning."
 	 (v-l (if (and v-a (string-match l-re v-a))
 		  (replace-match "[[\\1]]" nil nil v-a)
 		v-a))
+	 (v-L (if (and v-a (string-match l-re v-a))
+		  (replace-match "\\1" nil nil v-a)
+		v-a))
 	 (v-n user-full-name)
 	 (v-k (if (marker-buffer org-clock-marker)
 		  (org-no-properties org-clock-heading)
@@ -1642,7 +1654,7 @@ The template may still contain \"%?\" for cursor positioning."
       ;; Mark %() embedded elisp for later evaluation.
       (org-capture-expand-embedded-elisp 'mark)
       ;; Expand non-interactive templates.
-      (let ((regexp "%\\(:[-A-Za-z]+\\|<\\([^>\n]+\\)>\\|[aAcfFikKlntTuUx]\\)"))
+      (let ((regexp "%\\(:[-A-Za-z]+\\|<\\([^>\n]+\\)>\\|[aAcfFikKlLntTuUx]\\)"))
 	(save-excursion
 	  (while (re-search-forward regexp nil t)
 	    ;; `org-capture-escaped-%' may modify buffer and cripple
@@ -1679,6 +1691,7 @@ The template may still contain \"%?\" for cursor positioning."
 			  (?k v-k)
 			  (?K v-K)
 			  (?l v-l)
+			  (?L v-L)
 			  (?n v-n)
 			  (?t v-t)
 			  (?T v-T)
@@ -1780,7 +1793,8 @@ The template may still contain \"%?\" for cursor positioning."
 					   (setq l (org-up-heading-safe)))
 					 (if l (point-marker)
 					   (point-min-marker)))))))
-			    (value (org-read-property-value prompt pom)))
+			    (value
+			     (org-read-property-value prompt pom default)))
 		       (org-set-property prompt value)))
 		    ((or "t" "T" "u" "U")
 		     ;; These are the date/time related ones.

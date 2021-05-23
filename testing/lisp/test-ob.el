@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -1084,7 +1084,25 @@ trying to find the :END: marker."
     (org-babel-execute-src-block)
     (goto-char (point-min))
     (should (search-forward "[[file:foo][bar]]" nil t))
-    (should (search-forward "[[file:foo][foo]]" nil t))))
+    (should (search-forward "[[file:foo][foo]]" nil t)))
+  (should (string-match-p
+           (regexp-quote "[[file:foo]]")
+           (org-test-with-temp-text "
+#+begin_src emacs-lisp :results file :file-desc []
+  \"foo\"
+#+end_src"
+             (org-babel-next-src-block)
+             (org-babel-execute-src-block)
+             (buffer-substring-no-properties (point-min) (point-max)))))
+  (should (string-match-p
+           (regexp-quote "[[file:foo][foo]]")
+           (org-test-with-temp-text "
+#+begin_src emacs-lisp :results file :file-desc
+  \"foo\"
+#+end_src"
+             (org-babel-next-src-block)
+             (org-babel-execute-src-block)
+             (buffer-substring-no-properties (point-min) (point-max))))))
 
 (ert-deftest test-ob/result-file-link-type-header-argument ()
   "Ensure that the result is a link to a file.

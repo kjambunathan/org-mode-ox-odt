@@ -2,7 +2,7 @@
 ;;
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 ;;
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;;	   Bastien Guerry <bzg@gnu.org>
 ;;         Dan Davison <davison at stats dot ox dot ac dot uk>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -679,7 +679,7 @@ This minor mode is turned on in two situations:
 \\{org-src-mode-map}
 
 See also `org-src-mode-hook'."
-  nil " OrgSrc" nil
+  :lighter " OrgSrc"
   (when org-edit-src-persistent-message
     (setq header-line-format
 	  (substitute-command-keys

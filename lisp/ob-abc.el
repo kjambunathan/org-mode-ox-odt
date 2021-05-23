@@ -3,6 +3,7 @@
 ;; Copyright (C) 2013-2021 Free Software Foundation, Inc.
 
 ;; Author: William Waites
+;; Maintainer: William Waites
 ;; Keywords: literate programming, music
 ;; Homepage: https://www.tardis.ed.ac.uk/~wwaites
 

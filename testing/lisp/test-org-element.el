@@ -15,7 +15,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -523,46 +523,28 @@ Some other text
 
 (ert-deftest test-org-element/citation-parser ()
   "Test `citation' parser"
-  ;; Parse simple parenthetical citations.  They imply non-nil
-  ;; `:parenthetical' property.
-  (should
-   (eq 'citation
-       (org-test-with-temp-text "[@key]"
-	 (org-element-type (org-element-context)))))
-  (should
-   (org-test-with-temp-text "[@key]"
-     (org-element-property :parenthetical (org-element-context))))
-  ;; Key in a simple parenthetical citation must start with an
-  ;; alphabetic character or an underscore.
-  (should
-   (eq 'citation
-       (org-test-with-temp-text "[@_key]"
-	 (org-element-type (org-element-context)))))
-  (should-not
-   (eq 'citation
-       (org-test-with-temp-text "[@1key]"
-	 (org-element-type (org-element-context)))))
-  ;; Parse citation lists.  They must contain at least a bare key.
+  ;; Parse citations.  They must contain at least a bare key.
   (should
    (eq 'citation
        (org-test-with-temp-text "[cite:@key]"
 	 (org-element-type (org-element-context)))))
   (should
    (eq 'citation
-       (org-test-with-temp-text "[(cite):@key]"
+       (org-test-with-temp-text "[cite:-@key]"
 	 (org-element-type (org-element-context)))))
   (should-not
    (eq 'citation
        (org-test-with-temp-text "[cite:text]"
 	 (org-element-type (org-element-context)))))
-  ;; "cite" tag implies nil `:parenthetical' property.  "(cite)"
-  ;; implies a non-nil `:parenthetical' property.
-  (should-not
-   (org-test-with-temp-text "[cite:@key]"
-     (org-element-property :parenthetical (org-element-context))))
+  ;; Citation may contain a style.
   (should
-   (org-test-with-temp-text "[(cite):@key]"
-     (org-element-property :parenthetical (org-element-context))))
+   (eq 'citation
+       (org-test-with-temp-text "[cite/style:@key]"
+	 (org-element-type (org-element-context)))))
+  (should
+   (equal "style"
+	  (org-test-with-temp-text "[cite/style:@key]"
+	    (org-element-property :style (org-element-context)))))
   ;; Handle multi citations separated with semi-columns.
   (should
    (eq 'citation
@@ -570,9 +552,18 @@ Some other text
 	 (org-element-type (org-element-context)))))
   (should
    (equal '("a" "b" "c")
-      (org-test-with-temp-text "[cite:@a;@b;@c]"
-	(org-element-map (org-element-parse-buffer) 'citation-reference
-	  (lambda (r) (org-element-property :key r))))))
+	  (org-test-with-temp-text "[cite:@a;@b;@c]"
+	    (org-element-map (org-element-parse-buffer) 'citation-reference
+	      (lambda (r) (org-element-property :key r))))))
+  (should
+   (eq 'citation
+       (org-test-with-temp-text "[cite:@a;-@b]"
+	 (org-element-type (org-element-context)))))
+  (should
+   (equal '("a" "b")
+	  (org-test-with-temp-text "[cite:@a;-@b]"
+	    (org-element-map (org-element-parse-buffer) 'citation-reference
+	      (lambda (r) (org-element-property :key r))))))
   ;; Multi citations accept `:prefix' and `:suffix' properties.
   (should
    (equal '("common-prefix")
@@ -581,6 +572,16 @@ Some other text
   (should
    (equal '("common-suffix")
 	  (org-test-with-temp-text "[cite:@a;common-suffix]"
+	    (org-element-property :suffix (org-element-context)))))
+  ;; White spaces right after "cite" tags are ignored. So are white
+  ;; spaces at the end of the citation.
+  (should
+   (equal '("common-prefix ")
+	  (org-test-with-temp-text "[cite: common-prefix ;@a]"
+	    (org-element-property :prefix (org-element-context)))))
+  (should
+   (equal '(" common-suffix")
+	  (org-test-with-temp-text "[cite: @a; common-suffix ]"
 	    (org-element-property :suffix (org-element-context))))))
 
 
@@ -588,70 +589,73 @@ Some other text
 
 (ert-deftest test-org-element/citation-reference-parser ()
   "Test `citation' reference parser."
-  ;; Parse bare keys.  They imply nil `:parenthetical' property.
+  ;; Parse bare keys.
   (should
    (eq 'citation-reference
-       (org-test-with-temp-text "@key"
+       (org-test-with-temp-text "[cite:<point>@key]"
 	 (org-element-type (org-element-context)))))
-  (should-not
-   (org-test-with-temp-text "@key"
-     (org-element-property
-      :parenthetical (org-element-property :parent (org-element-context)))))
-  ;; Bare keys must start with an alphabetic character or an
-  ;; underscore, can contain some punctuation characters, but must end
-  ;; on an alphanumeric character or an underscore.
+  ;; Bare keys can contain any word character, and some punctuation,
+  ;; but not semicolon, square brackets, and space.
   (should
    (equal "_key"
-	  (org-test-with-temp-text "@_k<point>ey"
+	  (org-test-with-temp-text "[cite:@_k<point>ey]"
 	    (org-element-property :key (org-element-context)))))
   (should
    (eq 'citation-reference
-       (org-test-with-temp-text "@a"
+       (org-test-with-temp-text "[cite:<point>@a]"
 	 (org-element-type (org-element-context)))))
   (should
    (eq 'citation-reference
-       (org-test-with-temp-text "@ö"
+       (org-test-with-temp-text "[cite:<point>@ö]"
 	 (org-element-type (org-element-context)))))
   (should
    (eq 'citation-reference
-       (org-test-with-temp-text "@_"
+       (org-test-with-temp-text "[cite:<point>@_]"
 	 (org-element-type (org-element-context)))))
   (should
    (equal "a:.#$%&-+?<>~/1"
-	  (org-test-with-temp-text "@a:.#$%&-+?<>~/1"
+	  (org-test-with-temp-text "[cite:<point>@a:.#$%&-+?<>~/1]"
 	    (org-element-property :key (org-element-context)))))
   (should-not
    (eq 'citation-reference
-       (org-test-with-temp-text "@1key"
+       (org-test-with-temp-text "[cite:<point>@;]"
 	 (org-element-type (org-element-context)))))
-  (should
+  (should-not
    (equal "key"
-	  (org-test-with-temp-text "@key:.#$%&-+?<>~/"
+	  (org-test-with-temp-text "[cite:<point>@[]]"
 	    (org-element-property :key (org-element-context)))))
-  ;; Bare keys must be located at bol or preceded by a whitespace.
-  (should
-   (eq 'citation-reference
-       (org-test-with-temp-text "Word <point>@key"
-	 (org-element-type (org-element-context)))))
-  (should-not
-   (eq 'citation-reference
-       (org-test-with-temp-text "Word<point>@key"
-	 (org-element-type (org-element-context)))))
-  ;; References in citation lists accept optional `:prefix' and
-  ;; `:suffix' properties, as secondary strings.
+  ;; References in citations accept optional `:prefix' and `:suffix'
+  ;; properties.
   (should
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite:pre <point>@key]"
 	    (org-element-property :prefix (org-element-context)))))
   (should
    (equal '(" post")
-	  (org-test-with-temp-text "[cite:@key<point> post]"
+	  (org-test-with-temp-text "[cite:<point>@key post]"
 	    (org-element-property :suffix (org-element-context)))))
   ;; White spaces between "cite" tag and prefix are ignored.
   (should
    (equal '("pre ")
 	  (org-test-with-temp-text "[cite: pre <point>@key]"
-	    (org-element-property :prefix (org-element-context))))))
+	    (org-element-property :prefix (org-element-context)))))
+  ;; Semicolons do not belong to prefix or suffix.
+  (should
+   (equal '("pre ")
+	  (org-test-with-temp-text "[cite:@key1;pre <point>@key2]"
+	    (org-element-property :prefix (org-element-context)))))
+  (should
+   (equal '(" post")
+	  (org-test-with-temp-text "[cite:@key1 <point>post;@key2]"
+	    (org-element-property :suffix (org-element-context)))))
+  (should
+   (equal '("pre ")
+	  (org-test-with-temp-text "[cite:global prefix;pre<point> @key1]"
+	    (org-element-property :prefix (org-element-context)))))
+  (should
+   (equal '(" post")
+	  (org-test-with-temp-text "[cite:@key1 <point>post; global suffix]"
+	    (org-element-property :suffix (org-element-context))))))
 
 ;;;; Clock
 
@@ -3260,19 +3264,33 @@ DEADLINE: <2012-03-29 thu.> SCHEDULED: <2012-03-29 thu.> CLOSED: [2012-03-29 thu
 
 (ert-deftest test-org-element/citation-interpreter ()
   "Test citation interpreter."
-  (should (equal (org-test-parse-and-interpret "@key") "[cite:@key]\n"))
-  (should (equal (org-test-parse-and-interpret "[@key]") "[(cite):@key]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:@key]") "[cite:@key]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:pre @key]")
-		 "[cite:pre @key]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:@key post]")
-		 "[cite:@key post]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:@a;@b;@c]")
-		 "[cite:@a;@b;@c]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:common-pre ; @a]")
-		 "[cite:common-pre ; @a]\n"))
-  (should (equal (org-test-parse-and-interpret "[cite:@a ; common-post]")
-		 "[cite:@a ; common-post]\n")))
+  (should
+   (equal "[cite:@key]\n"
+	  (org-test-parse-and-interpret "[cite:@key]")))
+  (should
+   (equal "[cite:-@key]\n"
+	  (org-test-parse-and-interpret "[cite:-@key]")))
+  (should
+   (equal "[cite/style:@key]\n"
+	  (org-test-parse-and-interpret "[cite/style:@key]")))
+  (should
+   (equal "[cite:pre @key]\n"
+	  (org-test-parse-and-interpret "[cite:pre @key]")))
+  (should
+   (equal "[cite:@key post]\n"
+	  (org-test-parse-and-interpret "[cite:@key post]")))
+  (should
+   (equal "[cite:@a ;b]\n"
+	  (org-test-parse-and-interpret "[cite: @a ;b]")))
+  (should
+   (equal "[cite:@a;@b;@c]\n"
+	  (org-test-parse-and-interpret "[cite:@a;@b;@c]")))
+  (should
+   (equal "[cite:common-pre ; @a]\n"
+	  (org-test-parse-and-interpret "[cite:common-pre ; @a]")))
+  (should
+   (equal "[cite:@a ; common-post]\n"
+	  (org-test-parse-and-interpret "[cite:@a ; common-post]"))))
 
 (ert-deftest test-org-element/code-interpreter ()
   "Test code interpreter."
@@ -4042,6 +4060,21 @@ Text
 	    :end (org-element-property :parent (org-element-at-point)))
 	   (+ parent-end 3))))))
 
+(ert-deftest test-org-element/cache-bugs ()
+  "Test basic expectations and common pitfalls for cache."
+  :expected-result :failed
+  ;; Unindented second row of the table should not be re-parented by
+  ;; inserted item.
+  (should
+   (eq 'table
+       (let ((org-element-use-cache t))
+	 (org-test-with-temp-text
+	  "#+begin_center\nP0\n\n<point>\n\n  P1\n  | a | b |\n| c | d |\n#+end_center"
+	  (save-excursion (search-forward "| c |") (org-element-at-point))
+	  (insert "- item")
+	  (search-forward "| c |")
+	  (beginning-of-line)
+	  (org-element-type (org-element-at-point)))))))
 
 (provide 'test-org-element)
 

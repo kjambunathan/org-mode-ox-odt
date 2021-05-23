@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
 ;;
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -85,15 +85,13 @@ it may be prettier to customize the `org-indent' face."
   :type 'character)
 
 (defcustom org-indent-mode-turns-off-org-adapt-indentation t
-  "Non-nil means setting the variable `org-indent-mode' will \
-turn off indentation adaptation.
+  "Non-nil means setting `org-indent-mode' will turn off indentation adaptation.
 For details see the variable `org-adapt-indentation'."
   :group 'org-indent
   :type 'boolean)
 
 (defcustom org-indent-mode-turns-on-hiding-stars t
-  "Non-nil means setting the variable `org-indent-mode' will \
-turn on `org-hide-leading-stars'."
+  "Non-nil means setting `org-indent-mode' will turn on `org-hide-leading-stars'."
   :group 'org-indent
   :type 'boolean)
 
@@ -169,7 +167,7 @@ properties, after each buffer modification, on the modified zone.
 The process is synchronous.  Though, initial indentation of
 buffer, which can take a few seconds on large buffers, is done
 during idle time."
-  nil " Ind" nil
+  :lighter " Ind"
   (cond
    (org-indent-mode
     ;; mode was turned on.

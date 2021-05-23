@@ -4,6 +4,7 @@
 
 ;; Author: Eric Schulte
 ;;	Dan Davison
+;; Maintainer: Jeremie Juste
 ;; Keywords: literate programming, reproducible research, R, statistics
 ;; Homepage: https://orgmode.org
 
@@ -348,7 +349,7 @@ Each member of this list is a list with three members:
                         {
                             tfile<-tempfile()
                             write.table(object, file=tfile, sep=\"\\t\",
-                                        na=\"nil\",row.names=%s,col.names=%s,
+                                        na=\"\",row.names=%s,col.names=%s,
                                         quote=FALSE)
                             file.rename(tfile,transfer.file)
                         },
@@ -361,7 +362,7 @@ Each member of this list is a list with three members:
             )
     }
 }(object=%s,transfer.file=\"%s\")"
-  "A template for an R command to evaluate a block of code and write the result to a file.
+  "Template for an R command to evaluate a block of code and write result to file.
 
 Has four %s escapes to be filled in:
 1. Row names, \"TRUE\" or \"FALSE\"
@@ -450,11 +451,13 @@ last statement in BODY, as elisp."
 		      (car (split-string line "\n")))
 		     (substring line (match-end 1))
 		   line))
-	       (org-babel-comint-with-output (session org-babel-R-eoe-output)
-		 (insert (mapconcat 'org-babel-chomp
-				    (list body org-babel-R-eoe-indicator)
-				    "\n"))
-		 (inferior-ess-send-input)))))) "\n"))))
+	       (with-current-buffer session
+		 (let ((comint-prompt-regexp (concat "^" comint-prompt-regexp)))
+		   (org-babel-comint-with-output (session org-babel-R-eoe-output)
+		     (insert (mapconcat 'org-babel-chomp
+					(list body org-babel-R-eoe-indicator)
+					"\n"))
+		     (inferior-ess-send-input)))))))) "\n"))))
 
 (defun org-babel-R-process-value-result (result column-names-p)
   "R-specific processing of return value.

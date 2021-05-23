@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Authors: Carsten Dominik <carsten at orgmode dot org>
+;; Authors: Carsten Dominik <carsten.dominik@gmail.com>
 ;;       Thomas Baumann <thomas dot baumann at ch dot tum dot de>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
@@ -431,7 +431,7 @@ variable to be globally bound."
 ;;; to override the 7-day default.
 
 (defun org-bbdb-date-list (d n)
-  "Return a list of dates in (m d y) format from the given date D to n-1 days hence."
+  "Return list of dates in (m d y) format from the given date D to n-1 days hence."
   (let ((abs (calendar-absolute-from-gregorian d)))
     (mapcar (lambda (i) (calendar-gregorian-from-absolute (+ abs i)))
 	    (number-sequence 0 (1- n)))))

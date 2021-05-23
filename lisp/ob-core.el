@@ -646,6 +646,14 @@ a list with the following pattern:
       (replace-regexp-in-string
        (org-src-coderef-regexp coderef) "" expand nil nil 1))))
 
+(defun org-babel--file-desc (params result)
+  "Retrieve file description."
+  (pcase (assq :file-desc params)
+    (`nil nil)
+    (`(:file-desc) result)
+    (`(:file-desc . ,(and (pred stringp) val)) val)
+    (`(:file-desc . []) nil)))
+
 ;;;###autoload
 (defun org-babel-execute-src-block (&optional arg info params)
   "Execute the current source code block.
@@ -749,8 +757,7 @@ block."
 		    (let ((*this* (if (not file) result
 				    (org-babel-result-to-file
 				     file
-				     (let ((desc (assq :file-desc params)))
-				       (and desc (or (cdr desc) result)))))))
+				     (org-babel--file-desc params result)))))
 		      (setq result (org-babel-ref-resolve post))
 		      (when file
 			(setq result-params (remove "file" result-params))))))
@@ -802,27 +809,6 @@ arguments and pop open the results in a preview buffer."
 	 expanded (concat "*Org-Babel Preview " (buffer-name) "[ " lang " ]*"))
       expanded)))
 
-(defun org-babel-edit-distance (s1 s2)
-  "Return the edit (levenshtein) distance between strings S1 S2."
-  (let* ((l1 (length s1))
-	 (l2 (length s2))
-	 (dist (vconcat (mapcar (lambda (_) (make-vector (1+ l2) nil))
-				(number-sequence 1 (1+ l1)))))
-	 (in (lambda (i j) (aref (aref dist i) j))))
-    (setf (aref (aref dist 0) 0) 0)
-    (dolist (j (number-sequence 1 l2))
-      (setf (aref (aref dist 0) j) j))
-    (dolist (i (number-sequence 1 l1))
-      (setf (aref (aref dist i) 0) i)
-      (dolist (j (number-sequence 1 l2))
-	(setf (aref (aref dist i) j)
-	      (min
-	       (1+ (funcall in (1- i) j))
-	       (1+ (funcall in i (1- j)))
-	       (+ (if (equal (aref s1 (1- i)) (aref s2 (1- j))) 0 1)
-		  (funcall in (1- i) (1- j)))))))
-    (funcall in l1 l2)))
-
 (defun org-babel-combine-header-arg-lists (original &rest others)
   "Combine a number of lists of header argument names and arguments."
   (let ((results (copy-sequence original)))
@@ -851,7 +837,7 @@ arguments and pop open the results in a preview buffer."
 				   (match-string 4))))))
       (dolist (name names)
 	(when (and (not (string= header name))
-		   (<= (org-babel-edit-distance header name) too-close)
+		   (<= (org-string-distance header name) too-close)
 		   (not (member header names)))
 	  (error "Supplied header \"%S\" is suspiciously close to \"%S\""
 		 header name))))
@@ -1100,7 +1086,7 @@ end-header-args -- point at the end of the header-args
 body ------------- string holding the body of the code block
 beg-body --------- point at the beginning of the body
 end-body --------- point at the end of the body"
-  (declare (indent 1))
+  (declare (indent 1) (debug t))
   (let ((tempvar (make-symbol "file")))
     `(let* ((case-fold-search t)
 	    (,tempvar ,file)
@@ -1139,7 +1125,6 @@ end-body --------- point at the end of the body"
 	       (goto-char end-block)))))
        (unless visited-p (kill-buffer to-be-removed))
        (goto-char point))))
-(def-edebug-spec org-babel-map-src-blocks (form body))
 
 ;;;###autoload
 (defmacro org-babel-map-inline-src-blocks (file &rest body)
@@ -1354,7 +1339,7 @@ the `org-mode-hook'."
 	(goto-char (match-beginning 0))
 	(org-babel-hide-hash)
 	(goto-char (match-end 0))))))
-(add-hook 'org-mode-hook 'org-babel-hide-all-hashes)
+(add-hook 'org-mode-hook #'org-babel-hide-all-hashes)
 
 (defun org-babel-hash-at-point (&optional point)
   "Return the value of the hash at POINT.
@@ -1372,7 +1357,7 @@ This can be called with `\\[org-ctrl-c-ctrl-c]'."
 Add `org-babel-hide-result' as an invisibility spec for hiding
 portions of results lines."
   (add-to-invisibility-spec '(org-babel-hide-result . t)))
-(add-hook 'org-mode-hook 'org-babel-result-hide-spec)
+(add-hook 'org-mode-hook #'org-babel-result-hide-spec)
 
 (defvar org-babel-hide-result-overlays nil
   "Overlays hiding results.")
@@ -1443,11 +1428,11 @@ portions of results lines."
 	(push ov org-babel-hide-result-overlays)))))
 
 ;; org-tab-after-check-for-cycling-hook
-(add-hook 'org-tab-first-hook 'org-babel-hide-result-toggle-maybe)
+(add-hook 'org-tab-first-hook #'org-babel-hide-result-toggle-maybe)
 ;; Remove overlays when changing major mode
 (add-hook 'org-mode-hook
 	  (lambda () (add-hook 'change-major-mode-hook
-			  'org-babel-show-result-all 'append 'local)))
+			  #'org-babel-show-result-all 'append 'local)))
 
 (defun org-babel-params-from-properties (&optional lang no-eval)
   "Retrieve source block parameters specified as properties.
@@ -2257,9 +2242,8 @@ INFO may provide the values of these header arguments (in the
 	 (setq result (org-no-properties result))
 	 (when (member "file" result-params)
 	   (setq result (org-babel-result-to-file
-			 result (when (assq :file-desc (nth 2 info))
-				  (or (cdr (assq :file-desc (nth 2 info)))
-				      result))))))
+			 result
+			 (org-babel--file-desc (nth 2 info) result)))))
 	((listp result))
 	(t (setq result (format "%S" result))))
   (if (and result-params (member "silent" result-params))
@@ -2554,8 +2538,9 @@ in the buffer."
 	 (let ((element (org-element-at-point)))
 	   (if (memq (org-element-type element)
 		     ;; Possible results types.
-		     '(drawer example-block export-block fixed-width item
-			      plain-list special-block src-block table))
+                     '(drawer example-block export-block fixed-width
+                              special-block src-block item plain-list table
+                              latex-environment))
 	       (save-excursion
 		 (goto-char (min (point-max) ;for narrowed buffers
 				 (org-element-property :end element)))
@@ -2995,7 +2980,7 @@ situations in which is it not appropriate."
   "If STRING represents a number return its value.
 Otherwise return nil."
   (unless (or (string-match-p "\\s-" (org-trim string))
-	      (not (string-match-p "^[0-9-e.+ ]+$" string)))
+	      (not (string-match-p "^[0-9e.+ -]+$" string)))
     (let ((interned-string (ignore-errors (read string))))
       (when (numberp interned-string)
 	interned-string))))
@@ -3075,8 +3060,7 @@ Emacs shutdown."))
 
 (defmacro org-babel-result-cond (result-params scalar-form &rest table-forms)
   "Call the code to parse raw string results according to RESULT-PARAMS."
-  (declare (indent 1)
-	   (debug (form form &rest form)))
+  (declare (indent 1) (debug t))
   (org-with-gensyms (params)
     `(let ((,params ,result-params))
        (unless (member "none" ,params)
@@ -3093,7 +3077,6 @@ Emacs shutdown."))
 		      (not (member "table" ,params))))
 	     ,scalar-form
 	   ,@table-forms)))))
-(def-edebug-spec org-babel-result-cond (form form body))
 
 (defun org-babel-temp-file (prefix &optional suffix)
   "Create a temporary file in the `org-babel-temporary-directory'.
@@ -3136,7 +3119,7 @@ of `org-babel-temporary-directory'."
 		    org-babel-temporary-directory
 		  "[directory not defined]"))))))
 
-(add-hook 'kill-emacs-hook 'org-babel-remove-temporary-directory)
+(add-hook 'kill-emacs-hook #'org-babel-remove-temporary-directory)
 
 (defun org-babel-one-header-arg-safe-p (pair safe-list)
   "Determine if the PAIR is a safe babel header arg according to SAFE-LIST.

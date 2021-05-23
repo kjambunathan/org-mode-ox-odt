@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -438,12 +438,11 @@ specifications than `frame-title-format', which see."
 (defcustom org-clock-x11idle-program-name "x11idle"
   "Name of the program which prints X11 idle time in milliseconds.
 
-You can find x11idle.c in the contrib/scripts directory of the
-Org git distribution. Or, you can do:
+you can do \"~$ sudo apt-get install xprintidle\" if you are using
+a Debian-based distribution.
 
-    sudo apt-get install xprintidle
-
-if you are using Debian."
+Alternatively, can find x11idle.c in the org-contrib repository at
+https://git.sr.ht/~bzg/org-contrib"
   :group 'org-clock
   :version "24.4"
   :package-version '(Org . "8.0")
@@ -484,6 +483,17 @@ is added to the user configuration."
   :type '(choice
 	  (integer :tag "Clock out after Emacs is idle for X seconds")
 	  (const :tag "Never auto clock out" nil)))
+
+(defcustom org-clock-ask-before-exiting t
+  "If non-nil, ask if the user wants to clock out before exiting Emacs.
+This variable only has effect if set with \\[customize]."
+  :set (lambda (symbol value)
+         (if value
+             (add-hook 'kill-emacs-query-functions #'org-clock-kill-emacs-query)
+           (remove-hook 'kill-emacs-query-functions #'org-clock-kill-emacs-query))
+         (set symbol value))
+  :type 'boolean
+  :package-version '(Org . "9.5"))
 
 (defvar org-clock-in-prepare-hook nil
   "Hook run when preparing the clock.
@@ -606,10 +616,6 @@ cannot be translated."
 	     (if (stringp log-drawer) log-drawer "LOGBOOK")))
 	  ((stringp drawer) drawer)
 	  (t nil))))
-
-(defun org-clocking-buffer ()
-  "Return the clocking buffer if we are currently clocking a task or nil."
-  (marker-buffer org-clock-marker))
 
 (defun org-clocking-p ()
   "Return t when clocking a task."
@@ -911,17 +917,17 @@ If CLOCK-SOUND is non-nil, it overrides `org-clock-sound'."
 
 (defmacro org-with-clock-position (clock &rest forms)
   "Evaluate FORMS with CLOCK as the current active clock."
+  (declare (indent 1) (debug t))
   `(with-current-buffer (marker-buffer (car ,clock))
      (org-with-wide-buffer
       (goto-char (car ,clock))
       (beginning-of-line)
       ,@forms)))
-(def-edebug-spec org-with-clock-position (form body))
-(put 'org-with-clock-position 'lisp-indent-function 1)
 
 (defmacro org-with-clock (clock &rest forms)
   "Evaluate FORMS with CLOCK as the current active clock.
 This macro also protects the current active clock from being altered."
+  (declare (indent 1) (debug t))
   `(org-with-clock-position ,clock
      (let ((org-clock-start-time (cdr ,clock))
 	   (org-clock-total-time)
@@ -932,8 +938,6 @@ This macro also protects the current active clock from being altered."
 				  (org-back-to-heading t)
 				  (point-marker))))
        ,@forms)))
-(def-edebug-spec org-with-clock (form body))
-(put 'org-with-clock 'lisp-indent-function 1)
 
 (defsubst org-clock-clock-in (clock &optional resume start-time)
   "Clock in to the clock located by CLOCK.
@@ -1164,13 +1168,12 @@ If `only-dangling-p' is non-nil, only ask to resolve dangling
 		  (org-clock-resolve
 		   clock
 		   (or prompt-fn
-		       (function
-			(lambda (clock)
-			  (format
-			   "Dangling clock started %d mins ago"
-			   (floor (org-time-convert-to-integer
-                                   (org-time-since (cdr clock)))
-                                  60)))))
+		       (lambda (clock)
+			 (format
+			  "Dangling clock started %d mins ago"
+			  (floor (org-time-convert-to-integer
+				  (org-time-since (cdr clock)))
+				 60))))
 		   (or last-valid
 		       (cdr clock)))))))))))
 
@@ -2241,7 +2244,7 @@ have priority."
 		  ((>= month 7) 3)
 		  ((>= month 4) 2)
 		  (t 1)))
-	 m1 h1 d1 month1 y1 shiftedy shiftedm shiftedq)
+	 h1 d1 month1 y1 shiftedy shiftedm shiftedq) ;; m1
     (cond
      ((string-match "\\`[0-9]+\\'" skey)
       (setq y (string-to-number skey) month 1 d 1 key 'year))
@@ -2344,7 +2347,7 @@ have priority."
 		  (`interactive (org-read-date nil t nil "Range end? "))
 		  (`untilnow (current-time))
 		  (_ (encode-time 0
-				  (or m1 m)
+				  m ;; (or m1 m)
 				  (or h1 h)
 				  (or d1 d)
 				  (or month1 month)
@@ -2391,7 +2394,7 @@ the currently selected interval size."
 	(user-error "Line needs a :block definition before this command works")
       (let* ((b (match-beginning 1)) (e (match-end 1))
 	     (s (match-string 1))
-	     block shift ins y mw d date wp m)
+	     block shift ins y mw d date wp) ;; m
 	(cond
 	 ((equal s "yesterday") (setq s "today-1"))
 	 ((equal s "lastweek") (setq s "thisweek-1"))
@@ -2416,7 +2419,7 @@ the currently selected interval size."
 	  (cond
 	   (d (setq ins (format-time-string
 			 "%Y-%m-%d"
-			 (encode-time 0 0 0 (+ d n) m y))))
+			 (encode-time 0 0 0 (+ d n) nil y)))) ;; m
 	   ((and wp (string-match "w\\|W" wp) mw (> (length wp) 0))
 	    (require 'cal-iso)
 	    (setq date (calendar-gregorian-from-absolute
@@ -2698,7 +2701,18 @@ from the dynamic block definition."
 	     (format (concat "| %s %s | %s%s%s"
 			     (format org-clock-file-time-cell-format
 				     (org-clock--translate "File time" lang))
-			     " | *%s*|\n")
+
+			     ;; The file-time rollup value goes in the first time
+			     ;; column (of which there is always at least one)...
+			     " | *%s*|"
+			     ;; ...and the remaining file time cols (if any) are blank.
+			     (make-string (max 0 (1- time-columns)) ?|)
+
+			     ;; Optionally show the percentage contribution of "this"
+			     ;; file time to the total time.
+			     (if (eq formula '%) " %s |" "")
+			     "\n")
+
 		     (file-name-nondirectory file-name)
 		     (if level?    "| " "") ;level column, maybe
 		     (if timestamp "| " "") ;timestamp column, maybe
@@ -2706,7 +2720,12 @@ from the dynamic block definition."
 		     (if properties	    ;properties columns, maybe
 			 (make-string (length properties) ?|)
 		       "")
-		     (org-duration-from-minutes file-time)))) ;time
+		     (org-duration-from-minutes file-time) ;time
+
+		     (cond ((not (eq formula '%)) "")	   ;time percentage, maybe
+			   ((or (not total-time) (= total-time 0)) "0.0")
+			   (t
+			    (format "%.1f" (* 100 (/ file-time (float total-time)))))))))
 
 	  ;; Get the list of node entries and iterate over it
 	  (when (> maxlevel 0)
@@ -3102,6 +3121,17 @@ The details of what will be saved are regulated by the variable
 	       (org-clock-in)
 	       (when (org-invisible-p) (org-show-context))))))
 	(_ nil)))))
+
+(defun org-clock-kill-emacs-query ()
+  "Query user when killing Emacs.
+This function is added to `kill-emacs-query-functions'."
+  (let ((buf (org-clocking-buffer)))
+    (when (and buf (yes-or-no-p "Clock out and save? "))
+      (with-current-buffer buf
+        (org-clock-out)
+        (save-buffer))))
+  ;; Unconditionally return t for `kill-emacs-query-functions'.
+  t)
 
 ;; Suggested bindings
 (org-defkey org-mode-map "\C-c\C-x\C-e" 'org-clock-modify-effort-estimate)

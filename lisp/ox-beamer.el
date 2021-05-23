@@ -4,6 +4,7 @@
 
 ;; Author: Carsten Dominik <carsten.dominik AT gmail DOT com>
 ;;         Nicolas Goaziou <n.goaziou AT gmail DOT com>
+;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: org, wp, tex
 
 ;; This file is part of GNU Emacs.
@@ -379,13 +380,12 @@ used as a communication channel."
 	   :parent 'latex
 	   :transcoders
 	   (let ((protected-output
-		  (function
-		   (lambda (object contents info)
-		     (let ((code (org-export-with-backend
-				  'beamer object contents info)))
-		       (if (org-string-nw-p code) (concat "\\protect" code)
-			 code))))))
-	     (mapcar #'(lambda (type) (cons type protected-output))
+		  (lambda (object contents info)
+		    (let ((code (org-export-with-backend
+				 'beamer object contents info)))
+		      (if (org-string-nw-p code) (concat "\\protect" code)
+			code)))))
+             (mapcar (lambda (type) (cons type protected-output))
 		     '(bold footnote-reference italic strike-through timestamp
 			    underline))))
 	  headline
@@ -812,17 +812,16 @@ holding export options."
      (org-latex-make-preamble info)
      ;; Insert themes.
      (let ((format-theme
-	    (function
-	     (lambda (prop command)
-	       (let ((theme (plist-get info prop)))
-		 (when theme
-		   (concat command
-			   (if (not (string-match "\\[.*\\]" theme))
-			       (format "{%s}\n" theme)
-			     (format "%s{%s}\n"
-				     (match-string 0 theme)
-				     (org-trim
-				      (replace-match "" nil nil theme)))))))))))
+	    (lambda (prop command)
+	      (let ((theme (plist-get info prop)))
+		(when theme
+		  (concat command
+			  (if (not (string-match "\\[.*\\]" theme))
+			      (format "{%s}\n" theme)
+			    (format "%s{%s}\n"
+				    (match-string 0 theme)
+				    (org-trim
+				     (replace-match "" nil nil theme))))))))))
        (mapconcat (lambda (args) (apply format-theme args))
 		  '((:beamer-theme "\\usetheme")
 		    (:beamer-color-theme "\\usecolortheme")
@@ -895,14 +894,16 @@ holding export options."
 ;;; Minor Mode
 
 
-(defvar org-beamer-mode-map (make-sparse-keymap)
+(defvar org-beamer-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "\C-c\C-b" 'org-beamer-select-environment)
+    map)
   "The keymap for `org-beamer-mode'.")
-(define-key org-beamer-mode-map "\C-c\C-b" 'org-beamer-select-environment)
 
 ;;;###autoload
 (define-minor-mode org-beamer-mode
   "Support for editing Beamer oriented Org mode files."
-  nil " Bm" 'org-beamer-mode-map)
+  :lighter " Bm")
 
 (when (fboundp 'font-lock-add-keywords)
   (font-lock-add-keywords

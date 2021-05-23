@@ -932,7 +932,7 @@ using customize, or with
   (add-to-list \\='org-latex-packages-alist \\='(\"newfloat\" \"minted\"))
 
 In addition, it is necessary to install pygments
-\(URL `http://pygments.org>'), and to configure the variable
+\(URL `https://pygments.org>'), and to configure the variable
 `org-latex-pdf-process' so that the -shell-escape option is
 passed to pdflatex.
 
@@ -1889,10 +1889,11 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		(org-export-get-footnote-definition footnote-reference info)
 		info t)))
       ;; Use \footnotemark if reference is within another footnote
-      ;; reference, footnote definition, table cell or item's tag.
+      ;; reference, footnote definition, table cell, verse block, or
+      ;; item's tag.
       ((or (org-element-lineage footnote-reference
 				'(footnote-reference footnote-definition
-						     table-cell))
+						     table-cell verse-block))
 	   (eq 'item (org-element-type
 		      (org-export-get-parent-element footnote-reference))))
        "\\footnotemark")
@@ -1904,7 +1905,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		  ;; Only insert a \label if there exist another
 		  ;; reference to def.
 		  (cond ((not label) "")
-			((org-element-map (plist-get info :parse-tree) 'footnote-reference
+			((org-element-map (plist-get info :parse-tree)
+			     'footnote-reference
 			   (lambda (f)
 			     (and (not (eq f footnote-reference))
 				  (equal (org-element-property :label f) label)
@@ -2382,8 +2384,8 @@ used as a communication channel."
 			((string= float "sideways") 'sideways)
 			((string= float "multicolumn") 'multicolumn)
 			((and (plist-member attr :float) (not float)) 'nonfloat)
-			((or float
-			     (org-element-property :caption parent)
+                        (float float)
+			((or (org-element-property :caption parent)
 			     (org-string-nw-p (plist-get attr :caption)))
 			 'figure)
 			(t 'nonfloat))))
@@ -2475,6 +2477,18 @@ used as a communication channel."
 						   nil t))))
     ;; Return proper string, depending on FLOAT.
     (pcase float
+      ((and (pred stringp) env-string)
+       (format "\\begin{%s}%s
+%s%s
+%s%s
+%s\\end{%s}"
+               env-string
+               placement
+               (if caption-above-p caption "")
+               (if center "\\centering" "")
+               comment-include image-code
+               (if caption-above-p "" caption)
+               env-string))
       (`wrap (format "\\begin{wrapfigure}%s
 %s%s
 %s%s
@@ -3205,9 +3219,9 @@ centered."
 (defun org-latex--decorate-table (table attributes caption above? info)
   "Decorate TABLE string with caption and float environment.
 
-ATTRIBUTES is the plist containing is LaTeX attributes.  CAPTION
-is its caption, as a string or nil.  It is located above the
-table if ABOVE? is non-nil.  INFO is the plist containing current
+ATTRIBUTES is the plist containing LaTeX attributes.  CAPTION is
+its caption, as a string or nil.  It is located above the table
+if ABOVE? is non-nil.  INFO is the plist containing current
 export parameters.
 
 Return new environment, as a string."
@@ -3216,7 +3230,8 @@ Return new environment, as a string."
 	    (cond ((and (not float) (plist-member attributes :float)) nil)
 		  ((member float '("sidewaystable" "sideways")) "sidewaystable")
 		  ((equal float "multicolumn") "table*")
-		  ((or float (org-string-nw-p caption)) "table")
+                  (float float)
+		  ((org-string-nw-p caption) "table")
 		  (t nil))))
 	 (placement
 	  (or (plist-get attributes :placement)
@@ -3511,22 +3526,37 @@ channel."
   "Transcode a VERSE-BLOCK element from Org to LaTeX.
 CONTENTS is verse block contents.  INFO is a plist holding
 contextual information."
-  (org-latex--wrap-label
-   verse-block
-   ;; In a verse environment, add a line break to each newline
-   ;; character and change each white space at beginning of a line
-   ;; into a space of 1 em.  Also change each blank line with
-   ;; a vertical space of 1 em.
-   (format "\\begin{verse}\n%s\\end{verse}"
-	   (replace-regexp-in-string
-	    "^[ \t]+" (lambda (m) (format "\\hspace*{%dem}" (length m)))
-	    (replace-regexp-in-string
-	     "^[ \t]*\\\\\\\\$" "\\vspace*{1em}"
-	     (replace-regexp-in-string
-	      "\\([ \t]*\\\\\\\\\\)?[ \t]*\n" "\\\\\n"
-	      contents nil t) nil t) nil t))
-   info))
-
+  (let* ((lin (org-export-read-attribute :attr_latex verse-block :lines))
+         (latcode (org-export-read-attribute :attr_latex verse-block :latexcode))
+         (cent (org-export-read-attribute :attr_latex verse-block :center))
+         (attr (concat
+	        (if cent "[\\versewidth]" "")
+	        (if lin (format "\n\\poemlines{%s}" lin) "")
+	        (if latcode (format "\n%s" latcode) "")))
+         (versewidth (org-export-read-attribute :attr_latex verse-block :versewidth))
+         (vwidth (if versewidth (format "\\settowidth{\\versewidth}{%s}\n" versewidth) ""))
+         (linreset (if lin "\n\\poemlines{0}" "")))
+    (concat
+     (org-latex--wrap-label
+      verse-block
+      ;; In a verse environment, add a line break to each newline
+      ;; character and change each white space at beginning of a line
+      ;; into a space of 1 em.  Also change each blank line with
+      ;; a vertical space of 1 em.
+      (format "%s\\begin{verse}%s\n%s\\end{verse}%s"
+	      vwidth
+	      attr
+	      (replace-regexp-in-string
+	       "^[ \t]+" (lambda (m) (format "\\hspace*{%dem}" (length m)))
+	       (replace-regexp-in-string
+	        "^[ \t]*\\\\\\\\$" "\\vspace*{1em}"
+	        (replace-regexp-in-string
+	         "\\([ \t]*\\\\\\\\\\)?[ \t]*\n" "\\\\\n"
+	         contents nil t) nil t) nil t) linreset)
+      info)
+     ;; Insert footnote definitions, if any, after the environment, so
+     ;; the special formatting above is not applied to them.
+     (org-latex--delayed-footnotes-definitions verse-block info))))
 
 
 ;;; End-user functions

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -500,7 +500,7 @@ This may be useful when columns have been shrunk."
 ;;;###autoload
 (define-minor-mode org-table-header-line-mode
   "Display the first row of the table at point in the header line."
-  nil " TblHeader" nil
+  :lighter " TblHeader"
   (unless (eq major-mode 'org-mode)
     (user-error "Cannot turn org table header mode outside org-mode buffers"))
   (if org-table-header-line-mode
@@ -684,8 +684,6 @@ Will be filled automatically during use.")
     ("_" . "Names for values in row below this one.")
     ("^" . "Names for values in row above this one.")))
 
-(defvar org-tbl-calc-modes nil)
-
 (defvar org-pos nil)
 
 
@@ -728,18 +726,6 @@ Field is restored even in case of abnormal exit."
 	 (goto-char ,line)
 	 (org-table-goto-column ,column)
 	 (set-marker ,line nil)))))
-
-(defsubst org-table--set-calc-mode (var &optional value)
-  (if (stringp var)
-      (setq var (assoc var '(("D" calc-angle-mode deg)
-			     ("R" calc-angle-mode rad)
-			     ("F" calc-prefer-frac t)
-			     ("S" calc-symbolic-mode t)))
-	    value (nth 2 var) var (nth 1 var)))
-  (if (memq var org-tbl-calc-modes)
-      (setcar (cdr (memq var org-tbl-calc-modes)) value)
-    (cons var (cons value org-tbl-calc-modes)))
-  org-tbl-calc-modes)
 
 
 ;;; Predicates
@@ -943,7 +929,8 @@ lines.  It can have the following values:
 - regexp  When a regular expression, use it to match the separator."
   (interactive "f\nP")
   (when (and (called-interactively-p 'any)
-	     (not (string-match-p (rx "." (or "txt" "tsv" "csv") eos) file)))
+	     (not (string-match-p (rx "." (or "txt" "tsv" "csv") eos) file))
+             (not (yes-or-no-p "The file's extension is not .txt, .tsv or .csv.  Import? ")))
     (user-error "Cannot import such file"))
   (unless (bolp) (insert "\n"))
   (let ((beg (point))
@@ -1982,7 +1969,7 @@ lines."
 When this mode is active, the field editor window will always show the
 current field.  The mode exits automatically when the cursor leaves the
 table (but see `org-table-exit-follow-field-mode-when-leaving-table')."
-  nil " TblFollow" nil
+  :lighter " TblFollow"
   (if org-table-follow-field-mode
       (add-hook 'post-command-hook 'org-table-follow-fields-with-editor
 		'append 'local)
@@ -2014,7 +2001,7 @@ toggle `org-table-follow-field-mode'."
     (let ((b (save-excursion (skip-chars-backward "^|") (point)))
 	  (e (save-excursion (skip-chars-forward "^|\r\n") (point))))
       (remove-text-properties b e '(invisible t intangible t))
-      (if (and (boundp 'font-lock-mode) font-lock-mode)
+      (if font-lock-mode
 	  (font-lock-fontify-block))))
    (t
     (let ((pos (point-marker))
@@ -2442,51 +2429,45 @@ location of point."
 			equation
 		      (org-table-get-formula equation (equal arg '(4)))))
 	   (n0 (org-table-current-column))
-	   (org-tbl-calc-modes (copy-sequence org-calc-default-modes))
+	   (calc-modes (copy-sequence org-calc-default-modes))
 	   (numbers nil)	   ; was a variable, now fixed default
 	   (keep-empty nil)
-	   n form form0 formrpl formrg bw fmt x ev orig c lispp literal
+	   form form0 formrpl formrg bw fmt ev orig lispp literal
 	   duration duration-output-format)
       ;; Parse the format string.  Since we have a lot of modes, this is
       ;; a lot of work.  However, I think calc still uses most of the time.
-      (if (string-match ";" formula)
-	  (let ((tmp (org-split-string formula ";")))
-	    (setq formula (car tmp)
-		  fmt (concat (cdr (assoc "%" org-table-local-parameters))
-			      (nth 1 tmp)))
+      (if (string-match "\\(.*\\);\\(.*\\)" formula)
+	  (progn
+	    (setq fmt (concat (cdr (assoc "%" org-table-local-parameters))
+			      (match-string-no-properties 2 formula)))
+	    (setq formula (match-string-no-properties 1 formula))
 	    (while (string-match "\\([pnfse]\\)\\(-?[0-9]+\\)" fmt)
-	      (setq c (string-to-char (match-string 1 fmt))
-		    n (string-to-number (match-string 2 fmt)))
-	      (if (= c ?p)
-		  (setq org-tbl-calc-modes
-			(org-table--set-calc-mode 'calc-internal-prec n))
-		(setq org-tbl-calc-modes
-		      (org-table--set-calc-mode
-		       'calc-float-format
-		       (list (cdr (assoc c '((?n . float) (?f . fix)
-					     (?s . sci) (?e . eng))))
-			     n))))
+	      (let ((c (string-to-char (match-string 1 fmt)))
+		    (n (string-to-number (match-string 2 fmt))))
+		(cl-case c
+		  (?p (setf (cl-getf calc-modes 'calc-internal-prec) n))
+		  (?n (setf (cl-getf calc-modes 'calc-float-format) (list 'float n)))
+		  (?f (setf (cl-getf calc-modes 'calc-float-format) (list 'fix n)))
+		  (?s (setf (cl-getf calc-modes 'calc-float-format) (list 'sci n)))
+		  (?e (setf (cl-getf calc-modes 'calc-float-format) (list 'eng n)))))
+	      ;; Remove matched flags from the mode string.
 	      (setq fmt (replace-match "" t t fmt)))
-	    (if (string-match "[tTU]" fmt)
-		(let ((ff (match-string 0 fmt)))
-		  (setq duration t numbers t
-			duration-output-format
-			(cond ((equal ff "T") nil)
-			      ((equal ff "t") org-table-duration-custom-format)
-			      ((equal ff "U") 'hh:mm))
-			fmt (replace-match "" t t fmt))))
-	    (if (string-match "N" fmt)
-		(setq numbers t
-		      fmt (replace-match "" t t fmt)))
-	    (if (string-match "L" fmt)
-		(setq literal t
-		      fmt (replace-match "" t t fmt)))
-	    (if (string-match "E" fmt)
-		(setq keep-empty t
-		      fmt (replace-match "" t t fmt)))
-	    (while (string-match "[DRFS]" fmt)
-	      (setq org-tbl-calc-modes
-		    (org-table--set-calc-mode (match-string 0 fmt)))
+	    (while (string-match "\\([tTUNLEDRFSu]\\)" fmt)
+	      (let ((c (string-to-char (match-string 1 fmt))))
+		(cl-case c
+		  (?t (setq duration t numbers t
+		      	    duration-output-format org-table-duration-custom-format))
+		  (?T (setq duration t numbers t duration-output-format nil))
+		  (?U (setq duration t numbers t duration-output-format 'hh:mm))
+		  (?N (setq numbers t))
+		  (?L (setq literal t))
+		  (?E (setq keep-empty t))
+		  (?D (setf (cl-getf calc-modes 'calc-angle-mode) 'deg))
+		  (?R (setf (cl-getf calc-modes 'calc-angle-mode) 'rad))
+		  (?F (setf (cl-getf calc-modes 'calc-prefer-frac) t))
+		  (?S (setf (cl-getf calc-modes 'calc-symbolic-mode) t))
+		  (?u (setf (cl-getf calc-modes 'calc-simplify-mode) 'units))))
+	      ;; Remove matched flags from the mode string.
 	      (setq fmt (replace-match "" t t fmt)))
 	    (unless (string-match "\\S-" fmt)
 	      (setq fmt nil))))
@@ -2588,17 +2569,17 @@ location of point."
 	(setq form0 form)
 	;; Insert the references to fields in same row
 	(while (string-match "\\$\\(\\([-+]\\)?[0-9]+\\)" form)
-	  (setq n (+ (string-to-number (match-string 1 form))
-		     (if (match-end 2) n0 0))
-		x (nth (1- (if (= n 0) n0 (max n 1))) fields)
-		formrpl (save-match-data
-			  (org-table-make-reference
-			   x keep-empty numbers lispp)))
-	  (when (or (not x)
-		    (save-match-data
-		      (string-match (regexp-quote formula) formrpl)))
-	    (user-error "Invalid field specifier \"%s\""
-			(match-string 0 form)))
+	  (let* ((n (+ (string-to-number (match-string 1 form))
+		       (if (match-end 2) n0 0)))
+		 (x (nth (1- (if (= n 0) n0 (max n 1))) fields)))
+	    (setq formrpl (save-match-data
+			    (org-table-make-reference
+			     x keep-empty numbers lispp)))
+	    (when (or (not x)
+		      (save-match-data
+			(string-match (regexp-quote formula) formrpl)))
+	      (user-error "Invalid field specifier \"%s\""
+			  (match-string 0 form))))
 	  (setq form (replace-match formrpl t t form)))
 
 	(if lispp
@@ -2630,7 +2611,7 @@ location of point."
 
 	  (setq ev (if (and duration (string-match "^[0-9]+:[0-9]+\\(?::[0-9]+\\)?$" form))
 		       form
-		     (calc-eval (cons form org-tbl-calc-modes)
+		     (calc-eval (cons form calc-modes)
 				(when (and (not keep-empty) numbers) 'num)))
 		ev (if duration (org-table-time-seconds-to-string
 				 (if (string-match "^[0-9]+:[0-9]+\\(?::[0-9]+\\)?$" ev)
@@ -5160,7 +5141,7 @@ When LOCAL is non-nil, show references for the table at point."
 ;;;###autoload
 (define-minor-mode orgtbl-mode
   "The Org mode table editor as a minor mode for use in other modes."
-  :lighter " OrgTbl" :keymap orgtbl-mode-map
+  :lighter " OrgTbl"
   (org-load-modules-maybe)
   (cond
    ((derived-mode-p 'org-mode)
@@ -6120,7 +6101,7 @@ supported.  It is also possible to use the following ones:
 
   When non-nil, use \"ascii-art-to-unicode\" package to translate
   the table.  You can download it here:
-  http://gnuvola.org/software/j/aa2u/ascii-art-to-unicode.el.
+  https://gnuvola.org/software/j/aa2u/ascii-art-to-unicode.el.
 
 :narrow
 

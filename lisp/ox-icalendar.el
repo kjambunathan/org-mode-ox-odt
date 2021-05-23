@@ -2,8 +2,9 @@
 
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;;      Nicolas Goaziou <n dot goaziou at gmail dot com>
+;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 
@@ -32,6 +33,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'org-agenda)
 (require 'ox-ascii)
 (declare-function org-bbdb-anniv-export-ical "ol-bbdb" nil)
 
@@ -281,7 +283,6 @@ re-read the iCalendar file.")
 		     (inlinetask . ignore)
 		     (planning . ignore)
 		     (section . ignore)
-		     (inner-template . (lambda (c i) c))
 		     (template . org-icalendar-template))
   :options-alist
   '((:exclude-tags
@@ -370,7 +371,6 @@ A headline is blocked when either
 		   (1- (length org-icalendar-date-time-format)))
 	      ?Z))
 
-(defvar org-agenda-default-appointment-duration) ; From org-agenda.el.
 (defun org-icalendar-convert-timestamp (timestamp keyword &optional end tz)
   "Convert TIMESTAMP to iCalendar format.
 

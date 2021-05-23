@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -38,11 +38,26 @@
   :group 'org-faces)
 
 (defface org-hide
-  '((((background light)) (:foreground "white"))
+  '((default :inherit fixed-pitch)
+    (((background light)) (:foreground "white"))
     (((background dark)) (:foreground "black")))
   "Face used to hide leading stars in headlines.
 The foreground color of this face should be equal to the background
 color of the frame."
+  :group 'org-faces)
+
+(defface org-dispatcher-highlight
+  '((default :weight bold)
+    (((class color) (min-colors 88) (background dark))
+     :background "gray20" :foreground "gold1")
+    (((class color) (min-colors 88) (background light))
+     :background "SlateGray1" :foreground "DarkBlue")
+    (((class color) (min-colors 16) (background dark))
+     :foreground "yellow")
+    (((class color) (min-colors 16) (background light))
+     :foreground "blue")
+    (t :inverse-video t))
+  "Face for highlighted keys in the dispatcher."
   :group 'org-faces)
 
 (defface org-level-1 '((t :inherit outline-1))
@@ -153,6 +168,14 @@ set the properties in the `org-column' face.  For example, set
   "Face for headline with the ARCHIVE tag."
   :group 'org-faces)
 
+(defface org-cite '((t :inherit link))
+  "Face for citations."
+  :group 'org-faces)
+
+(defface org-cite-key '((t :inherit link))
+  "Face for citation keys."
+  :group 'org-faces)
+
 (defface org-link '((t :inherit link))
   "Face for links."
   :group 'org-faces)
@@ -179,7 +202,8 @@ set the properties in the `org-column' face.  For example, set
   :group 'org-faces)
 
 (defface org-date
-  '((((class color) (background light)) (:foreground "Purple" :underline t))
+  '((default :inherit fixed-pitch)
+    (((class color) (background light)) (:foreground "Purple" :underline t))
     (((class color) (background dark)) (:foreground "Cyan" :underline t))
     (t (:underline t)))
   "Face for date/time stamps."
@@ -355,7 +379,8 @@ changes."
 		   (sexp :tag "Face")))))
 
 (defface org-table	   ;Copied from `font-lock-function-name-face'
-  '((((class color) (min-colors 88) (background light)) (:foreground "Blue1"))
+  '((default :inherit fixed-pitch)
+    (((class color) (min-colors 88) (background light)) (:foreground "Blue1"))
     (((class color) (min-colors 88) (background dark)) (:foreground "LightSkyBlue"))
     (((class color) (min-colors 16) (background light)) (:foreground "Blue"))
     (((class color) (min-colors 16) (background dark)) (:foreground "LightSkyBlue"))
@@ -371,7 +396,8 @@ changes."
   :group 'org-faces)
 
 (defface org-formula
-  '((((class color) (min-colors 88) (background light)) (:foreground "Firebrick"))
+  '((default :inherit fixed-pitch)
+    (((class color) (min-colors 88) (background light)) (:foreground "Firebrick"))
     (((class color) (min-colors 88) (background dark)) (:foreground "chocolate1"))
     (((class color) (min-colors 8)  (background light)) (:foreground "red"))
     (((class color) (min-colors 8)  (background dark)) (:foreground "red"))
@@ -379,12 +405,12 @@ changes."
   "Face for formulas."
   :group 'org-faces)
 
-(defface org-code '((t :inherit shadow))
+(defface org-code '((t :inherit (fixed-pitch shadow)))
   "Face for fixed-width text like code snippets."
   :group 'org-faces
   :version "22.1")
 
-(defface org-meta-line '((t :inherit font-lock-comment-face))
+(defface org-meta-line '((t :inherit (fixed-pitch font-lock-comment-face)))
   "Face for meta lines starting with \"#+\"."
   :group 'org-faces
   :version "22.1")
@@ -400,15 +426,18 @@ changes."
   '((((class color) (background light)) (:foreground "midnight blue"))
     (((class color) (background dark)) (:foreground "pale turquoise"))
     (t nil))
-  "Face for document date, author and email; i.e. that which
-follows a #+DATE:, #+AUTHOR: or #+EMAIL: keyword."
+  "Face for document information such as the author and date.
+This applies to the text that follows a #+SUBTITLE:, #+DATE:,
+#+AUTHOR: or #+EMAIL: keyword."
   :group 'org-faces)
 
 (defface org-document-info-keyword '((t :inherit shadow))
-  "Face for #+TITLE:, #+AUTHOR:, #+EMAIL: and #+DATE: keywords."
+  "Face for document information keywords.
+This face applies to the #+TITLE:, #+SUBTITLE:, #+AUTHOR:,
+#+EMAIL: and #+DATE: keywords."
   :group 'org-faces)
 
-(defface org-block `((t :inherit shadow
+(defface org-block `((t :inherit (fixed-pitch shadow)
 			,@(and (>= emacs-major-version 27) '(:extend t))))
   "Face used for text inside various blocks.
 
@@ -430,7 +459,7 @@ verse and quote blocks are fontified using the `org-verse' and
   "Face used for the line delimiting the end of source blocks."
   :group 'org-faces)
 
-(defface org-verbatim '((t (:inherit shadow)))
+(defface org-verbatim '((t (:inherit (fixed-pitch shadow))))
   "Face for fixed-with text like code snippets."
   :group 'org-faces
   :version "22.1")

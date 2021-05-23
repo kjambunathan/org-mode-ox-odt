@@ -3,6 +3,7 @@
 ;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou@gmail.com>
+;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: org, wp, markdown
 
 ;; This file is part of GNU Emacs.
@@ -100,6 +101,8 @@ The %s will be replaced by the footnote reference itself."
 		     (italic . org-md-italic)
 		     (item . org-md-item)
 		     (keyword . org-md-keyword)
+                     (latex-environment . org-md-latex-environment)
+                     (latex-fragment . org-md-latex-fragment)
 		     (line-break . org-md-line-break)
 		     (link . org-md-link)
 		     (node-property . org-md-node-property)
@@ -460,6 +463,35 @@ channel."
     (_ (org-export-with-backend 'html keyword contents info))))
 
 
+;;;; Latex Environment
+
+(defun org-md-latex-environment (latex-environment _contents info)
+  "Transcode a LATEX-ENVIRONMENT object from Org to Markdown.
+CONTENTS is nil.  INFO is a plist holding contextual information."
+  (when (plist-get info :with-latex)
+    (let ((latex-frag (org-remove-indentation
+                       (org-element-property :value latex-environment)))
+          (label (org-html--reference latex-environment info t)))
+      (if (org-string-nw-p label)
+          (replace-regexp-in-string "\\`.*"
+                                    (format "\\&\n\\\\label{%s}" label)
+                                    latex-frag)
+        latex-frag))))
+
+;;;; Latex Fragment
+
+(defun org-md-latex-fragment (latex-fragment _contents info)
+  "Transcode a LATEX-FRAGMENT object from Org to Markdown.
+CONTENTS is nil.  INFO is a plist holding contextual information."
+  (when (plist-get info :with-latex)
+    (let ((frag (org-element-property :value latex-fragment)))
+      (cond
+       ((string-match-p "^\\\\(" frag)
+        (concat "$" (substring frag 2 -2) "$"))
+       ((string-match-p "^\\\\\\[" frag)
+        (concat "$$" (substring frag 2 -2) "$$"))
+       (t frag))))) ; either already $-deliminated or a macro
+
 ;;;; Line Break
 
 (defun org-md-line-break (_line-break _contents _info)
@@ -543,7 +575,12 @@ INFO is a plist holding contextual information.  See
      ((string= type "coderef")
       (format (org-export-get-coderef-format path desc)
 	      (org-export-resolve-coderef path info)))
-     ((equal type "radio") desc)
+     ((string= type "radio")
+      (let ((destination (org-export-resolve-radio-link link info)))
+	(if (not destination) desc
+	  (format "<a href=\"#%s\">%s</a>"
+		  (org-export-get-reference destination info)
+		  desc))))
      (t (if (not desc) (format "<%s>" path)
 	  (format "[%s](%s)" desc path))))))
 

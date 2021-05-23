@@ -1,8 +1,9 @@
-;;; ob-msc.el --- Babel Functions for Mscgen         -*- lexical-binding: t; -*-
+;;; ob-mscgen.el --- Babel Functions for Mscgen         -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2010-2021 Free Software Foundation, Inc.
 
 ;; Author: Juan Pechiar
+;; Maintainer: Justin Abrahms
 ;; Keywords: literate programming, reproducible research
 ;; Homepage: https://orgmode.org
 
@@ -28,7 +29,7 @@
 ;; sequence definition, and must therefore be installed in the system.
 ;;
 ;; Mscgen is available and documented at
-;; http://www.mcternan.me.uk/mscgen/index.html
+;; https://www.mcternan.me.uk/mscgen/index.html
 ;;
 ;; This code is directly inspired by Eric Schulte's ob-dot.el
 ;;
@@ -78,4 +79,4 @@ mscgen supported formats."
 
 (provide 'ob-mscgen)
 
-;;; ob-msc.el ends here
+;;; ob-mscgen.el ends here

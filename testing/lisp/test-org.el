@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Template test file for Org tests
 
@@ -1816,7 +1816,31 @@
 		 (lambda (&rest args) "+1d")))
 	(org-clone-subtree-with-time-shift 1))
       (buffer-substring-no-properties (line-beginning-position 2)
-				      (line-end-position 2))))))
+				      (line-end-position 2)))))
+  ;; Hour shift.
+  (should
+   (equal "\
+* H1\n<2015-06-21 20:00>
+* H1\n<2015-06-21 23:00>
+* H1\n<2015-06-22 02:00>
+"
+          (org-test-with-temp-text "* H1\n<2015-06-21 Sun 20:00>"
+            (org-clone-subtree-with-time-shift 2 "+3h")
+            (replace-regexp-in-string
+             "\\( [.A-Za-z]+\\)\\( [0-9][0-9]:[0-9][0-9]\\)?>" ""
+             (buffer-substring-no-properties (point-min) (point-max))
+             nil nil 1))))
+  (should
+   (equal "\
+* H1\n<2015-06-21 20:00>
+* H1\n<2015-06-21 18:00>
+"
+          (org-test-with-temp-text "* H1\n<2015-06-21 Sun 20:00>"
+            (org-clone-subtree-with-time-shift 1 "-2h")
+            (replace-regexp-in-string
+             "\\( [.A-Za-z]+\\)\\( [0-9][0-9]:[0-9][0-9]\\)?>" ""
+             (buffer-substring-no-properties (point-min) (point-max))
+             nil nil 1)))))
 
 
 ;;; Fixed-Width Areas
@@ -7963,6 +7987,10 @@ CLOCK: [2012-03-29 Thu 10:00]--[2012-03-29 Thu 16:40] =>  6:40"
     (should (equal '(0 7 8 9) (funcall list-visible-lines 'local nil)))
     (should (equal '(0 3 7) (funcall list-visible-lines 'ancestors t)))
     (should (equal '(0 3 7 8) (funcall list-visible-lines 'ancestors nil)))
+    (should (equal '(0 3 7 8 9 10 11)
+                   (funcall list-visible-lines 'ancestors-full t)))
+    (should (equal '(0 3 7 8 9 10 11)
+                   (funcall list-visible-lines 'ancestors-full nil)))
     (should (equal '(0 3 5 7 12) (funcall list-visible-lines 'lineage t)))
     (should (equal '(0 3 5 7 8 9 12) (funcall list-visible-lines 'lineage nil)))
     (should (equal '(0 1 3 5 7 12 13) (funcall list-visible-lines 'tree t)))
