@@ -5773,8 +5773,57 @@ exported file."
 ;; This feature is inspired by following thread:
 ;; https://lists.gnu.org/archive/html/emacs-orgmode/2011-03/msg01101.html
 
+;; Experience suggests that translation of a list to tables as done by
+;; `org-odt--translate-list-tables' works well for both HTML and LaTeX
+;; exports.  See
+
+;; 1. https://emacsnotes.wordpress.com/2020/04/26/create-tables-with-paragraph-like-content-in-org-mode-with-the-least-amount-of-hassle/
+;; 2. https://github.com/kjambunathan/org-mode-ox-odt/issues/91#issuecomment-877945835
+
+;; If you desire the convenience of list tables in HTML and LaTeX
+;; backends, add the following snippet to your init file.
+;; `org-generic--translate-list-tables' has an autoload cookie.  i.e.,
+;; if you have used `package.el' to download `ox-odt', then Emacs
+;; shouldn't have any problem "linking" to
+;; `org-generic--translate-list-tables' as defined here.
+;;
+;; (add-to-list
+;;    'org-export-filter-parse-tree-functions
+;;    (defun org-generic--translate-list-tables (tree backend info)
+;;      (if (memq backend '(latex html) )
+;;          (org-odt--translate-list-tables tree backend info)
+;;        tree)))
+
+;; If the above snippet doesn't work, add one or both of the following
+;; snippets to your init file.
+
+;; ;; Add support for list tables in HTML export
+;;
+;; (with-eval-after-load 'ox-html
+;;   (unless (featurep 'ox-odt)
+;;     (require 'ox-odt))
+;;   (add-to-list
+;;    'org-export-filter-parse-tree-functions
+;;    (defun org-html--translate-list-tables (tree backend info)
+;;      (if (eq backend 'html)
+;;          (org-odt--translate-list-tables tree backend info)
+;;        tree))))
+
+;; ;; Add support for list tables in LaTeX export
+;;
+;; (with-eval-after-load 'ox-latex
+;;   (unless (featurep 'ox-odt)
+;;     (require 'ox-odt))
+;;   (add-to-list
+;;    'org-export-filter-parse-tree-functions
+;;    (defun org-latex--translate-list-tables (tree backend info)
+;;      (if (eq backend 'latex)
+;;          (org-odt--translate-list-tables tree backend info)
+;;        tree))))
+
 ;; Translate lists to tables
 
+;;;###autoload
 (defun org-odt--translate-list-tables (tree _backend info)
   (let* ((org-element-all-objects-1 org-element-all-objects)
 	 (org-element-all-elements-1 org-element-all-elements)
@@ -5792,7 +5841,9 @@ exported file."
 	   ;; Build replacement table.
 	   (apply 'org-element-adopt-elements
 		  (list 'table (list :type 'org
-				     :attr_odt (org-element-property :attr_odt l1-list)
+                                     :attr_odt (org-element-property :attr_odt l1-list)
+                                     :attr_latex (org-element-property :attr_latex l1-list)
+				     :attr_html (org-element-property :attr_html l1-list)
 				     :caption (org-element-property :caption l1-list)
 				     :name (org-element-property :name l1-list)))
 		  (delq nil
