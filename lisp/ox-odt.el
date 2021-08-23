@@ -3547,7 +3547,7 @@ used as a communication channel."
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
-	 width height)
+	 (width nil) (height nil))
     (cond
      ((eq embed-as 'character)
       (org-odt--render-image/formula "InlineFormula" href width height
@@ -4088,15 +4088,21 @@ INFO is a plist holding contextual information.  See
 
 ;;;; Node Property
 
-(defun org-odt-node-property (node-property _contents _info)
+(defun org-odt-node-property (node-property _contents info)
   "Transcode a NODE-PROPERTY element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual
 information."
-  (org-odt--encode-plain-text
-   (format "%s:%s"
-	   (org-element-property :key node-property)
-	   (let ((value (org-element-property :value node-property)))
-	     (if value (concat " " value) "")))))
+  (let* ((key (org-element-property :key node-property))
+	 (value (or (org-element-property :value node-property) "")))
+    (format "<text:p text:style-name=\"%s\">%s</text:p>"
+	    (if (org-export-last-sibling-p node-property info)
+		"OrgPropertiesBlockLastLine"
+	      "OrgPropertiesBlock")
+	    (format "%s: <text:tab/>%s"
+		    (format "<text:span text:style-name=\"OrgPropertyName\">%s</text:span>"
+			    (org-odt--encode-plain-text key))
+		    (format "<text:span text:style-name=\"OrgPropertyValue\">%s</text:span>"
+			    (org-odt--encode-plain-text value))))))
 
 ;;;; Paragraph
 
@@ -4390,9 +4396,7 @@ channel."
   "Transcode a PROPERTY-DRAWER element from Org to ODT.
 CONTENTS holds the contents of the drawer.  INFO is a plist
 holding contextual information."
-  (and (org-string-nw-p contents)
-       (format "<text:p text:style-name=\"OrgFixedWidthBlock\">%s</text:p>"
-	       contents)))
+  contents)
 
 
 ;;;; Quote Block

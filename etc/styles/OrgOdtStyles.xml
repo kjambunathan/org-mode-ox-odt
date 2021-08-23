@@ -303,6 +303,28 @@
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.21cm"/>
   </style:style>
 
+  <!-- BEGIN: Properties Drawer -->
+  <style:style style:name="OrgPropertyName" style:family="text">
+   <style:text-properties fo:font-weight="bold"/>
+  </style:style>
+
+  <style:style style:name="OrgPropertyValue" style:family="text">
+   <style:text-properties fo:font-style="italic" style:font-style-asian="italic" style:font-style-complex="italic"/>
+  </style:style>
+
+  <style:style style:name="OrgPropertiesBlock" style:family="paragraph" style:parent-style-name="Standard">
+   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm" style:contextual-spacing="false" fo:background-color="transparent" fo:padding="0.64cm" fo:border="0.06pt solid #000000" style:shadow="none">
+    <style:tab-stops>
+     <style:tab-stop style:position="5.6cm"/>
+    </style:tab-stops>
+   </style:paragraph-properties>
+  </style:style>
+
+  <style:style style:name="OrgPropertiesBlockLastLine" style:family="paragraph" style:parent-style-name="OrgPropertiesBlock">
+   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.21cm" style:contextual-spacing="false"/>
+  </style:style>
+  <!-- END: Properties Drawer -->
+  
   <style:style style:name="OrgFormula" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties>
     <style:tab-stops>
