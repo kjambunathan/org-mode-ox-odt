@@ -1,4 +1,4 @@
-;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; -*-
+;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; coding: utf-8-emacs; -*-
 
 ;; Copyright (C) 2010-2019 Jambunathan K <kjambunathan at gmail dot com>
 
@@ -1786,15 +1786,84 @@ See `org-odt--build-date-styles' for implementation details."
 
 ;;;; Checkbox
 
+;; | Ascii | LaTeX      | Html Entity | Html Hex  | Unicode Name                  | Unicode Character |
+;; |-------+------------+-------------+-----------+-------------------------------+-------------------|
+;; | x     | \checkmark | &check;     | &#x2713;  | CHECK MARK                    | ✓                 |
+;; |-------+------------+-------------+-----------+-------------------------------+-------------------|
+;; | [x]   | \boxminus  | &boxtimes;  | &#x022A0; | SQUARED TIMES                 | ⊠                 |
+;; | [ ]   | \square    | &square;    | &#x025A1; | WHITE  SQUARE                 | □                 |
+;; | [-]   | \boxtimes  | &boxminus;  | &#x0229F; | SQUARED MINUS                 | ⊟                 |
+;; |-------+------------+-------------+-----------+-------------------------------+-------------------|
+;; | [x]   |            |             | &#x1F5F7; | BALLOT BOX WITH BOLD SCRIPT X | 🗷                 |
+;; | [ ]   |            |             | &#x1F78F; | MEDIUM WHITE SQUARE           | 🞏                 |
+;; | [-]   |            |             | &#x2BBD;  | BALLOT BOX WITH LIGHT X       | ⮽                 |
+
 (defun org-odt--checkbox (item)
-  "Return check-box string associated to ITEM."
+  "Return check-box string associated to ITEM.
+
+You can control how the checkboxes are typeset by customizing the
+`utf-8' vaule of following entities:
+
+  (1) \"checkboxon\"
+  (2) \"checkboxoff\"
+  (3) \"checkboxwip\"
+
+in `org-entities-user'.
+
+The default setting is equivalent to the following custom value
+of `org-entities-user':
+
+  (dolist (new-entity
+	   \\='(
+	     ;; (\"name\"         \"LaTeX\"         \"LaTeX mathp\"  \"HTML\"        \"ASCII\"  \"Latin1\"  \"utf-8\")
+		(\"checkboxon\"   \"\\\\boxtimes\"    t              \"&boxtimes;\"  \"[x]\"    \"[x]\"     \"&#x022A0;\") ; ⊠ - SQUARED TIMES
+		(\"checkboxoff\"  \"\\\\square\"      t              \"&square;\"    \"[ ]\"    \"[ ]\"     \"&#x025A1;\") ; □ - WHITE  SQUARE
+		(\"checkboxwip\"  \"\\\\boxminus\"    t              \"&boxminus;\"  \"[-]\"    \"[-]\"     \"&#x0229F;\") ; ⊟ - SQUARED MINUS
+		))
+    (map-delete org-entities-user (car new-entity))
+    (customize-set-variable \\='org-entities-user (cons new-entity org-entities-user))
+    (customize-save-variable \\='org-entities-user org-entities-user))
+
+Here are possible alternative settings:
+
+  (dolist (new-entity
+	   \\='(
+	     ;; (\"name\"         \"LaTeX\"         \"LaTeX mathp\"  \"HTML\"        \"ASCII\"  \"Latin1\"  \"utf-8\")
+		(\"checkboxon\"   \"\\\\boxtimes\"    t              \"&#x1F5F7;\"  \"[x]\"    \"[x]\"     \"&#x1F5F7;\") ; 🗷 - BALLOT BOX WITH BOLD SCRIPT X
+		(\"checkboxoff\"  \"\\\\square\"      t              \"&#x1F78F;\"  \"[ ]\"    \"[ ]\"     \"&#x1F78F;\") ; 🞏 - MEDIUM WHITE SQUARE          
+		(\"checkboxwip\"  \"\\\\boxminus\"    t              \"&#x2BBD;\"   \"[-]\"    \"[-]\"     \"&#x2BBD;\" ) ; ⮽ - BALLOT BOX WITH LIGHT X      
+		))
+    (map-delete org-entities-user (car new-entity))
+    (customize-set-variable \\='org-entities-user (cons new-entity org-entities-user))
+    (customize-save-variable \\='org-entities-user org-entities-user))
+
+  (dolist (new-entity
+	   \\='(
+	     ;; (\"name\"         \"LaTeX\"         \"LaTeX mathp\"  \"HTML\"        \"ASCII\"  \"Latin1\"  \"utf-8\")
+		(\"checkboxon\"   \"\\\\boxtimes\"    t              \"[&#x2713;]\"  \"[x]\"    \"[x]\"     \"[&#x2713;]\") ; [✓] - CHECK MARK
+		(\"checkboxoff\"  \"\\\\square\"      t              \"[ ]\"         \"[ ]\"    \"[ ]\"     \"[ ]\"       ) ; [ ] - SPACE
+		(\"checkboxwip\"  \"\\\\boxminus\"    t              \"[-]\"         \"[-]\"    \"[-]\"     \"[-]\"       ) ; [-] - HYPHEN-MINUS
+		))
+    (map-delete org-entities-user (car new-entity))
+    (customize-set-variable \\='org-entities-user (cons new-entity org-entities-user))
+    (customize-save-variable \\='org-entities-user org-entities-user))
+
+For the pupose of this exporter, only the `utf-8' values are of
+significance.  All other values are ignored."
   (let ((checkbox (org-element-property :checkbox item)))
     (if (not checkbox) ""
-      (format "<text:span text:style-name=\"%s\">%s</text:span>"
+      (format "<text:span text:style-name=\"%s\">%s </text:span>"
 	      "OrgCode" (cl-case checkbox
-			  (on "[&#x2713;] ") ; CHECK MARK
-			  (off "[ ] ")
-			  (trans "[-] "))))))
+			  (on (or (nth 6 (org-entity-get "checkboxon"))
+				  "&#x022A0;"
+				  "[&#x2713;]"))
+			  (off (or (nth 6 (org-entity-get "checkboxoff"))
+				   "&#x025A1;"
+				   "[ ]"))
+			  (trans (or
+				  (nth 6 (org-entity-get "checkboxwip"))
+				  "&#x0229F;"
+				  "[-]")))))))
 
 ;;; Template
 
