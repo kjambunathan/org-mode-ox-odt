@@ -2984,7 +2984,7 @@ holding contextual information."
 CONTENTS holds the contents of the block.  INFO is a plist
 holding contextual information."
   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-	  "Text_20_body"
+	  "Standard"
 	  (org-odt--textbox
 	   (concat
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
@@ -3753,7 +3753,7 @@ used as a communication channel."
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			  "Standard"
+			  "Caption"
 			  (apply 'org-odt--frame href (car widths) (car heights)
 				 (append inner title-and-desc)))))
 	(apply 'org-odt--textbox
@@ -4266,10 +4266,10 @@ the plist used as a communication channel."
 	    ;; it's style from the it's parent.
 
 	    ;; Case 4: If an element has no parent (i.e., root node),
-	    ;; use the fallback style "Text_20_body".
+	    ;; use the fallback style "Standard".
 	    (cl-loop for el in data
 		     ;; Fallback style.
-		     with style = "Text_20_body"
+		     with style = "Standard"
 		     with within-note-definition-p = nil do
 		     (setq style
 			   (or
