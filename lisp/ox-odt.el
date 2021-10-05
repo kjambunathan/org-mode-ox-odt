@@ -5049,6 +5049,70 @@ styles will be defined *automatically* for you."
 	(capitalize (symbol-name (org-export-table-cell-alignment
 				  table-cell info))))))))
 
+(defun org-odt-table-cell-types (table info)
+  "Non-nil when TABLE has spanned row or columns.
+INFO is a plist used as a communication channel.
+
+A TABLE has spanned row or columns when it has a `:span'
+attribute.  You can attach a `:span' attribute to a table as
+follows:
+
+    #+ATTR_ODT: :span \"@R1C1{ROWSPAN1:COLSPAN1} @R2C2{ROWSPAN2:COLSPAN2} ...\"
+    | Some | table |
+    | ...  | ...   |
+    |      |       |
+
+For example, an `org' table like the one below
+
+    #+ATTR_ODT: :span \"@1$1{3:1} @1$2{1:8} @2$2{1:2} @2$4{1:2} @2$6{1:2} @2$8{1:2}\"
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    | Region | Sales |     |     |     |     |     |     |     |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    |        | Q1    |     |  Q2 |     |  Q3 |     |  Q4 |     |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+    | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+
+is equivalent to the following `table.el'-table with row and
+column spans
+
+    +--------+-------------------------------------------------+
+    | Region |                      Sales                      |
+    |        +-------------+-----------+-----------+-----------+
+    |        | Q1          |    Q2     |    Q3     |    Q4     |
+    |        +-------+-----+-----+-----+-----+-----+-----+-----+
+    |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+    +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+    | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+    +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+    | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+    +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+."
+  (let* ((cache (or (plist-get info :table-cell-widths-cache)
+		    (let ((table (make-hash-table :test #'eq)))
+		      (plist-put info :table-cell-widths-cache table)
+		      table)))
+	 (cached (gethash table cache 'no-cache)))
+    (if (not (eq cached 'no-cache)) cached
+      (puthash table
+	       (let* ((span (org-odt--read-attribute table :span)))
+		 (cl-loop for spec in (when span (split-string span " "))
+			  when (string-match "@\\([[:digit:]]+\\)\\$\\([[:digit:]]+\\){\\([[:digit:]]+\\):\\([[:digit:]]+\\)}" spec)
+			  append
+			  (pcase-let ((`(,pivot-r ,pivot-c ,rowspan ,colspan)
+				       (mapcar (lambda (i)
+						 (string-to-number (match-string i spec)))
+					       (number-sequence 1 4))))
+			    (cons (cons (cons pivot-r pivot-c) (cons rowspan colspan))
+				  (cdr (apply #'append
+					      (cl-loop for r in (number-sequence pivot-r (1- (+ pivot-r rowspan))) collect
+						       (cl-loop for c in (number-sequence pivot-c (1- (+ pivot-c colspan)))
+								collect (cons (cons r c) 'covered)))))))))
+	       cache))))
+
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
@@ -5059,6 +5123,9 @@ channel."
 	 (c (cdr table-cell-address))
 	 (horiz-span (nth c (org-odt--table-cell-widths
 			     (org-export-get-parent-table table-cell) info)))
+	 (table-cell-types (org-odt-table-cell-types (org-export-get-parent-table table-cell) info))
+	 (table-cell-type (cdr (assoc (cons (1+ (car table-cell-address)) (1+ (cdr table-cell-address)))
+				      table-cell-types)))
 	 (custom-style-prefix (org-odt-get-table-cell-styles
 			       table-cell info))
 	 (cell-style-name
@@ -5072,25 +5139,59 @@ channel."
 	    (when (memq 'left table-cell-borders) "L")
 	    (when (memq 'right table-cell-borders) "R"))))
 	 (cell-attributes
-	  (concat
-	   (format " table:style-name=\"%s\"" cell-style-name)
-	   (and (> horiz-span 0)
-		(format " table:number-columns-spanned=\"%d\""
-			(1+ horiz-span))))))
+	  (cond
+	   ;; Table with `:span' cells.
+	   ((null table-cell-types)
+	    (concat
+	     (format " table:style-name=\"%s\"" cell-style-name)
+	     (and (> horiz-span 0)
+		  (format " table:number-columns-spanned=\"%d\""
+			  (1+ horiz-span)))))
+	   ;; Table without any `:span' cells.
+	   (t
+	    (concat
+	     (format " table:style-name=\"%s\"" cell-style-name)
+	     (when (consp table-cell-type)
+	       (pcase-let ((`(,rowspan . ,colspan) table-cell-type))
+		 (concat
+		  (unless (= 1 rowspan)
+		    (format " table:number-rows-spanned=\"%d\""
+			    rowspan))
+		  (unless (= 1 colspan)
+		    (format " table:number-columns-spanned=\"%d\""
+			    colspan))))))))))
     (unless contents (setq contents ""))
-    (concat
-     (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
-	     cell-attributes
-	     (let ((table-cell-contents (org-element-contents table-cell)))
-	       (if (eq (org-element-class (car table-cell-contents)) 'element)
-		   contents
-		 (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			 (org-odt-table-cell--get-paragraph-styles table-cell info)
-			 contents))))
-     (let (s)
-       (dotimes (_i horiz-span s)
-	 (setq s (concat s "\n<table:covered-table-cell/>"))))
-     "\n")))
+    (cond
+     ;; Table with `:span' cells.
+     ((null table-cell-types)
+      (concat
+       (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
+	       cell-attributes
+	       (let ((table-cell-contents (org-element-contents table-cell)))
+		 (if (eq (org-element-class (car table-cell-contents)) 'element)
+		     contents
+		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			   (org-odt-table-cell--get-paragraph-styles table-cell info)
+			   contents))))
+       (let (s)
+	 (dotimes (_i horiz-span s)
+	   (setq s (concat s "\n<table:covered-table-cell/>"))))
+       "\n"))
+     ;; Table without any `:span' cells.
+     (t
+      (cond
+       ((eq table-cell-type 'covered) "\n<table:covered-table-cell/>")
+       (t
+	(concat
+	 (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
+		 cell-attributes
+		 (let ((table-cell-contents (org-element-contents table-cell)))
+		   (if (eq (org-element-class (car table-cell-contents)) 'element)
+		       contents
+		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			     (org-odt-table-cell--get-paragraph-styles table-cell info)
+			     contents))))
+	 "\n")))))))
 
 
 ;;;; Table Row
