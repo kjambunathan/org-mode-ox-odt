@@ -1,6 +1,6 @@
 ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; coding: utf-8-emacs; -*-
 
-;; Copyright (C) 2010-2019 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2010-2021 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
@@ -392,6 +392,348 @@ See `org-odt-format-label'.")
 	       index-title)))))
 
 (defvar hfy-user-sheet-assoc)
+
+(defvar org-odt-locales-alist
+  '(("aa_DJ"    "Afar (Djibouti)"                                                       western )
+    ("aa_ER"    "Afar (Eritrea)"                                                        western )
+    ("aa_ET"    "Afar (Ethiopia)"                                                       western )
+    ("af_ZA"    "Afrikaans (South Africa)"                                              western )
+    ("agr_PE"   "Aguaruna (Peru)"                                                       western )
+    ("ak_GH"    "Akan (Ghana)"                                                          western )
+    ("am_ET"    "Amharic (Ethiopia)"                                                    ctl     )
+    ("an_ES"    "Aragonese (Spain)"                                                     western )
+    ("anp_IN"   "Angika (India)"                                                        ctl     )
+    ("ar_AE"    "Arabic (United Arab Emirates)"                                         ctl     )
+    ("ar_BH"    "Arabic (Bahrain)"                                                      ctl     )
+    ("ar_DZ"    "Arabic (Algeria)"                                                      ctl     )
+    ("ar_EG"    "Arabic (Egypt)"                                                        ctl     )
+    ("ar_IN"    "Arabic (India)"                                                        ctl     )
+    ("ar_IQ"    "Arabic (Iraq)"                                                         ctl     )
+    ("ar_JO"    "Arabic (Jordan)"                                                       ctl     )
+    ("ar_KW"    "Arabic (Kuwait)"                                                       ctl     )
+    ("ar_LB"    "Arabic (Lebanon)"                                                      ctl     )
+    ("ar_LY"    "Arabic (Libya)"                                                        ctl     )
+    ("ar_MA"    "Arabic (Morocco)"                                                      ctl     )
+    ("ar_OM"    "Arabic (Oman)"                                                         ctl     )
+    ("ar_QA"    "Arabic (Qatar)"                                                        ctl     )
+    ("ar_SA"    "Arabic (Saudi Arabia)"                                                 ctl     )
+    ("ar_SD"    "Arabic (Sudan)"                                                        ctl     )
+    ("ar_SS"    "Arabic (South Sudan)"                                                  ctl     )
+    ("ar_SY"    "Arabic (Syrian Arab Republic)"                                         ctl     )
+    ("ar_TN"    "Arabic (Tunisia)"                                                      ctl     )
+    ("ar_YE"    "Arabic (Yemen)"                                                        ctl     )
+    ("as_IN"    "Assamese (India)"                                                      ctl     )
+    ("ast_ES"   "Asturian (Spain)"                                                      western )
+    ("ayc_PE"   "Southern Aymara (Peru)"                                                western )
+    ("az_AZ"    "Azerbaijani (Azerbaijan)"                                              western )
+    ("az_IR"    "Azerbaijani (Iran, Islamic Republic of)"                               western )
+    ("be_BY"    "Belarusian (Belarus)"                                                  western )
+    ("bem_ZM"   "Bemba (Zambia) (Zambia)"                                               western )
+    ("bg_BG"    "Bulgarian (Bulgaria)"                                                  western )
+    ("bhb_IN"   "Bhili (India)"                                                         ctl     )
+    ("bho_IN"   "Bhojpuri (India)"                                                      ctl     )
+    ("bho_NP"   "Bhojpuri (Nepal)"                                                      ctl     )
+    ("bi_VU"    "Bislama (Vanuatu)"                                                     western )
+    ("bn_BD"    "Bengali (Bangladesh)"                                                  ctl     )
+    ("bn_IN"    "Bengali (India)"                                                       ctl     )
+    ("bo_CN"    "Tibetan (China)"                                                       ctl     )
+    ("bo_IN"    "Tibetan (India)"                                                       ctl     )
+    ("br_FR"    "Breton (France)"                                                       western )
+    ("brx_IN"   "Bodo (India) (India)"                                                  ctl     )
+    ("bs_BA"    "Bosnian (Bosnia and Herzegovina)"                                      western )
+    ("byn_ER"   "Bilin (Eritrea)"                                                       western )
+    ("ca_AD"    "Catalan (Andorra)"                                                     western )
+    ("ca_ES"    "Catalan (Spain)"                                                       western )
+    ("ca_FR"    "Catalan (France)"                                                      western )
+    ("ca_IT"    "Catalan (Italy)"                                                       western )
+    ("ce_RU"    "Chechen (Russian Federation)"                                          western )
+    ("chr_US"   "Cherokee (United States)"                                              western )
+    ("ckb_IQ"   "Central Kurdish (Iraq)"                                                western )
+    ("cmn_TW"   "Mandarin Chinese (Taiwan, Province of China)"                          cjk     )
+    ("crh_UA"   "Crimean Tatar (Ukraine)"                                               western )
+    ("cs_CZ"    "Czech (Czechia)"                                                       western )
+    ("csb_PL"   "Kashubian (Poland)"                                                    western )
+    ("cv_RU"    "Chuvash (Russian Federation)"                                          western )
+    ("cy_GB"    "Welsh (United Kingdom)"                                                western )
+    ("da_DK"    "Danish (Denmark)"                                                      western )
+    ("de_DE"    "German (Germany)"                                                      western )
+    ("de_AT"    "German (Austria)"                                                      western )
+    ("de_BE"    "German (Belgium)"                                                      western )
+    ("de_CH"    "German (Switzerland)"                                                  western )
+    ("de_IT"    "German (Italy)"                                                        western )
+    ("de_LI"    "German (Liechtenstein)"                                                western )
+    ("de_LU"    "German (Luxembourg)"                                                   western )
+    ("doi_IN"   "Dogri (macrolanguage) (India)"                                         ctl     )
+    ("dsb_DE"   "Lower Sorbian (Germany)"                                               western )
+    ("dv_MV"    "Dhivehi (Maldives)"                                                    ctl     )
+    ("dz_BT"    "Dzongkha (Bhutan)"                                                     ctl     )
+    ("el_CY"    "Modern Greek (1453-) (Cyprus)"                                         western )
+    ("el_GR"    "Modern Greek (1453-) (Greece)"                                         western )
+    ("en_US"    "English (United States)"                                               western )
+    ("en_AG"    "English (Antigua and Barbuda)"                                         western )
+    ("en_AU"    "English (Australia)"                                                   western )
+    ("en_BW"    "English (Botswana)"                                                    western )
+    ("en_CA"    "English (Canada)"                                                      western )
+    ("en_DK"    "English (Denmark)"                                                     western )
+    ("en_GB"    "English (United Kingdom)"                                              western )
+    ("en_HK"    "English (Hong Kong)"                                                   western )
+    ("en_IE"    "English (Ireland)"                                                     western )
+    ("en_IL"    "English (Israel)"                                                      western )
+    ("en_IN"    "English (India)"                                                       western )
+    ("en_NG"    "English (Nigeria)"                                                     western )
+    ("en_NZ"    "English (New Zealand)"                                                 western )
+    ("en_PH"    "English (Philippines)"                                                 western )
+    ("en_SC"    "English (Seychelles)"                                                  western )
+    ("en_SG"    "English (Singapore)"                                                   western )
+    ("en_ZA"    "English (South Africa)"                                                western )
+    ("en_ZM"    "English (Zambia)"                                                      western )
+    ("en_ZW"    "English (Zimbabwe)"                                                    western )
+    ("es_ES"    "Spanish (Spain)"                                                       western )
+    ("es_AR"    "Spanish (Argentina)"                                                   western )
+    ("es_BO"    "Spanish (Bolivia, Plurinational State of)"                             western )
+    ("es_CL"    "Spanish (Chile)"                                                       western )
+    ("es_CO"    "Spanish (Colombia)"                                                    western )
+    ("es_CR"    "Spanish (Costa Rica)"                                                  western )
+    ("es_CU"    "Spanish (Cuba)"                                                        western )
+    ("es_DO"    "Spanish (Dominican Republic)"                                          western )
+    ("es_EC"    "Spanish (Ecuador)"                                                     western )
+    ("es_GT"    "Spanish (Guatemala)"                                                   western )
+    ("es_HN"    "Spanish (Honduras)"                                                    western )
+    ("es_MX"    "Spanish (Mexico)"                                                      western )
+    ("es_NI"    "Spanish (Nicaragua)"                                                   western )
+    ("es_PA"    "Spanish (Panama)"                                                      western )
+    ("es_PE"    "Spanish (Peru)"                                                        western )
+    ("es_PR"    "Spanish (Puerto Rico)"                                                 western )
+    ("es_PY"    "Spanish (Paraguay)"                                                    western )
+    ("es_SV"    "Spanish (El Salvador)"                                                 western )
+    ("es_US"    "Spanish (United States)"                                               western )
+    ("es_UY"    "Spanish (Uruguay)"                                                     western )
+    ("es_VE"    "Spanish (Venezuela, Bolivarian Republic of)"                           western )
+    ("et_EE"    "Estonian (Estonia)"                                                    western )
+    ("eu_ES"    "Basque (Spain)"                                                        western )
+    ("eu_FR"    "Basque (France)"                                                       western )
+    ("fa_IR"    "Persian (Iran, Islamic Republic of)"                                   ctl     )
+    ("ff_SN"    "Fulah (Senegal)"                                                       western )
+    ("fi_FI"    "Finnish (Finland)"                                                     western )
+    ("fil_PH"   "Filipino (Philippines)"                                                western )
+    ("fo_FO"    "Faroese (Faroe Islands)"                                               western )
+    ("fr_FR"    "French (France)"                                                       western )
+    ("fr_BE"    "French (Belgium)"                                                      western )
+    ("fr_CA"    "French (Canada)"                                                       western )
+    ("fr_CH"    "French (Switzerland)"                                                  western )
+    ("fr_LU"    "French (Luxembourg)"                                                   western )
+    ("fur_IT"   "Friulian (Italy)"                                                      western )
+    ("fy_DE"    "western Frisian (Germany)"                                             western )
+    ("fy_NL"    "western Frisian (Netherlands)"                                         western )
+    ("ga_IE"    "Irish (Ireland)"                                                       western )
+    ("gd_GB"    "Scottish Gaelic (United Kingdom)"                                      western )
+    ("gez_ER"   "Geez (Eritrea)"                                                        western )
+    ("gez_ET"   "Geez (Ethiopia)"                                                       western )
+    ("gl_ES"    "Galician (Spain)"                                                      western )
+    ("gu_IN"    "Gujarati (India)"                                                      ctl     )
+    ("gv_GB"    "Manx (United Kingdom)"                                                 western )
+    ("ha_NG"    "Hausa (Nigeria)"                                                       western )
+    ("hak_TW"   "Hakka Chinese (Taiwan, Province of China)"                             cjk     )
+    ("he_IL"    "Hebrew (Israel)"                                                       ctl     )
+    ("hi_IN"    "Hindi (India)"                                                         ctl     )
+    ("hif_FJ"   "Fiji Hindi (Fiji)"                                                     western )
+    ("hne_IN"   "Chhattisgarhi (India)"                                                 ctl     )
+    ("hr_HR"    "Croatian (Croatia)"                                                    western )
+    ("hsb_DE"   "Upper Sorbian (Germany)"                                               western )
+    ("ht_HT"    "Haitian (Haiti)"                                                       western )
+    ("hu_HU"    "Hungarian (Hungary)"                                                   ctl     )
+    ("hy_AM"    "Armenian (Armenia)"                                                    western )
+    ("ia_FR"    "Interlingua (International Auxiliary Language Association) (France)"   western )
+    ("id_ID"    "Indonesian (Indonesia)"                                                western )
+    ("ig_NG"    "Igbo (Nigeria)"                                                        western )
+    ("ik_CA"    "Inupiaq (Canada)"                                                      western )
+    ("is_IS"    "Icelandic (Iceland)"                                                   western )
+    ("it_CH"    "Italian (Switzerland)"                                                 western )
+    ("it_IT"    "Italian (Italy)"                                                       western )
+    ("iu_CA"    "Inuktitut (Canada)"                                                    western )
+    ("ja_JP"    "Japanese (Japan)"                                                      cjk     )
+    ("ka_GE"    "Georgian (Georgia)"                                                    western )
+    ("kab_DZ"   "Kabyle (Algeria)"                                                      western )
+    ("kk_KZ"    "Kazakh (Kazakhstan)"                                                   western )
+    ("kl_GL"    "Kalaallisut (Greenland)"                                               western )
+    ("km_KH"    "Central Khmer (Cambodia)"                                              ctl     )
+    ("kn_IN"    "Kannada (India)"                                                       ctl     )
+    ("ko_KR"    "Korean (Korea, Republic of)"                                           cjk     )
+    ("kok_IN"   "Konkani (macrolanguage) (India)"                                       ctl     )
+    ("ks_IN"    "Kashmiri (India)"                                                      ctl     )
+    ("ku_TR"    "Kurdish (Turkey)"                                                      ctl     )
+    ("kw_GB"    "Cornish (United Kingdom)"                                              western )
+    ("ky_KG"    "Kirghiz (Kyrgyzstan)"                                                  western )
+    ("lb_LU"    "Luxembourgish (Luxembourg)"                                            western )
+    ("lg_UG"    "Ganda (Uganda)"                                                        western )
+    ("li_BE"    "Limburgan (Belgium)"                                                   western )
+    ("li_NL"    "Limburgan (Netherlands)"                                               western )
+    ("lij_IT"   "Ligurian (Italy)"                                                      western )
+    ("ln_CD"    "Lingala (Congo, The Democratic Republic of the)"                       western )
+    ("lo_LA"    "Lao (Lao People's Democratic Republic)"                                western )
+    ("lt_LT"    "Lithuanian (Lithuania)"                                                western )
+    ("lv_LV"    "Latvian (Latvia)"                                                      western )
+    ("lzh_TW"   "Literary Chinese (Taiwan, Province of China)"                          cjk     )
+    ("mag_IN"   "Magahi (India)"                                                        ctl     )
+    ("mai_IN"   "Maithili (India)"                                                      ctl     )
+    ("mai_NP"   "Maithili (Nepal)"                                                      ctl     )
+    ("mfe_MU"   "Morisyen (Mauritius)"                                                  western )
+    ("mg_MG"    "Malagasy (Madagascar)"                                                 western )
+    ("mhr_RU"   "Eastern Mari (Russian Federation)"                                     western )
+    ("mi_NZ"    "Maori (New Zealand)"                                                   western )
+    ("miq_NI"   "Mískito (Nicaragua)"                                                   western )
+    ("mjw_IN"   "Karbi (India)"                                                         ctl     )
+    ("mk_MK"    "Macedonian (North Macedonia)"                                          western )
+    ("ml_IN"    "Malayalam (India)"                                                     ctl     )
+    ("mn_MN"    "Mongolian (Mongolia)"                                                  ctl     )
+    ("mni_IN"   "Manipuri (India)"                                                      ctl     )
+    ("mnw_MM"   "Mon (Myanmar)"                                                         ctl     )
+    ("mr_IN"    "Marathi (India)"                                                       ctl     )
+    ("ms_MY"    "Malay (macrolanguage) (Malaysia)"                                      ctl     )
+    ("mt_MT"    "Maltese (Malta)"                                                       western )
+    ("my_MM"    "Burmese (Myanmar)"                                                     ctl     )
+    ("nan_TW"   "Min Nan Chinese (Taiwan, Province of China)"                           cjk     )
+    ("nb_NO"    "Norwegian Bokmål (Norway)"                                             western )
+    ("nds_DE"   "Low German (Germany)"                                                  western )
+    ("nds_NL"   "Low German (Netherlands)"                                              western )
+    ("ne_NP"    "Nepali (macrolanguage) (Nepal)"                                        ctl     )
+    ("nhn_MX"   "Central Nahuatl (Mexico)"                                              western )
+    ("niu_NU"   "Niuean (Niue)"                                                         western )
+    ("niu_NZ"   "Niuean (New Zealand)"                                                  western )
+    ("nl_AW"    "Dutch (Aruba)"                                                         western )
+    ("nl_BE"    "Dutch (Belgium)"                                                       western )
+    ("nl_NL"    "Dutch (Netherlands)"                                                   western )
+    ("nn_NO"    "Norwegian Nynorsk (Norway)"                                            western )
+    ("nr_ZA"    "South Ndebele (South Africa)"                                          western )
+    ("nso_ZA"   "Pedi (South Africa)"                                                   western )
+    ("oc_FR"    "Occitan (post 1500) (France)"                                          western )
+    ("om_ET"    "Oromo (Ethiopia)"                                                      western )
+    ("om_KE"    "Oromo (Kenya)"                                                         western )
+    ("or_IN"    "Oriya (macrolanguage) (India)"                                         ctl     )
+    ("os_RU"    "Ossetian (Russian Federation)"                                         western )
+    ("pa_IN"    "Panjabi (India)"                                                       western )
+    ("pa_PK"    "Panjabi (Pakistan)"                                                    western )
+    ("pap_AW"   "Papiamento (Aruba)"                                                    western )
+    ("pap_CW"   "Papiamento (Curaçao)"                                                  western )
+    ("pl_PL"    "Polish (Poland)"                                                       western )
+    ("ps_AF"    "Pushto (Afghanistan)"                                                  ctl     )
+    ("pt_BR"    "Portuguese (Brazil)"                                                   western )
+    ("pt_PT"    "Portuguese (Portugal)"                                                 western )
+    ("quz_PE"   "Cusco Quechua (Peru)"                                                  western )
+    ("raj_IN"   "Rajasthani (India)"                                                    ctl     )
+    ("ro_RO"    "Romanian (Romania)"                                                    western )
+    ("ru_RU"    "Russian (Russian Federation)"                                          western )
+    ("ru_UA"    "Russian (Ukraine)"                                                     western )
+    ("rw_RW"    "Kinyarwanda (Rwanda)"                                                  western )
+    ("sa_IN"    "Sanskrit (India)"                                                      ctl     )
+    ("sah_RU"   "Yakut (Russian Federation)"                                            western )
+    ("sat_IN"   "Santali (India)"                                                       ctl     )
+    ("sc_IT"    "Sardinian (Italy)"                                                     western )
+    ("sd_IN"    "Sindhi (India)"                                                        ctl     )
+    ("se_NO"    "Northern Sami (Norway)"                                                western )
+    ("sgs_LT"   "Samogitian (Lithuania)"                                                western )
+    ("shn_MM"   "Shan (Myanmar)"                                                        ctl     )
+    ("shs_CA"   "Shuswap (Canada)"                                                      western )
+    ("si_LK"    "Sinhala (Sri Lanka)"                                                   ctl     )
+    ("sid_ET"   "Sidamo (Ethiopia)"                                                     western )
+    ("sk_SK"    "Slovak (Slovakia)"                                                     western )
+    ("sl_SI"    "Slovenian (Slovenia)"                                                  western )
+    ("sm_WS"    "Samoan (Samoa)"                                                        western )
+    ("so_SO"    "Somali (Somalia)"                                                      western )
+    ("so_DJ"    "Somali (Djibouti)"                                                     western )
+    ("so_ET"    "Somali (Ethiopia)"                                                     western )
+    ("so_KE"    "Somali (Kenya)"                                                        western )
+    ("sq_AL"    "Albanian (Albania)"                                                    western )
+    ("sq_MK"    "Albanian (North Macedonia)"                                            western )
+    ("sr_ME"    "Serbian (Montenegro)"                                                  western )
+    ("sr_RS"    "Serbian (Serbia)"                                                      western )
+    ("ss_ZA"    "Swati (South Africa)"                                                  western )
+    ("st_ZA"    "Southern Sotho (South Africa)"                                         western )
+    ("sv_SE"    "Swedish (Sweden)"                                                      western )
+    ("sv_FI"    "Swedish (Finland)"                                                     western )
+    ("sw_KE"    "Swahili (macrolanguage) (Kenya)"                                       western )
+    ("sw_TZ"    "Swahili (macrolanguage) (Tanzania, United Republic of)"                western )
+    ("szl_PL"   "Silesian (Poland)"                                                     western )
+    ("ta_IN"    "Tamil (India)"                                                         ctl     )
+    ("ta_LK"    "Tamil (Sri Lanka)"                                                     ctl     )
+    ("tcy_IN"   "Tulu (India)"                                                          ctl     )
+    ("te_IN"    "Telugu (India)"                                                        ctl     )
+    ("tg_TJ"    "Tajik (Tajikistan)"                                                    western )
+    ("th_TH"    "Thai (Thailand)"                                                       western )
+    ("the_NP"   "Chitwania Tharu (Nepal)"                                               ctl     )
+    ("ti_ER"    "Tigrinya (Eritrea)"                                                    western )
+    ("ti_ET"    "Tigrinya (Ethiopia)"                                                   western )
+    ("tig_ER"   "Tigre (Eritrea)"                                                       western )
+    ("tk_TM"    "Turkmen (Turkmenistan)"                                                western )
+    ("tl_PH"    "Tagalog (Philippines)"                                                 western )
+    ("tn_ZA"    "Tswana (South Africa)"                                                 western )
+    ("to_TO"    "Tonga (Tonga Islands) (Tonga)"                                         western )
+    ("tpi_PG"   "Tok Pisin (Papua New Guinea)"                                          western )
+    ("tr_TR"    "Turkish (Turkey)"                                                      western )
+    ("tr_CY"    "Turkish (Cyprus)"                                                      western )
+    ("ts_ZA"    "Tsonga (South Africa)"                                                 western )
+    ("tt_RU"    "Tatar (Russian Federation)"                                            western )
+    ("ug_CN"    "Uighur (China)"                                                        ctl     )
+    ("uk_UA"    "Ukrainian (Ukraine)"                                                   western )
+    ("unm_US"   "Unami (United States)"                                                 western )
+    ("ur_IN"    "Urdu (India)"                                                          ctl     )
+    ("ur_PK"    "Urdu (Pakistan)"                                                       ctl     )
+    ("uz_UZ"    "Uzbek (Uzbekistan)"                                                    western )
+    ("ve_ZA"    "Venda (South Africa)"                                                  western )
+    ("vi_VN"    "Vietnamese (Viet Nam)"                                                 western )
+    ("wa_BE"    "Walloon (Belgium)"                                                     western )
+    ("wae_CH"   "Walser (Switzerland)"                                                  western )
+    ("wal_ET"   "Wolaytta (Ethiopia)"                                                   western )
+    ("wo_SN"    "Wolof (Senegal)"                                                       western )
+    ("xh_ZA"    "Xhosa (South Africa)"                                                  western )
+    ("yi_US"    "Yiddish (United States)"                                               ctl     )
+    ("yo_NG"    "Yoruba (Nigeria)"                                                      western )
+    ("yue_HK"   "Yue Chinese (Hong Kong)"                                               cjk     )
+    ("yuw_PG"   "Yau (Morobe Province) (Papua New Guinea)"                              western )
+    ("zh_CN"    "Chinese (China)"                                                       cjk     )
+    ("zh_HK"    "Chinese (Hong Kong)"                                                   cjk     )
+    ("zh_SG"    "Chinese (Singapore)"                                                   cjk     )
+    ("zh_TW"    "Chinese (Taiwan, Province of China)"                                   cjk     )
+    ("zu_ZA"    "Zulu (South Africa)"                                                   western ))
+  "Locale info.
+
+A list of entries (LOCALE-CODE LOCALE-NAME LIBO-SCRIPT-TYPE).
+Here is one of the entries in the list:
+
+  (\"ta_IN\" \"Tamil (India)\" ctl )
+
+LOCALE-CODE and LOCALE-NAME are used in `org-odt-update-locale'
+for configuring the LANGUAGE keyword of an Org file.  These
+LOCALE values together with LIBO-SCRIPT-TYPE is used to configure
+the default language/script for body text in exported document.
+See `org-odt-write-styles-file'
+
+LOCALE-CODE, a string => LANG-CODE UNDERSCORE COUNTRY-CODE .
+Example: \"ta_IN\".
+
+     - LOCALE-CODEs are sourced from file `/usr/share/i18n/SUPPORTED'.
+       This file is part of `locales' package on Debian.  For more
+       information see https://en.wikipedia.org/wiki/ISO/IEC_15897.
+
+LOCALE-NAME, a string =>  LANG-NAME OPEN-PAREN COUNTRY-NAME CLOSE-PAREN.
+Example: \"Tamil (India)\".
+
+    - LANG-NAME is sourced by looking up LANG-CODE in file
+      `/usr/share/iso-codes/json/iso_639-3.json'.  This file is
+      part of `iso-codes' package on Debian.  For more
+      information, see https://en.wikipedia.org/wiki/ISO_639-3.
+
+    - COUNTRY-NAME is sourced by looking up COUNTRY-CODE in file
+      `/usr/share/iso-codes/json/iso_3166-1.json'.  This file is
+      part of `iso-codes' package on Debian. For more
+      information, see https://en.wikipedia.org/wiki/ISO_3166-1.
+
+LIBO-SCRIPT-TYPE, a symbol, is one of `western', `cjk' or `ctl'.
+It is populated by consulting the font configuration menu in
+LibreOffice UI. The entries can also be cross-checked against the
+following file:
+
+https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/isolang/mslangid.cxx.")
 
 
 
@@ -1535,6 +1877,56 @@ See `org-odt--build-date-styles' for implementation details."
 	 (and (not (string= repeater ""))  " ")
 	 repeater)))))
 
+
+;;;; Locale-specific
+
+(defun org-odt--translate (s encoding info)
+  "Translate string S according to language specification.
+
+ENCODING is a symbol among `:ascii', `:html', `:latex', `:latin1'
+and `:utf-8'.  In the context of this exporter, ENCODING is
+always `:utf-8'.  INFO is a plist used as a communication
+channel.  Translation depends on `:language' property.  Return
+the translated string.  If no translation is found, try to fall
+back to `:default' encoding.  If it fails, return S.
+
+This function is a thin wrapper around `org-export-translate'.
+The syntax of LANGUAGE keyword (see
+`org-export-default-language') is not codified at the time of
+this writing.  Based on entries on `org-export-dictionary', it
+can either be a LANG-CODE, or LOCALE-CODE.  The LOCALE-CODE _may_
+use hyphen instead of underscore to separate the LANG-CODE and
+COUNTRY-CODE.
+
+This wrapper does the right thing for all the above variations in
+LANGUAGE keyword."
+  (or
+   (cl-block outer
+     (cl-loop with lang = (plist-get info :language)
+	      with s-entry = (cdr (assoc s org-export-dictionary))
+	      with try-langs = (cl-delete-duplicates
+				;; Try looking up following variations of LANGUAGE value in
+				;; `org-export-dictionary'.
+				(list
+				 ;; LANGUAGE, as it is.
+				 lang
+				 ;; LANGUAGE, but with hyphen instead of underscore.
+				 (replace-regexp-in-string "-" "_" lang t t)
+				 ;; LANGUAGE, but with underscore instead of underscore.
+				 (replace-regexp-in-string "_" "-" lang t t)
+				 ;; LANGUAGE, but with just the LANG-CODE.
+                                 (car (split-string lang "[_-]+")))
+	       :test #'string=)
+	      with try-encodings = (list encoding :default)
+	      for encoding in try-encodings
+	      do (cl-loop for lang in try-langs
+			  for translation = (plist-get (assoc-default lang s-entry)
+						       encoding)
+			  ;; Return the first succesful translation.
+			  when translation do (cl-return-from outer translation))))
+   s))
+
+
 ;;;; Frame
 
 (defun org-odt--frame (text width height style &optional extra
@@ -1739,7 +2131,7 @@ See `org-odt--build-date-styles' for implementation details."
   ;;
   ;; Likewise, links, footnote references and regular targets are also
   ;; suppressed.
-  (let* ((title (org-export-translate "Table of Contents" :utf-8 info))
+  (let* ((title (org-odt--translate "Table of Contents" :utf-8 info))
 	 (headlines (org-export-collect-headlines
 		     info (and (wholenump depth) depth) scope))
 	 (parent-level (or (and scope (org-export-get-relative-level
@@ -2247,6 +2639,50 @@ holding export options."
 
       ;; Write extra styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
+
+      ;; Write the default LANGUAGE for body text.
+      (insert (or
+	       (let* ((lang-or-locale (plist-get info :language))
+		      ;; Convert user-string to canonical format with hyphen as separator.
+		      (locale (replace-regexp-in-string "-" "_" lang-or-locale t t))
+		      (entry (when locale
+			       (assoc locale org-odt-locales-alist))))
+		 (let* ((entry (or
+				;; LOCALE-CODE is well-known.
+				entry
+				;; LOCALE-CODE is not known to us.
+				;;
+				;; It is most likely a LOCALE-CODE in degenerate form.  That is, it
+				;; is most likely a LANG-CODE without any COUNTRY-CODE.
+				;;
+				;; In thi case, look up LANG-CODE in our locales list and map it to
+				;; the first locale that shares the user-specified language.
+				(cl-some (lambda (it)
+					   (when (string-prefix-p (format "%s_" lang-or-locale) (car it))
+					     it))
+					 org-odt-locales-alist)))
+			;; Split LOCALE-CODE in to component parts.
+			(country (when entry (cadr (split-string (car entry) "_"))))
+			(lang (when entry (car (split-string (car entry) "_"))))
+			(script-type (when entry (nth 2 entry))))
+		   (when script-type
+		     (format "
+<style:style style:name=\"Standard\" style:family=\"paragraph\" style:class=\"text\">
+   <style:text-properties %s/>
+</style:style>"
+			     (mapconcat #'identity
+					(list
+					 (format "fo:language=\"%s\" fo:country=\"%s\""
+						 (if (eq script-type 'western) lang "none")
+						 (if (eq script-type 'western) country "none"))
+					 (format "style:language-asian=\"%s\" style:country-asian=\"%s\""
+						 (if (eq script-type 'cjk) lang "none")
+						 (if (eq script-type 'cjk) country "none"))
+					 (format "style:language-complex=\"%s\" style:country-complex=\"%s\""
+						 (if (eq script-type 'ctl) lang "none")
+						 (if (eq script-type 'ctl) country "none")))
+					" ")))))
+	       ""))
 
       ;; Update styles.xml - take care of outline numbering
 
@@ -3068,7 +3504,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	    ;; Translate the title.
 	    (if (string-match "\\(?:<text:index-title-template.*>\\(?1:\\(?:.\\|\n\\)+?\\)</text:index-title-template>\\)"
 			      template)
-		(replace-match (org-export-translate (org-trim (match-string 1 template)) :utf-8 info) t t template 1)
+		(replace-match (org-odt--translate (org-trim (match-string 1 template)) :utf-8 info)
+			       t t template 1)
 	      template))))))
      ;; Handle BIBLIOGRAPHY.  Ignore it.
      ((string= key "BIBLIOGRAPHY")
@@ -3348,7 +3785,7 @@ SHORT-CAPTION are strings."
 			       (pcase %
 				 ('category
 				  ;; Localize entity name.
-				  (org-export-translate (plist-get category-props :entity-name) :utf-8 info))
+				  (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
 				 ('counter
 				  (concat
 				   ;; Sneak in a bookmark.  The bookmark is used when the
@@ -6458,6 +6895,7 @@ non-nil."
     (org-odt-export-as-odt-backend backend async subtreep
 				   visible-only body-only ext-plist)))
 
+
 ;;;; Convert between OpenDocument and other formats
 
 (defun org-odt-reachable-p (in-fmt out-fmt)
@@ -6573,6 +7011,59 @@ using `org-open-file'."
    (append (org-odt-convert-read-params) current-prefix-arg))
   (org-odt-do-convert in-file out-fmt open))
 
+
+;;;; Completion for `#+LANGUAGE: ' line
+
+(defun org-odt-update-locale ()
+  "Implement `completing-read' for LANGUAGE keyword.
+
+Use entries from `org-odt-locales-alist' as candidates.  
+
+Note, that there already exists
+`pcomplete/org-mode/file-option/language' for completing LANGUAGE
+values.  Here are the differences between this function and the
+`pcomplete'-command:
+
+  - This function completes on a bigger list of candidates, and
+    offers human-readable description of the locale.  The
+    `pcomplete' version completes the sole candidate,
+    `org-export-default-language'.
+
+  - This function hooks to `org-tab-first-hook' and is invoked by
+    pressing TAB when on LANGUAGE line.  The `pcomplete' version
+    uses \"completion at point\" infrastructure and is invoked by
+    pressing \\[completion-at-point]."
+  (org-with-wide-buffer
+   (let* ((element (org-element-at-point))
+	  (completions
+	   (append
+            ;; Alist of (LANG-NAME . LANG-CODE)
+	    (cl-delete-duplicates
+	     (cl-loop for (locale name _script-type) in org-odt-locales-alist
+		      for language = (car (split-string locale "_"))
+		      for language-name = (when (string-match "\\(.*?\\) \\((.*?)\\)" name)
+					    (match-string 1 name))
+		      collect (list language-name language))
+	     :test #'equal)
+	    ;; Alist of (LOCALE-NAME . LOCALE-CODE)
+	    (mapcar (lambda (it) (cdr (reverse it))) org-odt-locales-alist))))
+     (when (and (eq (org-element-type element) 'keyword)
+		(string= (upcase (org-element-property :key element)) "LANGUAGE")
+		(< (point) (org-element-property :end element))
+		(>= (point) (org-element-property :begin element)))
+       (goto-char (org-element-property :begin element))
+       (when (re-search-forward ":" (point-at-eol) t)
+	 ;; Wipe-off the current entry.
+	 (delete-region (point) (point-at-eol))
+	 (insert " ")
+	 ;; Insert the chosen entry.
+	 (let ((input (car (assoc-default
+			    (org-completing-read "Language/Locale: " completions) completions))))
+	   (when input
+	     (insert input))))))))
+
+(add-hook 'org-tab-first-hook 'org-odt-update-locale)
+
 ;;; Library Initializations
 
 (cl-loop for (extn . rest) in org-odt-file-extensions-alist do
@@ -6583,3 +7074,7 @@ using `org-open-file'."
 (provide 'ox-odt)
 
 ;;; ox-odt.el ends here
+
+;; Local Variables:
+;; fill-column: 100
+;; End:
