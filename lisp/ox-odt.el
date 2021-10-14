@@ -274,8 +274,8 @@ standard Emacs.")
 
 (defconst org-odt-table-style-format
   "
-<style:style style:name=\"%s\" style:family=\"table\">
-  <style:table-properties style:rel-width=\"%d%%\" fo:margin-top=\"0cm\" fo:margin-bottom=\"0.20cm\" table:align=\"center\"/>
+<style:style style:name=\"%s\" style:family=\"table\" %s>
+  <style:table-properties fo:margin-top=\"0cm\" fo:margin-bottom=\"0.20cm\" table:align=\"center\" %s/>
 </style:style>
 "
   "Template for auto-generated Table styles.")
@@ -5777,7 +5777,29 @@ contextual information."
 		   (format
 		    "\n<table:table table:style-name=\"%s\"%s>"
 		    (or custom-table-style
-			(let* ((props (org-export-read-attribute :attr_odt table))
+			(let* ((props (org-odt--read-attribute table))
+			       (rel-width (let ((value (plist-get props :rel-width)))
+					    (if (numberp value) value 96)))
+			       (pagebreak-type (let ((page-break (plist-get props :page-break)))
+						 (cond
+						  ((null page-break)
+						   nil)
+						  ((string= (plist-get props :page-break) "after")
+						   'after)
+						  (t 'before))))
+			       (master-page-name (let ((page-style (plist-get props :page-style)))
+						   ;; When setting up a page break after a table,
+						   ;; LibreOffice v7.2.1.2 (Community edition) UI
+						   ;; doesn't enable either the page style or page
+						   ;; number.  This seems to be a bug or a lack of
+						   ;; feature.  For now, mimic the UI behaviour.
+						   (unless (eq pagebreak-type 'after)
+						     page-style)))
+			       (page-number (let ((n (plist-get props :page-number)))
+					      ;; Suppress page-number when there is no explicit
+					      ;; master page style specified.
+					      (when (and (numberp n) master-page-name)
+						n)))
 			       style-name)
 			  (when props
 			    (setq style-name (format "Org%s" (org-odt--name-object info 'table)))
@@ -5785,9 +5807,39 @@ contextual information."
 				       (concat (plist-get info :odt-automatic-styles)
 					       (format org-odt-table-style-format
 						       style-name
-						       (or (let ((value (plist-get props :rel-width)))
-							     (and value (ignore-errors (read value))))
-							   96)))))
+						       ;; style:style attributes
+						       (or
+							(cl-case pagebreak-type
+							  (before
+							   (if master-page-name
+							       (format "style:master-page-name=\"%s\""
+								       master-page-name)
+							     ""))
+							  (after
+							   (format "style:master-page-name=\"%s\""
+								   (or master-page-name "")))
+							  (otherwise))
+							"")
+						       ;; style:table-properties
+						       (concat
+							(format " style:rel-width=\"%.2f%%\" " rel-width)
+							(cl-case pagebreak-type
+							  (before
+							   (if (org-string-nw-p master-page-name)
+							       (concat
+								" fo:break-before=\"auto\" fo:break-after=\"auto\""
+								(format
+								 " style:page-number=\"%s\""
+								 (if page-number (number-to-string page-number)
+								   "auto")))
+							     " fo:break-before=\"page\""))
+							  (after
+							   (format
+							    " style:page-number=\"%s\" fo:break-after=\"page\""
+							    (if page-number (number-to-string page-number)
+							      "auto")))
+							  (otherwise
+							   "")))))))
 			  style-name)
 			"OrgTable")
 		    (concat (when short-caption
