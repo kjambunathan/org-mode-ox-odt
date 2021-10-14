@@ -1823,6 +1823,20 @@ See `org-odt--build-date-styles' for implementation details."
   :type 'boolean)
 
 
+;;;; Experimental features: LANGUAGE keyword
+
+(defcustom org-odt-experimental-features '(language)
+  "List of EXPERIMENTAL features that are enabled.
+
+This is a list of symbols, with each symbol representing a
+feature.  Currently the following EXPERIMENTAL features are
+available:
+
+    - language :: Honor LANGUAGE setting.  See inline comments in
+      `org-odt-write-styles-file'."
+  :group 'org-export-odt
+  :type '(set (symbol :tag "Honor LANGUAGE keyword" language)))
+
 
 ;;; Internal functions
 
@@ -2637,52 +2651,110 @@ holding export options."
       (when (re-search-forward "</office:styles>" nil t)
 	(goto-char (match-beginning 0)))
 
-      ;; Write extra styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
+      ;;    Style structure when                  Style structure when
+      ;;    `language' feature is OFF             `language' feature is ON
+      ;;                        
+      ;;                                                                                    o 
+      ;;                                                                                   /|\
+      ;;                                                                                    |
+      ;;                                                                                 ORG FILE
+      ;;                                                                                    |
+      ;;                                                                                    |
+      ;;                                                                                    |
+      ;;            O OrgUser                               O OrgUser                       |   OrgUser =>  User sets this style in Org file
+      ;;            |                                       |                               |               through #+ODT_EXTRA_STYLES:
+      ;;            |                                       |                               |
+      ;;            |                                       |                               |
+      ;;    ========|=======================================|=======================================
+      ;;            |                                       |                               o
+      ;;            |                                       |                              /|\
+      ;;            |                                       |                               |
+      ;;            |                                       |                             EXPORTER 
+      ;;            |                                       +------> OrgLocale              |     
+      ;;            |                                              |                        |     
+      ;;            |                                              |                        |    OrgLocale => Exporter introduces this style     
+      ;;            |                                              |                        |                 to honour the LANGUAGE KEYWORD
+      ;;            |                                              |                       \|/
+      ;;            |                                              |                        o
+      ;;    ========|==============================================|==================================
+      ;;            |                                              |                        |
+      ;;            |                                              |                        |
+      ;;            |                                              |                        |
+      ;;            +----> Standard                                +----> Standard          |     Standard => Defined in OrgOdtStyles.xml. 
+      ;;                                                                                    |                 The root style from which
+      ;;                                                                                    |                 all other styles inherit from.
+      ;;                                                                                    |
+      ;;                                                                                    |
+      ;;                                                                                   STYLES.XML
+      ;;                                                                                    |
+      ;;                                                                                   \|/
+      ;;                                                                                    o
+      ;; 
 
       ;; Write the default LANGUAGE for body text.
-      (insert (or
-	       (let* ((lang-or-locale (plist-get info :language))
-		      ;; Convert user-string to canonical format with hyphen as separator.
-		      (locale (replace-regexp-in-string "-" "_" lang-or-locale t t))
-		      (entry (when locale
-			       (assoc locale org-odt-locales-alist))))
-		 (let* ((entry (or
-				;; LOCALE-CODE is well-known.
-				entry
-				;; LOCALE-CODE is not known to us.
-				;;
-				;; It is most likely a LOCALE-CODE in degenerate form.  That is, it
-				;; is most likely a LANG-CODE without any COUNTRY-CODE.
-				;;
-				;; In thi case, look up LANG-CODE in our locales list and map it to
-				;; the first locale that shares the user-specified language.
-				(cl-some (lambda (it)
-					   (when (string-prefix-p (format "%s_" lang-or-locale) (car it))
-					     it))
-					 org-odt-locales-alist)))
-			;; Split LOCALE-CODE in to component parts.
-			(country (when entry (cadr (split-string (car entry) "_"))))
-			(lang (when entry (car (split-string (car entry) "_"))))
-			(script-type (when entry (nth 2 entry))))
-		   (when script-type
-		     (format "
-<style:style style:name=\"Standard\" style:family=\"paragraph\" style:class=\"text\">
-   <style:text-properties %s/>
-</style:style>"
-			     (mapconcat #'identity
-					(list
-					 (format "fo:language=\"%s\" fo:country=\"%s\""
-						 (if (eq script-type 'western) lang "none")
-						 (if (eq script-type 'western) country "none"))
-					 (format "style:language-asian=\"%s\" style:country-asian=\"%s\""
-						 (if (eq script-type 'cjk) lang "none")
-						 (if (eq script-type 'cjk) country "none"))
-					 (format "style:language-complex=\"%s\" style:country-complex=\"%s\""
-						 (if (eq script-type 'ctl) lang "none")
-						 (if (eq script-type 'ctl) country "none")))
-					" ")))))
-	       ""))
+      (if (not (memq 'language org-odt-experimental-features))
+	  (insert "
+<style:style style:name=\"Standard\" style:family=\"paragraph\" style:parent-style-name=\"OrgUser\"/>
+")
+	(insert (or
+		 (let* ((lang-or-locale (plist-get info :language))
+			;; Convert user-string to canonical format with hyphen as separator.
+			(locale (replace-regexp-in-string "-" "_" lang-or-locale t t))
+			(entry (when locale
+				 (assoc locale org-odt-locales-alist))))
+		   (let* ((entry (or
+				  ;; LOCALE-CODE is well-known.
+				  entry
+				  ;; LOCALE-CODE is not known to us.
+				  ;;
+				  ;; It is most likely a LOCALE-CODE in degenerate form.  That is, it
+				  ;; is most likely a LANG-CODE without any COUNTRY-CODE.
+				  ;;
+				  ;; In thi case, look up LANG-CODE in our locales list and map it to
+				  ;; the first locale that shares the user-specified language.
+				  (cl-some (lambda (it)
+					     (when (string-prefix-p (format "%s_" lang-or-locale) (car it))
+					       it))
+					   org-odt-locales-alist)))
+			  ;; Split LOCALE-CODE in to component parts.
+			  (country (when entry (cadr (split-string (car entry) "_"))))
+			  (lang (when entry (car (split-string (car entry) "_"))))
+			  (script-type (when entry (nth 2 entry))))
+		     (when script-type
+		       (format "
+<style:style style:name=\"OrgLocale\" style:family=\"paragraph\" style:parent-style-name=\"OrgUser\">
+  <style:text-properties %s/>
+</style:style>
+<style:style style:name=\"Standard\" style:family=\"paragraph\" style:parent-style-name=\"OrgLocale\"/>
+"
+			       (mapconcat #'identity
+					  (list
+					   (format "fo:language=\"%s\" fo:country=\"%s\""
+						   (if (eq script-type 'western) lang "none")
+						   (if (eq script-type 'western) country "none"))
+					   (format "style:language-asian=\"%s\" style:country-asian=\"%s\""
+						   (if (eq script-type 'cjk) lang "none")
+						   (if (eq script-type 'cjk) country "none"))
+					   (format "style:language-complex=\"%s\" style:country-complex=\"%s\""
+						   (if (eq script-type 'ctl) lang "none")
+						   (if (eq script-type 'ctl) country "none")))
+					  " ")))))
+		 "")))
+
+      ;; Write extra styles.
+      ;;
+      ;; Note: If the user has defined the `Standard' style in ODT_EXTRA_STYLES then that is what is
+      ;; effective in the final exported document.  What this means is that when the EXPERIMENTAL
+      ;; `language' feature is ON, the re-definition of `Standard' via `OrgLocale' inserted by the
+      ;; exporter gets overridden.  This behavour is deliberate so that existing org files continue
+      ;; to function in the same way as they were well-before the availability of the EXPERIMENTAL
+      ;; `language' feature.
+      ;;
+      ;; A WORD OF ADVICE TO THE USER: Don't define `Standard' style in ODT_EXTRA_STYLES.  Instead
+      ;; define the style `OrgUser'.  This way you can enable have best of both worlds: custom
+      ;; inline definition of styles, AND setting up of locale according to LANGUAGE keyword in the
+      ;; document.
+      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
 
       ;; Update styles.xml - take care of outline numbering
 
@@ -7077,4 +7149,5 @@ values.  Here are the differences between this function and the
 
 ;; Local Variables:
 ;; fill-column: 100
+;; eval: (menu-bar--toggle-truncate-long-lines)
 ;; End:
