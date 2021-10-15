@@ -2182,11 +2182,12 @@ LANGUAGE keyword."
 	       (plist-put counters object seqno))
     seqno))
 
-(defun org-odt--name-object (info object)
+(defun org-odt--name-object (info object &optional base-style-name)
   (cl-assert (and (symbolp object)
 		  (not (keywordp object))))
   (format "%s%d"
-	  (capitalize (symbol-name object))
+	  (or base-style-name
+	      (capitalize (symbol-name object)))
 	  (org-odt--count-object info object)))
 
 
@@ -5444,19 +5445,18 @@ styles congruent with the ODF-1.2 specification."
 	(concat template-name cell-type)))))
 
 (defun org-odt--table-cell-widths (table info)
-  (let* ((user-widths (org-export-read-attribute :attr_odt table :widths))
-	 (user-width-p (and user-widths t))
-	 (user-widths (and user-width-p (split-string user-widths ","))))
-    (org-element-map
-	(org-element-map table 'table-row
-	  (lambda (row)
-	    (unless (eq (org-element-property :type row) 'rule) row))
-	  info 'first-match)
-	'table-cell
-      (lambda (table-cell)
-	(or (and user-width-p (string-to-number (or (pop user-widths) "0")))
-	    (org-export-table-cell-width table-cell info) 0))
-      info nil 'table)))
+  (let* ((num-columns (cdr (org-export-table-dimensions table info)))
+	 (widths (mapcar (lambda (n) (* 1.0 (string-to-number n)))
+			 (let ((widths (org-odt--read-attribute table :widths)))
+			   (when (stringp widths)
+			     (split-string widths "\\(?:,[[:space:]]*\\)" t "\\(?:[[:space:]]+\\)")))))
+	 (cum-width (apply #'+ widths))
+	 (normalized-cum-width 1000))
+    (when (and widths
+	       (not (cl-some #'zerop widths))
+	       (= (length widths) num-columns))
+      (cl-loop for width in widths
+	       collect (/ (* normalized-cum-width width) cum-width)))))
 
 (defun org-odt-table-cell--get-paragraph-styles (table-cell info)
   "Get paragraph style for TABLE-CELL.
@@ -5629,9 +5629,6 @@ channel."
   (let* ((table-cell-address (org-odt-table-cell-address table-cell info))
 	 (table-cell-borders (org-export-table-cell-borders table-cell info))
 	 (_r (car table-cell-address))
-	 (c (cdr table-cell-address))
-	 (horiz-span (nth c (org-odt--table-cell-widths
-			     (org-export-get-parent-table table-cell) info)))
 	 (table-cell-types (org-odt-table-cell-types (org-export-get-parent-table table-cell) info))
 	 (table-cell-type (cdr (assoc (cons (1+ (car table-cell-address)) (1+ (cdr table-cell-address)))
 				      table-cell-types)))
@@ -5646,61 +5643,31 @@ channel."
 	    (when (memq 'above table-cell-borders) "T")
 	    (when (memq 'below table-cell-borders) "B")
 	    (when (memq 'left table-cell-borders) "L")
-	    (when (memq 'right table-cell-borders) "R"))))
-	 (cell-attributes
-	  (cond
-	   ;; Table with `:span' cells.
-	   ((null table-cell-types)
-	    (concat
-	     (format " table:style-name=\"%s\"" cell-style-name)
-	     (and (> horiz-span 0)
-		  (format " table:number-columns-spanned=\"%d\""
-			  (1+ horiz-span)))))
-	   ;; Table without any `:span' cells.
-	   (t
-	    (concat
-	     (format " table:style-name=\"%s\"" cell-style-name)
-	     (when (consp table-cell-type)
-	       (pcase-let ((`(,rowspan . ,colspan) table-cell-type))
-		 (concat
-		  (unless (= 1 rowspan)
-		    (format " table:number-rows-spanned=\"%d\""
-			    rowspan))
-		  (unless (= 1 colspan)
-		    (format " table:number-columns-spanned=\"%d\""
-			    colspan))))))))))
+	    (when (memq 'right table-cell-borders) "R")))))
     (unless contents (setq contents ""))
     (cond
-     ;; Table with `:span' cells.
-     ((null table-cell-types)
+     ((eq table-cell-type 'covered) "\n<table:covered-table-cell/>")
+     (t
       (concat
        (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
-	       cell-attributes
+	       (concat
+		(format " table:style-name=\"%s\"" cell-style-name)
+		(when (consp table-cell-type)
+		  (pcase-let ((`(,rowspan . ,colspan) table-cell-type))
+		    (concat
+		     (unless (= 1 rowspan)
+		       (format " table:number-rows-spanned=\"%d\""
+			       rowspan))
+		     (unless (= 1 colspan)
+		       (format " table:number-columns-spanned=\"%d\""
+			       colspan))))))
 	       (let ((table-cell-contents (org-element-contents table-cell)))
 		 (if (eq (org-element-class (car table-cell-contents)) 'element)
 		     contents
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (org-odt-table-cell--get-paragraph-styles table-cell info)
 			   contents))))
-       (let (s)
-	 (dotimes (_i horiz-span s)
-	   (setq s (concat s "\n<table:covered-table-cell/>"))))
-       "\n"))
-     ;; Table without any `:span' cells.
-     (t
-      (cond
-       ((eq table-cell-type 'covered) "\n<table:covered-table-cell/>")
-       (t
-	(concat
-	 (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
-		 cell-attributes
-		 (let ((table-cell-contents (org-element-contents table-cell)))
-		   (if (eq (org-element-class (car table-cell-contents)) 'element)
-		       contents
-		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			     (org-odt-table-cell--get-paragraph-styles table-cell info)
-			     contents))))
-	 "\n")))))))
+       "\n")))))
 
 
 ;;;; Table Row
@@ -5762,16 +5729,28 @@ contextual information."
 	    (table-column-specs
 	     (lambda (table info)
 	       (let* ((table-style (or custom-table-style "OrgTable"))
-		      (column-style (format "%sColumn" table-style)))
-		 (mapconcat
-		  (lambda (width)
-		    (setq width (1+ width))
-		    (let ((s (format
-			      "\n<table:table-column table:style-name=\"%s\"/>"
-			      column-style))
-			  out)
-		      (dotimes (_i width out) (setq out (concat s out)))))
-		  (org-odt--table-cell-widths table info) "\n"))))
+		      (column-style (format "%sColumn" table-style))
+		      (widths (org-odt--table-cell-widths table info)))
+		 (cond
+		  (widths
+		   (mapconcat
+		    (lambda (width)
+		      (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
+			(plist-put info :odt-automatic-styles
+				   (concat (plist-get info :odt-automatic-styles)
+					   (format
+					    "
+					   <style:style style:name=\"%s\" style:family=\"table-column\" style:parent-style-name=\"%s\">
+					        <style:table-column-properties style:rel-column-width=\"%d*\"/>
+					   </style:style>"
+					    derived-column-style column-style width)))
+			(format "\n<table:table-column table:style-name=\"%s\"/>"
+				derived-column-style)))
+		    widths "\n"))
+		  (t
+		   (format "\n<table:table-column table:style-name=\"%s\" table:number-columns-repeated=\"%d\"/>"
+			   column-style
+			   (cdr (org-export-table-dimensions table info))))))))
 	    (text (concat
 		   ;; begin table.
 		   (format
@@ -5844,7 +5823,6 @@ contextual information."
 			"OrgTable")
 		    (concat (when short-caption
 			      (format " table:name=\"%s\"" short-caption))))
-
 		   ;; column specification.
 		   (funcall table-column-specs table info)
 		   ;; actual contents.
@@ -7200,6 +7178,6 @@ values.  Here are the differences between this function and the
 ;;; ox-odt.el ends here
 
 ;; Local Variables:
-;; fill-column: 100
+;; fill-column: 160
 ;; eval: (menu-bar--toggle-truncate-long-lines)
 ;; End:
