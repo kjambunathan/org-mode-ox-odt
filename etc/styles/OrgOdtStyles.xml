@@ -970,6 +970,13 @@
       </style:tab-stops>
     </style:paragraph-properties>
   </style:style>
+
+  <style:style style:name="Frame_20_contents" style:display-name="Frame contents" style:family="paragraph" style:parent-style-name="Standard" style:class="extra"/>  
+
+  <style:style style:name="OrgFigureText" style:family="paragraph" style:parent-style-name="Frame_20_contents">
+   <style:paragraph-properties fo:text-align="end" style:justify-single-word="false"/>
+  </style:style>
+
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">

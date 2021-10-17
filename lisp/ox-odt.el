@@ -1832,10 +1832,36 @@ This is a list of symbols, with each symbol representing a
 feature.  Currently the following EXPERIMENTAL features are
 available:
 
-    - language :: Honor LANGUAGE setting.  See inline comments in
-      `org-odt-write-styles-file'."
+    - `language' :: Honor LANGUAGE setting.  See inline comments in
+      `org-odt-write-styles-file'
+      
+    - `short-caption-as-label' :: Use short caption as image label.
+      The effect of this option, by default, is to \"overlay\" the
+      short caption as a text on the top-right (i.e., north-east)
+      corner of an image.  You can use this feature to add an
+      \"index\" to a subfigure.  For example, with the snippet like
+      the one below:
+
+          #+NAME: table
+          #+CAPTION: Animals
+          #+ATTR_ODT: :category \"figure\"
+          #+ATTR_ODT: :list-table t
+          -
+              -
+                  #+NAME: dog
+                  #+CAPTION[([[dog]])]: A Dog
+                  [[./org-mode-unicorn.png]]
+              -
+                  #+NAME: goat
+                  #+CAPTION[([[goat]])]: A Goat        
+                  [[./org-mode-unicorn.png]]
+ ."
+
   :group 'org-export-odt
-  :type '(set (symbol :tag "Honor LANGUAGE keyword" language)))
+  :type '(set (const :tag "Honor LANGUAGE keyword" language)
+	      (choice (const :tag "Ignore short caption" nil)
+		      ;; (symbol :tag "Honor short caption" short-caption)
+		      (const :tag "Short captions as object label" short-caption-as-label))))
 
 
 ;;; Internal functions
@@ -3785,20 +3811,31 @@ SHORT-CAPTION are strings."
 	 ;; elements in `org-element-all-objects', but for now this
 	 ;; will do.
 	 (short-caption
-	  ;; Sneaking in short-caption as name attribute is
-	  ;; problematic with LibreOffice > 4.0.4.2.  So ignore
-	  ;; short-captions.  See following thread:
-	  ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00100.html
-	  (ignore
-	   (let ((short-caption (or short-caption caption))
-		 (backend (org-export-create-backend
-			   :parent (org-export-backend-name
-				    (plist-get info :back-end))
-			   :transcoders
-			   (mapcar (lambda (type) (cons type (lambda (_o c _i) c)))
-				   org-element-all-objects))))
-	     (when short-caption
-	       (org-export-data-with-backend short-caption backend info))))))
+	  (when short-caption
+	    (cond
+	     ;; Short captions, as they are commonly understood in
+	     ;; LaTeX world, is not supported by this exporter.
+	     ((memq 'short-caption org-odt-experimental-features)
+	      ;; Sneaking in short-caption as name attribute is
+	      ;; problematic with LibreOffice > 4.0.4.2.  So ignore
+	      ;; short-captions.  See following thread:
+	      ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00100.html
+	      ;; (ignore
+	      ;;  (let ((short-caption (or short-caption caption))
+	      ;; 	   (backend (org-export-create-backend
+	      ;; 		     :parent (org-export-backend-name
+	      ;; 			      (plist-get info :back-end))
+	      ;; 		     :transcoders
+	      ;; 		     (mapcar (lambda (type) (cons type (lambda (_o c _i) c)))
+	      ;; 			     org-element-all-objects))))
+	      ;;    (when short-caption
+	      ;; 	 (org-export-data-with-backend short-caption backend info))))
+	      )
+	     ;; Use short caption as text "overlay" over the object
+	     ;; underneath.
+	     ((memq 'short-caption-as-label org-odt-experimental-features)
+	      (when short-caption
+		(org-export-data short-caption info)))))))
     (when (org-odt--enumerable-p caption-from info)
       (let* ((category (or (org-odt--element-category element info)
 			   (error "Refusing to enumerate the uncategorizable element: %S"
@@ -3890,7 +3927,11 @@ SHORT-CAPTION are strings."
 		     (t caption-text))))
 	       short-caption
 	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
-			  :caption-position)))
+			  :caption-position)
+	       ;; Paragraph style for the "overlaid" short caption,
+	       ;; and the associated image/formula.
+	       (or (org-odt--read-attribute caption-from :style)
+		   (format "Org%sText" (plist-get category-props :caption-style)))))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-loop for % in (plist-get
@@ -4259,13 +4300,15 @@ used as a communication channel."
 		    (setcar (cdr frame-params)
 			    (concat
 			     (cadr frame-params)
-			     (when short-caption
+			     (when (and (memq 'short-caption org-odt-experimental-features) short-caption)
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			  "Standard"
-			  (apply 'org-odt--frame href (car widths) (car heights)
-				 (append inner title-and-desc)))))
+			  (nth 3 captions)
+			  (concat
+			   short-caption
+			   (apply 'org-odt--frame href (car widths) (car heights)
+				  (append inner title-and-desc))))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
