@@ -4084,13 +4084,20 @@ used as a communication channel."
 		      (link (org-export-get-parent-element element))
 		      (t element)))
 	 ;; Handle `:anchor', `:style' and `:attributes' properties.
-	 (user-frame-anchor
-	  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
-			     '(("as-char") ("paragraph") ("page")) t)))
-	 (user-frame-style nil)
-	 (user-frame-attrs nil)
+	 ;; (user-frame-anchor
+	 ;;  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
+	 ;; 		     '(("as-char") ("paragraph") ("page")) t)))
+	 ;; (user-frame-style nil)
+	 ;; (user-frame-attrs nil)
+	 ;; (user-frame-params
+	 ;;  (list user-frame-style user-frame-attrs user-frame-anchor))
 	 (user-frame-params
-	  (list user-frame-style user-frame-attrs user-frame-anchor))
+	  (cl-loop for which-frame in (list :inner-frame :outer-frame)
+		   for frame-params = (let ((value (org-odt--read-attribute attr-from which-frame)))
+					(cl-loop for (a b . rest) on value by #'cddr
+						 append (list (intern (format ":%s" a)) b)))
+		   collect (cl-loop for prop in '(:style :extra :anchor)
+				    collect (plist-get frame-params prop))))
 	 ;; (embed-as (or embed-as user-frame-anchor "paragraph"))
 	 ;;
 	 ;; Handle `:width', `:height' and `:scale' properties.
@@ -4273,22 +4280,25 @@ used as a communication channel."
 	 (inner (nth 1 frame-cfg))
 	 (outer (nth 2 frame-cfg))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
-	 (user user-frame-params)
+	 (inner-user (nth 0 user-frame-params))
+	 (outer-user (nth 1 user-frame-params))
 	 (--merge-frame-params (lambda (default user)
 				 "Merge default and user frame params."
-				 (if (not user) default
-				   (cl-assert (= (length default) 3))
-				   (cl-assert (= (length user) 3))
-				   (cl-loop for u in user
-					    for d in default
-					    collect (or u d))))))
+				 (list
+				  (or (nth 0 user)
+				      (nth 0 default))
+				  (format " %s %s"
+					  (or (nth 1 user) "")
+					  (or (nth 1 default) ""))
+				  (or (nth 2 user)
+				      (nth 2 default))))))
     (cond
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
      ;;         or formula.
      ((not caption)
       ;; Merge user frame params with that from configuration.
-      (setq inner (funcall --merge-frame-params inner user))
+      (setq inner (funcall --merge-frame-params inner inner-user))
       (apply 'org-odt--frame href (car widths) (car heights)
 	     (append inner title-and-desc)))
      ;; Case 2: Image/Formula is captioned or labeled.
@@ -4297,7 +4307,7 @@ used as a communication channel."
      ;;         caption/sequence number.
      (t
       ;; Merge user frame params with outer frame params.
-      (setq outer (funcall --merge-frame-params outer user))
+      (setq outer (funcall --merge-frame-params outer outer-user))
       ;; Short caption, if specified, goes as part of inner frame.
       (setq inner (let ((frame-params (copy-sequence inner)))
 		    (when (or (cdr widths) (cdr heights))
@@ -4308,6 +4318,7 @@ used as a communication channel."
 			     (when (and (memq 'short-caption org-odt-experimental-features) short-caption)
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
+      (setq inner (funcall --merge-frame-params inner inner-user))
       (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			  (nth 3 captions)
 			  (concat
