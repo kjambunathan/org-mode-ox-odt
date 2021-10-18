@@ -2021,15 +2021,20 @@ LANGUAGE keyword."
 
 ;;;; Library wrappers :: Ox
 
-(defun org-odt--read-attribute (element &optional property)
+(defun org-odt--read-attribute (element &optional property collectp)
   (let ((attrs (cl-case (org-element-type element)
 		 (headline
-		  (let* ((value (org-element-property :ATTR_ODT  element)))
+		  (let* ((value (org-element-property :ATTR_ODT element)))
 		    (when value
 		      (ignore-errors (read (format "(%s)" value))))))
 		 (t (cl-loop for x on (org-export-read-attribute :attr_odt element) by 'cddr
 			     append (list (car x) (read (cadr x))))))))
-    (if property (plist-get attrs property) attrs)))
+    (cond
+     ((null property) attrs)
+     ((null collectp) (plist-get attrs property))
+     (t (cl-loop for x = (memq property attrs) then (memq property (cddr x))
+		 while x collecting (cadr x) into value
+		 finally (return value))))))
 
 
 ;;;; Target
@@ -5650,7 +5655,9 @@ column spans
 	 (cached (gethash table cache 'no-cache)))
     (if (not (eq cached 'no-cache)) cached
       (puthash table
-	       (let* ((span (org-odt--read-attribute table :span)))
+	       (let* ((span (mapconcat #'identity
+				       (org-odt--read-attribute table :span 'collect)
+				       " ")))
 		 (cl-loop for spec in (when span (split-string span " "))
 			  when (string-match "@\\([[:digit:]]+\\)\\$\\([[:digit:]]+\\){\\([[:digit:]]+\\):\\([[:digit:]]+\\)}" spec)
 			  append
