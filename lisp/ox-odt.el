@@ -4319,12 +4319,23 @@ used as a communication channel."
 			       (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
       (setq inner (funcall --merge-frame-params inner inner-user))
-      (let ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			  (nth 3 captions)
-			  (concat
-			   short-caption
-			   (apply 'org-odt--frame href (car widths) (car heights)
-				  (append inner title-and-desc))))))
+      (let* ((text
+	      (cond
+	       ((string= (nth 2 inner) "frame")
+		(concat
+		 (apply 'org-odt--frame href (car widths) (car heights)
+			(append inner title-and-desc))
+		 (when short-caption
+		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			   (nth 3 captions)
+			   short-caption))))
+	       (t
+		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			(nth 3 captions)
+			(concat
+			 short-caption
+			 (apply 'org-odt--frame href (car widths) (car heights)
+				(append inner title-and-desc))))))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
