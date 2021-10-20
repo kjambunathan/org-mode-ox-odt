@@ -977,6 +977,10 @@
    <style:paragraph-properties fo:text-align="end" style:justify-single-word="false"/>
   </style:style>
 
+  <style:style style:name="OrgSubFigure" style:family="paragraph" style:parent-style-name="Figure"/>
+  <style:style style:name="OrgSubListing" style:family="paragraph" style:parent-style-name="Listing"/>
+  <style:style style:name="OrgSubTable" style:family="paragraph" style:parent-style-name="Table"/>
+
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">

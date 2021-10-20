@@ -3927,7 +3927,10 @@ SHORT-CAPTION are strings."
 		   (cl-case (or format-prop :caption-format)
 		     (:caption-format
 		      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			      (plist-get category-props :caption-style)
+			      (let ((style (plist-get category-props :caption-style)))
+				(if (eq secondary-category :SUBENTITY:)
+				    (format "OrgSub%s" style)
+				  style))
 			      caption-text))
 		     (t caption-text))))
 	       short-caption
