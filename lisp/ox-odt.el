@@ -5453,7 +5453,8 @@ modifications to account for nested tables."
 		info 'first-match 'table-cell))))))
 
 (defun org-odt-table-style-spec (element info)
-  (let* ((table (org-export-get-parent-table element))
+  (let* ((table (if (eq (org-element-type element) 'table) element
+		  (org-export-get-parent-table element)))
 	 (table-style (org-odt--read-attribute table :style)))
     (assoc table-style (plist-get info :odt-table-styles))))
 
