@@ -97,7 +97,8 @@
 		       org-odt--collect-cite-keys
 		       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
-		       org-odt--translate-list-tables)))
+		       org-odt--translate-list-tables
+		       org-odt--transclude-sole-footnote-references-in-a-table)))
   :menu-entry
   '(?o "Export to ODT"
        ((?o "As ODT file" org-odt-export-to-odt)
@@ -1855,13 +1856,58 @@ available:
                   #+NAME: goat
                   #+CAPTION[([[goat]])]: A Goat        
                   [[./org-mode-unicorn.png]]
+
+    - `transclude-sole-footnote-references-in-a-table' :: Enable
+      Transcluded tables.  When enabled, a table cell whose
+      content is a _sole_ footnote reference will be expanded as
+      if it held the associated footnote definition.
+
+      An Org table that is expanded like this is called as a \"Transcluded
+      table\".
+
+      A Transcluded table like this,
+
+      #+ATTR_ODT: :widths \"2,1,1,8\"
+      | /       | <        | >        |         |
+      | Day     | Min Temp | Max Temp | Summary |
+      |---------+----------+----------+---------|
+      | Monday  | 11C      | 22C      | [fn:1]  |
+      |---------+----------+----------+---------|
+      | Tuesday | 9C       | 19C      | [fn:2]  |
+
+      [fn:1]
+
+      1. A clear day with lots of sunshine.
+      2. Late in the day, a strong breeze will bring down the temperatures.
+
+      [fn:2]
+
+      1. Cloudy with rain, across many northern regions.
+      2. Clear spells across most of Scotland and Northern Ireland, but
+	 rain reaching the far northwest.
+
+      when exported, will be typeset \"as if\" it is like the table below:
+
+      | /       | <        | >        |                                                    |
+      | Day     | Min Temp | Max Temp | Summary                                            |
+      |---------+----------+----------+----------------------------------------------------|
+      | Monday  | 11C      | 22C      | 1. A clear day with lots of sunshine.              |
+      |         |          |          | 2. Late in the day, a strong breeze will bring     |
+      |         |          |          |    down the temperatures.                          |
+      |---------+----------+----------+----------------------------------------------------|
+      | Tuesday | 9C       | 19C      | 1. Cloudy with rain, across many northern regions. |
+      |         |          |          | 2. Clear spells across most of Scotland and        |
+      |         |          |          |    Northern Ireland, but rain reaching the far     |
+      |         |          |          |    northwest.                                      |
+
  ."
 
   :group 'org-export-odt
   :type '(set (const :tag "Honor LANGUAGE keyword" language)
 	      (choice (const :tag "Ignore short caption" nil)
 		      ;; (symbol :tag "Honor short caption" short-caption)
-		      (const :tag "Short captions as object label" short-caption-as-label))))
+		      (const :tag "Short captions as object label" short-caption-as-label))
+	      (const :tag "Enable Transcluded tables" transclude-sole-footnote-references-in-a-table)))
 
 
 ;;; Internal functions
@@ -5626,9 +5672,10 @@ styles will be defined *automatically* for you."
        (t "Contents"))
       ;; CELL-ALIGNMENT: One of "Left", "Right" or "Center" based on
       ;; the column alignment.  BUT, ignore column alignment
-      ;; attributes on list tables, to work around
-      ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
-      (unless (org-odt--read-attribute table :list-table)
+      ;; attributes on list tables and transcluded tables, as a work
+      ;; around to https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
+      (unless (or (org-odt--read-attribute table :list-table)
+		  (org-odt--table-type table info))
 	(capitalize (symbol-name (org-export-table-cell-alignment
 				  table-cell info))))))))
 
@@ -5744,6 +5791,27 @@ channel."
 			   (org-odt-table-cell--get-paragraph-styles table-cell info)
 			   contents))))
        "\n")))))
+
+(defun org-odt--table-type (element info)
+  (let* ((table (if (eq (org-element-type element) 'table) element
+		  (org-export-get-parent-table element))))
+    (let* ((cache (or (plist-get info :table-type-cache)
+		      (let ((table (make-hash-table :test #'eq)))
+			(plist-put info :table-type-cache table)
+			table)))
+	   (cached (gethash table cache 'no-cache)))
+      (if (not (eq cached 'no-cache)) cached
+	(let ((table-type
+	       (cl-block outer
+		 (cl-loop for table-row in (org-element-contents table)
+			  when (and (eq (org-element-property :type table-row) 'standard)
+				    (not (org-export-table-row-is-special-p table-row info)))
+			  do (cl-loop for table-cell in (org-element-contents table-row)
+				      for cell-type = (eq (org-element-class (car (org-element-contents table-cell)))
+							  'element)
+				      when cell-type do (cl-return-from outer 'special))))))
+	  (puthash table table-type cache)
+	  table-type)))))
 
 
 ;;;; Table Row
@@ -6726,6 +6794,106 @@ exported file."
 				  (length table-rows) ncols-per-row)))))
 	nil)
       info))
+  tree)
+
+;;;; Transcluded tables :: Better List tables
+
+;; When the `org-odt-experimental-features' has
+;; `transclude-sole-footnote-references-in-a-table' feature enabled, a
+;; table cell whose content is a _sole_ footnote reference will be
+;; typeset as if it held the associated footnote definition.  For
+;; simplicity, let us call these "Transcluded Tables".
+;;
+;; Transcluded tables combine the best features of both a canonical
+;; Org table, and a List table.  Like list tables, you can use them to
+;; produce documents that have paragraph-like content.  But unlike
+;; list tables, you can easily "visualise" the final table output.
+;; Thus they are pleasant to create and modify.
+;;
+;; "Transcluded tables" are better understood with an example.
+;;
+;; Consider a Transcluded table like the one below:
+;;
+;; #+ATTR_ODT: :widths "2,1,1,8"
+;; | /       | <        | >        |         |
+;; | Day     | Min Temp | Max Temp | Summary |
+;; |---------+----------+----------+---------|
+;; | Monday  | 11C      | 22C      | [fn:1]  |
+;; |---------+----------+----------+---------|
+;; | Tuesday | 9C       | 19C      | [fn:2]  |
+;;
+;; [fn:1]
+;;
+;; 1. A clear day with lots of sunshine.
+;; 2. Late in the day, a strong breeze will bring down the temperatures.
+;;
+;; [fn:2]
+;;
+;; 1. Cloudy with rain, across many northern regions.
+;; 2. Clear spells across most of Scotland and Northern Ireland, but
+;;    rain reaching the far northwest.
+;;
+;; When exported it is typeset "as if" it is like the table below:
+;;
+;; | /       | <        | >        |                                                                       |
+;; | Day     | Min Temp | Max Temp | Summary                                                               |
+;; |---------+----------+----------+-----------------------------------------------------------------------|
+;; | Monday  | 11C      | 22C      | 1. A clear day with lots of sunshine.                                 |
+;; |         |          |          | 2. Late in the day, a strong breeze will bring down the temperatures. |
+;; |---------+----------+----------+-----------------------------------------------------------------------|
+;; | Tuesday | 9C       | 19C      | 1. Cloudy with rain, across many northern regions.                    |
+;; |         |          |          | 2. Clear spells across most of Scotland and Northern Ireland, but     |
+;; |         |          |          |    rain reaching the far northwest.                                   |
+;;
+;;
+;; In other words, the above transcluded table, is entirely equivalent
+;; to the following list table.
+;;
+;; #+ATTR_ODT: :widths "2,1,1,8"
+;; #+ATTR_ODT: :list-table t
+;; - | /    | <    | >    |      |
+;; -
+;;   - Day
+;;   - Min Temp
+;;   - Max Temp
+;;   - Summary
+;; - ----------------
+;;   - Monday
+;;   - 11C
+;;   - 22C
+;;   -
+;;     1. A clear day with lots of sunshine.
+;;     2. Late in the day, a strong breeze will bring down the temperatures.
+;; - ----------------
+;;   - Tuesday
+;;   - 9C
+;;   - 19C
+;;   -
+;;     1. Cloudy with rain, across many northern regions.
+;;     2. Clear spells across most of Scotland and Northern Ireland, but
+;;        rain reaching the far northwest.
+;;
+
+(defun org-odt--transclude-sole-footnote-references-in-a-table (tree _backend info)
+  (when (memq 'transclude-sole-footnote-references-in-a-table
+	      org-odt-experimental-features)
+    (let* ((defns (org-element-map tree '(footnote-definition)
+		    (lambda (el) (cons (org-element-property :label el) el)) info))
+	   (refs (org-element-map tree '(footnote-reference)
+		   (lambda (el)
+		     (let* ((parent (org-export-get-parent el))
+			    (parent-contents (org-element-contents parent)))
+		       (when (and (eq (org-element-type parent) 'table-cell)
+				  (eq (car parent-contents) el)
+				  (not (cdr parent-contents)))
+			 el)))
+		   info)))
+      (dolist (footnote-reference refs)
+	(let* ((def (assoc-default (org-element-property :label footnote-reference) defns)))
+	  (org-element-set-element
+	   footnote-reference (apply #'org-element-adopt-elements
+				     (list 'special-block (list :type "transcluded-text"))
+				     (org-element-contents def)))))))
   tree)
 
 
