@@ -125,7 +125,10 @@
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
-
+    ;; Keywords that affect meta.xml
+    (:odt-document-properties "ODT_DOCUMENT_PROPERTIES" nil nil split)
+    (:odt-extra-meta "ODT_EXTRA_META" nil nil newline)
+    
     ;; Keys associated with Endnotes
     (:odt-endnote-anchor-format nil nil org-odt-endnote-anchor-format t)
     (:odt-endnote-braces nil nil org-odt-endnote-braces t)
@@ -1660,6 +1663,64 @@ Choose one of HTML or LaTeX style."
 	 (fset 'org-odt--translate-description-lists value))
   :version "24.1")
 
+;;;; Macros
+
+(defcustom org-odt-global-macros
+  '(
+    ("keyword-to-documentproperty" .
+     "(eval (if (org-export-derived-backend-p
+		org-export-current-backend 'odt)
+	       (format \"@@odt:%s@@\"
+		       (org-odt--use-custom-field
+			$1 (org-macro--find-keyword-value $1)))
+	     (org-macro--find-keyword-value $1)))")
+    )
+  "Alist of ODT specific macro names and expansion templates.
+
+This variable defines macro expansion templates installed by the
+ODT backend, that are available globally.  Entries here are
+appended to `org-export-global-macros' as part of
+`org-odt-before-processing-hook', which is hooked on to
+`org-export-before-processing-hook'.
+
+Currently, following macros are defined:
+
+ - `keyword-to-documentproperty' :: Usage
+   {{{keyword-to-documentproperty(NAME)}}}.  Generate a reference
+   to keyword NAME in content.xml.  In order for the reference to
+   be functional, the keyword NAME (and it's value) need to be
+   defined, and the keyword NAME has to be marked as exportable
+   by appearing as a value of `ODT_DOCUMENT_PROPERTIES' keyword.
+   In non-ODT backends this macro behaves like the standard
+   {{{keyword(NAME)}}}.
+
+   For example, to define and reference a document property
+   called `DOC-TITLE' with value \"Custom fields\", you can do
+   the following:
+
+	#+ODT_DOCUMENT_PROPERTIES: DOC-TITLE 
+	#+DOC-TITLE: Custom fields
+
+	#+MACRO: DocTitle {{{keyword-to-documentproperty(DOC-TITLE)}}}
+
+	The name of the document is {{{DocTitle}}}.
+
+Associations follow the pattern
+
+  (NAME . TEMPLATE)
+
+where NAME is a string beginning with a letter and consisting of
+alphanumeric characters only.
+
+TEMPLATE is the string to which the macro is going to be
+expanded.  Inside, \"$1\", \"$2\"... are place-holders for
+macro's arguments.  Moreover, if the template starts with
+\"(eval\", it will be parsed as an Elisp expression and evaluated
+accordingly."
+  :group 'org-export-odt
+  :type '(repeat
+	  (cons (string :tag "Macro Name")
+		(string :tag "Expansion Template"))))
 
 ;;;; Src Block
 
@@ -2442,6 +2503,30 @@ significance.  All other values are ignored."
   (plist-put info :odt-manifest-file-entries
 	     (cons args (plist-get info :odt-manifest-file-entries))))
 
+(defun org-odt--define-custom-field (key value)
+  "Install a user-define variable NAME with value VALUE in meta.xml.
+
+See entry titled `keyword-to-documentproperty' in
+`org-odt-global-macros' for more information."
+  (when (org-string-nw-p key)
+    (let ((value-type "string"))
+      (format "\n<meta:user-defined meta:value-type=\"%s\" meta:name=\"%s\" >%s</meta:user-defined>\n"
+	      value-type
+	      (org-odt--encode-plain-text key)
+	      (org-odt--encode-plain-text (or value ""))))))
+
+(defun org-odt--use-custom-field (name &optional value style)
+  "Reference a user-defined variable NAME.
+
+See entry titled `keyword-to-documentproperty' in
+`org-odt-global-macros' for more information."
+  (when (org-string-nw-p name)
+    (format "<text:user-defined %s text:name=\"%s\">%s</text:user-defined>"
+	    (if style (format "style:data-style-name=\"%s\"" style) "")
+	    (org-odt--encode-plain-text name)
+	    (org-odt--encode-plain-text value))))
+
+
 ;;;; Inner Template
 
 (defun org-odt-inner-template (contents info)
@@ -2935,7 +3020,9 @@ holding export options."
 	 (when (org-string-nw-p email)
 	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email))
 	 (when (org-string-nw-p subtitle)
-	   (format "<meta:user-defined meta:name=\"Subtitle\">%s</meta:user-defined>\n" subtitle)))
+	   (format "<meta:user-defined meta:name=\"Subtitle\">%s</meta:user-defined>\n" subtitle))
+	 ;; Additional user-defined entries.
+	 (plist-get info :odt-extra-meta))
 	"  </office:meta>\n" "</office:document-meta>"))
       ;; Prettify buffer contents, if needed
       (when org-odt-prettify-xml
@@ -3626,6 +3713,13 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   (let ((key (org-element-property :key keyword))
 	(value (org-element-property :value keyword)))
     (cond
+     ;; If KEYWORD is part of ODT_DOCUMENT_PROPERTIES add it's name
+     ;; and value in meta.xml.
+     ((member key (mapcar #'upcase (plist-get info :odt-document-properties)))
+      (plist-put info :odt-extra-meta (concat
+					 (plist-get info :odt-extra-meta)
+					 (org-odt--define-custom-field key value)))
+      nil)
      ((string= key "ODT") value)
      ((string= key "INDEX")
       ;; FIXME
@@ -7416,6 +7510,17 @@ values.  Here are the differences between this function and the
 	 ;; Let Emacs open all OpenDocument files in archive mode
 	 (add-to-list 'auto-mode-alist
 		      (cons (concat  "\\." extn "\\'") 'archive-mode)))
+
+;;; Org Export Before Processing Hook
+
+;;;; ODT-specific Global Macros
+
+(defun org-odt-export-before-processing-function (backend)
+  (when (eq backend 'odt)
+    (cl-loop for macro in org-odt-global-macros
+	     do (add-to-list 'org-export-global-macros macro t))))
+
+(add-hook 'org-export-before-processing-hook 'org-odt-export-before-processing-function)
 
 (provide 'ox-odt)
 
