@@ -5660,17 +5660,82 @@ styles congruent with the ODF-1.2 specification."
 
 (defun org-odt--table-cell-widths (table info)
   (let* ((num-columns (cdr (org-export-table-dimensions table info)))
-	 (widths (mapcar (lambda (n) (* 1.0 (string-to-number n)))
-			 (let ((widths (org-odt--read-attribute table :widths)))
-			   (when (stringp widths)
-			     (split-string widths "\\(?:,[[:space:]]*\\)" t "\\(?:[[:space:]]+\\)")))))
-	 (cum-width (apply #'+ widths))
-	 (normalized-cum-width 1000))
-    (when (and widths
-	       (not (cl-some #'zerop widths))
-	       (= (length widths) num-columns))
+	 (widths
+	  (cond
+	   ;; Case 1: Widths comes from `:widths'.
+	   ((org-odt--read-attribute table :widths)
+	    (mapcar (lambda (n) (* 1.0 (string-to-number n)))
+		    (let ((widths (org-odt--read-attribute table :widths)))
+		      (when (stringp widths)
+			(split-string widths "\\(?:,[[:space:]]*\\)" t "\\(?:[[:space:]]+\\)")))))
+	   ;; Case 2: Widths come from `:col-cookies'.
+	   ((org-odt--read-attribute table :col-cookies)
+	    (plist-get (org-odt--table-col-cookies table info) :widths))
+	   ;; Case other: Widths may be specified in column cookies.
+	   ;; But those widths aren't what we are looking for here.
+	   ;; Widths specified in column cookies of a table are meant
+	   ;; for comfortable viewing/editing of long tables within
+	   ;; Emacs by shrinking one or more columns to a manageable
+	   ;; width.  These widths are thus functionally different
+	   ;; from column widths that one needs in exported documents.
+	   ;; NOTE: The old exporter, specifically the exporter prior
+	   ;; to introduction of `:widths' and `:col-cookies' ODT
+	   ;; attributes, overloaded widths _within_ the special row
+	   ;; of a table to also mean widths of columns in exported
+	   ;; document.  This was a convenient hack then.  This hack
+	   ;; is no longer needed, and is removed.
+	   (t nil))))
+    (setq widths (mapcar (lambda (w)
+			   (if (or (null w) (zerop w)) 1 w))
+			 (or widths (make-list num-columns 1))))
+
+    (unless (= (length widths) num-columns)
+      (user-error "You haven't specified widths of all columns"))
+
+    (let* ((cum-width (apply #'+ widths))
+	   (normalized-cum-width 1000))
       (cl-loop for width in widths
 	       collect (/ (* normalized-cum-width width) cum-width)))))
+
+(defun org-odt--table-col-cookies (table _info)
+  (let* ((cookies
+	  ;; Cookies come from ...
+	  (or
+	   ;; ... either the `:col-cookies' attribute
+	   (let ((c (org-odt--read-attribute table :col-cookies)))
+	     (when c
+	       (setq c (replace-regexp-in-string "\\(?:[[:space:]]*\\)" "" c))
+	       (when (and (string-prefix-p "|" c)
+			  (string-suffix-p "|" c))
+		 (split-string (substring c 1 -1) "|"))))
+	   ;; ... or right from within the table.
+	   (cl-loop for table-row in (org-element-contents table)
+		    for table-cells = (org-element-contents table-row)
+		    for contents = (cl-loop for table-cell in table-cells
+					    collect (org-element-contents table-cell))
+		    when (and (org-export-table-row-is-special-p table-row 'ignore)
+			      (cl-every (lambda (c)
+					  (and (null (cdr c))
+					       (stringp (car c))
+					       (string-match-p "\\`<[lrc]?\\([0-9]+\\)>\\'" (car c))))
+					contents)
+			      (mapcar (lambda (s)
+					(substring-no-properties (car s)))
+				      contents))
+		    do (cl-return it)))))
+    (cl-loop for (align . width) in
+	     (cl-loop for s in cookies
+		      collect (when (string-match "<?\\([lrc]\\)?\\([0-9]+\\)?>?" s)
+				(let* ((align (match-string 1 s))
+				       (width (match-string 2 s)))
+				  (cons (assoc-default (string-to-char (or align "l"))
+						       '((?l . left)
+							 (?c . center)
+							 (?r . right)))
+					(or (when width (string-to-number width)))))))
+	     collecting align into alignments
+	     collecting width into widths
+	     finally (return (list :aligns alignments :widths widths)))))
 
 (defun org-odt-table-cell--get-paragraph-styles (table-cell info)
   "Get paragraph style for TABLE-CELL.
@@ -5765,13 +5830,31 @@ styles will be defined *automatically* for you."
 	"Heading")
        (t "Contents"))
       ;; CELL-ALIGNMENT: One of "Left", "Right" or "Center" based on
-      ;; the column alignment.  BUT, ignore column alignment
-      ;; attributes on list tables and transcluded tables, as a work
-      ;; around to https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
-      (unless (or (org-odt--read-attribute table :list-table)
-		  (org-odt--table-type table info))
-	(capitalize (symbol-name (org-export-table-cell-alignment
-				  table-cell info))))))))
+      ;; the column alignment.
+      (capitalize (symbol-name
+		   (cond
+		    ;; Case 1: NOT a list table or a table with a
+		    ;; paragraph-like content. That is, it is a
+		    ;; regular Org table, with no `:col-cookies' line.
+		    ((and
+		      (not (or (org-odt--read-attribute table :list-table)
+			       (org-odt--table-type table info)))
+
+		      (not (org-odt--read-attribute table :col-cookies)))
+		     ;; Fall back to regular handling where the
+		     ;; alignment may be _inferred_ based on
+		     ;; heuristics.
+		     (org-export-table-cell-alignment table-cell info))
+		    ;; Case 2: This is a special table--a list table
+		    ;; or a transcluded table.  Don't use
+		    ;; `org-export-table-cell-alignment' to avoid
+		    ;; running in to
+		    ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
+		    ;; Instead, go with what the user has explicitly
+		    ;; indicated.
+		    (t
+		     (nth c (plist-get (org-odt--table-col-cookies table info)
+				       :aligns))))))))))
 
 (defun org-odt-table-cell-types (table info)
   "Non-nil when TABLE has spanned row or columns.
