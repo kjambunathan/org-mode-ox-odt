@@ -5728,7 +5728,7 @@ styles congruent with the ODF-1.2 specification."
 		      collect (when (string-match "<?\\([lrc]\\)?\\([0-9]+\\)?>?" s)
 				(let* ((align (match-string 1 s))
 				       (width (match-string 2 s)))
-				  (cons (assoc-default (string-to-char (or align "l"))
+				  (cons (assoc-default (when align (string-to-char align))
 						       '((?l . left)
 							 (?c . center)
 							 (?r . right)))
@@ -5831,30 +5831,32 @@ styles will be defined *automatically* for you."
        (t "Contents"))
       ;; CELL-ALIGNMENT: One of "Left", "Right" or "Center" based on
       ;; the column alignment.
-      (capitalize (symbol-name
-		   (cond
-		    ;; Case 1: NOT a list table or a table with a
-		    ;; paragraph-like content. That is, it is a
-		    ;; regular Org table, with no `:col-cookies' line.
-		    ((and
-		      (not (or (org-odt--read-attribute table :list-table)
-			       (org-odt--table-type table info)))
+      (capitalize
+       (format "%s" (or
+		     (cond
+		      ;; Case 1: NOT a list table or a table with a
+		      ;; paragraph-like content. That is, it is a
+		      ;; regular Org table, with no `:col-cookies' line.
+		      ((and
+			(not (or (org-odt--read-attribute table :list-table)
+				 (org-odt--table-type table info)))
 
-		      (not (org-odt--read-attribute table :col-cookies)))
-		     ;; Fall back to regular handling where the
-		     ;; alignment may be _inferred_ based on
-		     ;; heuristics.
-		     (org-export-table-cell-alignment table-cell info))
-		    ;; Case 2: This is a special table--a list table
-		    ;; or a transcluded table.  Don't use
-		    ;; `org-export-table-cell-alignment' to avoid
-		    ;; running in to
-		    ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
-		    ;; Instead, go with what the user has explicitly
-		    ;; indicated.
-		    (t
-		     (nth c (plist-get (org-odt--table-col-cookies table info)
-				       :aligns))))))))))
+			(not (org-odt--read-attribute table :col-cookies)))
+		       ;; Fall back to regular handling where the
+		       ;; alignment may be _inferred_ based on
+		       ;; heuristics.
+		       (org-export-table-cell-alignment table-cell info))
+		      ;; Case 2: This is a special table--a list table
+		      ;; or a transcluded table.  Don't use
+		      ;; `org-export-table-cell-alignment' to avoid
+		      ;; running in to
+		      ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/25.
+		      ;; Instead, go with what the user has explicitly
+		      ;; indicated.
+		      (t
+		       (nth c (plist-get (org-odt--table-col-cookies table info)
+					 :aligns))))
+		     "")))))))
 
 (defun org-odt-table-cell-types (table info)
   "Non-nil when TABLE has spanned row or columns.
