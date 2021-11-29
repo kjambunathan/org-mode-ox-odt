@@ -7589,6 +7589,168 @@ values.  Here are the differences between this function and the
 
 (add-hook 'org-tab-first-hook 'org-odt-update-locale)
 
+
+;;;; Suggest `:span' attrbutes for a table
+
+(defun org-odt--table-compute-spans (table info)
+  (let* ((cell-empty-p (lambda (table-cell)
+			 (null (org-element-contents table-cell))))
+	 (data-row-p (lambda (table-row)
+		       (and (eq (org-element-property :type table-row) 'standard)
+			    (not (org-export-table-row-is-special-p table-row 'ignore)))))
+	 (get-span-length
+	  (lambda (table-cells)
+	    (cl-loop for table-cell in table-cells
+		     while (funcall cell-empty-p table-cell)
+		     counting t into n
+		     finally (return n))))
+	 (table (cl-loop for table-row in (org-element-contents table)
+			 when (funcall data-row-p table-row)
+			 collect table-row)))
+    (cl-loop for table-row in table counting t into r
+	     when (cl-loop for table-cell in (org-element-contents table-row)
+			   counting t into c
+			   when (and (not (funcall cell-empty-p table-cell))
+				     (let* ((rowspan (funcall get-span-length
+							      (cl-loop for table-row in (org-export-get-next-element table-row info t)
+								       when (funcall data-row-p table-row)
+								       collect (nth (1- c) (org-element-contents table-row)))))
+					    (colspan (funcall get-span-length (org-export-get-next-element table-cell info t))))
+				       (unless (and (zerop rowspan)
+						    (zerop colspan))
+					 (format "@%d$%d{%s:%s}"
+						 r c
+						 (number-to-string (1+ rowspan))
+						 (number-to-string (1+ colspan))))))
+			   collect it)
+	     collect it)))
+
+(defun org-odt-table-suggest-spans ()
+  "Insert `:span' lines for a table at point.
+
+Use empty cells to infer a spanned cell.  i.e., A table cell is
+considered as spanned cell if it has an empty cell immediately
+below it or to the right.  For a spanned cell, suggest the
+`:span' attribute by counting the number of empty cells
+immediately to it's right and immediately right below it.  This
+command doesn't alter any prior attribute lines including the
+`:span' lines.
+
+Note that the `#+ATTR_ODT: :span ...' lines are merely
+suggestions.  You may have to tweak the suggestions a bit to get
+the desired typesetting.  This function generates multipe `:span'
+lines, with each line containing *all* spanned cells on a unique
+row. 
+
+To understand \"You may have to tweak the suggestions a bit ...\"
+remark above above, consider the following example.
+
+If you want to produce the following table
+
+    #+begin_example
+    +----------+----------+----------+
+    |Column 1  |Column 2  |Column 3  |
+    +----------+----------+----------+
+    |A         |B                    |
+    |          +----------+----------+
+    |          |C         |D         |
+    +----------+----------+----------+
+    |E         |F                    |
+    +----------+                     |
+    |G         |                     |
+    +----------+---------------------+
+    |H                               |
+    +--------------------------------+
+    #+end_example
+
+you will start with the following Org table:
+
+    #+ATTR_ODT: :style \"GriddedTable\" 
+    |----------+----------+----------|
+    | Column 1 | Column 2 | Column 3 |
+    |----------+----------+----------|
+    | A        | B        |          |
+    |          | C        | D        |
+    | E        | F        |          |
+    | G        |          |          |
+    | H        |          |          |
+    |----------+----------+----------|
+
+When you invoke `M-x org-odt-table-suggest-spans' on this table,
+you will get the following result
+
+    #+ATTR_ODT: :style \"GriddedTable\"
+    #+ATTR_ODT: :span \"@1$3{2:1}\"
+    #+ATTR_ODT: :span \"@2$1{2:1} @2$2{1:2}\"
+    #+ATTR_ODT: :span \"@3$3{4:1}\"
+    #+ATTR_ODT: :span \"@4$2{3:2}\"
+    #+ATTR_ODT: :span \"@5$1{1:3}\"
+    #+ATTR_ODT: :span \"@6$1{1:3}\"
+    |----------+----------+----------|
+    | Column 1 | Column 2 | Column 3 |
+    |----------+----------+----------|
+    | A        | B        |          |
+    |          | C        | D        |
+    | E        | F        |          |
+    | G        |          |          |
+    | H        |          |          |
+    |----------+----------+----------|
+
+If you export this table, you will get a table with col and
+rowspans but in a \"wrong\" way. In order to get the desired
+spans, you have to do the following \"edits\"
+
+     #+ATTR_ODT: :style \"GriddedTable\"
+    -#+ATTR_ODT: :span \"@1$3{2:1}\"
+     #+ATTR_ODT: :span \"@2$1{2:1} @2$2{1:2}\"
+    -#+ATTR_ODT: :span \"@3$3{4:1}\"
+    -#+ATTR_ODT: :span \"@4$2{3:2}\"
+    -#+ATTR_ODT: :span \"@5$1{1:3}\"
+    +#+ATTR_ODT: :span \"@4$2{2:2}\"
+     #+ATTR_ODT: :span \"@6$1{1:3}\"
+
+That is,
+
+    - Ignore `:span'-suggestions for first, third and fifth rows
+    - Modify the `:span'-suggestions on fifth row
+    - Retain `:span'-suggestions on other rows
+
+and end up with the table like this:
+
+    #+ATTR_ODT: :style \"GriddedTable\"
+    #+ATTR_ODT: :span \"@2$1{2:1} @2$2{1:2}\"
+    #+ATTR_ODT: :span \"@4$2{2:2}\"
+    #+ATTR_ODT: :span \"@6$1{1:3}\"
+    |----------+----------+----------|
+    | Column 1 | Column 2 | Column 3 |
+    |----------+----------+----------|
+    | A        | B        |          |
+    |          | C        | D        |
+    | E        | F        |          |
+    | G        |          |          |
+    | H        |          |          |
+    |----------+----------+----------|
+
+Note that the `:span'-suggestions are split row-wise,
+specifically to help with subsequent tweaks.
+  (interactive)"
+  (when (derived-mode-p 'org-mode)
+    (org-with-wide-buffer
+     (let* ((table (let* ((el (org-element-at-point)))
+		     (when (memq (org-element-type el) '(table-row table))
+		       (narrow-to-region (org-table-begin)
+					 (org-table-end))
+		       (org-element-map (org-element-parse-buffer) 'table #'identity nil t)))))
+       (when table
+	 (goto-char (org-table-begin))
+	 (insert
+	  (mapconcat #'identity
+		     (cl-loop for row in (org-odt--compute-spans table nil)
+			      collect (format "#+ATTR_ODT: :span \"%s\""
+					      (mapconcat #'identity row " ")))
+		     "\n")
+	  "\n"))))))
+
 ;;; Library Initializations
 
 (cl-loop for (extn . rest) in org-odt-file-extensions-alist do
