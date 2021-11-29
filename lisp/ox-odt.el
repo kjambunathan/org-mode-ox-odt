@@ -7732,8 +7732,8 @@ and end up with the table like this:
     |----------+----------+----------|
 
 Note that the `:span'-suggestions are split row-wise,
-specifically to help with subsequent tweaks.
-  (interactive)"
+specifically to help with subsequent tweaks."
+  (interactive)
   (when (derived-mode-p 'org-mode)
     (org-with-wide-buffer
      (let* ((table (let* ((el (org-element-at-point)))
