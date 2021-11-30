@@ -753,10 +753,15 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 
 (defcustom org-odt-prettify-xml nil
   "Specify whether or not the xml output should be prettified.
-When this option is turned on, `indent-region' is run on all
-component xml buffers before they are saved.  Turn this off for
-regular use.  Turn this on if you need to examine the xml
-visually."
+
+When this option is turned on, use
+`org-odt-prettify-xml-buffer' (i.e., specifically HTML tidy) on
+component xml buffers before they are saved.  Since this function
+creates line breaks, it may introduce extraneous and undesirable
+whitespace in exported document.  So, don't use this option in
+production.  Use this for developing ODT-specific features or to
+make sense of OpenDocument XML produced by a third party, say
+LibreOffice."
   :group 'org-export-odt
   :version "24.1"
   :type 'boolean)
@@ -2533,7 +2538,7 @@ See entry titled `keyword-to-documentproperty' in
   "Return body of document string after ODT conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
-  (let* ( ;; `org-display-custom-times' should be accessed right
+  (let* (;; `org-display-custom-times' should be accessed right
 	 ;; within the context of the Org buffer.  So obtain its
 	 ;; value before moving on to temp-buffer context down below.
 	 (custom-time-fmts
@@ -2688,8 +2693,7 @@ holding export options."
       (insert "\n<!-- begin -->\n" contents "\n<!-- end -->\n")
       ;; Prettify buffer contents, if needed.
       (when org-odt-prettify-xml
-	(nxml-mode)
-	(indent-region (point-min) (point-max)))
+	(org-odt-prettify-xml-buffer))
       ;; Cleanup, when export is body-only.
       (when (memq 'body-only (plist-get info :export-options))
 	(org-odt-cleanup-xml-buffers nil nil info))
@@ -2947,8 +2951,7 @@ holding export options."
 	    (replace-match replacement t nil))))
       ;; Prettify buffer contents, if needed
       (when org-odt-prettify-xml
-	(nxml-mode)
-	(indent-region (point-min) (point-max)))
+	(org-odt-prettify-xml-buffer))
       ;; Write styles.xml
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
@@ -2999,9 +3002,9 @@ holding export options."
        <office:meta>\n"
 	(concat
 	 ;; Order the items here by their XML element name.
-         (when (org-string-nw-p author)
+	 (when (org-string-nw-p author)
 	   (format "<dc:creator>%s</dc:creator>\n" author))
-         (when (org-string-nw-p iso-date)
+	 (when (org-string-nw-p iso-date)
 	   (format "<dc:date>%s</dc:date>\n" iso-date))
 	 (when (org-string-nw-p description)
 	   (format "<dc:description>%s</dc:description>\n" description))
@@ -3015,7 +3018,7 @@ holding export options."
 	   (format "<meta:generator>%s</meta:generator>\n" creator))
 	 (when (org-string-nw-p author)
 	   (format "<meta:initial-creator>%s</meta:initial-creator>\n" author))
-         (when (org-string-nw-p keywords)
+	 (when (org-string-nw-p keywords)
 	   (format "<meta:keyword>%s</meta:keyword>\n" keywords))
 	 (when (org-string-nw-p email)
 	   (format "<meta:user-defined meta:name=\"E-Mail\">%s</meta:user-defined>\n" email))
@@ -3026,8 +3029,7 @@ holding export options."
 	"  </office:meta>\n" "</office:document-meta>"))
       ;; Prettify buffer contents, if needed
       (when org-odt-prettify-xml
-	(nxml-mode)
-	(indent-region (point-min) (point-max)))
+	(org-odt-prettify-xml-buffer))
       ;; Write meta.xml.
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
@@ -3065,8 +3067,7 @@ holding export options."
     (insert "\n</manifest:manifest>")
     ;; Prettify buffer contents, if needed
     (when org-odt-prettify-xml
-      (nxml-mode)
-      (indent-region (point-min) (point-max)))
+      (org-odt-prettify-xml-buffer))
     ;; Write manifest.xml
     (let ((coding-system-for-write 'utf-8))
       (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
@@ -7750,6 +7751,167 @@ specifically to help with subsequent tweaks."
 					      (mapconcat #'identity row " ")))
 		     "\n")
 	  "\n"))))))
+
+
+;;;; Insert prettifed XML
+
+(defun org-odt-prettify-xml-buffer ()
+  "Run HTML Tidy (i.e., `tidy' on debian) on current buffer.
+
+Specfically, it does the following:
+
+  - indent element content
+  - add some extra empty lines for readability
+  - begin each attribute on a new line
+  - sort attributes within an element alphabetically in ascending order
+  - write some attributes, specifically style:name, before other
+    attributes of an element
+
+Also run `indent-region' on the tidied output.
+
+This function is used for prettifying XML files when user option
+`org-odt-prettify-xml' is non-nil."
+
+  (when (executable-find "tidy")
+    (let* ((output-file (make-temp-file "odt-tidy-out-"))
+	   (error-file (make-temp-file "odt-tidy-err-"))
+	   (attributes (mapconcat #'identity
+				  '(
+				    "style:name"
+				    "style:default-outline-level"
+				    "style:parent-style-name"
+				    "style:next-style-name"
+				    "style:page-layout-name"
+				    "style:list-style-name"
+				    "style:display-name"
+				    "style:font-name"
+				    "style:font-name-asian"
+				    "style:font-name-complex"
+				    "text:master-page-name"
+				    "text:default-style-name"
+				    "text:citation-style-name"
+				    "text:citation-body-style-name"
+				    "text:level"
+				    "text:style-name"
+				    "text:name"
+				    "style:family"
+				    "style:class")
+				  ", "))
+	   (cmd (list
+		 "tidy"					; executable name
+		 "--wrap" "10"				; the right margin for line wrapping;
+							; set this to a very small value so that each
+							; attribute is on a line of it's own
+		 "--indent-attributes" "yes"		; begin each attribute on a new line
+		 "--quiet" "yes"			; report only document warnings and errors
+		 "--sort-attributes" "alpha"		; sort attributes within an element alphabetically in ascending order
+		 "--tidy-mark" "no"			; don't add a meta element
+		 "--vertical-space" "yes"		; add some extra empty lines for readability
+		 "-indent"				; indent element content
+		 "-utf8"				; use UTF-8 for both input and output
+		 "-xml"					; the input is well formed XML
+		 "--priority-attributes" attributes	; write these attributes before other attributes of an element
+		 "--error-file" error-file		; write errors and warnings this file
+		 "--output-file" output-file		; write output to this file
+		 ))
+	   (exitcode (progn
+		       (message "Running %s" (mapconcat 'identity cmd " "))
+		       (setq exitcode
+			     (apply #'call-process-region nil nil (car cmd) nil nil (cdr cmd)))))
+	   (error-string
+	    (with-temp-buffer
+	      (insert-file-contents error-file)
+	      (prog1 (buffer-string)
+		(delete-file error-file))))
+	   (output-string
+	    (with-temp-buffer
+	      (insert-file-contents output-file)
+	      (prog1 (buffer-string)
+		(delete-file output-file)))))
+      (cond
+       ((member exitcode '(0 1))
+	(delete-region (point-min) (point-max))
+	(insert output-string))
+       (t
+	(message "%s failed with error: ->\n%s\n<-"
+		 (car cmd) error-string)))))
+  (nxml-mode)
+  (indent-region (point-min) (point-max)))
+
+(defun org-odt-yank-styles (&optional dont-prompt-for-styles-keyword)
+  "Yank `current-kill', (presumably )a ODT (styles) XML, at point.
+
+`current-kill' is assumed to be a XML string, most likely an XML
+string copied over from one of the component XML files (i.e.,
+styles.xml, content.xml, meta.xml or manifest.xml) in an
+OpenDocument file produced by LibreOffice UI.
+
+Use this command to yank XML in to either an `org-mode' buffer or
+non `org-mode' buffer.  In both the cases, the result will be
+prettified with `org-odt-prettify-xml-buffer'.
+
+If you are in a non-`org-mode' file, no further action is taken.
+
+However, if you are in an `org-mode' buffer, then you will be
+prompted for picking up one of the following styles-related
+keywords
+
+    - #+odt_extra_styles: 
+    - #+odt_extra_automatic_styles: 
+    - #+odt_master_styles: 
+    - #+odt_automatic_styles: 
+
+The keyword you choose will be prefixed to the yanked XML.
+When in an `org-mode' buffer, if you don't want the yanked XML to
+be prefixed with a styles keyword, possibly because you are
+yanking in to a `nxml-mode' source block like so
+
+    #+begin_src nxml
+    ...
+    #+end_src
+
+invoke this command with a prefix argument
+`dont-prompt-for-styles-keyword'.
+
+Note that LibreOffice can be configured to emit pretty-print
+XML (i.e., with indentation and line breaks) by doing the
+following
+
+    On the `Tools' - `Options' - `Load/Save' - General tab page
+    you can clear the check box Size optimization for ODF format.
+
+
+or
+    Under `Tools' – `Options' – `LibreOffice' – `Advanced' –
+    `Expert Configuration' set the property
+    `/org.openoffice.Office.Common/Save/Document PrettyPrinting'
+    to true.
+
+This command further prettifies the LibreOffice-prettified XML.
+See `org-odt-prettify-xml-buffer' for more information."
+  (interactive "P")
+  (let* ((text (current-kill 0))
+	 (start (point)))
+    (save-excursion
+      (insert
+       (with-temp-buffer
+	 (insert text)
+	 (org-odt-prettify-xml-buffer)
+	 (buffer-substring-no-properties (point-min) (point-max))))
+      (when (and (derived-mode-p 'org-mode)
+		 (null dont-prompt-for-styles-keyword))
+	(kill-region
+	 (save-excursion (skip-chars-backward "\n")
+			 (point))
+	 (point))
+	(string-rectangle start (point-at-bol)
+			  (completing-read "Prefix: "
+					   '("#+odt_extra_styles: "
+					     "#+odt_extra_automatic_styles: "
+					     "#+odt_master_styles: "
+					     "#+odt_automatic_styles: ")))
+	(goto-char (point-at-eol))
+	(insert "\n")))))
 
 ;;; Library Initializations
 
