@@ -7745,7 +7745,7 @@ specifically to help with subsequent tweaks."
 	 (goto-char (org-table-begin))
 	 (insert
 	  (mapconcat #'identity
-		     (cl-loop for row in (org-odt--compute-spans table nil)
+		     (cl-loop for row in (org-odt--table-compute-spans table nil)
 			      collect (format "#+ATTR_ODT: :span \"%s\""
 					      (mapconcat #'identity row " ")))
 		     "\n")
