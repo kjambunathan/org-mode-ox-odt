@@ -2191,7 +2191,95 @@ LANGUAGE keyword."
 	   text)
    width nil style extra anchor-type))
 
+;;;; Customshape
 
+(defun org-odt--draw:custom-shape (text width height style &optional
+					extra anchor-type)
+  ;; WARNING: `customshape' blocks are EXPERIMENTAL and pre-ALPHA
+  ;; quality.  Don't use it in production.  See
+  ;; `org-odt--draw:custom-shape' sample usage and other details.
+  ;;
+  ;; A *simple* document produced by LibreOffice UI (or this
+  ;; exporter) that contains *even* a single captioned image is
+  ;; *not* properly in Google Documents.  See
+  ;; https://github.com/kjambunathan/org-mode-ox-odt/issues/136
+  ;;
+  ;; Google Documents uses a draw object which is a combination of
+  ;; image and it's caption to produce captioned images. See
+  ;;
+  ;; - How to Add Captions to Images in Google Docs ::
+  ;;     https://www.howtogeek.com/725451/how-to-add-captions-to-images-in-google-docs/
+  ;;
+  ;; - A typical ODT document produced by Google docs ::
+  ;;     https://github.com/kjambunathan/org-mode-ox-odt/files/7594408/A.Simple.Captioned.Image.as.produced.by.Google.Docs.odt
+  ;;
+  ;; In order to produce such a document, this exporter needs to
+  ;; emit a custom rectangulare shape for holding the caption.
+  ;; Here is a sample snippet to produce a document that has
+  ;; custom shapes:
+  ;;
+  ;;     #+odt_automatic_styles: <style:style style:name="OrgShape"
+  ;;     #+odt_automatic_styles:              style:family="graphic">
+  ;;     #+odt_automatic_styles:   <style:graphic-properties draw:auto-grow-height="true"
+  ;;     #+odt_automatic_styles:                             draw:textarea-horizontal-align="justify"
+  ;;     #+odt_automatic_styles:                             draw:textarea-vertical-align="middle"
+  ;;     #+odt_automatic_styles:                             draw:wrap-influence-on-position="once-concurrent"
+  ;;     #+odt_automatic_styles:                             fo:min-height="0cm"
+  ;;     #+odt_automatic_styles:                             fo:min-width="0cm"
+  ;;     #+odt_automatic_styles:                             fo:padding-bottom="0.125cm"
+  ;;     #+odt_automatic_styles:                             fo:padding-left="0.25cm"
+  ;;     #+odt_automatic_styles:                             fo:padding-right="0.25cm"
+  ;;     #+odt_automatic_styles:                             fo:padding-top="0.125cm"
+  ;;     #+odt_automatic_styles:                             fo:wrap-option="wrap"
+  ;;     #+odt_automatic_styles:                             style:flow-with-text="false"
+  ;;     #+odt_automatic_styles:                             style:horizontal-pos="center"
+  ;;     #+odt_automatic_styles:                             style:horizontal-rel="paragraph"
+  ;;     #+odt_automatic_styles:                             style:number-wrapped-paragraphs="no-limit"
+  ;;     #+odt_automatic_styles:                             style:run-through="foreground"
+  ;;     #+odt_automatic_styles:                             style:vertical-pos="top"
+  ;;     #+odt_automatic_styles:                             style:vertical-rel="paragraph"
+  ;;     #+odt_automatic_styles:                             style:wrap="none" />
+  ;;     #+odt_automatic_styles:   <style:paragraph-properties style:writing-mode="lr-tb" />
+  ;;     #+odt_automatic_styles: </style:style>
+  ;;
+  ;;     [[./org-mode-unicorn.png]]
+  ;;
+  ;;     #+ATTR_ODT: :anchor "paragraph" :style "OrgShape" :width 3
+  ;;     #+begin_customshape
+  ;;       Aliqua esse aute non lorem ullamco sint consequat in incididunt
+  ;;       qui excepteur reprehenderit
+  ;;     #+end_customshape
+  ;;
+  ;; Note that to produce a captioned image, the image and caption
+  ;; (contained within custom shape) have to be grouped together.
+  ;; Unfortunately, even before I could proceed with grouping the
+  ;; objects, I realized that LibreOffice 7.2.2 has multiple issues
+  ;; with rendering custom shapes.  One of the key issue is that
+  ;; LibreOffice, even though it honors the relative positioning--both
+  ;; horizontal and vertical position--of text (i.e., caption text)
+  ;; within the custom shape, it re-writes the styles in an
+  ;; inconvenient way.  See ['Writer typesets identically defined
+  ;; automatic and custom graphic-styles
+  ;; differently'](https://bugs.documentfoundation.org/show_bug.cgi?id=145987).
+  ;;
+  ;; Support for `customshape' is added to produce the ODT document
+  ;; annexed in above LibreOffice bug report.  In other words,
+  ;; `customshape' aren't meant for production use.
+  ;;
+  (format "
+<draw:custom-shape 
+                   draw:style-name=\"%s\"
+                   draw:text-style-name=\"%s\"
+                   svg:width=\"%0.2fcm\"
+                   svg:height=\"%0.2fcm\"
+                   text:anchor-type=\"%s\" %s>%s</draw:custom-shape>" ; draw:name=\"Shape 1\"
+	  style
+	  "Text_20_body"
+	  (or width 0.2)
+	  (or height 0.2)
+	  anchor-type
+	  (or extra "")
+	  text))
 
 ;;;; Table of Contents
 
@@ -5049,6 +5137,8 @@ the plist used as a communication channel."
 				  ;; the ODT exporter.
 				  ((string= type "textbox")
 				   (org-odt--read-attribute el :p-style))
+				  ((string= type "customshape")
+				   (org-odt--read-attribute el :p-style))				  
 				  ((string= type "section")
 				   (org-odt--read-attribute el :p-style))
 				  ;; Case 2: Handle user-specified
@@ -5279,6 +5369,19 @@ holding contextual information."
      ((string= type "paragraph")
       ;; Enclose the contens in a paragraph and return it.
       (org-odt-paragraph special-block contents info))
+     ((string= type "customshape")
+      ;; WARNING: `customshape' blocks are EXPERIMENTAL and pre-ALPHA
+      ;; quality.  Don't use it in production.  See
+      ;; `org-odt--draw:custom-shape' for sample usage and other details.
+      (let ((width (org-odt--read-attribute special-block :width))
+	    (height (org-odt--read-attribute special-block :height))
+	    (style (org-odt--read-attribute special-block :style))
+	    (extra (org-odt--read-attribute special-block :extra))
+	    (anchor (org-odt--read-attribute special-block :anchor)))
+	(org-odt-paragraph special-block
+			   (org-odt--draw:custom-shape contents width height
+						       style extra anchor)
+			   info)))
      ;; Annotation.
      ((string= type "annotation")
       (let* ((author (or (plist-get attributes :author)
