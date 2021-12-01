@@ -116,7 +116,7 @@
     ;; ODT-specific keywords
     ;; Keywords that affect styles.xml
     (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
-    (:odt-styles-file "ODT_STYLES_FILE" nil nil t)
+    (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
     (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil nil newline)
@@ -154,7 +154,6 @@
     (:odt-inline-formula-rules nil nil org-odt-inline-formula-rules)
     (:odt-inline-image-rules nil nil org-odt-inline-image-rules)
     (:odt-pixels-per-inch nil nil org-odt-pixels-per-inch)
-    (:odt-styles-file nil nil org-odt-styles-file)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
     ;; Variables that are used per-session of export.
