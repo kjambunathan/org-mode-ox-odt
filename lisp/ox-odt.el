@@ -7905,6 +7905,7 @@ This function is used for prettifying XML files when user option
 							; set this to a very small value so that each
 							; attribute is on a line of it's own
 		 "--indent-attributes" "yes"		; begin each attribute on a new line
+		 "--literal-attributes" "yes"		; don't normalize attribute values i.e., preserve whitespace
 		 "--quiet" "yes"			; report only document warnings and errors
 		 "--sort-attributes" "alpha"		; sort attributes within an element alphabetically in ascending order
 		 "--tidy-mark" "no"			; don't add a meta element
@@ -7918,8 +7919,7 @@ This function is used for prettifying XML files when user option
 		 ))
 	   (exitcode (progn
 		       (message "Running %s" (mapconcat 'identity cmd " "))
-		       (setq exitcode
-			     (apply #'call-process-region nil nil (car cmd) nil nil (cdr cmd)))))
+		       (apply #'call-process-region nil nil (car cmd) nil nil (cdr cmd))))
 	   (error-string
 	    (with-temp-buffer
 	      (insert-file-contents error-file)
