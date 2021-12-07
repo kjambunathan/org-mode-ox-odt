@@ -125,6 +125,7 @@
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
+    (:odt-app "ODT_APP" nil nil t)
     ;; Keywords that affect meta.xml
     (:odt-document-properties "ODT_DOCUMENT_PROPERTIES" nil nil split)
     (:odt-extra-meta "ODT_EXTRA_META" nil nil newline)
@@ -3995,7 +3996,226 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
     (when category
       (if (org-odt--get-captioned-parent element info) :SUBENTITY: category))))
 
+(defun org-odt--get-app-function (app fn)
+  (let* ((app-functions
+	  '(("gdocs" .
+	     ((render-image/formula . org-odt--render-image/formula-for-gdocs)
+	      (format-label . org-odt-format-label-for-gdocs)))
+	    ("lo" .
+	     ((render-image/formula . org-odt--render-image/formula-for-lo)
+	      (format-label . org-odt-format-label-for-lo)))))
+	 (app-function (or
+			(assoc-default fn (assoc-default app
+							 app-functions))
+			(error "App `%S' doesn't provide `%S'"
+			       app fn))))
+    app-function))
+
 (defun org-odt-format-label (element info op &optional format-prop)
+  (let* ((caption-from
+	  (cl-case (org-element-type element)
+	    (link (org-export-get-parent-element element))
+	    (t element)))
+	 (app (or (plist-get info :odt-app)
+		  (org-odt--read-attribute caption-from :app)
+		  "lo")))
+    (funcall (org-odt--get-app-function app 'format-label) element info op format-prop)))
+
+(defun org-odt-format-label-for-lo (element info op &optional format-prop)
+  "Return a label for ELEMENT.
+
+ELEMENT is a `link', `table', `src-block' or `paragraph' type
+element.  INFO is a plist used as a communication channel.  OP is
+either `definition' or `reference', depending on the purpose of
+the generated string.
+
+Return value is a string if OP is set to `reference' or a cons
+cell like CAPTION . SHORT-CAPTION) where CAPTION and
+SHORT-CAPTION are strings."
+  (cl-assert (memq (org-element-type element) '(link table src-block paragraph)))
+  (let* ((caption-from
+	  (cl-case (org-element-type element)
+	    (link (org-export-get-parent-element element))
+	    (t element)))
+	 ;; Get label and caption.
+	 (label (org-export-get-reference caption-from info))
+	 (caption (org-export-get-caption caption-from))
+	 (short-caption (org-export-get-caption caption-from t))
+	 ;; Transcode captions.
+	 (caption (and caption (org-export-data caption info)))
+	 ;; Currently short caption are sneaked in as object names.
+	 ;;
+	 ;; The advantages are:
+	 ;;
+	 ;; - Table Of Contents: Currently, there is no support for
+	 ;;   building TOC for figures, listings and tables.  See
+	 ;;   `org-odt-keyword'.  User instead has to rely on
+	 ;;   external application for building such indices.  Within
+	 ;;   LibreOffice, building an "Illustration Index" or "Index
+	 ;;   of Tables" will create a table with long captions (only)
+	 ;;   and building a table with "Object names" will create a
+	 ;;   table with short captions.
+	 ;;
+	 ;; - Easy navigation: In LibreOffice, object names are
+	 ;;   offered via the navigation bar.  This way one can
+	 ;;   quickly locate and jump to object of his choice in the
+	 ;;   exported document.
+	 ;;
+	 ;; The main disadvantage is that there cannot be any markups
+	 ;; within object names i.e., one cannot embolden, italicize
+	 ;; or underline text within short caption.  So suppress
+	 ;; generation of <text:span >...</text:span> and other
+	 ;; markups by overriding the default translators.  We
+	 ;; probably shouldn't be suppressing translators for all
+	 ;; elements in `org-element-all-objects', but for now this
+	 ;; will do.
+	 (short-caption
+	  (when short-caption
+	    (cond
+	     ;; Short captions, as they are commonly understood in
+	     ;; LaTeX world, is not supported by this exporter.
+	     ((memq 'short-caption org-odt-experimental-features)
+	      ;; Sneaking in short-caption as name attribute is
+	      ;; problematic with LibreOffice > 4.0.4.2.  So ignore
+	      ;; short-captions.  See following thread:
+	      ;; http://lists.gnu.org/archive/html/emacs-orgmode/2013-12/msg00100.html
+	      ;; (ignore
+	      ;;  (let ((short-caption (or short-caption caption))
+	      ;; 	   (backend (org-export-create-backend
+	      ;; 		     :parent (org-export-backend-name
+	      ;; 			      (plist-get info :back-end))
+	      ;; 		     :transcoders
+	      ;; 		     (mapcar (lambda (type) (cons type (lambda (_o c _i) c)))
+	      ;; 			     org-element-all-objects))))
+	      ;;    (when short-caption
+	      ;; 	 (org-export-data-with-backend short-caption backend info))))
+	      )
+	     ;; Use short caption as text "overlay" over the object
+	     ;; underneath.
+	     ((memq 'short-caption-as-label org-odt-experimental-features)
+	      (when short-caption
+		(org-export-data short-caption info)))))))
+    (when (org-odt--enumerable-p caption-from info)
+      (let* ((category (or (org-odt--element-category element info)
+			   (error "Refusing to enumerate the uncategorizable element: %S"
+				  element)))
+	     (captioned-parent (org-odt--get-captioned-parent element info))
+	     (secondary-category (if captioned-parent :SUBENTITY: category))
+	     ;; Compute sequence number of the element.
+	     (scope (or captioned-parent
+			(cl-loop for x in (org-element-lineage element)
+				 with n = (string-to-number
+					   (plist-get info :odt-display-outline-level))
+				 thereis (and (eq (org-element-type x) 'headline)
+					      (<= (org-export-get-relative-level x info) n)
+					      (org-export-numbered-headline-p x info)
+					      x))))
+	     (ordinal (let ((counter 0))
+			(let* ((org-element-all-objects (remq 'table-cell org-element-all-objects))
+			       (org-element-all-elements (cons 'table-cell org-element-all-elements))
+			       (org-element-greater-elements (append '(table-row table-cell)
+								     org-element-greater-elements)))
+			  (org-element-map (or scope (plist-get info :parse-tree))
+			      '(link src-block table)
+			    (lambda (el)
+			      (and (eq secondary-category (org-odt--element-secondary-category el info))
+				   (cl-incf counter)
+				   (or (eq element el)
+				       (eq element (cl-case (org-element-type el)
+						     (link (org-export-get-parent-element el))
+						     (t el))))
+				   counter))
+			    info 'first-match))))
+	     (seqno (pcase secondary-category
+		      (':SUBENTITY: (number-to-string ordinal))
+		      (_ (concat
+			  ;; Section number.
+			  (and scope
+			       (mapconcat 'number-to-string
+					  (org-export-get-headline-number scope info) "."))
+			  ;; Separator.
+			  (and scope ".")
+			  ;; Ordinal.
+			  (number-to-string ordinal))))))
+	(let* ((category-props (assoc-default secondary-category org-odt-caption-and-numbering-settings)))
+	  (cl-case op
+	    ;; Case 1: Handle Label definition.
+	    (definition
+	      (list
+	       (let ((caption-text
+		      ;; Label definition: Typically formatted as below:
+		      ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
+		      ;; with translation for correct punctuation.
+		      (cl-loop for % in (plist-get
+					 (assoc-default secondary-category
+							org-odt-caption-and-xref-settings)
+					 (or format-prop :caption-format))
+			       concat
+			       (pcase %
+				 ('category
+				  ;; Localize entity name.
+				  (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
+				 ('counter
+				  (concat
+				   ;; Sneak in a bookmark.  The bookmark is used when the
+				   ;; labeled element is referenced with a link that
+				   ;; provides its own description.
+				   (org-odt--target "" label)
+				   (if (and captioned-parent (= ordinal 1))
+				       (format
+					"<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
+					label
+					(plist-get category-props :variable)
+					(plist-get category-props :seq-num-format)
+					seqno)
+				     (format
+				      "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
+				      label
+				      (plist-get category-props :variable)
+				      (plist-get category-props :variable)
+				      (plist-get category-props :seq-num-format)
+				      seqno))))
+				 ('caption (or caption ""))
+				 (_ %)))))
+		 (unless (string= caption-text "")
+		   (cl-case (or format-prop :caption-format)
+		     (:caption-format
+		      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			      (let ((style (plist-get category-props :caption-style)))
+				(if (eq secondary-category :SUBENTITY:)
+				    (format "OrgSub%s" style)
+				  style))
+			      caption-text))
+		     (t caption-text))))
+	       short-caption
+	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
+			  :caption-position)
+	       ;; Paragraph style for the "overlaid" short caption,
+	       ;; and the associated image/formula.
+	       (or (org-odt--read-attribute caption-from :style)
+		   (format "Org%sText" (plist-get category-props :caption-style)))))
+	    ;; Case 2: Handle Label reference.
+	    (reference
+	     (cl-loop for % in (plist-get
+				(assoc-default secondary-category org-odt-caption-and-xref-settings)
+				(or format-prop :xref-format))
+		      concat
+		      (pcase %
+			((pred stringp) %)
+			((pred symbolp)
+			 (format
+			  "<text:sequence-ref text:reference-format=\"%s\" text:ref-name=\"%s\">%s</text:sequence-ref>"
+			  %
+			  label
+			  (if (equal (assoc-default secondary-category org-odt-caption-and-xref-settings)
+				     (assoc-default secondary-category
+						    (eval (car (get 'org-odt-caption-and-xref-settings
+								    'standard-value)))))
+			      seqno
+			    "[PLS. UPDATE FIELDS]"))))))
+	    (t (error "Unknown %S on label" op))))))))
+
+(defun org-odt-format-label-for-gdocs (element info op &optional format-prop)
   "Return a label for ELEMENT.
 
 ELEMENT is a `link', `table', `src-block' or `paragraph' type
@@ -4368,8 +4588,11 @@ used as a communication channel."
 
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
-	 (desc (and replaces (org-element-property :value replaces))))
-    (org-odt--render-image/formula entity href widths heights
+	 (desc (and replaces (org-element-property :value replaces)))
+	 (app (or (plist-get info :odt-app)
+		  (org-odt--read-attribute attr-from :app)
+		  "lo")))
+    (org-odt--render-image/formula app entity href widths heights
 				   captions user-frame-params title desc)))
 
 
@@ -4406,19 +4629,19 @@ used as a communication channel."
 	 ;; or LaTeX environment.  It will go in to frame title.
 	 (title (and replaces (capitalize
 			       (symbol-name (org-element-type replaces)))))
-
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
-	 (width nil) (height nil))
+	 (width nil) (height nil)
+	 (app "lo"))
     (cond
      ((eq embed-as 'character)
-      (org-odt--render-image/formula "InlineFormula" href width height
+      (org-odt--render-image/formula app "InlineFormula" href width height
 				     nil nil title desc))
      (t
-      (let* ((equation (org-odt--render-image/formula
-			"CaptionedDisplayFormula" href width height
-			captions nil title desc))
+      (let* ((equation (org-odt--render-image/formula app
+						      "CaptionedDisplayFormula" href width height
+						      captions nil title desc))
 	     (label
 	      (car (org-odt-format-label element info 'definition :label-format))))
 	(concat equation "<text:tab/>" label))))))
@@ -4451,9 +4674,141 @@ used as a communication channel."
 
 ;;;; Targets
 
-(defun org-odt--render-image/formula (cfg-key href widths heights &optional
+(defun org-odt--render-image/formula (app cfg-key href widths heights &optional
+					  captions user-frame-params
+					  &rest title-and-desc)
+  (apply (org-odt--get-app-function app 'render-image/formula)
+	 cfg-key href widths heights
+	 captions user-frame-params
+	 title-and-desc))
+
+(defun org-odt--render-image/formula-for-lo (cfg-key href widths heights &optional
 					      captions user-frame-params
 					      &rest title-and-desc)
+  (let* ((frame-cfg-alist
+	  ;; Each element of this alist is of the form (CFG-HANDLE
+	  ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
+
+	  ;; CFG-HANDLE is the key to the alist.
+
+	  ;; INNER-FRAME-PARAMS and OUTER-FRAME-PARAMS specify the
+	  ;; frame params for INNER-FRAME and OUTER-FRAME
+	  ;; respectively.  See below.
+
+	  ;; Configurations that are meant to be applied to
+	  ;; non-captioned image/formula specifies no
+	  ;; OUTER-FRAME-PARAMS.
+
+	  ;; TERMINOLOGY
+	  ;; ===========
+	  ;; INNER-FRAME :: Frame that directly surrounds an
+	  ;;                image/formula.
+
+	  ;; OUTER-FRAME :: Frame that encloses the INNER-FRAME.  This
+	  ;;                frame also contains the caption, if any.
+
+	  ;; FRAME-PARAMS :: List of the form (FRAME-STYLE-NAME
+	  ;;                 FRAME-ATTRIBUTES FRAME-ANCHOR).  Note
+	  ;;                 that these are the last three arguments
+	  ;;                 to `org-odt--frame'.
+
+	  ;; Note that an un-captioned image/formula requires just an
+	  ;; INNER-FRAME, while a captioned image/formula requires
+	  ;; both an INNER and an OUTER-FRAME.
+	  '(("As-CharImage" ("OrgInlineImage" nil "as-char"))
+	    ("ParagraphImage" ("OrgDisplayImage" nil "paragraph"))
+	    ("PageImage" ("OrgPageImage" nil "page"))
+	    ("CaptionedAs-CharImage"
+	     ("OrgDisplayImage"
+	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
+	     ("OrgInlineImage" nil "as-char"))
+	    ("CaptionedParagraphImage"
+	     ("OrgDisplayImage"
+	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
+	     ("OrgImageCaptionFrame" nil "paragraph"))
+	    ("CaptionedPageImage"
+	     ("OrgDisplayImage"
+	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
+	     ("OrgPageImageCaptionFrame" nil "page"))
+	    ("InlineFormula" ("OrgInlineFormula" nil "as-char"))
+	    ("DisplayFormula" ("OrgDisplayFormula" nil "as-char"))
+	    ("CaptionedDisplayFormula"
+	     ("OrgCaptionedFormula" nil "as-char")
+	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
+	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
+	 (caption-position (nth 2 captions))
+	 ;; Retrieve inner and outer frame params, from configuration.
+	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
+	 (inner (nth 1 frame-cfg))
+	 (outer (nth 2 frame-cfg))
+	 ;; User-specified frame params (from #+ATTR_ODT spec)
+	 (inner-user (nth 0 user-frame-params))
+	 (outer-user (nth 1 user-frame-params))
+	 (--merge-frame-params (lambda (default user)
+				 "Merge default and user frame params."
+				 (list
+				  (or (nth 0 user)
+				      (nth 0 default))
+				  (format " %s %s"
+					  (or (nth 1 user) "")
+					  (or (nth 1 default) ""))
+				  (or (nth 2 user)
+				      (nth 2 default))))))
+    (cond
+     ;; Case 1: Image/Formula has no caption.
+     ;;         There is only one frame, one that surrounds the image
+     ;;         or formula.
+     ((not caption)
+      ;; Merge user frame params with that from configuration.
+      (setq inner (funcall --merge-frame-params inner inner-user))
+      (apply 'org-odt--frame href (car widths) (car heights)
+	     (append inner title-and-desc)))
+     ;; Case 2: Image/Formula is captioned or labeled.
+     ;;         There are two frames: The inner one surrounds the
+     ;;         image or formula.  The outer one contains the
+     ;;         caption/sequence number.
+     (t
+      ;; Merge user frame params with outer frame params.
+      (setq outer (funcall --merge-frame-params outer outer-user))
+      ;; Short caption, if specified, goes as part of inner frame.
+      (setq inner (let ((frame-params (copy-sequence inner)))
+		    (when (or (cdr widths) (cdr heights))
+		      (setcar (cdr frame-params) nil))
+		    (setcar (cdr frame-params)
+			    (concat
+			     (cadr frame-params)
+			     (when (and (memq 'short-caption org-odt-experimental-features) short-caption)
+			       (format " draw:name=\"%s\" " short-caption))))
+		    frame-params))
+      (setq inner (funcall --merge-frame-params inner inner-user))
+      (let* ((text
+	      (cond
+	       ((string= (nth 2 inner) "frame")
+		(concat
+		 (apply 'org-odt--frame href (car widths) (car heights)
+			(append inner title-and-desc))
+		 (when short-caption
+		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			   (nth 3 captions)
+			   short-caption))))
+	       (t
+		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			(nth 3 captions)
+			(concat
+			 short-caption
+			 (apply 'org-odt--frame href (car widths) (car heights)
+				(append inner title-and-desc))))))))
+	(apply 'org-odt--textbox
+	       (cl-case caption-position
+		 (above (concat caption text))
+		 (t (concat text caption)))
+	       (or (cdr widths) (car widths))
+	       (or (cdr heights) (car heights))
+	       outer))))))
+
+(defun org-odt--render-image/formula-for-gdocs (cfg-key href widths heights &optional
+							captions user-frame-params
+							&rest title-and-desc)
   (let* ((frame-cfg-alist
 	  ;; Each element of this alist is of the form (CFG-HANDLE
 	  ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
