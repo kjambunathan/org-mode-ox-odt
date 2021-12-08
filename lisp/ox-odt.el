@@ -4585,15 +4585,22 @@ used as a communication channel."
 	 ;; or LaTeX environment.  It will go in to frame title.
 	 (title (and replaces (capitalize
 			       (symbol-name (org-element-type replaces)))))
-
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
 	 (app (or (plist-get info :odt-app)
 		  (org-odt--read-attribute attr-from :app)
 		  "lo")))
-    (org-odt--render-image/formula app entity href widths heights
-				   captions user-frame-params title desc)))
+    (let ((contents (org-odt--render-image/formula app entity href widths heights
+						   captions user-frame-params title desc)))
+      (if standalone-link-p
+	  ;; Decorate contents with the paragraph style it needs to be
+	  ;; enclosed in.  The value of `:p-style' is probed in
+	  ;; `org-odt-paragraph'.
+	  (propertize contents :p-style
+		      (concat "Org" (if (org-odt--get-captioned-parent element info) "Sub" "")
+			      "FigureBody"))
+	contents))))
 
 
 ;;;; Links :: Math formula
@@ -4643,8 +4650,16 @@ used as a communication channel."
 						      "CaptionedDisplayFormula" href width height
 						      captions nil title desc))
 	     (label
-	      (car (org-odt-format-label element info 'definition :label-format))))
-	(concat equation "<text:tab/>" label))))))
+	      (car (org-odt-format-label element info 'definition :label-format)))
+	     (contents (concat equation "<text:tab/>" label)))
+	;; Decorate contents with the paragraph style it needs to be
+	;; enclosed in.  The value of `:p-style' is probed in
+	;; `org-odt-paragraph'.
+	(propertize contents :p-style
+		    (concat "Org"
+			    (if (org-odt--get-captioned-parent element info)
+				"Sub" "")
+			    "FormulaBody")))))))
 
 (defun org-odt--copy-formula-file (info src-file target-dir)
   "Returns the internal name of the file"
@@ -5435,7 +5450,11 @@ the plist used as a communication channel."
 	    ;; use the fallback style "Text_20_body".
 	    (cl-loop for el in data
 		     ;; Fallback style.
-		     with style = "Text_20_body"
+		     with style = (or
+				   ;; Style set in `org-odt-link--inline-image'
+				   ;; or `org-odt-link--inline-formula'.
+				   (get-text-property 0 :p-style contents)
+				   "Text_20_body")
 		     with within-note-definition-p = nil do
 		     (setq style
 			   (or
@@ -5493,7 +5512,7 @@ the plist used as a communication channel."
 				  ((string= type "textbox")
 				   (org-odt--read-attribute el :p-style))
 				  ((string= type "customshape")
-				   (org-odt--read-attribute el :p-style))				  
+				   (org-odt--read-attribute el :p-style))
 				  ((string= type "section")
 				   (org-odt--read-attribute el :p-style))
 				  ;; Case 2: Handle user-specified
@@ -7018,7 +7037,7 @@ exported file."
 			  (latex-environment
 			   (org-element-adopt-elements
 			       (list 'paragraph
-				     (list :style "OrgFormula"
+				     (list ;; :style "OrgFormula"
 					   :name (org-element-property :name
 								       latex-*)
 					   :caption (org-element-property :caption

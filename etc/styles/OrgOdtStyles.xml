@@ -981,6 +981,12 @@
   <style:style style:name="OrgSubListing" style:family="paragraph" style:parent-style-name="Listing"/>
   <style:style style:name="OrgSubTable" style:family="paragraph" style:parent-style-name="Table"/>
 
+  <style:style style:name="OrgFigureBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
+  <style:style style:name="OrgSubFigureBody" style:family="paragraph" style:parent-style-name="OrgFigureBody"/>
+
+  <style:style style:name="OrgFormulaBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
+  <style:style style:name="OrgSubFormulaBody" style:family="paragraph" style:parent-style-name="OrgFormulaBody"/>
+
  </office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
