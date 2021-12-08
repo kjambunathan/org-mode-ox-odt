@@ -4141,59 +4141,59 @@ SHORT-CAPTION are strings."
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
-	      (list
-	       (let ((caption-text
-		      ;; Label definition: Typically formatted as below:
-		      ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
-		      ;; with translation for correct punctuation.
-		      (cl-loop for % in (plist-get
-					 (assoc-default secondary-category
-							org-odt-caption-and-xref-settings)
-					 (or format-prop :caption-format))
-			       concat
-			       (pcase %
-				 ('category
-				  ;; Localize entity name.
-				  (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
-				 ('counter
-				  (concat
-				   ;; Sneak in a bookmark.  The bookmark is used when the
-				   ;; labeled element is referenced with a link that
-				   ;; provides its own description.
-				   (org-odt--target "" label)
-				   (if (and captioned-parent (= ordinal 1))
-				       (format
-					"<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
-					label
-					(plist-get category-props :variable)
-					(plist-get category-props :seq-num-format)
-					seqno)
-				     (format
-				      "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
-				      label
-				      (plist-get category-props :variable)
-				      (plist-get category-props :variable)
-				      (plist-get category-props :seq-num-format)
-				      seqno))))
-				 ('caption (or caption ""))
-				 (_ %)))))
-		 (unless (string= caption-text "")
-		   (cl-case (or format-prop :caption-format)
-		     (:caption-format
-		      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			      (let ((style (plist-get category-props :caption-style)))
-				(if (eq secondary-category :SUBENTITY:)
-				    (format "OrgSub%s" style)
-				  style))
-			      caption-text))
-		     (t caption-text))))
-	       short-caption
-	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
-			  :caption-position)
-	       ;; Paragraph style for the "overlaid" short caption,
-	       ;; and the associated image/formula.
-	       (or (org-odt--read-attribute caption-from :style)
-		   (format "Org%sText" (plist-get category-props :caption-style)))))
+	     (list
+	      (let ((caption-text
+		     ;; Label definition: Typically formatted as below:
+		     ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
+		     ;; with translation for correct punctuation.
+		     (cl-loop for % in (plist-get
+					(assoc-default secondary-category
+						       org-odt-caption-and-xref-settings)
+					(or format-prop :caption-format))
+			      concat
+			      (pcase %
+				('category
+				 ;; Localize entity name.
+				 (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
+				('counter
+				 (concat
+				  ;; Sneak in a bookmark.  The bookmark is used when the
+				  ;; labeled element is referenced with a link that
+				  ;; provides its own description.
+				  (org-odt--target "" label)
+				  (if (and captioned-parent (= ordinal 1))
+				      (format
+				       "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
+				       label
+				       (plist-get category-props :variable)
+				       (plist-get category-props :seq-num-format)
+				       seqno)
+				    (format
+				     "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
+				     label
+				     (plist-get category-props :variable)
+				     (plist-get category-props :variable)
+				     (plist-get category-props :seq-num-format)
+				     seqno))))
+				('caption (or caption ""))
+				(_ %)))))
+		(unless (string= caption-text "")
+		  (cl-case (or format-prop :caption-format)
+		    (:caption-format
+		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			     (let ((style (plist-get category-props :caption-style)))
+			       (if (eq secondary-category :SUBENTITY:)
+				   (format "OrgSub%s" style)
+				 style))
+			     caption-text))
+		    (t caption-text))))
+	      short-caption
+	      (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
+			 :caption-position)
+	      ;; Paragraph style for the "overlaid" short caption,
+	      ;; and the associated image/formula.
+	      (or (org-odt--read-attribute caption-from :style)
+		  (format "Org%sText" (plist-get category-props :caption-style)))))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-loop for % in (plist-get
@@ -4335,59 +4335,59 @@ SHORT-CAPTION are strings."
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
-	      (list
-	       (let ((caption-text
-		      ;; Label definition: Typically formatted as below:
-		      ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
-		      ;; with translation for correct punctuation.
-		      (cl-loop for % in (plist-get
-					 (assoc-default secondary-category
-							org-odt-caption-and-xref-settings)
-					 (or format-prop :caption-format))
-			       concat
-			       (pcase %
-				 ('category
-				  ;; Localize entity name.
-				  (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
-				 ('counter
-				  (concat
-				   ;; Sneak in a bookmark.  The bookmark is used when the
-				   ;; labeled element is referenced with a link that
-				   ;; provides its own description.
-				   (org-odt--target "" label)
-				   (if (and captioned-parent (= ordinal 1))
-				       (format
-					"<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
-					label
-					(plist-get category-props :variable)
-					(plist-get category-props :seq-num-format)
-					seqno)
-				     (format
-				      "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
-				      label
-				      (plist-get category-props :variable)
-				      (plist-get category-props :variable)
-				      (plist-get category-props :seq-num-format)
-				      seqno))))
-				 ('caption (or caption ""))
-				 (_ %)))))
-		 (unless (string= caption-text "")
-		   (cl-case (or format-prop :caption-format)
-		     (:caption-format
-		      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			      (let ((style (plist-get category-props :caption-style)))
-				(if (eq secondary-category :SUBENTITY:)
-				    (format "OrgSub%s" style)
-				  style))
-			      caption-text))
-		     (t caption-text))))
-	       short-caption
-	       (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
-			  :caption-position)
-	       ;; Paragraph style for the "overlaid" short caption,
-	       ;; and the associated image/formula.
-	       (or (org-odt--read-attribute caption-from :style)
-		   (format "Org%sText" (plist-get category-props :caption-style)))))
+	     (list
+	      (let ((caption-text
+		     ;; Label definition: Typically formatted as below:
+		     ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
+		     ;; with translation for correct punctuation.
+		     (cl-loop for % in (plist-get
+					(assoc-default secondary-category
+						       org-odt-caption-and-xref-settings)
+					(or format-prop :caption-format))
+			      concat
+			      (pcase %
+				('category
+				 ;; Localize entity name.
+				 (org-odt--translate (plist-get category-props :entity-name) :utf-8 info))
+				('counter
+				 (concat
+				  ;; Sneak in a bookmark.  The bookmark is used when the
+				  ;; labeled element is referenced with a link that
+				  ;; provides its own description.
+				  (org-odt--target "" label)
+				  (if (and captioned-parent (= ordinal 1))
+				      (format
+				       "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" style:num-format=\"%s\">%s</text:sequence>"
+				       label
+				       (plist-get category-props :variable)
+				       (plist-get category-props :seq-num-format)
+				       seqno)
+				    (format
+				     "<text:sequence text:ref-name=\"%s\" text:name=\"%s\" text:formula=\"ooow:%s+1\" style:num-format=\"%s\">%s</text:sequence>"
+				     label
+				     (plist-get category-props :variable)
+				     (plist-get category-props :variable)
+				     (plist-get category-props :seq-num-format)
+				     seqno))))
+				('caption (or caption ""))
+				(_ %)))))
+		(unless (string= caption-text "")
+		  (cl-case (or format-prop :caption-format)
+		    (:caption-format
+		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			     (let ((style (plist-get category-props :caption-style)))
+			       (if (eq secondary-category :SUBENTITY:)
+				   (format "OrgSub%s" style)
+				 style))
+			     caption-text))
+		    (t caption-text))))
+	      short-caption
+	      (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
+			 :caption-position)
+	      ;; Paragraph style for the "overlaid" short caption,
+	      ;; and the associated image/formula.
+	      (or (org-odt--read-attribute caption-from :style)
+		  (format "Org%sText" (plist-get category-props :caption-style)))))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-loop for % in (plist-get
