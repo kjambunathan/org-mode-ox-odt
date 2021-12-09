@@ -914,10 +914,51 @@ I. Reload
   to view the new changes.  This macro takes care of this manual
   step.
 
-  You most definitely would want the exported document go through
-  this macro first.  So, keep this macro enabled and have it
-  first in the transformer pipeline.
+  Don't add this macro to `org-odt-transform-processes'.  The
+  macro is listed here for your information.  This macro is best
+  used in conjunction with `xdg-open'.
 
+  Here is a quick guide on how to configure existing LibreOffice
+  session to reload ODT files on fresh export.
+
+  1. Configure `xdg-open' as the system-dependent command for opening
+     files
+
+	 (setcdr (assq 'system org-file-apps-gnu) \"xdg-open %s\")
+
+	 (advice-add 'org-open-file :around
+		     (lambda (orig-fun &rest args)
+		       ;; Work around a weird problem with xdg-open.
+		       (let ((process-connection-type nil))
+			 (apply orig-fun args))))
+
+  2. Install `OrgModeUtilities.oxt' as an add-on to LibreOffice with
+     `Tools' -> `Extension Manager' -> `Add-on' -> [pick
+     `OrgModeUtilities.oxt' from you filesystem].
+
+     You can obtain from `OrgModeUtilities.oxt' either from
+     `contrib/odt/LibreOffice/' (git) or from
+     `.emacs.d/elpa/ox-odt-x.x.x.xxx/LibreOffice/' (elpa).
+
+  3. Create a custom desktop file, say
+     `my-libreoffice-writer.desktop', and configure the `Exec' command
+     to execute the `Reload' macro on file open.  Associate this
+     custom desktop file with all OpenDocument files. In other words,
+     open a terminal, and do the following:
+     
+	 ~$ cp /usr/share/applications/libreoffice-writer.desktop ~/.local/share/applications/my-libreoffice-writer.desktop
+
+	 Open `my-libreoffice-writer.desktop', and modify the `Exec' command which looks like
+
+	     Exec=libreoffice --writer %U
+
+	 to
+
+	     Exec=soffice --nologo --norestore %u macro:///OrgMode.Utilities.Reload()
+
+	 ~$ xdg-mime default my-libreoffice-writer.desktop application/vnd.oasis.opendocument.text
+
+	 ~$ update-desktop-database ~/.local/share/applications
 
 II. Update All
 -------------
