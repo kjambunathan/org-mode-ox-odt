@@ -129,7 +129,11 @@
     ;; Keywords that affect meta.xml
     (:odt-document-properties "ODT_DOCUMENT_PROPERTIES" nil nil split)
     (:odt-extra-meta "ODT_EXTRA_META" nil nil newline)
-    
+    ;; Keyword for debugging; affects all the above XML files.
+    (:odt-prettify-xml "ODT_PRETTIFY_XML" nil org-odt-prettify-xml t) ; can either be empty or one of
+								      ; tidy or tidy+indent.  See
+								      ; `org-odt-prettify-xml-buffer'.
+
     ;; Keys associated with Endnotes
     (:odt-endnote-anchor-format nil nil org-odt-endnote-anchor-format t)
     (:odt-endnote-braces nil nil org-odt-endnote-braces t)
@@ -165,7 +169,7 @@
     ;; Initialize temporary workarea.  All files that end up in the
     ;; exported document are created here.
     (:odt-zip-dir nil nil (let ((dir (file-name-as-directory (make-temp-file "odt-" t))))
-			    (prog1 dir (message  "ODT Zip Dir is %s" dir))))
+			    (prog1 dir (message "ODT Zip Dir is %s" dir))))
     (:odt-hfy-user-sheet-assoc nil nil nil)))
 
 
@@ -751,20 +755,30 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 
 ;;;; Debugging
 
-(defcustom org-odt-prettify-xml nil
+(defcustom org-odt-prettify-xml ""
   "Specify whether or not the xml output should be prettified.
 
-When this option is turned on, use
-`org-odt-prettify-xml-buffer' (i.e., specifically HTML tidy) on
-component xml buffers before they are saved.  Since this function
-creates line breaks, it may introduce extraneous and undesirable
-whitespace in exported document.  So, don't use this option in
-production.  Use this for developing ODT-specific features or to
-make sense of OpenDocument XML produced by a third party, say
-LibreOffice."
+Value, a string, can be one of
+
+    - \"\"		:: an empty string. Don't prettify
+    - \"tidy\"		:: Run HTML tidy on component XML buffers
+    - \"tidy+indent\"	:: Run HTML tidy followed with `indent-region'
+                           on component XML buffers
+
+When this option is non nil, use
+`org-odt-prettify-xml-buffer' (i.e., HTML tidy) on component xml
+buffers -- `content.xml', `styles.xml', `meta.xml', and
+`mainifest.mxl' -- before they are zipped up in to a OpenDocument
+file.  Note that this function creates line breaks, and will
+introduce extraneous and undesirable whitespace in exported
+document.  So, don't use this option in production.  Use this for
+developing ODT-specific features or to make sense of OpenDocument
+XML produced by a third party, say LibreOffice."
   :group 'org-export-odt
-  :version "24.1"
-  :type 'boolean)
+  :type '(choice
+	  (const :tag "Don't prettify" "")
+	  (const :tag "Prettify with HTML Tidy only" "tidy")
+	  (const :tag "Prettify with HTML Tidy; Also run `indent-region'" "tidy+indent")))
 
 
 ;;;; Document schema
@@ -2821,8 +2835,7 @@ holding export options."
       ;; Contents.
       (insert "\n<!-- begin -->\n" contents "\n<!-- end -->\n")
       ;; Prettify buffer contents, if needed.
-      (when org-odt-prettify-xml
-	(org-odt-prettify-xml-buffer))
+      (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Cleanup, when export is body-only.
       (when (memq 'body-only (plist-get info :export-options))
 	(org-odt-cleanup-xml-buffers nil nil info))
@@ -3079,8 +3092,7 @@ holding export options."
 		    (if (wholenump sec-num) (<= level sec-num) sec-num))
 	    (replace-match replacement t nil))))
       ;; Prettify buffer contents, if needed
-      (when org-odt-prettify-xml
-	(org-odt-prettify-xml-buffer))
+      (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Write styles.xml
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
@@ -3157,8 +3169,7 @@ holding export options."
 	 (plist-get info :odt-extra-meta))
 	"  </office:meta>\n" "</office:document-meta>"))
       ;; Prettify buffer contents, if needed
-      (when org-odt-prettify-xml
-	(org-odt-prettify-xml-buffer))
+      (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Write meta.xml.
       (let ((coding-system-for-write 'utf-8))
 	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
@@ -3195,8 +3206,7 @@ holding export options."
 		 (nth 0 file-entry) (nth 1 file-entry) extra))))
     (insert "\n</manifest:manifest>")
     ;; Prettify buffer contents, if needed
-    (when org-odt-prettify-xml
-      (org-odt-prettify-xml-buffer))
+    (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
     ;; Write manifest.xml
     (let ((coding-system-for-write 'utf-8))
       (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
@@ -8272,7 +8282,8 @@ specifically to help with subsequent tweaks."
 
 ;;;; Insert prettifed XML
 
-(defun org-odt-prettify-xml-buffer ()
+(defun org-odt-prettify-xml-buffer (&optional arg)
+  (interactive "P")
   "Run HTML Tidy (i.e., `tidy' on debian) on current buffer.
 
 Specfically, it does the following:
@@ -8284,12 +8295,27 @@ Specfically, it does the following:
   - write some attributes, specifically style:name, before other
     attributes of an element
 
-Also run `indent-region' on the tidied output.
+When there is no prefix ARG, run `indent-region' on the tidied
+output.  With prefix ARG, run only HTML Tidy, and skip
+`indent-region'.
 
 This function is used for prettifying XML files when user option
 `org-odt-prettify-xml' is non-nil."
-
-  (when (executable-find "tidy")
+  (when (and (called-interactively-p 'any) arg)
+    (setq arg t))
+  (unless (consp arg)
+    (setq arg (assoc-default arg
+			     '(
+			       ;; Mapping when called as part of export process,
+			       ("tidy+indent" . (tidy indent))
+			       ("tidy" . (tidy))
+			       ("" . nil)
+			       ;; Mapping when called interactively.
+			       (nil . (tidy indent))
+			       (t . (tidy))))))
+  ;; Run HTML tidy.
+  (when (and (executable-find "tidy")
+	     (memq 'tidy arg))
     (let* ((output-file (make-temp-file "odt-tidy-out-"))
 	   (error-file (make-temp-file "odt-tidy-err-"))
 	   (attributes (mapconcat #'identity
@@ -8320,12 +8346,12 @@ This function is used for prettifying XML files when user option
 							; set this to a very small value so that each
 							; attribute is on a line of it's own
 		 "--indent-attributes" "yes"		; begin each attribute on a new line
+		 "--indent" "no"			; don't indent element content		 
 		 "--literal-attributes" "yes"		; don't normalize attribute values i.e., preserve whitespace
 		 "--quiet" "yes"			; report only document warnings and errors
 		 "--sort-attributes" "alpha"		; sort attributes within an element alphabetically in ascending order
 		 "--tidy-mark" "no"			; don't add a meta element
-		 "--vertical-space" "yes"		; add some extra empty lines for readability
-		 "-indent"				; indent element content
+		 "--vertical-space" "no"		; don't add any extra empty lines
 		 "-utf8"				; use UTF-8 for both input and output
 		 "-xml"					; the input is well formed XML
 		 "--priority-attributes" attributes	; write these attributes before other attributes of an element
@@ -8352,8 +8378,10 @@ This function is used for prettifying XML files when user option
        (t
 	(message "%s failed with error: ->\n%s\n<-"
 		 (car cmd) error-string)))))
-  (nxml-mode)
-  (indent-region (point-min) (point-max)))
+  ;; Run `indent-region'.
+  (when (memq 'indent arg)
+    (nxml-mode)
+    (indent-region (point-min) (point-max))))
 
 (defun org-odt-yank-styles (&optional dont-prompt-for-styles-keyword)
   "Yank `current-kill', (presumably )a ODT (styles) XML, at point.
