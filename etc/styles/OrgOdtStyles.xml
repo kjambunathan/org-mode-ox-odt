@@ -984,7 +984,13 @@
   <style:style style:name="OrgFigureBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
   <style:style style:name="OrgSubFigureBody" style:family="paragraph" style:parent-style-name="OrgFigureBody"/>
 
-  <style:style style:name="OrgFormulaBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
+  <style:style style:name="OrgFormulaBody" style:family="paragraph" style:parent-style-name="Text_20_body">
+   <style:paragraph-properties>
+    <style:tab-stops>
+     <style:tab-stop style:position="17cm" style:type="right"/>
+    </style:tab-stops>
+   </style:paragraph-properties>
+  </style:style>
   <style:style style:name="OrgSubFormulaBody" style:family="paragraph" style:parent-style-name="OrgFormulaBody"/>
 
  </office:styles>
