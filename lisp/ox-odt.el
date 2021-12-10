@@ -4141,9 +4141,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	  (cl-case (org-element-type element)
 	    (link (org-export-get-parent-element element))
 	    (t element)))
-	 (app (or (plist-get info :odt-app)
-		  (org-odt--read-attribute caption-from :app)
-		  "lo")))
+	 (app (let ((v (or (plist-get info :odt-app)
+			   (org-odt--read-attribute caption-from :app))))
+		(if (member v '("lo" "gdocs")) v "lo"))))
     (funcall (org-odt--get-app-function app 'format-label) element info op format-prop)))
 
 (defun org-odt-format-label-for-lo (element info op &optional format-prop)
@@ -4713,9 +4713,9 @@ used as a communication channel."
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
-	 (app (or (plist-get info :odt-app)
-		  (org-odt--read-attribute attr-from :app)
-		  "lo")))
+	 (app (let ((v (or (plist-get info :odt-app)
+			   (org-odt--read-attribute attr-from :app))))
+		(if (member v '("lo" "gdocs")) v "lo"))))
     (let ((contents (org-odt--render-image/formula app entity href widths heights
 						   captions user-frame-params title desc)))
       (if standalone-link-p
