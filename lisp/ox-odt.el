@@ -113,6 +113,7 @@
     (:subtitle "SUBTITLE" nil nil parse)
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)
+    (:odt-math-syntax "ODT_MATH_SYNTAX" nil org-odt-math-syntax t)
     ;; ODT-specific keywords
     ;; Keywords that affect styles.xml
     (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
@@ -1586,6 +1587,47 @@ t              Synonym for `mathjax'."
 	  (const :tag "Use imagemagick to make images" imagemagick)
 	  (const :tag "Use MathJax to display math" mathjax)
 	  (const :tag "Leave math verbatim" verbatim)))
+
+(defcustom org-odt-math-syntax "latex"
+  "Syntax of the text between LaTeX math delimiters.
+
+The value, a string can be one of \"latex\" or \"starmath\".
+When the value is \"latex\", the interpretation is same as that
+specified in the following node.
+
+    (info \"(org) LaTeX fragments\") 
+
+When the value is \"starmath\", the string between the LaTeX math
+delimiters are assumed to be in Starmath format.  Use this option
+if you find that the LaTeX-to-MathML conversion achieved by
+`org-latex-to-mathml-convert-command' is error-prone or
+unsatisfactory.
+
+Here is a sample Org snippet that uses starmath for typesetting
+the math.
+
+    #+options: tex:t
+    #+odt_math_syntax: starmath
+
+    When ${ a <> 0 }$, there are two solutions to \\( { a x ^ 2 + b x + c = 0 } \\)
+    and they are
+
+    $${ x  = frac { { - b +- sqrt { b ^ 2 - 4 a c } } } { { 2 a } }}$$
+
+    A trigonometric equation
+
+    \\begin{equation}
+     { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+    \\end{equation}
+
+When you use Starmath fragments, the value of `org-odt-with-latex'
+is ignored, and the output is *always* set to MathML.  In other
+words, you lose the ability to embed a starmath fragment verbatim
+or as an image in the exported file."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "LaTeX" "latex")
+	  (const :tag "Starmath" "starmath")))
 
 
 ;;;; Links
@@ -7079,21 +7121,91 @@ exported file."
     (nconc info (list :citations-alist citations-alist)))
   tree)
 
+
 ;;;; LaTeX fragments
 
+;;;;; Starmath-specific
+
+(defun org-odt--extract-starmath-from-latex-frag (&optional latex-frag)
+  (let* ((latex-frag (or latex-frag
+			 (buffer-substring-no-properties (region-beginning) (region-end))))
+	 (latex-frag (org-trim latex-frag)))
+    (cond
+     ((and (string-prefix-p "$$" latex-frag)
+	   (string-suffix-p "$$" latex-frag))
+      (substring latex-frag 2 -2))
+     ((and (string-prefix-p "$" latex-frag)
+	   (string-suffix-p "$" latex-frag))
+      (substring latex-frag 1 -1))
+     ((and (string-prefix-p "\\[" latex-frag)
+	   (string-suffix-p "\\]" latex-frag))
+      (substring latex-frag 2 -2))
+     ((and (string-prefix-p "\\(" latex-frag)
+	   (string-suffix-p "\\)" latex-frag))
+      (substring latex-frag 2 -2))
+     ((string-match (rx-to-string '(seq "\\begin{" (group (one-or-more (any "0-9A-Za-z" "*\\"))) "}")) latex-frag)
+      (let* ((prefix (match-string 1 latex-frag))
+	     (preamble (format "\\begin{%s}" prefix))
+	     (postamble (format "\\end{%s}" prefix)))
+	(when (string-suffix-p postamble latex-frag)
+	  (substring latex-frag (length preamble) (- (length postamble))))))
+     (t (error "Couldn't match latex-frag: %S" latex-frag)))))
+
+(defun org-create-math-formula-from-starmath (latex-frag &optional mathml-file)
+  "Convert LATEX-FRAG to MathML and store it in MATHML-FILE.
+
+LATEX-FRAG here is in fact _not_ a latex fragment as such, but a
+startmath formula delimited using .  If the conversion is
+successful, return the portion between \"<math...> </math>\"
+elements otherwise return nil.  When MATHML-FILE is specified,
+write the results in to that file.  When invoked as an
+interactive command, prompt for LATEX-FRAG, with initial value
+set to the current active region and echo the results for user
+inspection."
+  (interactive (list (let ((frag (when (org-region-active-p)
+				   (buffer-substring-no-properties
+				    (region-beginning) (region-end)))))
+		       (read-string "LaTeX Fragment: " frag nil frag))))
+  (let* ((starmath (org-odt--extract-starmath-from-latex-frag latex-frag))
+	 (_ (message "\n->%s<-\n\n-->%s<--\n" latex-frag starmath))
+	 (mathml
+	  (format
+	   "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\">
+  <semantics>
+    <mi/>
+    <annotation encoding=\"StarMath 5.0\">%s</annotation>
+ </semantics>
+</math>
+"
+	   (org-odt--encode-plain-text starmath t))))
+    (when mathml-file
+      (message "Wrote %s" mathml-file)
+      (write-region mathml nil mathml-file))
+    mathml))
+
+
+;;;;; Translate LaTeX / Starmath fragments to mathml, image etc
+
 (defun org-odt--translate-latex-fragments (tree _backend info)
-  (let ((processing-type (plist-get info :with-latex))
-	(count 0))
+  (let* ((starmathp (string= (plist-get info :odt-math-syntax) "starmath"))
+	 (processing-type (if starmathp 'mathml
+			    (plist-get info :with-latex)))
+	 (count 0))
     ;; Normalize processing-type to one of dvipng, mathml or verbatim.
     ;; If the desired converter is not available, force verbatim
     ;; processing.
     (cl-case processing-type
       ((t mathml)
-       (if (and (fboundp 'org-format-latex-mathml-available-p)
-		(org-format-latex-mathml-available-p))
-	   (setq processing-type 'mathml)
-	 (message "LaTeX to MathML converter not available.")
-	 (setq processing-type 'verbatim)))
+       (cond
+	(starmathp
+	 (message "Assuming LaTeX fragments  are in starmath format."))
+	(t
+	 (if (and (fboundp 'org-format-latex-mathml-available-p)
+		  (org-format-latex-mathml-available-p))
+	     (setq processing-type 'mathml)
+	   (message "LaTeX to MathML converter not available.")
+	   (setq processing-type 'verbatim)))))
       ((dvipng imagemagick)
        (unless (and (org-check-external-command "latex" "" t)
 		    (org-check-external-command
@@ -7120,7 +7232,8 @@ exported file."
 		 (cache-subdir (concat
 				(cl-case processing-type
 				  ((dvipng imagemagick) "ltxpng/")
-				  (mathml "ltxmathml/"))
+				  (mathml
+				   (if starmathp "ltxstarmath/" "ltxmathml/")))
 				(file-name-sans-extension
 				 (file-name-nondirectory input-file))))
 		 (display-msg
@@ -7128,17 +7241,34 @@ exported file."
 		    ((dvipng imagemagick)
 		     (format "Creating LaTeX Image %d..." count))
 		    (mathml
-		     (format "Creating MathML snippet %d..." count))))
+		     (format "Creating MathML snippet from %s fragment %d..."
+			     (if starmathp "Starmath" "LaTeX")
+			     count))))
 		 ;; Get an Org-style link to PNG image or the MathML
 		 ;; file.
 		 (org-link
-		  (let ((link (with-temp-buffer
-				(insert latex-frag)
-				(org-format-latex cache-subdir nil nil cache-dir
-						  nil display-msg nil
-						  processing-type)
-				(buffer-substring-no-properties
-				 (point-min) (point-max)))))
+		  (let ((link
+			 (cond
+			  (starmathp
+			   (unwind-protect
+			       (let* ((org-latex-to-mathml-convert-command "emacs"))
+				 (advice-add 'org-create-math-formula :override
+					     'org-create-math-formula-from-starmath)
+				 (with-temp-buffer
+				   (insert latex-frag)
+				   (org-format-latex cache-subdir nil nil cache-dir
+						     nil display-msg nil 'mathml)
+				   (buffer-substring-no-properties
+				    (point-min) (point-max))))
+			     (advice-remove 'org-create-math-formula
+					    'org-create-math-formula-from-starmath)))
+			  (t
+			   (with-temp-buffer
+			     (insert latex-frag)
+			     (org-format-latex cache-subdir nil nil cache-dir
+					       nil display-msg nil processing-type)
+			     (buffer-substring-no-properties
+			      (point-min) (point-max)))))))
 		    (if (string-match-p "file:\\([^]]*\\)" link) link
 		      (prog1 nil (message "LaTeX Conversion failed."))))))
 	    (when org-link
@@ -7163,10 +7293,8 @@ exported file."
 			   (org-element-adopt-elements
 			       (list 'paragraph
 				     (list ;; :style "OrgFormula"
-					   :name (org-element-property :name
-								       latex-*)
-					   :caption (org-element-property :caption
-									  latex-*)))
+				      :name (org-element-property :name latex-*)
+				      :caption (org-element-property :caption latex-*)))
 			     link))
 			  ;; Case 2: LaTeX fragment.
 			  ;; No special action.
@@ -7684,8 +7812,13 @@ exported file."
 ;;;; Export to OpenDocument formula
 
 ;;;###autoload
-(defun org-odt-export-as-odf (latex-frag &optional odf-file)
+(defun org-odt-export-as-odf (latex-frag &optional starmathp odf-file)
   "Export LATEX-FRAG as OpenDocument formula file ODF-FILE.
+
+STARMATHP, a boolean, specifies the syntax of LATEX-FRAG.  If it
+is non-nil LATEX-FRAG is assumed to be in Starmath syntax.
+Otherwise, it is assumed to be in LaTeX syntax.
+
 Use `org-create-math-formula' to convert LATEX-FRAG first to
 MathML.  When invoked as an interactive command, use
 `org-latex-regexps' to infer LATEX-FRAG from currently active
@@ -7700,7 +7833,8 @@ MathML source to kill ring depending on the value of
 			(cl-loop for e in org-latex-regexps
 				 thereis (when (string-match (nth 1 e) frag)
 					   (match-string (nth 2 e) frag)))))
-	(read-string "LaTeX Fragment: " frag nil frag))
+	(read-string "Fragment (LaTeX / Starmath): " frag nil frag))
+     ,(yes-or-no-p "Is fragment in Starmath format? ")
      ,(let ((odf-filename (expand-file-name
 			   (concat
 			    (file-name-sans-extension
@@ -7745,7 +7879,9 @@ MathML source to kill ring depending on the value of
 				;; org-odt-prettify-xml-files-maybe
 				org-odt-zip
 				org-odt-cleanup-xml-buffers)
-			      :initial-value (or (org-create-math-formula latex-frag)
+			      :initial-value (or (if starmathp
+						     (org-create-math-formula-from-starmath latex-frag)
+						   (org-create-math-formula latex-frag))
 						 (error "No Math formula created"))))
       ((error)
        ;; Cleanup work directory and work files.
