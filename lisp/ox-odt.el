@@ -129,10 +129,14 @@
     ;; Keywords that affect meta.xml
     (:odt-document-properties "ODT_DOCUMENT_PROPERTIES" nil nil split)
     (:odt-extra-meta "ODT_EXTRA_META" nil nil newline)
-    ;; Keyword for debugging; affects all the above XML files.
-    (:odt-prettify-xml "ODT_PRETTIFY_XML" nil org-odt-prettify-xml t) ; can either be empty or one of
-								      ; tidy or tidy+indent.  See
-								      ; `org-odt-prettify-xml-buffer'.
+    ;; Keywords for debugging
+    ;; - Pretty print XML files
+    ;;     Value can either be empty, or one of `tidy' or `tidy+indent'.
+    ;;     See `org-odt-prettify-xml-buffer'.
+    (:odt-prettify-xml "ODT_PRETTIFY_XML" nil org-odt-prettify-xml t)
+    ;; - Check for 'well-formed'-ness of a OpenDocument file
+    ;;     Value can either be empty, or one of `noabort' or `abort'.
+    (:odt-validate "ODT_VALIDATE" nil org-odt-validate t)
 
     ;; Keys associated with Endnotes
     (:odt-endnote-anchor-format nil nil org-odt-endnote-anchor-format t)
@@ -897,6 +901,65 @@ a per-file basis.  For example,
   :version "24.4"
   :package-version '(Org . "8.0")
   :type 'integer)
+
+
+;;;; Document validation
+
+(defcustom org-odt-validate-process nil
+  "Shell command to validate a OpenDocument format.
+
+Get ODF Validator from ODF Toolkit project.  See
+https://odftoolkit.org/downloads.html.
+
+A typical command with the above validator looks like this:
+
+    java -jar /some/dir/odfvalidator-<whatever>.jar -v %i
+
+Value is of the form (SHELL-CMD CMD-ARG1 CMD-ARG2 ...).
+SHELL-CMD is the name of the executable.
+CMD-ARG-1 etc. are the arguments to the command.  These arguments
+can contain format specifiers.  These format specifiers are
+interpreted as below:
+
+    %i input file name in full.
+
+Customize option `org-odt-validate' to control the post-export
+validation process.
+
+Use command `org-odt-validate' to validate any OpenDocument file."
+  :group 'org-export-odt
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (cons :tag "Command"
+	  (string :tag "Executable") (repeat :tag "Arguments " (string :tag "Argument")))))
+
+(defcustom org-odt-validate ""
+  "Speccify if ODF Validator is run, and what to do on validation failures.
+
+Validate with `org-odt-validate-process'.  Validation happens
+immediately after a OpenDocument format file is created, but
+before `org-odt-convert' and `org-odt-transform-processes'.
+
+It's value, a string, can be one of
+
+    - \"\"		:: Don't run ODF Validator on exported documents.
+
+    - \"noabort\"	:: Run ODF Validator, but ignore error status.
+                             In other words, proceed ahead with `org-odt-convert' 
+                             and `org-odt-transform-processes' even if document 
+			     is NOT well-formed.
+
+    - \"abort\"		:: Run ODF Validator; Abort further processing if
+                             validation fails.  In other words, don't run 
+                             `org-odt-convert'and `org-odt-transform-processes'
+			      if document is NOT well-formed."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "Skip validation checks" "")
+	  (const :tag "Run Validator;  Don't abort, even if document in NOT well-formed" "noabort")
+	  (const :tag "Run Validator;  Abort export, if document is NOT well-formed" "abort")))
+
 
 ;;;; Document transformation
 
@@ -3284,6 +3347,16 @@ holding export options."
     ;; files that get copied there.
     (delete-directory (plist-get info :odt-zip-dir) t)))
 
+;;;; Wrapper for File Validation
+
+(defun org-odt--validate-target (target _backend info)
+  (let* ((validate (let ((v (plist-get info :odt-validate)))
+		     (cl-assert (member v '(nil "" "noabort" "abort")))
+		     v)))
+    (prog1 target
+      (when (org-string-nw-p validate)
+	(org-odt-validate target (string= "abort" validate))))))
+
 ;;;; Wrapper for File Transformation
 
 (defun org-odt--transform-target (target _backend _info)
@@ -3309,7 +3382,8 @@ holding export options."
   (condition-case-unless-debug err
       (cl-reduce (lambda (target f)
 		   (funcall f target nil info))
-		 '(org-odt--transform-target
+		 '(org-odt--validate-target
+		   org-odt--transform-target
 		   org-odt--convert)
 		 :initial-value
 		 (cl-reduce (lambda (contents f)
@@ -7947,6 +8021,49 @@ non-nil."
   (let ((backend 'odt))
     (org-odt-export-as-odt-backend backend async subtreep
 				   visible-only body-only ext-plist)))
+
+
+;;;; Validate OpenDocument a file
+
+(defun org-odt-validate (in-file &optional abortp)
+  "Validate IN-FILE using `org-odt-validate-process'."
+  (interactive "fOpenDocument file: ")
+  (let* ((cmd org-odt-validate-process)
+	 err-string exit-code)
+    (setq cmd (mapcar (lambda (arg)
+			(format-spec arg `((?i . ,in-file))))
+		      cmd))
+    (message "Validating file `%s' ..." (expand-file-name in-file))
+    ;; Complain if `org-odt-validate-process' is misconfigured.
+    (unless (and cmd
+		 (executable-find (car cmd))
+		 (let* ((jar-file (cadr (member "-jar" cmd))))
+		   (or (null jar-file) (file-readable-p jar-file))))
+      (error "Validation requested, but no Validator is configured:\n %S" cmd))
+    ;; Run the validator
+    (message "Running %s" (mapconcat #'identity cmd " "))
+    (setq err-string
+	  (with-output-to-string
+	    (setq exit-code
+		  (apply 'call-process (car cmd)
+			 nil standard-output nil (cdr cmd)))))
+    (cond
+     ;; Document is well-formed.
+     ((zerop exit-code)
+      (message "File `%s' is well-formed" (expand-file-name in-file)))
+     ;; Document is not well-formed.  Output any message from the
+     ;; validator.
+     (t
+      (message "%s" (with-temp-buffer
+		      (insert err-string)
+		      (let ((fill-prefix "\t"))
+			(indent-region (point-min) (point-max))
+			(buffer-string))))
+      (funcall
+       ;; Check how the user wants the malformed-ness to be treated.
+       (if abortp #'error #'message)
+       "File `%s' is malformed" in-file)))
+    in-file))
 
 
 ;;;; Convert between OpenDocument and other formats
