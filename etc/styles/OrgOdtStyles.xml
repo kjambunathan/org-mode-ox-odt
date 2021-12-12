@@ -369,6 +369,7 @@
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="Figure" style:family="paragraph" style:parent-style-name="Caption"/>
+  <style:style style:name="Formula" style:family="paragraph" style:parent-style-name="Caption"/>
   <style:style style:name="Illustration_20_Index_20_Heading" style:display-name="Illustration Index Heading" style:family="paragraph" style:parent-style-name="Heading" style:class="index">
    <style:paragraph-properties fo:margin-left="0cm" fo:margin-right="0cm" fo:text-indent="0cm" style:auto-text-indent="false" text:number-lines="false" text:line-number="0"/>
    <style:text-properties fo:font-size="16pt" fo:font-weight="bold" style:font-size-asian="16pt" style:font-weight-asian="bold" style:font-size-complex="16pt" style:font-weight-complex="bold"/>
@@ -508,9 +509,9 @@
     <style:graphic-properties style:vertical-pos="middle" style:vertical-rel="text" draw:ole-draw-aspect="1"/>
   </style:style>
 
-  <style:style style:name="OrgDisplayFormula" style:family="graphic" style:parent-style-name="OrgFormula">
-    <style:graphic-properties style:vertical-pos="middle" style:vertical-rel="text" style:horizontal-pos="from-left" style:horizontal-rel="paragraph-content" draw:ole-draw-aspect="1"/>
-  </style:style>
+  <style:style style:name="OrgDisplayFormula" style:family="graphic" style:parent-style-name="Graphics">
+   <style:graphic-properties text:anchor-type="paragraph" style:wrap="run-through" style:number-wrapped-paragraphs="1" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph"/>
+  </style:style>  
 
   <style:style style:name="OrgFormulaCaptionFrame" style:family="graphic" style:parent-style-name="Frame">
    <style:graphic-properties text:anchor-type="paragraph" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0cm" fo:margin-bottom="0cm" style:wrap="right" style:number-wrapped-paragraphs="1" style:wrap-contour="false" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph" fo:padding="0cm" fo:border="none"/>
@@ -993,7 +994,11 @@
   </style:style>
   <style:style style:name="OrgSubFormulaBody" style:family="paragraph" style:parent-style-name="OrgFormulaBody"/>
 
- </office:styles>
+  <style:style style:name="OrgFormulaNumberFrame" style:family="graphic" style:parent-style-name="Frame">
+   <style:graphic-properties svg:width="2cm" fo:min-height="0.499cm" svg:x="14.799cm" svg:y="0.21cm" fo:margin-left="0.201cm" fo:margin-right="0.201cm" fo:margin-top="0.201cm" fo:margin-bottom="0.201cm" style:wrap="parallel" style:number-wrapped-paragraphs="no-limit" style:wrap-contour="false" style:vertical-pos="middle" style:vertical-rel="paragraph-content" style:horizontal-pos="right" style:horizontal-rel="paragraph" fo:background-color="transparent" draw:fill="none" draw:fill-color="#729fcf" fo:padding="0.15cm" fo:border="none"/>
+  </style:style>  
+
+</office:styles>
  <office:automatic-styles>
   <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>

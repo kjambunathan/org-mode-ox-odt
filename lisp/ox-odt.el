@@ -327,7 +327,7 @@ according to the default face identified by the `htmlfontify'.")
   '((:TABLE:        :variable "Table"        :entity-name "Table"    :caption-style "Table"     :use-outline-levelp t   :seq-num-format "1")
     (:FIGURE:       :variable "Figure"       :entity-name "Figure"   :caption-style "Figure"    :use-outline-levelp t   :seq-num-format "1")
     (:SUBENTITY:    :variable "SubEntity"    :entity-name ""         :caption-style "Figure"    :use-outline-levelp nil :seq-num-format "a")
-    (:MATH-FORMULA: :variable "Text"         :entity-name "Equation" :caption-style "Figure"    :use-outline-levelp t   :seq-num-format "1")
+    (:MATH-FORMULA: :variable "Text"         :entity-name "Equation" :caption-style "Formula"    :use-outline-levelp t   :seq-num-format "1")
     (:DVIPNG-IMAGE: :variable "Equation"     :entity-name "Equation" :caption-style "Figure"    :use-outline-levelp t   :seq-num-format "1")
     (:LISTING:      :variable "Listing"      :entity-name "Listing"  :caption-style "Listing"   :use-outline-levelp t   :seq-num-format "1"))
   "Map a CATEGORY-HANDLE to CATEGORY-PROPS.
@@ -4792,8 +4792,18 @@ used as a communication channel."
 				 (format "Formula-%04d/"
 					 (org-odt--count-object info :formulas))))))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
-	 (embed-as (if standalone-link-p 'paragraph 'character))
+	 (enumerable-link-p (when standalone-link-p
+			      (let ((caption-from (cl-case (org-element-type element)
+						    (link (org-export-get-parent-element element))
+						    (t element))))
+				(org-odt--enumerable-p caption-from info))))
 	 (captions (org-odt-format-label element info 'definition))
+	 (label (car (org-odt-format-label element info 'definition :label-format)))
+	 (entity
+	  (concat
+	   (when enumerable-link-p "Captioned")
+	   (if standalone-link-p "Paragraph" "As-Char")
+	   "Formula"))
 	 ;; Check if this link was created by LaTeX-to-MathML
 	 ;; converter.
 	 (replaces (org-element-property
@@ -4807,26 +4817,32 @@ used as a communication channel."
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
 	 (width nil) (height nil)
-	 (app "lo"))
-    (cond
-     ((eq embed-as 'character)
-      (org-odt--render-image/formula app "InlineFormula" href width height
-				     nil nil title desc))
-     (t
-      (let* ((equation (org-odt--render-image/formula app
-						      "CaptionedDisplayFormula" href width height
-						      captions nil title desc))
-	     (label
-	      (car (org-odt-format-label element info 'definition :label-format)))
-	     (contents (concat equation "<text:tab/>" label)))
+	 (app "lo")
+	 (equation (org-odt--render-image/formula app
+						  entity
+						  href width height
+						  (append captions (list label))
+						  nil title desc)))
+    (if (not standalone-link-p) equation
+      (let* ((label (when label
+		      (org-odt--textbox
+		       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			       "Standard"
+			       label)
+		       nil nil "OrgFormulaNumberFrame"
+		       nil		; extra
+		       "paragraph"	; anchor-type
+		       ))))
 	;; Decorate contents with the paragraph style it needs to be
 	;; enclosed in.  The value of `:p-style' is probed in
 	;; `org-odt-paragraph'.
-	(propertize contents :p-style
-		    (concat "Org"
-			    (if (org-odt--get-captioned-parent element info)
-				"Sub" "")
-			    "FormulaBody")))))))
+	(propertize
+	 (concat equation label)
+	 :p-style
+	 (concat "Org"
+		 (if (org-odt--get-captioned-parent element info)
+		     "Sub" "")
+		 "FormulaBody"))))))
 
 (defun org-odt--copy-formula-file (info src-file target-dir)
   "Returns the internal name of the file"
@@ -4865,8 +4881,8 @@ used as a communication channel."
 	 title-and-desc))
 
 (defun org-odt--render-image/formula-for-lo (cfg-key href widths heights &optional
-					      captions user-frame-params
-					      &rest title-and-desc)
+						     captions user-frame-params
+						     &rest title-and-desc)
   (let* ((frame-cfg-alist
 	  ;; Each element of this alist is of the form (CFG-HANDLE
 	  ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
@@ -4912,13 +4928,14 @@ used as a communication channel."
 	     ("OrgDisplayImage"
 	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
 	     ("OrgPageImageCaptionFrame" nil "page"))
-	    ("InlineFormula" ("OrgInlineFormula" nil "as-char"))
-	    ("DisplayFormula" ("OrgDisplayFormula" nil "as-char"))
-	    ("CaptionedDisplayFormula"
+	    ("As-CharFormula" ("OrgInlineFormula" nil "as-char"))
+	    ("ParagraphFormula" ("OrgDisplayFormula" nil "paragraph"))
+	    ("CaptionedParagraphFormula"
 	     ("OrgCaptionedFormula" nil "as-char")
 	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
 	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
 	 (caption-position (nth 2 captions))
+	 (label (nth 4 captions))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
 	 (inner (nth 1 frame-cfg))
@@ -4940,7 +4957,7 @@ used as a communication channel."
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
      ;;         or formula.
-     ((not caption)
+     ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (funcall --merge-frame-params inner inner-user))
       (apply 'org-odt--frame href (car widths) (car heights)
@@ -5036,13 +5053,14 @@ used as a communication channel."
 	     ("OrgDisplayImage"
 	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
 	     ("OrgPageImageCaptionFrame" nil "page"))
-	    ("InlineFormula" ("OrgInlineFormula" nil "as-char"))
-	    ("DisplayFormula" ("OrgDisplayFormula" nil "as-char"))
-	    ("CaptionedDisplayFormula"
+	    ("As-CharFormula" ("OrgInlineFormula" nil "as-char"))
+	    ("ParagraphFormula" ("OrgDisplayFormula" nil "paragraph"))
+	    ("CaptionedParagraphFormula"
 	     ("OrgCaptionedFormula" nil "as-char")
 	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
 	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
 	 (caption-position (nth 2 captions))
+	 (label (nth 4 captions))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
 	 (inner (nth 1 frame-cfg))
@@ -5064,7 +5082,7 @@ used as a communication channel."
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
      ;;         or formula.
-     ((not caption)
+     ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (funcall --merge-frame-params inner inner-user))
       (apply 'org-odt--frame href (car widths) (car heights)
