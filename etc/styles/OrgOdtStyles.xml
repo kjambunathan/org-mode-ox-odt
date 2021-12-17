@@ -340,31 +340,7 @@
   <style:style style:name="OrgCenter" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
   </style:style>
-  <style:style style:name="OrgTableContents" style:family="paragraph" style:parent-style-name="Text_20_body"/>
-  <style:style style:name="OrgTableHeading" style:family="paragraph" style:parent-style-name="OrgTableContents" style:class="extra">
-    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false" text:number-lines="false" text:line-number="0"/>
-    <style:text-properties fo:font-weight="bold" style:font-weight-asian="bold" style:font-weight-complex="bold"/>
-  </style:style>
 
-  <style:style style:name="OrgTableHeadingLeft" style:family="paragraph" style:parent-style-name="OrgTableHeading">
-    <style:paragraph-properties fo:text-align="left" style:justify-single-word="false"/>
-  </style:style>
-  <style:style style:name="OrgTableHeadingRight" style:family="paragraph" style:parent-style-name="OrgTableHeading">
-    <style:paragraph-properties fo:text-align="right" style:justify-single-word="false"/>
-  </style:style>
-  <style:style style:name="OrgTableHeadingCenter" style:family="paragraph" style:parent-style-name="OrgTableHeading">
-    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
-  </style:style>
-
-  <style:style style:name="OrgTableContentsLeft" style:family="paragraph" style:parent-style-name="OrgTableContents">
-    <style:paragraph-properties fo:text-align="left" style:justify-single-word="false"/>
-  </style:style>
-  <style:style style:name="OrgTableContentsRight" style:family="paragraph" style:parent-style-name="OrgTableContents">
-    <style:paragraph-properties fo:text-align="right" style:justify-single-word="false"/>
-  </style:style>
-  <style:style style:name="OrgTableContentsCenter" style:family="paragraph" style:parent-style-name="OrgTableContents">
-    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
-  </style:style>
   <style:style style:name="Text_20_body_20_bold" style:display-name="Text body bold" style:family="paragraph" style:parent-style-name="Text_20_body" style:next-style-name="Text_20_body">
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
