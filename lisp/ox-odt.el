@@ -5059,25 +5059,16 @@ used as a communication channel."
 						  (append captions (list label))
 						  nil title desc)))
     (if (not standalone-link-p) equation
-      (let* ((label (when label
-		      (org-odt--textbox
-		       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			       "Standard"
-			       label)
-		       nil nil "OrgFormulaNumberFrame"
-		       nil		; extra
-		       "paragraph"	; anchor-type
-		       ))))
-	;; Decorate contents with the paragraph style it needs to be
-	;; enclosed in.  The value of `:p-style' is probed in
-	;; `org-odt-paragraph'.
-	(propertize
-	 (concat equation label)
-	 :p-style
-	 (concat "Org"
-		 (if (org-odt--get-captioned-parent element info)
-		     "Sub" "")
-		 "FormulaBody"))))))
+      ;; Decorate contents with the paragraph style it needs to be
+      ;; enclosed in.  The value of `:p-style' is probed in
+      ;; `org-odt-paragraph'.
+      (propertize
+       (concat "<text:tab/>" equation "<text:tab/>" label)
+       :p-style
+       (concat "Org"
+	       (if (org-odt--get-captioned-parent element info)
+		   "Sub" "")
+	       "FormulaBody")))))
 
 (defun org-odt--copy-formula-file (info src-file target-dir)
   "Returns the internal name of the file"
@@ -5167,7 +5158,7 @@ used as a communication channel."
 	    ("ParagraphFormula" ("OrgDisplayFormula" nil "paragraph"))
 	    ("CaptionedParagraphFormula"
 	     ("OrgCaptionedFormula" nil "as-char")
-	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
+	     ("OrgFormulaCaptionFrame" nil "as-char"))))
 	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
 	 (caption-position (nth 2 captions))
 	 (label (nth 4 captions))
@@ -5292,7 +5283,7 @@ used as a communication channel."
 	    ("ParagraphFormula" ("OrgDisplayFormula" nil "paragraph"))
 	    ("CaptionedParagraphFormula"
 	     ("OrgCaptionedFormula" nil "as-char")
-	     ("OrgFormulaCaptionFrame" nil "paragraph"))))
+	     ("OrgFormulaCaptionFrame" nil "as-char"))))
 	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
 	 (caption-position (nth 2 captions))
 	 (label (nth 4 captions))

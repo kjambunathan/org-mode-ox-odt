@@ -324,7 +324,7 @@
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.21cm" />
   </style:style>
   <!-- END: Properties Drawer -->
-  
+
   <style:style style:name="OrgFormula" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties>
     <style:tab-stops>
@@ -444,7 +444,7 @@
   <!-- Simple Images   -->
   <style:style style:name="OrgDisplayImage" style:family="graphic" style:parent-style-name="Graphics">
    <style:graphic-properties text:anchor-type="paragraph" style:wrap="none" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph" draw:wrap-influence-on-position="once-concurrent"/>
-  </style:style>  
+  </style:style>
 
   <style:style style:name="OrgPageImage" style:family="graphic" style:parent-style-name="Graphics">
    <style:graphic-properties text:anchor-type="page" fo:margin-top="0.21cm" fo:margin-bottom="0.21cm" style:vertical-pos="middle" style:vertical-rel="page" style:horizontal-pos="center" style:horizontal-rel="page" fo:background-color="transparent" style:background-transparency="100%" style:shadow="none" style:mirror="none" fo:clip="rect(0cm, 0cm, 0cm, 0cm)" draw:luminance="0%" draw:contrast="0%" draw:red="0%" draw:green="0%" draw:blue="0%" draw:gamma="100%" draw:color-inversion="false" draw:image-opacity="100%" draw:color-mode="standard">
@@ -487,10 +487,10 @@
 
   <style:style style:name="OrgDisplayFormula" style:family="graphic" style:parent-style-name="Graphics">
    <style:graphic-properties text:anchor-type="paragraph" style:wrap="run-through" style:number-wrapped-paragraphs="1" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph"/>
-  </style:style>  
+  </style:style>
 
-  <style:style style:name="OrgFormulaCaptionFrame" style:family="graphic" style:parent-style-name="Frame">
-   <style:graphic-properties text:anchor-type="paragraph" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0cm" fo:margin-bottom="0cm" style:wrap="right" style:number-wrapped-paragraphs="1" style:wrap-contour="false" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph" fo:padding="0cm" fo:border="none"/>
+  <style:style style:name="OrgFormulaCaptionFrame" style:family="graphic" style:parent-style-name="OrgFormula">
+   <style:graphic-properties text:anchor-type="as-char" svg:x="0cm" svg:y="0cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0cm" fo:margin-bottom="0cm" style:run-through="foreground" style:wrap="none" style:vertical-pos="middle" style:vertical-rel="baseline" style:horizontal-pos="center" style:horizontal-rel="paragraph-content" fo:padding="0cm" fo:border="none" style:shadow="none" draw:shadow-opacity="100%"/>
   </style:style>
 
   <style:style style:name="OrgCaptionedFormula" style:family="graphic" style:parent-style-name="OrgFormula">
@@ -948,7 +948,7 @@
     </style:paragraph-properties>
   </style:style>
 
-  <style:style style:name="Frame_20_contents" style:display-name="Frame contents" style:family="paragraph" style:parent-style-name="Standard" style:class="extra"/>  
+  <style:style style:name="Frame_20_contents" style:display-name="Frame contents" style:family="paragraph" style:parent-style-name="Standard" style:class="extra"/>
 
   <style:style style:name="OrgFigureText" style:family="paragraph" style:parent-style-name="Frame_20_contents">
    <style:paragraph-properties fo:text-align="end" style:justify-single-word="false"/>
@@ -964,6 +964,7 @@
   <style:style style:name="OrgFormulaBody" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties>
     <style:tab-stops>
+     <style:tab-stop style:position="8.5cm" style:type="center"/>
      <style:tab-stop style:position="17cm" style:type="right"/>
     </style:tab-stops>
    </style:paragraph-properties>
@@ -972,7 +973,7 @@
 
   <style:style style:name="OrgFormulaNumberFrame" style:family="graphic" style:parent-style-name="Frame">
    <style:graphic-properties svg:width="2cm" fo:min-height="0.499cm" svg:x="14.799cm" svg:y="0.21cm" fo:margin-left="0.201cm" fo:margin-right="0.201cm" fo:margin-top="0.201cm" fo:margin-bottom="0.201cm" style:wrap="parallel" style:number-wrapped-paragraphs="no-limit" style:wrap-contour="false" style:vertical-pos="middle" style:vertical-rel="paragraph-content" style:horizontal-pos="right" style:horizontal-rel="paragraph" fo:background-color="transparent" draw:fill="none" draw:fill-color="#729fcf" fo:padding="0.15cm" fo:border="none"/>
-  </style:style>  
+  </style:style>
 
 </office:styles>
  <office:automatic-styles>
