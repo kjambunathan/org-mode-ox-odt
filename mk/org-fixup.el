@@ -42,10 +42,11 @@
 (make-obsolete 'org-make-manuals
                "use org-make-manual and org-make-guide."
                "9.6")
-(defun org-make-manuals ()
+(defun org-make-manuals (&optional manuals)
   "Generate the Texinfo files out of Org manuals."
   (require 'ox-texinfo)
-  (dolist (manual '("../doc/org-manual.org" "../doc/org-guide.org"))
+  (setq manuals (or manuals '("../doc/org-manual.org" "../doc/org-guide.org")))
+  (dolist (manual manuals)
     (find-file manual)
     (org-texinfo-export-to-texinfo)))
 

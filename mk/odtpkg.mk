@@ -130,7 +130,7 @@ odtmanual:
 	make -C doc org-odt.html
 	$(RM) $(DOCROOT)/*
 	mv doc/org-odt-manual/*.html $(DOCROOT)
-	mv doc/org-odt $(DOCROOT)
+	mv doc/org-odt.info $(DOCROOT)
 	$(CP) doc/org-odt-manual/*.png $(DOCROOT)
 	$(CP) doc/org-odt-manual/*.css $(DOCROOT)
 	make -C doc org-odt.pdf
