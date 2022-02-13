@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 (defmacro test-org-in-property-buffer (&rest body)
@@ -45,6 +45,5 @@
    (org-babel-next-src-block 3)
    (should (= 6 (org-babel-execute-src-block)))))
 
-(provide 'test-ob-R)
-
+(provide 'test-property-inheritance)
 ;;; test-property-inheritance.el ends here

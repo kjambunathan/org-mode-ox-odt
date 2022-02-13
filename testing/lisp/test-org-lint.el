@@ -15,7 +15,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -205,6 +205,32 @@ Paragraph 2"
 
 (ert-deftest test-org-lint/obsolete-properties-drawer ()
   "Test `org-lint-obsolete-properties-drawer' checker."
+  (should-not
+   (org-test-with-temp-text "
+* H
+:PROPERTIES:
+:SOMETHING: foo
+:END:"
+     (org-lint '(obsolete-properties-drawer))))
+  (should-not
+   (org-test-with-temp-text "
+* H
+SCHEDULED: <2012-03-29>
+:PROPERTIES:
+:SOMETHING: foo
+:END:"
+     (org-lint '(obsolete-properties-drawer))))
+  (should-not
+   (org-test-with-temp-text ":PROPERTIES:
+:SOMETHING: foo
+:END:"
+     (org-lint '(obsolete-properties-drawer))))
+  (should-not
+   (org-test-with-temp-text "# Comment
+:PROPERTIES:
+:SOMETHING: foo
+:END:"
+     (org-lint '(obsolete-properties-drawer))))
   (should
    (org-test-with-temp-text "
 * H
@@ -218,6 +244,12 @@ Paragraph
 * H
 :PROPERTIES:
 This is not a node property
+:END:"
+     (org-lint '(obsolete-properties-drawer))))
+  (should
+   (org-test-with-temp-text "Paragraph
+:PROPERTIES:
+:FOO: bar
 :END:"
      (org-lint '(obsolete-properties-drawer)))))
 
@@ -281,6 +313,9 @@ This is not a node property
   "Test `org-lint-unknown-options-item' checker."
   (should
    (org-test-with-temp-text "#+options: foobarbaz:t"
+     (org-lint '(unknown-options-item))))
+  (should
+   (org-test-with-temp-text "#+options: H:"
      (org-lint '(unknown-options-item)))))
 
 (ert-deftest test-org-lint/invalid-macro-argument-and-template ()
@@ -304,6 +339,12 @@ This is not a node property
   (should-not
    (org-test-with-temp-text
        "#+macro: valid $1 $2\n{{{valid(1, 2)}}}"
+     (org-lint '(invalid-macro-argument-and-template))))
+  (should
+   (org-test-with-temp-text "{{{keyword}}}"
+     (org-lint '(invalid-macro-argument-and-template))))
+  (should
+   (org-test-with-temp-text "{{{keyword(one, too many)}}}"
      (org-lint '(invalid-macro-argument-and-template)))))
 
 (ert-deftest test-org-lint/undefined-footnote-reference ()
@@ -360,6 +401,9 @@ SCHEDULED: <2012-03-29 thu.>"
   "Test `org-lint-incomplete-drawer' checker."
   (should
    (org-test-with-temp-text ":DRAWER:"
+     (org-lint '(incomplete-drawer))))
+  (should
+   (org-test-with-temp-text ":DRAWER:\n:ODD:\n:END:"
      (org-lint '(incomplete-drawer))))
   (should-not
    (org-test-with-temp-text ":DRAWER:\n:END:"

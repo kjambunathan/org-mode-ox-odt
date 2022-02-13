@@ -17,7 +17,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -163,7 +163,12 @@ num:2 <:active")))
 	  (org-export--parse-option-keyword
 	   "opt:t"
 	   (org-export-create-backend
-	    :options '((:opt1 nil "opt") (:opt2 nil "opt")))))))
+	    :options '((:opt1 nil "opt") (:opt2 nil "opt"))))))
+  ;; Ignore options with a missing value.
+  (should
+   (let ((options (org-export--parse-option-keyword "H: num:t")))
+     (and (not (plist-get options :headline-levels))
+          (plist-get options :section-numbers)))))
 
 (ert-deftest test-org-export/get-inbuffer-options ()
   "Test reading all standard export keywords."
@@ -280,7 +285,12 @@ num:2 <:active")))
   (should-not
    (equal "Mine"
 	  (org-test-with-parsed-data "* COMMENT H1\n** H2\n#+EMAIL: Mine"
-				     (plist-get info :email)))))
+				     (plist-get info :email))))
+  ;; Keywords can be set to an empty value.
+  (should-not
+   (let ((user-full-name "Me"))
+     (org-test-with-parsed-data "#+AUTHOR:"
+				(plist-get info :author)))))
 
 (ert-deftest test-org-export/get-subtree-options ()
   "Test setting options from headline's properties."
@@ -2971,7 +2981,7 @@ Para2"
    (string-match
     "success"
     (progn
-      (org-link-set-parameters "foo" :export (lambda (p d f) "success"))
+      (org-link-set-parameters "foo" :export (lambda (p d f i) "success"))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -2980,14 +2990,14 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c 'test)
+		    (or (org-export-custom-protocol-maybe l c 'test i)
 			"failure")))))))))
   (should-not
    (string-match
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f) (and (eq f 'test) "success")))
+       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -2996,7 +3006,7 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c 'no-test)
+		    (or (org-export-custom-protocol-maybe l c 'no-test i)
 			"failure")))))))))
   ;; Ignore anonymous back-ends.
   (should-not
@@ -3004,7 +3014,7 @@ Para2"
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f) (and (eq f 'test) "success")))
+       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -3012,7 +3022,7 @@ Para2"
 	'((section . (lambda (s c i) c))
 	  (paragraph . (lambda (p c i) c))
 	  (link . (lambda (l c i)
-		    (or (org-export-custom-protocol-maybe l c nil)
+		    (or (org-export-custom-protocol-maybe l c nil i)
 			"failure"))))))))))
 
 (ert-deftest test-org-export/get-coderef-format ()
@@ -3802,6 +3812,17 @@ Another text. (ref:text)
 	    (org-export-data-with-backend paragraph backend nil)))))
 
 
+;;; Raw objects
+
+(ert-deftest test-org-export/raw-strings ()
+  "Test exporting raw objects."
+  (should
+   (equal "foo"
+          (let ((backend (org-export-create-backend))
+                (object (org-export-raw-string "foo")))
+            (org-export-data-with-backend object backend nil)))))
+
+
 ;;; Src-block and example-block
 
 (ert-deftest test-org-export/unravel-code ()
@@ -3885,6 +3906,103 @@ Another text. (ref:text)
 		"#+BEGIN_SRC emacs-lisp\n123 (ref:a)\n1 (ref:b)\n#+END_SRC"
 	      (org-export-format-code-default
 	       (org-element-map tree 'src-block #'identity info t) info))))))
+
+(ert-deftest test-org-export/latex-src-block-verbatim-caption ()
+  "Test `org-latex-src-block' caption for verbatim environment.
+Check that percent sign does not become a part of format.
+This test does not cover listings and custom environments."
+  (let ((export
+	 (lambda (buffer-text)
+	   (org-test-with-parsed-data
+	       buffer-text
+	     (let* ((backend (org-export-get-backend 'latex))
+		    (info (org-combine-plists
+			   (org-export--get-export-attributes backend)
+			   (org-export-get-environment backend)))
+		    (result (org-latex-src-block
+			     (org-element-map tree 'src-block #'identity info t)
+			     t info)))
+	       ;; Remove properties to make failure reports more clear.
+	       (set-text-properties 0 (length result) nil result)
+	       result)))))
+
+    (should (equal
+	     "\
+\\begin{verbatim}
+\"No float, no listings, 20%S\"
+\\end{verbatim}
+\\captionof{figure}{Caption of verbatim is below, 20\\%s}
+"
+	     (funcall export
+		      "\
+#+CAPTION: Caption of verbatim is below, 20%s
+#+BEGIN_SRC emacs-lisp
+  \"No float, no listings, 20%S\"
+#+END_SRC")))
+
+    ;; `org-latex-caption-above' has no associated property or keyword.
+    (should (equal
+	     "\
+\\captionof{figure}{Caption of verbatim is above, 40\\%s}
+\\begin{verbatim}
+\"No float, no listings, 40%S\"
+\\end{verbatim}"
+	     (let ((org-latex-caption-above t))
+	       (funcall export
+			"\
+#+CAPTION: Caption of verbatim is above, 40%s
+#+BEGIN_SRC emacs-lisp
+  \"No float, no listings, 40%S\"
+#+END_SRC"))))
+
+    (should (equal
+	     "\
+\\begin{figure*}[tp]
+\\caption{Caption is above, 60\\%s}
+\\begin{verbatim}
+\"Float, no listings, 60%S\"
+\\end{verbatim}
+\\end{figure*}"
+	     (let ((org-latex-caption-above t)
+		   (org-latex-default-figure-position "tp"))
+	       (funcall export
+			"\
+#+CAPTION: Caption is above, 60%s
+#+ATTR_LATEX: :float multicolumn
+#+BEGIN_SRC emacs-lisp
+  \"Float, no listings, 60%S\"
+#+END_SRC"))))
+
+    (should (equal
+	     "\
+\\begin{figure*}[tp]
+\\begin{verbatim}
+\"Float, no lang, listings, 80%S\"
+\\end{verbatim}
+\\caption{Caption is below, 60\\%s}
+\\end{figure*}"
+	     (let ((org-latex-listings 'minted) ; inactive due to missing lang
+		   (org-latex-default-figure-position "tp"))
+	       ;; Namely "multicolumn" value to get just figure environment
+	       ;; looks like a bug.
+	       (funcall export
+			"\
+#+CAPTION: Caption is below, 60%s
+#+ATTR_LATEX: :float multicolumn
+#+BEGIN_SRC
+  \"Float, no lang, listings, 80%S\"
+#+END_SRC"))))
+
+    (should (equal
+	     "\
+\\begin{verbatim}
+\"No caption, no float, no listings, 100%S\"
+\\end{verbatim}"
+	     (funcall export
+		      "\
+#+BEGIN_SRC emacs-lisp
+  \"No caption, no float, no listings, 100%S\"
+#+END_SRC")))))
 
 
 
@@ -4121,6 +4239,16 @@ Another text. (ref:text)
 | a | b |
 |---+---|
 | c | d |"
+     (org-export-table-has-header-p
+      (org-element-map tree 'table 'identity info 'first-match)
+      info)))
+  ;; With a multi-line header.
+  (should
+   (org-test-with-parsed-data "
+| a | b |
+| 0 | 1 |
+|---+---|
+| a | w |"
      (org-export-table-has-header-p
       (org-element-map tree 'table 'identity info 'first-match)
       info)))

@@ -133,6 +133,32 @@
        (let ((file (buffer-file-name)))
 	 (equal (format "[[file:%s::*H1][H1]]" file)
 		(org-store-link nil))))))
+  ;; On a headline, remove TODO and COMMENT keywords, priority cookie,
+  ;; and tags.
+  (should
+   (let (org-store-link-props org-stored-links)
+     (org-test-with-temp-text-in-file "* TODO H1"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*H1][H1]]" file)
+		(org-store-link nil))))))
+  (should
+   (let (org-store-link-props org-stored-links)
+     (org-test-with-temp-text-in-file "* COMMENT H1"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*H1][H1]]" file)
+		(org-store-link nil))))))
+  (should
+   (let (org-store-link-props org-stored-links)
+     (org-test-with-temp-text-in-file "* [#A] H1"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*H1][H1]]" file)
+		(org-store-link nil))))))
+  (should
+   (let (org-store-link-props org-stored-links)
+     (org-test-with-temp-text-in-file "* H1 :tag:"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*H1][H1]]" file)
+		(org-store-link nil))))))
   ;; On a headline, remove any link from description.
   (should
    (let (org-store-link-props org-stored-links)
@@ -217,7 +243,7 @@
        (fundamental-mode)
        (let ((file (buffer-file-name)))
 	 (equal (format "[[file:%s][file:%s]]" file file)
-	 	(org-store-link nil))))))
+		(org-store-link nil))))))
   ;; C-u prefix reverses `org-context-in-file-links' in non-Org
   ;; buffer.
   (should
@@ -237,7 +263,95 @@
        (fundamental-mode)
        (let ((file (buffer-file-name)))
 	 (equal (format "[[file:%s][file:%s]]" file file)
-	 	(org-store-link '(16))))))))
+		(org-store-link '(16)))))))
+  ;; Context does not include special search syntax.
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "(two)"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "# two"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "*two"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "( two )"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "# two"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "#( two )"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "#** ((## two) )"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  (should-not
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "(two"
+       (fundamental-mode)
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::two]]" file file)
+		(org-store-link nil))))))
+  ;; Context also ignore statistics cookies and special headlines
+  ;; data.
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "* TODO [#A] COMMENT foo :bar:"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*foo][foo]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "* foo[33%]bar"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*foo bar][foo bar]]" file file)
+		(org-store-link nil))))))
+  (should
+   (let ((org-stored-links nil)
+	 (org-context-in-file-links t))
+     (org-test-with-temp-text-in-file "* [%][/]  foo [35%] bar[3/5]"
+       (let ((file (buffer-file-name)))
+	 (equal (format "[[file:%s::*foo bar][foo bar]]" file file)
+		(org-store-link nil)))))))
 
 
 ;;; Radio Targets
@@ -376,6 +490,116 @@
 		   (last-command this-command))
 	      (org-previous-link))
 	    (buffer-substring (point) (line-end-position))))))
+
+
+;;; Link regexps
+
+
+(defmacro test-ol-parse-link-in-text (text)
+  "Return list of :type and :path of link parsed in TEXT.
+\"<point>\" string must be at the beginning of the link to be parsed."
+  (declare (indent 1))
+  `(org-test-with-temp-text ,text
+     (list (org-element-property :type (org-element-link-parser))
+           (org-element-property :path (org-element-link-parser)))))
+
+(ert-deftest test-ol/plain-link-re ()
+  "Test `org-link-plain-re'."
+  (should
+   (equal
+    '("https" "//example.com")
+    (test-ol-parse-link-in-text
+        "(<point>https://example.com)")))
+  (should
+   (equal
+    '("https" "//example.com/qwe()")
+    (test-ol-parse-link-in-text
+        "(Some text <point>https://example.com/qwe())")))
+  (should
+   (equal
+    '("https" "//doi.org/10.1016/0160-791x(79)90023-x")
+    (test-ol-parse-link-in-text
+        "<point>https://doi.org/10.1016/0160-791x(79)90023-x")))
+  (should
+   (equal
+    '("file" "aa")
+    (test-ol-parse-link-in-text
+        "The <point>file:aa link")))
+  (should
+   (equal
+    '("file" "a(b)c")
+    (test-ol-parse-link-in-text
+        "The <point>file:a(b)c link")))
+  (should
+   (equal
+    '("file" "a()")
+    (test-ol-parse-link-in-text
+        "The <point>file:a() link")))
+  (should
+   (equal
+    '("file" "aa((a))")
+    (test-ol-parse-link-in-text
+        "The <point>file:aa((a)) link")))
+  (should
+   (equal
+    '("file" "aa(())")
+    (test-ol-parse-link-in-text
+        "The <point>file:aa(()) link")))
+  (should
+   (equal
+    '("file" "/a")
+    (test-ol-parse-link-in-text
+        "The <point>file:/a link")))
+  (should
+   (equal
+    '("file" "/a/")
+    (test-ol-parse-link-in-text
+        "The <point>file:/a/ link")))
+  (should
+   (equal
+    '("http" "//")
+    (test-ol-parse-link-in-text
+        "The <point>http:// link")))
+  (should
+   (equal
+    '("file" "ab")
+    (test-ol-parse-link-in-text
+        "The (some <point>file:ab) link")))
+  (should
+   (equal
+    '("file" "aa")
+    (test-ol-parse-link-in-text
+        "The <point>file:aa) link")))
+  (should
+   (equal
+    '("file" "aa")
+    (test-ol-parse-link-in-text
+        "The <point>file:aa( link")))
+  (should
+   (equal
+    '("http" "//foo.com/more_(than)_one_(parens)")
+    (test-ol-parse-link-in-text
+        "The <point>http://foo.com/more_(than)_one_(parens) link")))
+  (should
+   (equal
+    '("http" "//foo.com/blah_(wikipedia)#cite-1")
+    (test-ol-parse-link-in-text
+        "The <point>http://foo.com/blah_(wikipedia)#cite-1 link")))
+  (should
+   (equal
+    '("http" "//foo.com/blah_(wikipedia)_blah#cite-1")
+    (test-ol-parse-link-in-text
+        "The <point>http://foo.com/blah_(wikipedia)_blah#cite-1 link")))
+  (should
+   (equal
+    '("http" "//foo.com/unicode_(✪)_in_parens")
+    (test-ol-parse-link-in-text
+        "The <point>http://foo.com/unicode_(✪)_in_parens link")))
+  (should
+   (equal
+    '("http" "//foo.com/(something)?after=parens")
+    (test-ol-parse-link-in-text
+        "The <point>http://foo.com/(something)?after=parens link"))))
 
 (provide 'test-ol)
 ;;; test-ol.el ends here

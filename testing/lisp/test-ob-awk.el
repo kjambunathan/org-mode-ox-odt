@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 (org-test-for-executable "awk")
@@ -46,3 +46,6 @@
   (org-test-at-id "9e998b2a-3581-43fe-b26d-07d3c507b86a"
     (org-babel-next-src-block 4)
     (should (equal '(("a" "b" "c")) (org-babel-execute-src-block)))))
+
+(provide 'test-ob-awk)
+;;; test-ob-awk.el ends here

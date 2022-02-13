@@ -1,8 +1,8 @@
 ;;; org-goto.el --- Fast navigation in an Org buffer  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 
 ;; This file is part of GNU Emacs.
@@ -22,27 +22,8 @@
 
 ;;; Code:
 
-(require 'org-macs)
-(require 'org-compat)
-
-(declare-function org-at-heading-p "org" (&optional ignored))
-(declare-function org-beginning-of-line "org" (&optional n))
-(declare-function org-defkey "org" (keymap key def))
-(declare-function org-mark-ring-push "org" (&optional pos buffer))
-(declare-function org-overview "org" ())
-(declare-function org-refile-check-position "org" (refile-pointer))
-(declare-function org-refile-get-location "org" (&optional prompt default-buffer new-nodes))
-(declare-function org-show-context "org" (&optional key))
-(declare-function org-show-set-visibility "org" (detail))
-
-(defvar org-complex-heading-regexp)
-(defvar org-startup-align-all-tables)
-(defvar org-startup-folded)
-(defvar org-startup-truncated)
-(defvar org-special-ctrl-a/e)
-(defvar org-refile-target-verify-function)
-(defvar org-refile-use-outline-path)
-(defvar org-refile-targets)
+(require 'org)
+(require 'org-refile)
 
 (defvar org-goto-exit-command nil)
 (defvar org-goto-map nil)
@@ -222,45 +203,39 @@ When nil, you can use these keybindings to navigate the buffer:
   "Let the user select a location in current buffer.
 This function uses a recursive edit.  It returns the selected
 position or nil."
-  (org-no-popups
-   (let ((isearch-mode-map org-goto-local-auto-isearch-map)
-	 (isearch-hide-immediately nil)
-	 (isearch-search-fun-function
-	  (lambda () #'org-goto--local-search-headings))
-	 (help (or help org-goto-help)))
-     (save-excursion
-       (save-window-excursion
-	 (delete-other-windows)
-	 (and (get-buffer "*org-goto*") (kill-buffer "*org-goto*"))
-	 (pop-to-buffer-same-window
-	  (condition-case nil
-	      (make-indirect-buffer (current-buffer) "*org-goto*")
-	    (error (make-indirect-buffer (current-buffer) "*org-goto*"))))
-	 (let (temp-buffer-show-function temp-buffer-show-hook)
-	   (with-output-to-temp-buffer "*Org Help*"
-	   (princ (format help (if org-goto-auto-isearch
-				   "  Just type for auto-isearch."
-				 "  n/p/f/b/u to navigate, q to quit.")))))
-	 (org-fit-window-to-buffer (get-buffer-window "*Org Help*"))
-	 (setq buffer-read-only nil)
-	 (let ((org-startup-truncated t)
-	       (org-startup-folded nil)
-	       (org-startup-align-all-tables nil))
-	   (org-mode)
-	   (org-overview))
-	 (setq buffer-read-only t)
-	 (if (and (boundp 'org-goto-start-pos)
-		  (integer-or-marker-p org-goto-start-pos))
-	     (progn (goto-char org-goto-start-pos)
-		    (when (org-invisible-p)
-		      (org-show-set-visibility 'lineage)))
-	   (goto-char (point-min)))
-	 (let (org-special-ctrl-a/e) (org-beginning-of-line))
-	 (message "Select location and press RET")
-	 (use-local-map org-goto-map)
-	 (recursive-edit)))
-     (kill-buffer "*org-goto*")
-     (cons org-goto-selected-point org-goto-exit-command))))
+  (let ((isearch-mode-map org-goto-local-auto-isearch-map)
+	(isearch-hide-immediately nil)
+	(isearch-search-fun-function
+	 (lambda () #'org-goto--local-search-headings))
+	(help (or help org-goto-help)))
+    (save-excursion
+      (save-window-excursion
+	(delete-other-windows)
+	(and (get-buffer "*org-goto*") (kill-buffer "*org-goto*"))
+	(pop-to-buffer-same-window
+	 (condition-case nil
+	     (make-indirect-buffer (current-buffer) "*org-goto*" t)
+	   (error (make-indirect-buffer (current-buffer) "*org-goto*" t))))
+	(let (temp-buffer-show-function temp-buffer-show-hook)
+	  (with-output-to-temp-buffer "*Org Help*"
+	    (princ (format help (if org-goto-auto-isearch
+				    "  Just type for auto-isearch."
+				  "  n/p/f/b/u to navigate, q to quit.")))))
+	(org-fit-window-to-buffer (get-buffer-window "*Org Help*"))
+	(org-overview)
+	(setq buffer-read-only t)
+	(if (and (boundp 'org-goto-start-pos)
+		 (integer-or-marker-p org-goto-start-pos))
+	    (progn (goto-char org-goto-start-pos)
+		   (when (org-invisible-p)
+		     (org-show-set-visibility 'lineage)))
+	  (goto-char (point-min)))
+	(let (org-special-ctrl-a/e) (org-beginning-of-line))
+	(message "Select location and press RET")
+	(use-local-map org-goto-map)
+	(recursive-edit)))
+    (kill-buffer "*org-goto*")
+    (cons org-goto-selected-point org-goto-exit-command)))
 
 ;;;###autoload
 (defun org-goto (&optional alternative-interface)
@@ -274,7 +249,7 @@ want.
 
 This command works around this by showing a copy of the current
 buffer in an indirect buffer, in overview mode.  You can dive
-into the tree in that copy, use org-occur and incremental search
+into the tree in that copy, use `org-occur' and incremental search
 to find a location.  When pressing RET or `Q', the command
 returns to the original buffer in which the visibility is still
 unchanged.  After RET it will also jump to the location selected
@@ -308,5 +283,9 @@ With a prefix argument, use the alternative interface: e.g., if
       (message "Quit"))))
 
 (provide 'org-goto)
+
+;; Local variables:
+;; generated-autoload-file: "org-loaddefs.el"
+;; End:
 
 ;;; org-goto.el ends here

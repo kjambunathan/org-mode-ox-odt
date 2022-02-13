@@ -1,6 +1,6 @@
 ;;; ob-lua.el --- Org Babel functions for Lua evaluation -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2014, 2016-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2014, 2016-2021 Free Software Foundation, Inc.
 
 ;; Authors: Dieter Schoen
 ;; Keywords: literate programming, reproducible research
@@ -21,6 +21,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Org-Babel support for evaluating lua source code.
+
 ;; Requirements:
 ;; for session support, lua-mode is needed.
 ;; lua-mode is not part of GNU Emacs/orgmode, but can be obtained
@@ -29,8 +33,6 @@
 ;; https://github.com/immerrr/lua-mode
 
 ;; However, sessions are not yet working.
-
-;; Org-Babel support for evaluating lua source code.
 
 ;;; Code:
 (require 'ob)
@@ -107,7 +109,8 @@ VARS contains resolved variable references."
     (org-babel-comint-in-buffer session
       (mapc (lambda (var)
               (end-of-line 1) (insert var) (comint-send-input)
-              (org-babel-comint-wait-for-output session)) var-lines))
+              (org-babel-comint-wait-for-output session))
+	    var-lines))
     session))
 
 (defun org-babel-load-session:lua (session body params)
@@ -396,7 +399,5 @@ fd:close()"
   (org-unbracket-string "'" "'" string))
 
 (provide 'ob-lua)
-
-
 
 ;;; ob-lua.el ends here

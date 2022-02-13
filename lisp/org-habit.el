@@ -1,6 +1,6 @@
 ;;; org-habit.el --- The habit tracking code for Org -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
 
 ;; Author: John Wiegley <johnw at gnu dot org>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -90,7 +90,7 @@ It will be green even if it was done after the deadline."
   :type 'boolean)
 
 (defcustom org-habit-scheduled-past-days nil
-"Value to use instead of `org-scheduled-past-days', for habits only.
+  "Value to use instead of `org-scheduled-past-days', for habits only.
 
 If nil, `org-scheduled-past-days' is used.
 
@@ -343,7 +343,10 @@ current time."
 	      (if (and in-the-past-p
 		       (not last-done-date)
 		       (not (< scheduled now)))
-		  '(org-habit-clear-face . org-habit-clear-future-face)
+		  (if (and all-done-dates (= (car all-done-dates) start))
+		      ;; This is the very first done of this habit.
+		      '(org-habit-ready-face . org-habit-ready-future-face)
+		    '(org-habit-clear-face . org-habit-clear-future-face))
 		(org-habit-get-faces
 		 habit start
 		 (and in-the-past-p
@@ -425,7 +428,8 @@ current time."
     (save-excursion
       (goto-char (if line (point-at-bol) (point-min)))
       (while (not (eobp))
-	(let ((habit (get-text-property (point) 'org-habit-p)))
+	(let ((habit (get-text-property (point) 'org-habit-p))
+              (invisible-prop (get-text-property (point) 'invisible)))
 	  (when habit
 	    (move-to-column org-habit-graph-column t)
 	    (delete-char (min (+ 1 org-habit-preceding-days
@@ -436,7 +440,12 @@ current time."
 	      habit
 	      (time-subtract moment (days-to-time org-habit-preceding-days))
 	      moment
-	      (time-add moment (days-to-time org-habit-following-days))))))
+	      (time-add moment (days-to-time org-habit-following-days))))
+            ;; Inherit invisible state of hidden entries.
+            (when invisible-prop
+              (put-text-property
+               (- (point) org-habit-graph-column) (point)
+               'invisible invisible-prop))))
 	(forward-line)))))
 
 (defun org-habit-toggle-habits ()

@@ -1,4 +1,4 @@
-;;; test-org-annex-attach.el --- Tests for Org Attach with git-annex
+;;; test-org-attach-git.el --- Tests for Org Attach with git-annex
 ;;
 ;; Copyright (c) 2016, 2019 Erik Hetzner
 ;; Authors: Erik Hetzner
@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 (org-test-for-executable "git-annex")
@@ -92,4 +92,5 @@
 	   (should (string-equal "hello world\n" (buffer-string))))
 	 (should (eq called 'was-called)))))))
 
-;;; test-org-attach-annex.el ends here
+(provide 'test-org-attach-git)
+;;; test-org-attach-git.el ends here

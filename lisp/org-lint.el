@@ -1,6 +1,6 @@
 ;;; org-lint.el --- Linting for Org documents        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2021 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -108,6 +108,7 @@
 (require 'cl-lib)
 (require 'ob)
 (require 'ol)
+(require 'org-attach)
 (require 'org-macro)
 (require 'ox)
 
@@ -349,7 +350,7 @@ called with one argument, the key used for comparison."
    (lambda (datum name)
      (goto-char (org-element-property :begin datum))
      (re-search-forward
-      (format "^[ \t]*#\\+[A-Za-z]+: +%s *$" (regexp-quote name)))
+      (format "^[ \t]*#\\+[A-Za-z]+:[ \t]*%s[ \t]*$" (regexp-quote name)))
      (match-beginning 0))
    (lambda (key) (format "Duplicate NAME \"%s\"" key))))
 
@@ -423,8 +424,10 @@ instead"
 
 (defun org-lint-deprecated-header-syntax (ast)
   (let* ((deprecated-babel-properties
-	  (mapcar (lambda (arg) (symbol-name (car arg)))
-		  org-babel-common-header-args-w-values))
+	  ;; DIR is also used for attachments.
+	  (delete "dir"
+		  (mapcar (lambda (arg) (downcase (symbol-name (car arg))))
+			  org-babel-common-header-args-w-values)))
 	 (deprecated-re
 	  (format "\\`%s[ \t]" (regexp-opt deprecated-babel-properties t))))
     (org-element-map ast '(keyword node-property)
@@ -541,15 +544,16 @@ Use :header-args: instead"
   (org-element-map ast 'drawer
     (lambda (d)
       (when (equal (org-element-property :drawer-name d) "PROPERTIES")
-	(let ((section (org-element-lineage d '(section))))
-	  (unless (org-element-map section 'property-drawer #'identity nil t)
-	    (list (org-element-property :post-affiliated d)
-		  (if (save-excursion
-			(goto-char (org-element-property :post-affiliated d))
-			(forward-line -1)
-			(or (org-at-heading-p) (org-at-planning-p)))
-		      "Incorrect contents for PROPERTIES drawer"
-		    "Incorrect location for PROPERTIES drawer"))))))))
+	(let ((headline? (org-element-lineage d '(headline)))
+	      (before
+	       (mapcar #'org-element-type
+		       (assq d (reverse (org-element-contents
+					 (org-element-property :parent d)))))))
+	  (list (org-element-property :post-affiliated d)
+		(if (or (and headline? (member before '(nil (planning))))
+			(and (null headline?) (member before '(nil (comment)))))
+		    "Incorrect contents for PROPERTIES drawer"
+		  "Incorrect location for PROPERTIES drawer")))))))
 
 (defun org-lint-invalid-effort-property (ast)
   (org-element-map ast 'node-property
@@ -564,16 +568,23 @@ Use :header-args: instead"
 (defun org-lint-link-to-local-file (ast)
   (org-element-map ast 'link
     (lambda (l)
-      (when (equal "file" (org-element-property :type l))
-	(let ((file (org-element-property :path l)))
-	  (and (not (file-remote-p file))
-	       (not (file-exists-p file))
-	       (list (org-element-property :begin l)
-		     (format (if (org-element-lineage l '(link))
-				 "Link to non-existent image file \"%s\"\
- in link description"
-			       "Link to non-existent local file \"%s\"")
-			     file))))))))
+      (let ((type (org-element-property :type l)))
+	(pcase type
+	  ((or "attachment" "file")
+	   (let* ((path (org-element-property :path l))
+		  (file (if (string= type "file")
+			    path
+                          (org-with-point-at (org-element-property :begin l)
+			    (org-attach-expand path)))))
+	     (and (not (file-remote-p file))
+		  (not (file-exists-p file))
+		  (list (org-element-property :begin l)
+			(format (if (org-element-lineage l '(link))
+				    "Link to non-existent image file %S \
+in description"
+				  "Link to non-existent local file %S")
+                                file)))))
+	  (_ nil))))))
 
 (defun org-lint-non-existent-setupfile-parameter (ast)
   (org-element-map ast 'keyword
@@ -582,7 +593,7 @@ Use :header-args: instead"
 	(let ((file (org-unbracket-string
 			"\"" "\""
 		      (org-element-property :value k))))
-	  (and (not (org-file-url-p file))
+	  (and (not (org-url-p file))
 	       (not (file-remote-p file))
 	       (not (file-exists-p file))
 	       (list (org-element-property :begin k)
@@ -660,7 +671,7 @@ Use \"export %s\" instead"
 	(when (string= (org-element-property :key k) "OPTIONS")
 	  (let ((value (org-element-property :value k))
 		(start 0))
-	    (while (string-match "\\(.+?\\):\\((.*?)\\|\\S-*\\)[ \t]*"
+	    (while (string-match "\\(.+?\\):\\((.*?)\\|\\S-+\\)?[ \t]*"
 				 value
 				 start)
 	      (setf start (match-end 0))
@@ -668,19 +679,50 @@ Use \"export %s\" instead"
 		(unless (member item allowed)
 		  (push (list (org-element-property :post-affiliated k)
 			      (format "Unknown OPTIONS item \"%s\"" item))
-			reports))))))))
+			reports))
+                (unless (match-string 2 value)
+                  (push (list (org-element-property :post-affiliated k)
+                              (format "Missing value for option item %S" item))
+                        reports))))))))
     reports))
 
 (defun org-lint-invalid-macro-argument-and-template (ast)
-  (let ((extract-placeholders
-	 (lambda (template)
-	   (let ((start 0)
-		 args)
-	     (while (string-match "\\$\\([1-9][0-9]*\\)" template start)
-	       (setf start (match-end 0))
-	       (push (string-to-number (match-string 1 template)) args))
-	     (sort (org-uniquify args) #'<))))
-	reports)
+  (let* ((reports nil)
+         (extract-placeholders
+	  (lambda (template)
+	    (let ((start 0)
+		  args)
+	      (while (string-match "\\$\\([1-9][0-9]*\\)" template start)
+	        (setf start (match-end 0))
+	        (push (string-to-number (match-string 1 template)) args))
+	      (sort (org-uniquify args) #'<))))
+         (check-arity
+          (lambda (arity macro)
+            (let* ((name (org-element-property :key macro))
+                   (pos (org-element-property :begin macro))
+                   (args (org-element-property :args macro))
+                   (l (length args)))
+              (cond
+               ((< l (1- (car arity)))
+                (push (list pos (format "Missing arguments in macro %S" name))
+                      reports))
+               ((< l (car arity))
+                (push (list pos (format "Missing argument in macro %S" name))
+                      reports))
+               ((> l (1+ (cdr arity)))
+                (push (let ((spurious-args (nthcdr (cdr arity) args)))
+                        (list pos
+                              (format "Spurious arguments in macro %S: %s"
+                                      name
+                                      (mapconcat #'org-trim spurious-args ", "))))
+                      reports))
+               ((> l (cdr arity))
+                (push (list pos
+                            (format "Spurious argument in macro %S: %s"
+                                    name
+                                    (org-last args)))
+                      reports))
+               (t nil))))))
     ;; Check arguments for macro templates.
     (org-element-map ast 'keyword
       (lambda (k)
@@ -716,25 +758,29 @@ Use \"export %s\" instead"
 	(lambda (macro)
 	  (let* ((name (org-element-property :key macro))
 		 (template (cdr (assoc-string name templates t))))
-	    (if (not template)
-		(push (list (org-element-property :begin macro)
-			    (format "Undefined macro \"%s\"" name))
-		      reports)
-	      (let ((arg-numbers (funcall extract-placeholders template)))
-		(when arg-numbers
-		  (let ((spurious-args
-			 (nthcdr (apply #'max arg-numbers)
-				 (org-element-property :args macro))))
-		    (when spurious-args
-		      (push
-		       (list (org-element-property :begin macro)
-			     (format "Unused argument%s in macro \"%s\": %s"
-				     (if (> (length spurious-args) 1) "s" "")
-				     name
-				     (mapconcat (lambda (a) (format "\"%s\"" a))
-						spurious-args
-						", ")))
-		       reports))))))))))
+            (pcase template
+              (`nil
+               (push (list (org-element-property :begin macro)
+			   (format "Undefined macro %S" name))
+		     reports))
+              ((guard (string= name "keyword"))
+               (funcall check-arity '(1 . 1) macro))
+              ((guard (string= name "modification-time"))
+               (funcall check-arity '(1 . 2) macro))
+              ((guard (string= name "n"))
+               (funcall check-arity '(0 . 2) macro))
+              ((guard (string= name "property"))
+               (funcall check-arity '(1 . 2) macro))
+              ((guard (string= name "time"))
+               (funcall check-arity '(1 . 1) macro))
+              ((pred functionp))        ;ignore (eval ...) templates
+              (_
+               (let* ((arg-numbers (funcall extract-placeholders template))
+                      (arity (if (null arg-numbers)
+                                 '(0 . 0)
+                               (let ((m (apply #'max arg-numbers)))
+                                 (cons m m)))))
+                 (funcall check-arity arity macro))))))))
     reports))
 
 (defun org-lint-undefined-footnote-reference (ast)
@@ -793,15 +839,25 @@ Use \"export %s\" instead"
       (let ((name (org-trim (match-string-no-properties 0)))
 	    (element (org-element-at-point)))
 	(pcase (org-element-type element)
-	  ((or `drawer `property-drawer)
-	   (goto-char (org-element-property :end element))
-	   nil)
+	  (`drawer
+	   ;; Find drawer opening lines within non-empty drawers.
+	   (let ((end (org-element-property :contents-end element)))
+	     (when end
+	       (while (re-search-forward org-drawer-regexp end t)
+		 (let ((n (org-trim (match-string-no-properties 0))))
+		   (push (list (line-beginning-position)
+			       (format "Possible misleading drawer entry %S" n))
+			 reports))))
+	     (goto-char (org-element-property :end element))))
+	  (`property-drawer
+	   (goto-char (org-element-property :end element)))
 	  ((or `comment-block `example-block `export-block `src-block
 	       `verse-block)
 	   nil)
 	  (_
+	   ;; Find drawer opening lines outside of any drawer.
 	   (push (list (line-beginning-position)
-		       (format "Possible incomplete drawer \"%s\"" name))
+		       (format "Possible incomplete drawer %S" name))
 		 reports)))))
     reports))
 
@@ -1170,7 +1226,6 @@ CHECKERS is the list of checkers used."
       (setf org-lint--source-buffer source)
       (setf org-lint--local-checkers checkers)
       (org-lint--refresh-reports)
-      (tabulated-list-print)
       (add-hook 'tabulated-list-revert-hook #'org-lint--refresh-reports nil t))
     (pop-to-buffer buffer)))
 
@@ -1196,7 +1251,7 @@ CHECKERS is the list of checkers used."
   (let ((c (org-lint--current-checker)))
     (setf tabulated-list-entries
 	  (cl-remove-if (lambda (e) (equal c (org-lint--current-checker e)))
-			 tabulated-list-entries))
+			tabulated-list-entries))
     (tabulated-list-print)))
 
 (defun org-lint--ignore-checker ()
@@ -1250,13 +1305,17 @@ ARG can also be a list of checker names, as symbols, to run."
 		     (throw 'exit c)))))))
 	   ((pred consp)
 	    (cl-remove-if-not (lambda (c) (memq (org-lint-checker-name c) arg))
-			       org-lint--checkers))
+			      org-lint--checkers))
 	   (_ (user-error "Invalid argument `%S' for `org-lint'" arg)))))
     (if (not (called-interactively-p 'any))
 	(org-lint--generate-reports (current-buffer) checkers)
       (org-lint--display-reports (current-buffer) checkers)
       (message "Org linting process completed"))))
 
-
 (provide 'org-lint)
+
+;; Local variables:
+;; generated-autoload-file: "org-loaddefs.el"
+;; End:
+
 ;;; org-lint.el ends here

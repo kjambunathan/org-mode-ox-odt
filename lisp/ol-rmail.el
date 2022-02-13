@@ -1,8 +1,8 @@
 ;;; ol-rmail.el --- Links to Rmail Messages          -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 ;; Homepage: https://orgmode.org
 ;;
@@ -43,7 +43,9 @@
 (defvar rmail-file-name)        ; From rmail.el
 
 ;; Install the link type
-(org-link-set-parameters "rmail" :follow #'org-rmail-open :store #'org-rmail-store-link)
+(org-link-set-parameters "rmail"
+			 :follow #'org-rmail-open
+			 :store #'org-rmail-store-link)
 
 ;; Implementation
 (defun org-rmail-store-link ()
@@ -75,7 +77,7 @@
 	  (rmail-show-message rmail-current-message)
 	  link)))))
 
-(defun org-rmail-open (path)
+(defun org-rmail-open (path _)
   "Follow an Rmail message link to the specified PATH."
   (let (folder article)
     (if (not (string-match "\\`\\([^#]+\\)\\(#\\(.*\\)\\)?" path))

@@ -15,7 +15,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -310,6 +310,15 @@
   (should
    (equal "me"
 	  (org-test-with-temp-text "#+author: me\n<point>{{{author}}}"
+	    (org-macro-initialize-templates)
+	    (org-macro-replace-all org-macro-templates)
+	    (buffer-substring-no-properties
+	     (line-beginning-position) (point-max)))))
+  ;; Return AUTHOR keyword value.
+  (should
+   (equal "author 1 author 2"
+	  (org-test-with-temp-text
+              "#+author: author 1\n#+author: author 2\n<point>{{{author}}}"
 	    (org-macro-initialize-templates)
 	    (org-macro-replace-all org-macro-templates)
 	    (buffer-substring-no-properties

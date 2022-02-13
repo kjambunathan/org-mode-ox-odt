@@ -1,8 +1,9 @@
 ;;; ox-ascii.el --- ASCII Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
+;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
 
 ;; This file is part of GNU Emacs.
@@ -30,6 +31,8 @@
 (require 'ox)
 (require 'ox-publish)
 (require 'cl-lib)
+
+;;; Function Declarations
 
 (declare-function aa2u "ext:ascii-art-to-unicode" ())
 
@@ -477,6 +480,9 @@ HOW determines the type of justification: it can be `left',
     (insert s)
     (goto-char (point-min))
     (let ((fill-column text-width)
+          ;; Ensure that `indent-tabs-mode' is nil so that indentation
+          ;; will always be achieved using spaces rather than tabs.
+          (indent-tabs-mode nil)
 	  ;; Disable `adaptive-fill-mode' so it doesn't prevent
 	  ;; filling lines matching `adaptive-fill-regexp'.
 	  (adaptive-fill-mode nil))
@@ -954,7 +960,7 @@ channel."
 	((not (org-element-contents link)) nil)
 	;; Do not add a link already handled by custom export
 	;; functions.
-	((org-export-custom-protocol-maybe link anchor 'ascii) nil)
+	((org-export-custom-protocol-maybe link anchor 'ascii info) nil)
 	(t
 	 (concat
 	  (org-ascii--fill-string
@@ -1031,7 +1037,7 @@ INFO is a plist used as a communication channel."
 	     ;; Format TITLE.  It may be filled if it is too wide,
 	     ;; that is wider than the two thirds of the total width.
 	     (title-len (min (apply #'max
-				    (mapcar #'length
+				    (mapcar #'string-width
 					    (org-split-string
 					     (concat title "\n" subtitle) "\n")))
 			     (/ (* 2 text-width) 3)))
@@ -1270,7 +1276,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   (org-ascii--justify-element
    (org-ascii--box-string
     (org-remove-indentation
-     (org-element-property :value fixed-width)) info)
+     (org-element-property :value fixed-width))
+    info)
    fixed-width info))
 
 
@@ -1373,7 +1380,7 @@ contextual information."
 ;;;; Inlinetask
 
 (defun org-ascii-format-inlinetask-default
-  (_todo _type _priority _name _tags contents width inlinetask info)
+    (_todo _type _priority _name _tags contents width inlinetask info)
   "Format an inline task element for ASCII export.
 See `org-ascii-format-inlinetask-function' for a description
 of the parameters."
@@ -1569,7 +1576,7 @@ DESC is the description part of the link, or the empty string.
 INFO is a plist holding contextual information."
   (let ((type (org-element-property :type link)))
     (cond
-     ((org-export-custom-protocol-maybe link desc 'ascii))
+     ((org-export-custom-protocol-maybe link desc 'ascii info))
      ((string= type "coderef")
       (let ((ref (org-element-property :path link)))
 	(format (org-export-get-coderef-format ref desc)
@@ -1605,13 +1612,11 @@ INFO is a plist holding contextual information."
 	  ;; Don't know what to do.  Signal it.
 	  (_ "???"))))
      (t
-      (let ((raw-link (concat (org-element-property :type link)
-			      ":"
-			      (org-element-property :path link))))
-	(if (not (org-string-nw-p desc)) (format "<%s>" raw-link)
+      (let ((path (org-element-property :raw-link link)))
+	(if (not (org-string-nw-p desc)) (format "<%s>" path)
 	  (concat (format "[%s]" desc)
 		  (and (not (plist-get info :ascii-links-to-notes))
-		       (format " (<%s>)" raw-link)))))))))
+		       (format " (<%s>)" path)))))))))
 
 
 ;;;; Node Properties
@@ -1939,33 +1944,32 @@ CONTENTS is the row contents.  INFO is a plist used as
 a communication channel."
   (when (eq (org-element-property :type table-row) 'standard)
     (let ((build-hline
-	   (function
-	    (lambda (lcorner horiz vert rcorner)
-	      (concat
-	       (apply
-		'concat
-		(org-element-map table-row 'table-cell
-		  (lambda (cell)
-		    (let ((width (org-ascii--table-cell-width cell info))
-			  (borders (org-export-table-cell-borders cell info)))
-		      (concat
-		       ;; In order to know if CELL starts the row, do
-		       ;; not compare it with the first cell in the
-		       ;; row as there might be a special column.
-		       ;; Instead, compare it with first exportable
-		       ;; cell, obtained with `org-element-map'.
-		       (when (and (memq 'left borders)
-				  (eq (org-element-map table-row 'table-cell
-					'identity info t)
-				      cell))
-			 lcorner)
-		       (make-string (+ 2 width) (string-to-char horiz))
-		       (cond
-			((not (memq 'right borders)) nil)
-			((eq (car (last (org-element-contents table-row))) cell)
-			 rcorner)
-			(t vert)))))
-		  info)) "\n"))))
+	   (lambda (lcorner horiz vert rcorner)
+	     (concat
+	      (apply
+	       'concat
+	       (org-element-map table-row 'table-cell
+		 (lambda (cell)
+		   (let ((width (org-ascii--table-cell-width cell info))
+			 (borders (org-export-table-cell-borders cell info)))
+		     (concat
+		      ;; In order to know if CELL starts the row, do
+		      ;; not compare it with the first cell in the
+		      ;; row as there might be a special column.
+		      ;; Instead, compare it with first exportable
+		      ;; cell, obtained with `org-element-map'.
+		      (when (and (memq 'left borders)
+				 (eq (org-element-map table-row 'table-cell
+				       'identity info t)
+				     cell))
+			lcorner)
+		      (make-string (+ 2 width) (string-to-char horiz))
+		      (cond
+		       ((not (memq 'right borders)) nil)
+		       ((eq (car (last (org-element-contents table-row))) cell)
+			rcorner)
+		       (t vert)))))
+		 info)) "\n")))
 	  (utf8p (eq (plist-get info :ascii-charset) 'utf-8))
 	  (borders (org-export-table-cell-borders
 		    (org-element-map table-row 'table-cell 'identity info t)
@@ -2087,7 +2091,7 @@ a communication channel."
 
 ;;;###autoload
 (defun org-ascii-export-as-ascii
-  (&optional async subtreep visible-only body-only ext-plist)
+    (&optional async subtreep visible-only body-only ext-plist)
   "Export current buffer to a text buffer.
 
 If narrowing is active in the current buffer, only export its
@@ -2122,7 +2126,7 @@ is non-nil."
 
 ;;;###autoload
 (defun org-ascii-export-to-ascii
-  (&optional async subtreep visible-only body-only ext-plist)
+    (&optional async subtreep visible-only body-only ext-plist)
   "Export current buffer to a text file.
 
 If narrowing is active in the current buffer, only export its

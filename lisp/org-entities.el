@@ -1,8 +1,8 @@
 ;;; org-entities.el --- Support for Special Entities -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2021 Free Software Foundation, Inc.
 
-;; Author: Carsten Dominik <carsten at orgmode dot org>,
+;; Author: Carsten Dominik <carsten.dominik@gmail.com>,
 ;;         Ulf Stegemann <ulf at zeitform dot de>
 ;; Keywords: outlines, calendar, wp
 ;; Homepage: https://orgmode.org
@@ -27,6 +27,7 @@
 
 ;;; Code:
 
+(declare-function org-mode "org" ())
 (declare-function org-toggle-pretty-entities "org"       ())
 (declare-function org-table-align            "org-table" ())
 
@@ -113,6 +114,8 @@ packages to be loaded, add these packages to `org-latex-packages-alist'."
      ("igrave" "\\`{i}" nil "&igrave;" "i" "ì" "ì")
      ("Iacute" "\\'{I}" nil "&Iacute;" "I" "Í" "Í")
      ("iacute" "\\'{i}" nil "&iacute;" "i" "í" "í")
+     ("Idot" "\\.{I}" nil "&idot;" "I" "İ" "İ")
+     ("inodot" "\\i" nil "&inodot;" "i" "ı" "ı")
      ("Icirc" "\\^{I}" nil "&Icirc;" "I" "Î" "Î")
      ("icirc" "\\^{i}" nil "&icirc;" "i" "î" "î")
      ("Iuml" "\\\"{I}" nil "&Iuml;" "I" "Ï" "Ï")
@@ -226,7 +229,7 @@ packages to be loaded, add these packages to `org-latex-packages-alist'."
      ("beth" "\\beth" t "&beth;" "beth" "beth" "ב")
      ("dalet" "\\daleth" t "&daleth;" "dalet" "dalet" "ד")
 
-     "** Dead languages"
+     "** Icelandic"
      ("ETH" "\\DH{}" nil "&ETH;" "D" "Ð" "Ð")
      ("eth" "\\dh{}" nil "&eth;" "dh" "ð" "ð")
      ("THORN" "\\TH{}" nil "&THORN;" "TH" "Þ" "Þ")
@@ -386,7 +389,7 @@ packages to be loaded, add these packages to `org-latex-packages-alist'."
      ("exists" "\\exists" t "&exist;" "[there exists]" "[there exists]" "∃")
      ("nexist" "\\nexists" t "&exist;" "[there does not exists]" "[there does not  exists]" "∄")
      ("nexists" "\\nexists" t "&exist;" "[there does not exists]" "[there does not  exists]" "∄")
-     ("empty" "\\empty" t "&empty;" "[empty set]" "[empty set]" "∅")
+     ("empty" "\\emptyset" t "&empty;" "[empty set]" "[empty set]" "∅")
      ("emptyset" "\\emptyset" t "&empty;" "[empty set]" "[empty set]" "∅")
      ("isin" "\\in" t "&isin;" "[element of]" "[element of]" "∈")
      ("in" "\\in" t "&isin;" "[element of]" "[element of]" "∈")
