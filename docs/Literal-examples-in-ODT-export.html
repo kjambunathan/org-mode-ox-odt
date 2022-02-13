@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Literal examples in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,19 +10,21 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="index.html" rel="up" title="Top">
-<link href="Bibliography-and-Citations-in-ODT-export.html#Bibliography-and-Citations-in-ODT-export" rel="next" title="Bibliography and Citations in ODT export">
+<link href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" rel="next" title="Advanced topics in ODT export">
 <link href="Labels-and-captions-in-ODT-export.html" rel="prev" title="Labels and captions in ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,17 +43,18 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="Literal-examples-in-ODT-export"></span><div class="header">
+<div class="chapter" id="Literal-examples-in-ODT-export">
+<div class="header">
 <p>
-Next: <a href="Bibliography-and-Citations-in-ODT-export.html#Bibliography-and-Citations-in-ODT-export" accesskey="n" rel="next">Bibliography and Citations in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" accesskey="n" rel="next">Advanced topics in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="Literal-examples-in-ODT-export-1"></span><h2 class="chapter">13 Literal examples in ODT export</h2>
 
-<p>Export of literal examples (See <a href="https://www.gnu.org/software/emacs/manual/html_node/org/Literal-examples.html#Literal-examples">(org)Literal examples</a>) with full
+<p>Export of literal examples (See <a data-manual="org" href="https://www.gnu.org/software/emacs/manual/html_node/org/Literal-examples.html#Literal-examples">(org)Literal examples</a>) with full
 fontification is supported. Internally, the exporter relies on
 &lsquo;<samp>htmlfontify.el</samp>&rsquo; to generate all style definitions needed for a fancy
-listing.<a id="DOCF14" href="#FOOT14"><sup>14</sup></a> The auto-generated styles have &lsquo;<samp>OrgSrc</samp>&rsquo; as prefix and
+listing.<a id="DOCF13" href="#FOOT13"><sup>13</sup></a> The auto-generated styles have &lsquo;<samp>OrgSrc</samp>&rsquo; as prefix and
 inherit their color from the faces used by Emacs &lsquo;<samp>font-lock</samp>&rsquo; library
 for the source language.
 </p>
@@ -63,18 +67,19 @@ do so by customizing the variable
 <p>You can turn off fontification of literal examples by customizing the
 variable &lsquo;<samp>org-odt-fontify-srcblocks</samp>&rsquo;.
 </p>
+</div>
 <div class="footnote">
 <hr>
 <h4 class="footnotes-heading">Footnotes</h4>
 
-<h5><a id="FOOT14" href="#DOCF14">(14)</a></h3>
+<h5><a id="FOOT13" href="#DOCF13">(13)</a></h5>
 <p>Your &lsquo;<samp>htmlfontify.el</samp>&rsquo; library must at least be at Emacs 24.1
 levels for fontification to be turned on.</p>
 </div>
 <hr>
 <div class="header">
 <p>
-Next: <a href="Bibliography-and-Citations-in-ODT-export.html#Bibliography-and-Citations-in-ODT-export" accesskey="n" rel="next">Bibliography and Citations in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export" accesskey="n" rel="next">Advanced topics in ODT export</a>, Previous: <a href="Labels-and-captions-in-ODT-export.html" accesskey="p" rel="prev">Labels and captions in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Math formatting in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,19 +10,21 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="index.html" rel="up" title="Top">
 <link href="Labels-and-captions-in-ODT-export.html" rel="next" title="Labels and captions in ODT export">
-<link href="Images-in-ODT-export.html#Anchoring-of-images" rel="prev" title="Anchoring of images">
+<link href="Images-in-ODT-export.html#Images-in-ODT-export" rel="prev" title="Images in ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,9 +43,10 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="Math-formatting-in-ODT-export"></span><div class="header">
+<div class="chapter" id="Math-formatting-in-ODT-export">
+<div class="header">
 <p>
-Next: <a href="Labels-and-captions-in-ODT-export.html" accesskey="n" rel="next">Labels and captions in ODT export</a>, Previous: <a href="Images-in-ODT-export.html#Images-in-ODT-export" accesskey="p" rel="prev">Images in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Labels-and-captions-in-ODT-export.html" accesskey="n" rel="next">Labels and captions in ODT export</a>, Previous: <a href="Images-in-ODT-export.html#Images-in-ODT-export" accesskey="p" rel="prev">Images in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="Math-formatting-in-ODT-export-1"></span><h2 class="chapter">11 Math formatting in ODT export</h2>
@@ -51,9 +55,10 @@ Next: <a href="Labels-and-captions-in-ODT-export.html" accesskey="n" rel="next">
 </p>
 
 <hr>
-<span id="Working-with-LaTeX-math-snippets"></span><span id="Working-with-LaTeX-math-snippets-1"></span><h3 class="section">11.1 Working with LaTeX math snippets</h3>
+<div class="section" id="Working-with-LaTeX-math-snippets">
+<span id="Working-with-LaTeX-math-snippets-1"></span><h3 class="section">11.1 Working with LaTeX math snippets</h3>
 
-<p>LaTeX math snippets (See <a href="https://www.gnu.org/software/emacs/manual/html_node/org/LaTeX-fragments.html#LaTeX-fragments">(org)LaTeX fragments</a>) can be embedded in the
+<p>LaTeX math snippets (See <a data-manual="org" href="https://www.gnu.org/software/emacs/manual/html_node/org/LaTeX-fragments.html#LaTeX-fragments">(org)LaTeX fragments</a>) can be embedded in the
 ODT document in one of the following ways:
 </p>
 <ol>
@@ -76,10 +81,10 @@ Formula in the exported document.
 variables &lsquo;<samp>org-latex-to-mathml-convert-command</samp>&rsquo; and
 &lsquo;<samp>org-latex-to-mathml-jar-file</samp>&rsquo;.
 </p>
-<p>If you prefer to use MathToWeb<a id="DOCF13" href="#FOOT13"><sup>13</sup></a> as your converter, you can
+<p>If you prefer to use MathToWeb<a id="DOCF12" href="#FOOT12"><sup>12</sup></a> as your converter, you can
 configure the above variables as shown below.
 </p>
-<div class="lisp">
+<div class="example lisp">
 <pre class="lisp">(setq org-latex-to-mathml-convert-command
       &quot;java -jar %j -unicode -force -df %o %I&quot;
       org-latex-to-mathml-jar-file
@@ -90,15 +95,13 @@ configure the above variables as shown below.
 reliability of the LaTeX-to-MathML converter.
 </p>
 <dl compact="compact">
-<dt><kbd>M-x org-export-as-odf</kbd></dt>
-<dd><span id="index-org_002dexport_002das_002dodf"></span>
-<p>Convert a LaTeX math snippet to OpenDocument formula (&lsquo;<samp>.odf</samp>&rsquo;)
+<dt id='index-org_002dexport_002das_002dodf'><span><kbd>M-x org-export-as-odf</kbd><a href='#index-org_002dexport_002das_002dodf' class='copiable-anchor'> &para;</a></span></dt>
+<dd><p>Convert a LaTeX math snippet to OpenDocument formula (&lsquo;<samp>.odf</samp>&rsquo;)
 file.
 </p>
 </dd>
-<dt><kbd>M-x org-export-as-odf-and-open</kbd></dt>
-<dd><span id="index-org_002dexport_002das_002dodf_002dand_002dopen"></span>
-<p>Convert a LaTeX math snippet to OpenDocument formula (&lsquo;<samp>.odf</samp>&rsquo;)
+<dt id='index-org_002dexport_002das_002dodf_002dand_002dopen'><span><kbd>M-x org-export-as-odf-and-open</kbd><a href='#index-org_002dexport_002das_002dodf_002dand_002dopen' class='copiable-anchor'> &para;</a></span></dt>
+<dd><p>Convert a LaTeX math snippet to OpenDocument formula (&lsquo;<samp>.odf</samp>&rsquo;)
 file and open the formula file with the system-registered
 application.
 </p></dd>
@@ -119,7 +122,9 @@ system.
 </p></li></ol>
 
 <hr>
-<span id="Working-with-MathML-or-OpenDocument-formula-files"></span><span id="Working-with-MathML-or-OpenDocument-formula-files-1"></span><h3 class="section">11.2 Working with MathML or OpenDocument formula files</h3>
+</div>
+<div class="section" id="Working-with-MathML-or-OpenDocument-formula-files">
+<span id="Working-with-MathML-or-OpenDocument-formula-files-1"></span><h3 class="section">11.2 Working with MathML or OpenDocument formula files</h3>
 
 <p>For various reasons, you may find embedding LaTeX math snippets in an
 ODT document less than reliable. In that case, you can embed a math
@@ -136,17 +141,20 @@ formula (&lsquo;<samp>.odf</samp>&rsquo;) file as shown below:
 <pre class="example">[[./equation.odf]]
 </pre></div>
 
+</div>
+</div>
 <div class="footnote">
 <hr>
 <h4 class="footnotes-heading">Footnotes</h4>
 
-<h5><a id="FOOT13" href="#DOCF13">(13)</a></h3>
-<p>See <a href="http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl">MathToWeb</a></p>
+<h5><a id="FOOT12" href="#DOCF12">(12)</a></h5>
+<p><a href="https://sourceforge.net/projects/mathtoweb/">https://sourceforge.net/projects/mathtoweb/</a>. See also
+<a href="https://web.archive.org/web/20200624192923/http://www.mathtoweb.com/cgi-bin/mathtoweb_download.pl">MathToWeb</a>.</p>
 </div>
 <hr>
 <div class="header">
 <p>
-Previous: <a href="#Working-with-LaTeX-math-snippets" accesskey="p" rel="prev">Working with LaTeX math snippets</a>, Up: <a href="#Math-formatting-in-ODT-export" accesskey="u" rel="up">Math formatting in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Labels-and-captions-in-ODT-export.html" accesskey="n" rel="next">Labels and captions in ODT export</a>, Previous: <a href="Images-in-ODT-export.html#Images-in-ODT-export" accesskey="p" rel="prev">Images in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Applying custom styles (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,19 +10,21 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="index.html" rel="up" title="Top">
 <link href="Links-in-ODT-export.html" rel="next" title="Links in ODT export">
-<link href="Extending-ODT-export.html#Converting-between-document-formats" rel="prev" title="Converting between document formats">
+<link href="Extending-ODT-export.html#Extending-ODT-export" rel="prev" title="Extending ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,20 +43,23 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="Applying-custom-styles"></span><div class="header">
+<div class="chapter" id="Applying-custom-styles">
+<div class="header">
 <p>
-Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT export</a>, Previous: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="p" rel="prev">Extending ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT export</a>, Previous: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="p" rel="prev">Extending ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="Applying-custom-styles-1"></span><h2 class="chapter">6 Applying custom styles</h2>
 
 
 <hr>
-<span id="Applying-custom-styles-through-keywords"></span><span id="Applying-custom-styles-through-keywords-1"></span><h3 class="section">6.1 Applying custom styles through keywords</h3>
+<div class="section" id="Applying-custom-styles-through-keywords">
+<span id="Applying-custom-styles-through-keywords-1"></span><h3 class="section">6.1 Applying custom styles through keywords</h3>
 
 
 <hr>
-<span id="Skeletal-structure-of-stylesxml"></span><span id="Skeletal-structure-of-styles_002exml"></span><h4 class="subsection">6.1.1 Skeletal structure of &lsquo;<samp>styles.xml</samp>&rsquo;</h4>
+<div class="subsection" id="Skeletal-structure-of-stylesxml">
+<span id="Skeletal-structure-of-styles_002exml"></span><h4 class="subsection">6.1.1 Skeletal structure of &lsquo;<samp>styles.xml</samp>&rsquo;</h4>
 
 <div class="example">
 <pre class="example">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
@@ -80,7 +86,9 @@ Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT e
 </pre></div>
 
 <hr>
-<span id="Skeletal-structure-of-contentsxml"></span><span id="Skeletal-structure-of-contents_002exml"></span><h4 class="subsection">6.1.2 Skeletal structure of &lsquo;<samp>contents.xml</samp>&rsquo;</h4>
+</div>
+<div class="subsection" id="Skeletal-structure-of-contentsxml">
+<span id="Skeletal-structure-of-contents_002exml"></span><h4 class="subsection">6.1.2 Skeletal structure of &lsquo;<samp>contents.xml</samp>&rsquo;</h4>
 
 <div class="example">
 <pre class="example">&lt;office:document-content&gt;
@@ -103,11 +111,13 @@ Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT e
 </pre></div>
 
 <hr>
-<span id="ODT_005fEXTRA_005fSTYLES"></span><span id="ODT_005fEXTRA_005fSTYLES-1"></span><h4 class="subsection">6.1.3 &lsquo;<samp>ODT_EXTRA_STYLES</samp>&rsquo;</h4>
+</div>
+<div class="subsection" id="ODT_005fEXTRA_005fSTYLES">
+<span id="ODT_005fEXTRA_005fSTYLES-1"></span><h4 class="subsection">6.1.3 &lsquo;<samp>ODT_EXTRA_STYLES</samp>&rsquo;</h4>
 
 <span id="index-ODT_005fEXTRA_005fSTYLES_002c-keyword"></span>
 <dl compact="compact">
-<dt>ODT<em>_EXTRA</em><em>_STYLES</em></dt>
+<dt><span>ODT<em class='math'>_EXTRA</em><em class='math'>_STYLES</em></span></dt>
 </dl>
 
 <div class="example">
@@ -136,14 +146,16 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-<img src="./custom-styles-1.png" alt="./custom-styles-1">
+<img src="custom-styles-1.png" alt="custom-styles-1">
 
 <hr>
-<span id="ODT_005fAUTOMATIC_005fSTYLES"></span><span id="ODT_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.4 &lsquo;<samp>ODT_AUTOMATIC_STYLES</samp>&rsquo;</h4>
+</div>
+<div class="subsection" id="ODT_005fAUTOMATIC_005fSTYLES">
+<span id="ODT_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.4 &lsquo;<samp>ODT_AUTOMATIC_STYLES</samp>&rsquo;</h4>
 
 <span id="index-ODT_005fAUTOMATIC_005fSTYLES_002c-keyword"></span>
 <dl compact="compact">
-<dt>ODT<em>_AUTOMATIC</em><em>_STYLES</em></dt>
+<dt><span>ODT<em class='math'>_AUTOMATIC</em><em class='math'>_STYLES</em></span></dt>
 </dl>
 
 <div class="example">
@@ -174,18 +186,20 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-<img src="./custom-styles-2.png" alt="./custom-styles-2">
+<img src="custom-styles-2.png" alt="custom-styles-2">
 
 <hr>
-<span id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES"></span><span id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.5 &lsquo;<samp>ODT_MASTER_STYLES</samp>&rsquo; and &lsquo;<samp>ODT_EXTRA_AUTOMATIC_STYLES</samp>&rsquo;</h4>
+</div>
+<div class="subsection" id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES">
+<span id="ODT_005fMASTER_005fSTYLES-and-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES-1"></span><h4 class="subsection">6.1.5 &lsquo;<samp>ODT_MASTER_STYLES</samp>&rsquo; and &lsquo;<samp>ODT_EXTRA_AUTOMATIC_STYLES</samp>&rsquo;</h4>
 
 <span id="index-ODT_005fEXTRA_005fIMAGES_002c-keyword"></span>
 <span id="index-ODT_005fMASTER_005fSTYLES_002c-keyword"></span>
 <span id="index-ODT_005fEXTRA_005fAUTOMATIC_005fSTYLES_002c-keyword"></span>
 <dl compact="compact">
-<dt>ODT<em>_EXTRA</em><em>_IMAGES</em></dt>
-<dt>ODT<em>_MASTER</em><em>_STYLES</em></dt>
-<dt>ODT<em>_EXTRA</em><em>_AUTOMATIC</em><em>_STYLES</em></dt>
+<dt><span>ODT<em class='math'>_EXTRA</em><em class='math'>_IMAGES</em></span></dt>
+<dt><span>ODT<em class='math'>_MASTER</em><em class='math'>_STYLES</em></span></dt>
+<dt><span>ODT<em class='math'>_EXTRA</em><em class='math'>_AUTOMATIC</em><em class='math'>_STYLES</em></span></dt>
 </dl>
 
 <div class="example">
@@ -307,10 +321,13 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-<img src="./custom-styles-4.png" alt="./custom-styles-4">
+<img src="custom-styles-4.png" alt="custom-styles-4">
 
 <hr>
-<span id="Applying-custom-styles-through-a-style-template"></span><span id="Applying-custom-styles-through-a-style-template-1"></span><h3 class="section">6.2 Applying custom styles through a style template</h3>
+</div>
+</div>
+<div class="section" id="Applying-custom-styles-through-a-style-template">
+<span id="Applying-custom-styles-through-a-style-template-1"></span><h3 class="section">6.2 Applying custom styles through a style template</h3>
 
 <p>The ODT exporter ships with a set of OpenDocument styles (see <a href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">Working with OpenDocument style files</a>) that ensure a well-formatted
 output. These factory styles, however, may not cater to your specific
@@ -321,7 +338,8 @@ and non-expert users alike, and is described here.
 </p>
 
 <hr>
-<span id="Applying-custom-styles-_002d-the-easy-way"></span><span id="Applying-custom-styles-_002d-the-easy-way-1"></span><h4 class="subsection">6.2.1 Applying custom styles - the easy way</h4>
+<div class="subsection" id="Applying-custom-styles-_002d-the-easy-way">
+<span id="Applying-custom-styles-_002d-the-easy-way-1"></span><h4 class="subsection">6.2.1 Applying custom styles - the easy way</h4>
 
 <ol>
 <li> Create a sample &lsquo;<samp>example.org</samp>&rsquo; file with the below settings and
@@ -358,7 +376,9 @@ like
 </li></ol>
 
 <hr>
-<span id="Using-third_002dparty-styles-and-templates"></span><span id="Using-third_002dparty-styles-and-templates-1"></span><h4 class="subsection">6.2.2 Using third-party styles and templates</h4>
+</div>
+<div class="subsection" id="Using-third_002dparty-styles-and-templates">
+<span id="Using-third_002dparty-styles-and-templates-1"></span><h4 class="subsection">6.2.2 Using third-party styles and templates</h4>
 
 <p>You can use third-party styles and templates for customizing your
 output. This will produce the desired output only if the template
@@ -367,10 +387,13 @@ this condition is met, the output is going to be less than
 satisfactory. So it is highly recommended that you only work with
 templates that are directly derived from the factory settings.
 </p>
+</div>
+</div>
+</div>
 <hr>
 <div class="header">
 <p>
-Previous: <a href="#Applying-custom-styles-_002d-the-easy-way" accesskey="p" rel="prev">Applying custom styles - the easy way</a>, Up: <a href="#Applying-custom-styles-through-a-style-template" accesskey="u" rel="up">Applying custom styles through a style template</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Links-in-ODT-export.html" accesskey="n" rel="next">Links in ODT export</a>, Previous: <a href="Extending-ODT-export.html#Extending-ODT-export" accesskey="p" rel="prev">Extending ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

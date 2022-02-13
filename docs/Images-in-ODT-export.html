@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Images in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,6 +10,8 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
@@ -18,11 +20,11 @@
 <link href="Tables-in-ODT-export.html" rel="prev" title="Tables in ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,16 +43,18 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="Images-in-ODT-export"></span><div class="header">
+<div class="chapter" id="Images-in-ODT-export">
+<div class="header">
 <p>
-Next: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="n" rel="next">Math formatting in ODT export</a>, Previous: <a href="Tables-in-ODT-export.html" accesskey="p" rel="prev">Tables in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="n" rel="next">Math formatting in ODT export</a>, Previous: <a href="Tables-in-ODT-export.html" accesskey="p" rel="prev">Tables in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="Images-in-ODT-export-1"></span><h2 class="chapter">10 Images in ODT export</h2>
 
 
 <hr>
-<span id="Embedding-images"></span><span id="Embedding-images-1"></span><h3 class="section">10.1 Embedding images</h3>
+<div class="section" id="Embedding-images">
+<span id="Embedding-images-1"></span><h3 class="section">10.1 Embedding images</h3>
 
 <p>You can embed images within the exported document by providing a link
 to the desired image file with no link description. For example, to
@@ -64,7 +69,9 @@ embed &lsquo;<samp>img.png</samp>&rsquo; do either of the following:
 </pre></div>
 
 <hr>
-<span id="Embedding-clickable-images"></span><span id="Embedding-clickable-images-1"></span><h3 class="section">10.2 Embedding clickable images</h3>
+</div>
+<div class="section" id="Embedding-clickable-images">
+<span id="Embedding-clickable-images-1"></span><h3 class="section">10.2 Embedding clickable images</h3>
 
 <p>You can create clickable images by providing a link whose description
 is a link to an image file. For example, to embed a image
@@ -76,7 +83,9 @@ website, do the following
 </pre></div>
 
 <hr>
-<span id="Sizing-and-scaling-of-embedded-images"></span><span id="Sizing-and-scaling-of-embedded-images-1"></span><h3 class="section">10.3 Sizing and scaling of embedded images</h3>
+</div>
+<div class="section" id="Sizing-and-scaling-of-embedded-images">
+<span id="Sizing-and-scaling-of-embedded-images-1"></span><h3 class="section">10.3 Sizing and scaling of embedded images</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-2"></span>
 <p>You can control the size and scale of the embedded images using the
@@ -87,7 +96,7 @@ website, do the following
 document in units of centimeters. In order to scale the embedded
 images, the exporter queries for pixel dimensions of the images using
 one of a) ImageMagick&rsquo;s identify program or b) Emacs &lsquo;<samp>create-image</samp>&rsquo;
-and &lsquo;<samp>image-size</samp>&rsquo; APIs.<a id="DOCF12" href="#FOOT12"><sup>12</sup></a> The pixel dimensions are subsequently
+and &lsquo;<samp>image-size</samp>&rsquo; APIs.<a id="DOCF11" href="#FOOT11"><sup>11</sup></a> The pixel dimensions are subsequently
 converted in to units of centimeters using
 &lsquo;<samp>org-odt-pixels-per-inch</samp>&rsquo;. The default value of this variable is set
 to &lsquo;<samp>display-pixels-per-inch</samp>&rsquo;. You can tweak this variable to achieve
@@ -96,7 +105,7 @@ the best results.
 <p>The examples below illustrate the various possibilities.
 </p>
 <dl compact="compact">
-<dt>Explicitly size the image</dt>
+<dt><span>Explicitly size the image</span></dt>
 <dd><p>To embed &lsquo;<samp>img.png</samp>&rsquo; as a 10 cm x 10 cm image, do the following:
 </p>
 <div class="example">
@@ -105,7 +114,7 @@ the best results.
 </pre></div>
 
 </dd>
-<dt>Scale the image</dt>
+<dt><span>Scale the image</span></dt>
 <dd><p>To embed &lsquo;<samp>img.png</samp>&rsquo; at half its size, do the following:
 </p>
 <div class="example">
@@ -114,7 +123,7 @@ the best results.
 </pre></div>
 
 </dd>
-<dt>Scale the image to a specific width</dt>
+<dt><span>Scale the image to a specific width</span></dt>
 <dd><p>To embed &lsquo;<samp>img.png</samp>&rsquo; with a width of 10 cm while retaining the
 original height:width ratio, do the following:
 </p>
@@ -124,7 +133,7 @@ original height:width ratio, do the following:
 </pre></div>
 
 </dd>
-<dt>Scale the image to a specific height</dt>
+<dt><span>Scale the image to a specific height</span></dt>
 <dd><p>To embed &lsquo;<samp>img.png</samp>&rsquo; with a height of 10 cm while retaining the
 original height:width ratio, do the following
 </p>
@@ -136,7 +145,9 @@ original height:width ratio, do the following
 </dl>
 
 <hr>
-<span id="Anchoring-of-images"></span><span id="Anchoring-of-images-1"></span><h3 class="section">10.4 Anchoring of images</h3>
+</div>
+<div class="section" id="Anchoring-of-images">
+<span id="Anchoring-of-images-1"></span><h3 class="section">10.4 Anchoring of images</h3>
 
 <span id="index-ATTR_005fODT_002c-keyword-3"></span>
 <p>You can control the manner in which an image is anchored by setting
@@ -151,11 +162,13 @@ of the the following three values for the &lsquo;<samp>:anchor</samp>&rsquo; pro
 [[./img.png]]
 </pre></div>
 
+</div>
+</div>
 <div class="footnote">
 <hr>
 <h4 class="footnotes-heading">Footnotes</h4>
 
-<h5><a id="FOOT12" href="#DOCF12">(12)</a></h3>
+<h5><a id="FOOT11" href="#DOCF11">(11)</a></h5>
 <p>Use of ImageMagick is only desirable. However, if you routinely
 produce documents that have large images or you export your Org files
 that has images using a Emacs batch script, then the use of
@@ -164,7 +177,7 @@ ImageMagick is mandatory.</p>
 <hr>
 <div class="header">
 <p>
-Previous: <a href="#Sizing-and-scaling-of-embedded-images" accesskey="p" rel="prev">Sizing and scaling of embedded images</a>, Up: <a href="#Images-in-ODT-export" accesskey="u" rel="up">Images in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="n" rel="next">Math formatting in ODT export</a>, Previous: <a href="Tables-in-ODT-export.html" accesskey="p" rel="prev">Tables in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

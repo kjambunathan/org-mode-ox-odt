@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Labels and captions in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,19 +10,21 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="index.html" rel="up" title="Top">
 <link href="Literal-examples-in-ODT-export.html" rel="next" title="Literal examples in ODT export">
-<link href="Math-formatting-in-ODT-export.html#Working-with-MathML-or-OpenDocument-formula-files" rel="prev" title="Working with MathML or OpenDocument formula files">
+<link href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" rel="prev" title="Math formatting in ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,16 +43,17 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="Labels-and-captions-in-ODT-export"></span><div class="header">
+<div class="chapter" id="Labels-and-captions-in-ODT-export">
+<div class="header">
 <p>
-Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="Labels-and-captions-in-ODT-export-1"></span><h2 class="chapter">12 Labels and captions in ODT export</h2>
 
 <p>You can label and caption various category of objects - an inline
 image, a table, a LaTeX fragment or a Math formula - using &lsquo;<samp>#+LABEL</samp>&rsquo;
-and &lsquo;<samp>#+CAPTION</samp>&rsquo; lines. See <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/File-Archives.html#File-Archives">(emacs)File Archives</a>. ODT exporter
+and &lsquo;<samp>#+CAPTION</samp>&rsquo; lines. See <a data-manual="emacs" href="https://www.gnu.org/software/emacs/manual/html_node/emacs/File-Archives.html#File-Archives">(emacs)File Archives</a>. ODT exporter
 enumerates each labeled or captioned object of a given category
 separately. As a result, each such object is assigned a sequence
 number based on order of it&rsquo;s appearance in the Org file.
@@ -76,7 +80,7 @@ the variable &lsquo;<samp>org-odt-category-strings</samp>&rsquo;. For example, t
 embedded images with the string &lsquo;<samp>Illustration</samp>&rsquo; (instead of the default
 &lsquo;<samp>Figure</samp>&rsquo;) use the following setting.
 </p>
-<div class="lisp">
+<div class="example lisp">
 <pre class="lisp">(setq org-odt-category-strings
       '((&quot;en&quot; &quot;Table&quot; &quot;Illustration&quot; &quot;Equation&quot; &quot;Equation&quot;)))
 </pre></div>
@@ -88,10 +92,11 @@ document.
 <pre class="example">Illustration 2: Bell curve
 </pre></div>
 
+</div>
 <hr>
 <div class="header">
 <p>
-Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Literal-examples-in-ODT-export.html" accesskey="n" rel="next">Literal examples in ODT export</a>, Previous: <a href="Math-formatting-in-ODT-export.html#Math-formatting-in-ODT-export" accesskey="p" rel="prev">Math formatting in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 

@@ -48,7 +48,6 @@ user of the stock Emacs backend, and want to learn about new features
 * Math formatting in ODT export:: How LaTeX fragments are formatted
 * Labels and captions in ODT export:: How captions are rendered
 * Literal examples in ODT export:: How source and example blocks are formatted
-* Bibliography and Citations in ODT export:: Use JabRef to produce ODT documents with Citation and Bibliography
 * Advanced topics in ODT export:: Read this if you are a power user
 * Main Index::                   Index of concepts related to OpenDocumentText format
 * Key Index::                    Key bindings used for export
@@ -110,12 +109,6 @@ Math formatting in ODT export
 
 * Working with @LaTeX{} math snippets:: How to embed LaTeX math fragments
 * Working with MathML or OpenDocument formula files:: How to embed equations in native format
-
-Bibliography and Citations in ODT export
-
-* Configure JabRef with @samp{Chicago.ODF} custom export: Configure JabRef with @samp{ChicagoODF} custom export. 
-* Example::
-* Sample Outputs::
 
 Advanced topics in ODT export
 
@@ -190,7 +183,6 @@ Jambunathan K <kjambuanthan at gmail.com>
 
 @table @asis
 @item ./
-ox-jabref.el                                      @*
 ox-odt-pkg.el                                     @*
 ox-odt.el                                         @*
 
@@ -204,7 +196,7 @@ LibreOffice/OrgModeUtilities.oxt
 
 @item docs/
 index.html                                        @*
-org-odt                                           @*
+org-odt.info                                      @*
 org-odt.pdf                                       @*
 style.css                                         @*
 
@@ -285,10 +277,9 @@ The ODT backend depends on the following programs
 @tab To convert inline @samp{pdf} to @samp{png}
 @item @samp{latexmlmath}@footnote{@uref{http://dlmf.nist.gov/LaTeXML/, @LaTeX{}ML}}
 @tab To convert @LaTeX{} math snippets to MathML
-@item @samp{mathtoweb}@footnote{@uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}}
+@item @samp{mathtoweb}@footnote{@uref{https://sourceforge.net/projects/mathtoweb/}. See also
+@uref{https://web.archive.org/web/20200624192923/http://www.mathtoweb.com/cgi-bin/mathtoweb_download.pl, MathToWeb}.}
 @tab 〃
-@item @samp{jabref}@footnote{@uref{https://www.jabref.org/, JabRef}}
-@tab To handle bibliography and citations
 @end multitable
 
 
@@ -314,7 +305,6 @@ A typical configuration look like this
 In the @samp{*Packages*} buffer, packages from this archive show up as below
 
 @example
-JabrefExportChicagoODF 1.2.2      ... Jabref Plugin for export to Chicago Manual of Style in OpenDocumentFormat
 ox-odt                 9.2.6.263  ... OpenDocument Text Exporter for Org Mode
 @end example
 
@@ -337,14 +327,12 @@ Here is a sample configuration.
      ("Reload"
       "soffice" "--norestore" "--invisible" "--headless"
       "macro:///OrgMode.Utilities.Reload(%I)")))
- '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n"))
  '(org-latex-to-mathml-convert-command
    "java -jar %j -unicode -force -df %o %I")
  '(org-latex-to-mathml-jar-file
    "/home/kjambunathan/Downloads/mathtoweb.jar"))
 
 (require 'ox-odt)
-(require 'ox-jabref)
 
 ;; (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
 (setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
@@ -376,12 +364,10 @@ Update cross-references, table of contents etc.
 re-load the new file in the same application window.
 @end itemize
 @item
-Tell where your @samp{JabRef} and @samp{mathtoweb} executables are located, and how they are invoked.
+Tell where your @samp{mathtoweb} executable is located, and how it is invoked.
 @item
 (if you are using a GNU system) open the @samp{odt} document with your
 preferred OpenDocument viewer, presumably @samp{LibreOffice}.
-@item
-Load @samp{ox-jabref} so as to produce documents with bibliography and citations .
 @end enumerate
 
 @node ODT export commands
@@ -565,7 +551,7 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-@image{./custom-styles-1,15cm,,,png}
+@image{custom-styles-1,15cm,,,png}
 
 @node @samp{ODT_AUTOMATIC_STYLES}
 @subsection @samp{ODT_AUTOMATIC_STYLES}
@@ -602,7 +588,7 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-@image{./custom-styles-2,15cm,,,png}
+@image{custom-styles-2,15cm,,,png}
 
 @node @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}
 @subsection @samp{ODT_MASTER_STYLES} and @samp{ODT_EXTRA_AUTOMATIC_STYLES}
@@ -736,7 +722,7 @@ Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
 
 
 
-@image{./custom-styles-4,15cm,,,png}
+@image{custom-styles-4,15cm,,,png}
 
 @node Applying custom styles through a style template
 @section Applying custom styles through a style template
@@ -888,7 +874,7 @@ below.
 | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 @end example
 
-@image{./list-table-1,15cm,,,png}
+@image{list-table-1,15cm,,,png}
 
 @node A list table with rules column size and alignments
 @section A list table with rules, column size and alignments
@@ -922,7 +908,7 @@ one below
 | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 @end example
 
-@image{./list-table-2,15cm,,,png}
+@image{list-table-2,15cm,,,png}
 
 Here is a real-world table that uses the same template as the one
 above
@@ -953,7 +939,7 @@ above
        rain reaching the far northwest.
 @end example
 
-@image{./list-table-3,15cm,,,png}
+@image{list-table-3,15cm,,,png}
 
 @node List table with table and figures
 @section List table with table and figures
@@ -974,7 +960,7 @@ caption them.
     [[./org-mode-unicorn.png]]
 @end example
 
-@image{./list-table-4,15cm,,,png}
+@image{list-table-4,15cm,,,png}
 
 @node List table can contain other tables
 @section List table can contain other tables
@@ -1008,7 +994,7 @@ caption them.
 - --------
 @end example
 
-@image{./list-table-6,15cm,,,png}
+@image{list-table-6,15cm,,,png}
 
 @node Tables in ODT export
 @chapter Tables in ODT export
@@ -1022,7 +1008,8 @@ By default, a table is exported with top and bottom frames and with
 rules separating row and column groups (See @ref{Column Groups,,,org,}). Furthermore, all tables are typeset to occupy the same width.
 If the table specifies alignment and relative width for its columns
 (See @ref{Column Width and Alignment,,,org,}) then these are honored on
-export.@footnote{See @uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}}
+export.@footnote{The column widths are interpreted as weighted ratios with the
+default weight being 1}
 
 @cindex @samp{ATTR_ODT}, keyword
 You can control the width of the table by specifying @samp{:rel-width}
@@ -1205,7 +1192,8 @@ You can specify the @LaTeX{}-to-MathML converter by customizing the
 variables @samp{org-latex-to-mathml-convert-command} and
 @samp{org-latex-to-mathml-jar-file}.
 
-If you prefer to use MathToWeb@footnote{See @uref{http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl, MathToWeb}} as your converter, you can
+If you prefer to use MathToWeb@footnote{@uref{https://sourceforge.net/projects/mathtoweb/}. See also
+@uref{https://web.archive.org/web/20200624192923/http://www.mathtoweb.com/cgi-bin/mathtoweb_download.pl, MathToWeb}.} as your converter, you can
 configure the above variables as shown below.
 
 @lisp
@@ -1327,316 +1315,6 @@ do so by customizing the variable
 @vindex org-odt-fontify-srcblocks
 You can turn off fontification of literal examples by customizing the
 variable @samp{org-odt-fontify-srcblocks}.
-
-@node Bibliography and Citations in ODT export
-@chapter Bibliography and Citations in ODT export
-
-The ODT export back-end uses JabRef to produce Bibliography and
-Citations.
-
-@samp{org} doesn't have a @emph{standard} markup for bibliography and citation
-references.  This is true for this export backend as well.  So, the
-syntax described in the next section is @emph{specific} to the ODT backend,
-and doesn't carry over to other backends.
-
-
-@table @asis
-@item Bibliography and Citation-specific Keywords in ODT export
-An @samp{org} file with bibliography and citations look like
-
-@example
-#+BIB_FILE: "novices.bib"
-#+ODT_JABREF_CITATION_STYLE: "Numeric" 
-
-Some text content
-
-#+BIBLIOGRAPHY: 
-@end example
-
-
-@table @asis
-@item @samp{BIB_FILE}
-@cindex @samp{BIB_FILE}, keyword
-Path to the bibliography file
-
-@item @samp{ODT_JABREF_CITATION_STYLE}
-@cindex @samp{ODT_JABREF_CITATION_STYLE}, keyword
-Citation style to use.  You can choose one of the following
-options
-
-@itemize
-@item
-@samp{"Numeric"}
-@item
-@samp{"Chicago (full-note)"}
-@item
-@samp{"Chicago (author-date)"}
-@end itemize
-
-@item @samp{BIBLIOGRAPHY} -
-@cindex @samp{BIBLIOGRAPHY}, keyword
-Bibliography is inserted here.
-@end table
-@end table
-
-
-@table @asis
-@item How to cite?
-The ODT backend recognizes following citation references
-
-@table @asis
-@item @samp{\cite@{@}} snippets
-
-
-@item Pandoc's Berkeley-style Citations@footnote{See section titled @emph{Berkeley-style citations} at @uref{https://pandoc.org/org.html}}
-The semi-official Org-mode citation syntax was designed by Richard
-Lawrence with additions by contributors on the emacs-orgmode mailing
-list. It is based on John MacFarlane’s pandoc Markdown syntax. It’s
-dubbed Berkeley syntax due the place of activity of its creators, both
-philosophers at UC Berkeley.  
-
-@table @asis
-@item Simple in-text citation
-This is the simplest form of
-citation. It consists of the citation ID prefixed by ‘@@’.
-
-@table @asis
-@item Example
-@example
-@@WatsonCrick1953 showed that DNA forms a double-helix.
-@end example
-@end table
-
-@item In-text citation list
-Citations presented in the text
-unparenthesized are called in-text citations. The syntax for
-these citations is
-
-@example
-[cite: =PREFIX=; =INDIVIDUAL-REFERENCE=; ... =INDIVIDUAL-REFERENCE=; =SUFFIX=]
-@end example
-
-where the initial @samp{PREFIX} and final @samp{SUFFIX} are optional. At least one
-@samp{INDIVIDUAL-REFERENCE} must be present. The colon and semicolons here
-are literal and indicate the end of the @samp{TAG} and the end of a @samp{PREFIX} or
-@samp{INDIVIDUAL-REFERENCE} respectively.
-
-An @samp{INDIVIDUAL-REFERENCE} has the format:
-
-@samp{PREFIX} @samp{KEY} @samp{SUFFIX}
-
-The @samp{KEY} is obligatory, and the prefix and suffix are optional.
-
-A @samp{PREFIX} or @samp{SUFFIX} is arbitrary text (except ;, ], and citation keys).
-
-@table @asis
-@item Example
-@example
-[cite: See; @@Mandelkern1981; and @@Watson1953]
-@end example
-@end table
-
-@item Parenthetical citation
-Citations surrounded by parantheses. The
-syntax is identical to in-text citations, except for the
-additional parentheses enclosing the initial cite tag.
-
-@table @asis
-@item Example
-@example
-[(cite): See; @@Mandelkern1981; and @@Watson1953]     
-@end example
-@end table
-@end table
-@end table
-@end table
-
-@menu
-* Configure JabRef with @samp{Chicago.ODF} custom export: Configure JabRef with @samp{ChicagoODF} custom export. 
-* Example::
-* Sample Outputs::
-@end menu
-
-@node Configure JabRef with @samp{ChicagoODF} custom export
-@section Configure JabRef with @samp{Chicago.ODF} custom export
-
-@table @asis
-@item Set up JabRef with @samp{Chicago.ODF} custom export
-@end table
-
-Install Jabref@footnote{@uref{http://dlmf.nist.gov/LaTeXML/, @LaTeX{}ML}}.
-
-Navigate to @samp{package-user-dir}, and locate the
-@samp{JabrefExportChicagoODF-1.2.2.tar}@footnote{See
-@uref{https://github.com/kjambunathan/JabRefChicagoForOrgmode, Jabref
-Plugin for export to Chicago Manual of Style in @code{OpenDocument}
-format}.  This a port of
-@uref{https://github.com/JabRef/layouts.jabref.org/tree/master/Chicago%20(English), Jabref's
-Plugin for export to Chicago Manual of Style in @code{RTF} format}.}.  Extract it to get a set of
-@samp{layout} files.
-
-Launch JabRef GUI@.  Navigate to @samp{Options -> Manage custom exports},
-and add an entry for each of the layout files as below.
-
-@float Table,org2971cad
-@multitable {aaaaaaaaaaaaaaaaaaaaaaaaa} {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa} {aaaaaaaaa}
-@headitem Export name
-@tab Main layout file
-@tab Extension
-@item Chicago.ODF.abstract
-@tab <whatever>/Chicago.ODF.abstract.layout
-@tab xml
-@item Chicago.ODF.biblio
-@tab <whatever>/Chicago.ODF.biblio.layout
-@tab xml
-@item Chicago.ODF.footend
-@tab <whatever>/Chicago.ODF.footend.layout
-@tab xml
-@item Chicago.ODF.footend.short
-@tab <whatever>/Chicago.ODF.footend.short.layout
-@tab xml
-@item Chicago.ODF.note
-@tab <whatever>/Chicago.ODF.note.layout
-@tab xml
-@item Chicago.ODF.reference
-@tab <whatever>/Chicago.ODF.reference.layout
-@tab xml
-@item Chicago.ODF.text
-@tab <whatever>/Chicago.ODF.text.layout
-@tab xml
-@end multitable
-@caption{How to setup JabRef-5.0's @samp{Manage custom exports}}
-@shortcaption{}
-@end float
-
-
-@float Figure
-@image{./JabRefCustomizeExportFormats,15cm,,,png}
-@caption{Screenshot of JabRef-5.0's @samp{Manage custom exports}}
-@shortcaption{}
-@end float
-
-Verify that the Chicago ODF plugin is successfully registered.  In a
-terminal, do
-
-@example
-/opt/jabref/bin//JabRef -n -h
-@end example
-
-Ensure that the @samp{Available export formats} mentions the @samp{Chicago.ODF}.
-
-@example
-Available export formats: html, simplehtml, docbook5, docbook4, din1505,
-bibordf, tablerefs, listrefs, tablerefsabsbib, harvard, iso690rtf,
-iso690txt, endnote, oocsv, ris, misq, bibtexml, oocalc, ods, MSBib,
-mods, xmp, pdf, Chicago.ODF.abstract, Chicago.ODF.biblio,
-Chicago.ODF.footend, Chicago.ODF.footend.short, Chicago.ODF.note,
-Chicago.ODF.reference, Chicago.ODF.text
-@end example
-
-@table @asis
-@item Configure Emacs
-@end table
-
-Tell Emacs about @samp{JabRef}'s executable.
-
-Use this if you have @samp{JabRef} executable.
-
-@example
-(custom-set-variables
- '(org-jabref-command '("/opt/jabref/bin/JabRef" "-n")))
-
-(require 'ox-jabref)
-@end example
-
-Use this if you have JabRef as a @samp{jar} file.
-
-@example
-(custom-set-variables
- '(org-jabref-command '("java -jar ~/Downloads/JabRef-2.9.2.jar" "-n")))
-
-(require 'ox-jabref)
-@end example
-
-@node Example
-@section Example
-
-@example
-@@book@{goossens94,
-  author = "Michel Goossens and Frank Mittelbach and Alexander Samarin",
-  title = "The @{\LaTeX@}\space companion",
-  publisher = "Addison-Wesley",
-  year = 1994
-@}
-
-@@book@{kopka95,
-  author = "Helmut Kopka and Patrick W. Daly",
-  title = "A guide to @{\LaTeXe@}: document preparation
-           for beginners and advanced users",
-  publisher = "Addison-Wesley",
-  year = 1995
-@}
-
-@@book@{novices,
-  author = "Nicola L. C. Talbot",
-  title = "@{\LaTeX@}\space for Complete Novices",
-  volume = 1,
-  publisher = "Dickmaw Books",
-  series = "Dickimaw @{\LaTeX@}\space Series",
-  note = "\url@{\baseurl/latex/novices/@}",
-  isbn="978-1-909440-00-5",
-  year = 2012
-@}
-
-@@book@{thesis,
-  author = "Nicola L. C. Talbot",
-  title = "Using @{\LaTeX@}\space to Write a Ph.D. Thesis",
-  volume = 2,
-  publisher = "Dickmaw Books",
-  series = "The Dickimaw @{\LaTeX@}\space Series",
-  note = "\url@{\baseurl/latex/thesis/@}",
-  year = 2012
-@}
-@end example
-
-@example
-#+bib_file: "./biblatex-examples/novices.bib"
-#+odt_jabref_citation_style: "Chicago (author-date)"
-
-: Nicola L. C. Talbot in his book [cite:@@novices; p. 97] says,
-
-#+begin_quote
-"If you have a large number of citations in your document, it's best
-to use an external bibliographic application, such as =bibtex= or
-=biber=. However, that is beyond the scope of this book.  See,
-instead, /A Guide to LaTeX/ \cite@{kopka95@}, /The LaTeX Companion/
-\cite@{goossens94@} or [[http://www.dickimaw-books.com/latex/thesis/][Using LaTeX to Write a PhD Thesis]]
-[cite:@@thesis]."
-#+end_quote
-
-#+bibliography:
-@end example
-
-@node Sample Outputs
-@section Sample Outputs
-
-@table @asis
-@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Numeric"}
-@end table
-
-@image{./citation-1,15cm,,,png}
-
-@table @asis
-@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Chicago (full-note)"}
-@end table
-
-@image{./citation-2,15cm,,,png}
-
-@table @asis
-@item Sample output with @code{#+ODT_JABREF_CITATION_STYLE: "Chicago (author-date)"}
-@end table
-
-@image{./citation-3,15cm,,,png}
 
 @node Advanced topics in ODT export
 @chapter Advanced topics in ODT export
@@ -2086,8 +1764,6 @@ for you.
 @chapter What is New
 
 @table @asis
-@item @ref{Bibliography and Citations in ODT export}
-Use JabRef to produce ODT documents with Citation and Bibliography
 @item @ref{List Tables in ODT export}
 Create a table with multi-paragraph content using a @samp{List table}
 @item @ref{Applying custom styles through keywords}

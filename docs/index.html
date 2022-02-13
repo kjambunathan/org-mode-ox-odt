@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Top (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,17 +10,19 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="#Top" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="#SEC_Contents" rel="contents" title="Table of Contents">
 <link href="Project-Summary.html" rel="next" title="Project Summary">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -29,6 +31,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -41,7 +44,8 @@ ul.no-bullet {list-style: none}
 <h1 class="settitle" align="center">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</h1>
 
 
-<span id="Top"></span><div class="header">
+<div class="top" id="Top">
+<div class="header">
 <p>
 Next: <a href="Project-Summary.html" accesskey="n" rel="next">Project Summary</a> &nbsp; [<a href="#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
@@ -57,18 +61,20 @@ Specification</a>, and can be opened with
 <a href="http://www.libreoffice.org/">LibreOffice</a> or any other compliant
 OpenDocument application.
 </p>
-<p>This manual is for a <em>fork</em> of the <a href="https://www.gnu.org/software/emacs/manual/html_node/org/OpenDocument-Text-export.html#OpenDocument-Text-export">(org)OpenDocument Text export</a> engine that ships with stock Emacs.  If you are an existing
+<p>This manual is for a <em>fork</em> of the <a data-manual="org" href="https://www.gnu.org/software/emacs/manual/html_node/org/OpenDocument-Text-export.html#OpenDocument-Text-export">(org)OpenDocument Text export</a> engine that ships with stock Emacs.  If you are an existing
 user of the stock Emacs backend, and want to learn about new features
 <em>exclusive</em> to this fork jump right to <a href="What-is-New.html">What is New</a> section.
 </p>
-<span id="SEC_Contents"></span>
+
+
+<div class="Contents_element" id="SEC_Contents">
 <h2 class="contents-heading">Table of Contents</h2>
 
 <div class="contents">
 
 <ul class="no-bullet">
-  <li><a id="toc-Project-Summary-1" href="Project-Summary.html#Project-Summary">1 Project Summary</a></li>
-  <li><a id="toc-Structure-of-ELPA-tar-1" href="Structure-of-ELPA-tar.html#Structure-of-ELPA-tar">2 Structure of ELPA tar</a></li>
+  <li><a id="toc-Project-Summary-1" href="Project-Summary.html">1 Project Summary</a></li>
+  <li><a id="toc-Structure-of-ELPA-tar-1" href="Structure-of-ELPA-tar.html">2 Structure of ELPA tar</a></li>
   <li><a id="toc-Getting-Started-with-ODT-export-1" href="Getting-Started-with-ODT-export.html#Getting-Started-with-ODT-export">3 Getting Started with ODT export</a>
   <ul class="no-bullet">
     <li><a id="toc-Pre_002drequisites-for-ODT-export-1" href="Getting-Started-with-ODT-export.html#Pre_002drequisites-for-ODT-export">3.1 Pre-requisites for ODT export</a></li>
@@ -100,7 +106,7 @@ user of the stock Emacs backend, and want to learn about new features
       <li><a id="toc-Using-third_002dparty-styles-and-templates-1" href="Applying-custom-styles.html#Using-third_002dparty-styles-and-templates">6.2.2 Using third-party styles and templates</a></li>
     </ul></li>
   </ul></li>
-  <li><a id="toc-Links-in-ODT-export-1" href="Links-in-ODT-export.html#Links-in-ODT-export">7 Links in ODT export</a></li>
+  <li><a id="toc-Links-in-ODT-export-1" href="Links-in-ODT-export.html">7 Links in ODT export</a></li>
   <li><a id="toc-List-Tables-in-ODT-export-1" href="List-Tables-in-ODT-export.html#List-Tables-in-ODT-export">8 List Tables in ODT export</a>
   <ul class="no-bullet">
     <li><a id="toc-Examples-1" href="List-Tables-in-ODT-export.html#Examples">8.1 Examples</a></li>
@@ -108,7 +114,7 @@ user of the stock Emacs backend, and want to learn about new features
     <li><a id="toc-List-table-with-table-and-figures-1" href="List-Tables-in-ODT-export.html#List-table-with-table-and-figures">8.3 List table with table and figures</a></li>
     <li><a id="toc-List-table-can-contain-other-tables-1" href="List-Tables-in-ODT-export.html#List-table-can-contain-other-tables">8.4 List table can contain other tables</a></li>
   </ul></li>
-  <li><a id="toc-Tables-in-ODT-export-1" href="Tables-in-ODT-export.html#Tables-in-ODT-export">9 Tables in ODT export</a></li>
+  <li><a id="toc-Tables-in-ODT-export-1" href="Tables-in-ODT-export.html">9 Tables in ODT export</a></li>
   <li><a id="toc-Images-in-ODT-export-1" href="Images-in-ODT-export.html#Images-in-ODT-export">10 Images in ODT export</a>
   <ul class="no-bullet">
     <li><a id="toc-Embedding-images-1" href="Images-in-ODT-export.html#Embedding-images">10.1 Embedding images</a></li>
@@ -121,40 +127,33 @@ user of the stock Emacs backend, and want to learn about new features
     <li><a id="toc-Working-with-LaTeX-math-snippets-1" href="Math-formatting-in-ODT-export.html#Working-with-LaTeX-math-snippets">11.1 Working with LaTeX math snippets</a></li>
     <li><a id="toc-Working-with-MathML-or-OpenDocument-formula-files-1" href="Math-formatting-in-ODT-export.html#Working-with-MathML-or-OpenDocument-formula-files">11.2 Working with MathML or OpenDocument formula files</a></li>
   </ul></li>
-  <li><a id="toc-Labels-and-captions-in-ODT-export-1" href="Labels-and-captions-in-ODT-export.html#Labels-and-captions-in-ODT-export">12 Labels and captions in ODT export</a></li>
-  <li><a id="toc-Literal-examples-in-ODT-export-1" href="Literal-examples-in-ODT-export.html#Literal-examples-in-ODT-export">13 Literal examples in ODT export</a></li>
-  <li><a id="toc-Bibliography-and-Citations-in-ODT-export-1" href="Bibliography-and-Citations-in-ODT-export.html#Bibliography-and-Citations-in-ODT-export">14 Bibliography and Citations in ODT export</a>
+  <li><a id="toc-Labels-and-captions-in-ODT-export-1" href="Labels-and-captions-in-ODT-export.html">12 Labels and captions in ODT export</a></li>
+  <li><a id="toc-Literal-examples-in-ODT-export-1" href="Literal-examples-in-ODT-export.html">13 Literal examples in ODT export</a></li>
+  <li><a id="toc-Advanced-topics-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export">14 Advanced topics in ODT export</a>
   <ul class="no-bullet">
-    <li><a id="toc-Configure-JabRef-with-Chicago_002eODF-custom-export" href="Bibliography-and-Citations-in-ODT-export.html#Configure-JabRef-with-ChicagoODF-custom-export">14.1 Configure JabRef with &lsquo;<samp>Chicago.ODF</samp>&rsquo; custom export</a></li>
-    <li><a id="toc-Example-1" href="Bibliography-and-Citations-in-ODT-export.html#Example">14.2 Example</a></li>
-    <li><a id="toc-Sample-Outputs-1" href="Bibliography-and-Citations-in-ODT-export.html#Sample-Outputs">14.3 Sample Outputs</a></li>
-  </ul></li>
-  <li><a id="toc-Advanced-topics-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Advanced-topics-in-ODT-export">15 Advanced topics in ODT export</a>
-  <ul class="no-bullet">
-    <li><a id="toc-Configuring-a-document-converter-1" href="Advanced-topics-in-ODT-export.html#Configuring-a-document-converter">15.1 Configuring a document converter</a></li>
-    <li><a id="toc-Working-with-OpenDocument-style-files-1" href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">15.2 Working with OpenDocument style files</a>
+    <li><a id="toc-Configuring-a-document-converter-1" href="Advanced-topics-in-ODT-export.html#Configuring-a-document-converter">14.1 Configuring a document converter</a></li>
+    <li><a id="toc-Working-with-OpenDocument-style-files-1" href="Advanced-topics-in-ODT-export.html#Working-with-OpenDocument-style-files">14.2 Working with OpenDocument style files</a>
     <ul class="no-bullet">
-      <li><a id="toc-Factory-styles-1" href="Advanced-topics-in-ODT-export.html#Factory-styles">15.2.1 Factory styles</a></li>
-      <li><a id="toc-Overriding-factory-styles-1" href="Advanced-topics-in-ODT-export.html#Overriding-factory-styles">15.2.2 Overriding factory styles</a></li>
+      <li><a id="toc-Factory-styles-1" href="Advanced-topics-in-ODT-export.html#Factory-styles">14.2.1 Factory styles</a></li>
+      <li><a id="toc-Overriding-factory-styles-1" href="Advanced-topics-in-ODT-export.html#Overriding-factory-styles">14.2.2 Overriding factory styles</a></li>
     </ul></li>
-    <li><a id="toc-Creating-one_002doff-styles-1" href="Advanced-topics-in-ODT-export.html#Creating-one_002doff-styles">15.3 Creating one-off styles</a></li>
-    <li><a id="toc-Customizing-tables-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Customizing-tables-in-ODT-export">15.4 Customizing tables in ODT export</a>
+    <li><a id="toc-Creating-one_002doff-styles-1" href="Advanced-topics-in-ODT-export.html#Creating-one_002doff-styles">14.3 Creating one-off styles</a></li>
+    <li><a id="toc-Customizing-tables-in-ODT-export-1" href="Advanced-topics-in-ODT-export.html#Customizing-tables-in-ODT-export">14.4 Customizing tables in ODT export</a>
     <ul class="no-bullet">
-      <li><a id="toc-Custom-table-styles-_002d-an-illustration-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-an-illustration">15.4.1 Custom table styles - an illustration</a></li>
-      <li><a id="toc-Custom-table-styles-_002d-the-nitty_002dgritty-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-the-nitty_002dgritty">15.4.2 Custom table styles - the nitty-gritty</a></li>
+      <li><a id="toc-Custom-table-styles-_002d-an-illustration-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-an-illustration">14.4.1 Custom table styles - an illustration</a></li>
+      <li><a id="toc-Custom-table-styles-_002d-the-nitty_002dgritty-1" href="Advanced-topics-in-ODT-export.html#Custom-table-styles-_002d-the-nitty_002dgritty">14.4.2 Custom table styles - the nitty-gritty</a></li>
     </ul></li>
-    <li><a id="toc-Validating-OpenDocument-XML-1" href="Advanced-topics-in-ODT-export.html#Validating-OpenDocument-XML">15.5 Validating OpenDocument XML</a></li>
+    <li><a id="toc-Validating-OpenDocument-XML-1" href="Advanced-topics-in-ODT-export.html#Validating-OpenDocument-XML">14.5 Validating OpenDocument XML</a></li>
   </ul></li>
-  <li><a id="toc-Main-Index-1" href="Main-Index.html#Main-Index" rel="index">16 Main Index</a></li>
-  <li><a id="toc-Key-Index-1" href="Key-Index.html#Key-Index" rel="index">17 Key Index</a></li>
-  <li><a id="toc-Command-and-Function-Index-1" href="Command-and-Function-Index.html#Command-and-Function-Index" rel="index">18 Command and Function Index</a></li>
-  <li><a id="toc-Variable-Index-1" href="Variable-Index.html#Variable-Index" rel="index">19 Variable Index</a></li>
-  <li><a id="toc-What-is-New-1" href="What-is-New.html#What-is-New">20 What is New</a></li>
+  <li><a id="toc-Main-Index-1" href="Main-Index.html" rel="index">15 Main Index</a></li>
+  <li><a id="toc-Key-Index-1" href="Key-Index.html" rel="index">16 Key Index</a></li>
+  <li><a id="toc-Command-and-Function-Index-1" href="Command-and-Function-Index.html" rel="index">17 Command and Function Index</a></li>
+  <li><a id="toc-Variable-Index-1" href="Variable-Index.html" rel="index">18 Variable Index</a></li>
+  <li><a id="toc-What-is-New-1" href="What-is-New.html">19 What is New</a></li>
 </ul>
 </div>
-
-
-
+</div>
+</div>
 <hr>
 <div class="header">
 <p>

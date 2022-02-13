@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>List Tables in ODT export (OpenDocument Text Exporter for Emacs&rsquo; Org Mode)</title>
@@ -10,6 +10,8 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="Main-Index.html" rel="index" title="Main Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
@@ -18,11 +20,11 @@
 <link href="Links-in-ODT-export.html" rel="prev" title="Links in ODT export">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -31,6 +33,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -40,9 +43,10 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<span id="List-Tables-in-ODT-export"></span><div class="header">
+<div class="chapter" id="List-Tables-in-ODT-export">
+<div class="header">
 <p>
-Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT export</a>, Previous: <a href="Links-in-ODT-export.html" accesskey="p" rel="prev">Links in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT export</a>, Previous: <a href="Links-in-ODT-export.html" accesskey="p" rel="prev">Links in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 <hr>
 <span id="List-Tables-in-ODT-export-1"></span><h2 class="chapter">8 List Tables in ODT export</h2>
@@ -51,7 +55,7 @@ Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT
 Use it to create tables with multi-paragraph content.
 </p>
 <dl compact="compact">
-<dt>Why a &lsquo;<samp>List Table</samp>&rsquo;?</dt>
+<dt><span>Why a &lsquo;<samp>List Table</samp>&rsquo;?</span></dt>
 </dl>
 
 <p>Org mode&rsquo;s tables are line-oriented i.e., each row (and hence a cell)
@@ -74,10 +78,11 @@ document.
 </p>
 
 <hr>
-<span id="Examples"></span><span id="Examples-1"></span><h3 class="section">8.1 Examples</h3>
+<div class="section" id="Examples">
+<span id="Examples-1"></span><h3 class="section">8.1 Examples</h3>
 
 <dl compact="compact">
-<dt>A simple list table</dt>
+<dt><span>A simple list table</span></dt>
 </dl>
 
 <p>Consider an example.  The following list table
@@ -107,10 +112,12 @@ below.
 | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 </pre></div>
 
-<img src="./list-table-1.png" alt="./list-table-1">
+<img src="list-table-1.png" alt="list-table-1">
 
 <hr>
-<span id="A-list-table-with-rules-column-size-and-alignments"></span><span id="A-list-table-with-rules_002c-column-size-and-alignments"></span><h3 class="section">8.2 A list table with rules, column size and alignments</h3>
+</div>
+<div class="section" id="A-list-table-with-rules-column-size-and-alignments">
+<span id="A-list-table-with-rules_002c-column-size-and-alignments"></span><h3 class="section">8.2 A list table with rules, column size and alignments</h3>
 
 <p>List tables honor all attributes save for the column alignments.
 </p>
@@ -141,7 +148,7 @@ one below
 | Row 2, Col 1 | Row 2, Col 2 | Row 2, Col 3 | Row 2, Col 4 |
 </pre></div>
 
-<img src="./list-table-2.png" alt="./list-table-2">
+<img src="list-table-2.png" alt="list-table-2">
 
 <p>Here is a real-world table that uses the same template as the one
 above
@@ -172,10 +179,12 @@ above
        rain reaching the far northwest.
 </pre></div>
 
-<img src="./list-table-3.png" alt="./list-table-3">
+<img src="list-table-3.png" alt="list-table-3">
 
 <hr>
-<span id="List-table-with-table-and-figures"></span><span id="List-table-with-table-and-figures-1"></span><h3 class="section">8.3 List table with table and figures</h3>
+</div>
+<div class="section" id="List-table-with-table-and-figures">
+<span id="List-table-with-table-and-figures-1"></span><h3 class="section">8.3 List table with table and figures</h3>
 
 <p>List tables are particularly well-suited for creating captioned
 side-by-side images.  Note that with conventional &lsquo;<samp>org</samp>&rsquo; tables, even
@@ -193,10 +202,12 @@ caption them.
     [[./org-mode-unicorn.png]]
 </pre></div>
 
-<img src="./list-table-4.png" alt="./list-table-4">
+<img src="list-table-4.png" alt="list-table-4">
 
 <hr>
-<span id="List-table-can-contain-other-tables"></span><span id="List-table-can-contain-other-tables-1"></span><h3 class="section">8.4 List table can contain other tables</h3>
+</div>
+<div class="section" id="List-table-can-contain-other-tables">
+<span id="List-table-can-contain-other-tables-1"></span><h3 class="section">8.4 List table can contain other tables</h3>
 
 <div class="example">
 <pre class="example">#+ATTR_ODT: :list-table t
@@ -227,12 +238,14 @@ caption them.
 - --------
 </pre></div>
 
-<img src="./list-table-6.png" alt="./list-table-6">
+<img src="list-table-6.png" alt="list-table-6">
 
+</div>
+</div>
 <hr>
 <div class="header">
 <p>
-Previous: <a href="#List-table-with-table-and-figures" accesskey="p" rel="prev">List table with table and figures</a>, Up: <a href="#List-Tables-in-ODT-export" accesskey="u" rel="up">List Tables in ODT export</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
+Next: <a href="Tables-in-ODT-export.html" accesskey="n" rel="next">Tables in ODT export</a>, Previous: <a href="Links-in-ODT-export.html" accesskey="p" rel="prev">Links in ODT export</a>, Up: <a href="index.html" accesskey="u" rel="up">OpenDocument Text Exporter for Emacs&rsquo; Org Mode</a> &nbsp; [<a href="index.html#SEC_Contents" title="Table of contents" rel="contents">Contents</a>][<a href="Main-Index.html" title="Index" rel="index">Index</a>]</p>
 </div>
 
 
