@@ -15,11 +15,6 @@ SERVROOT			= ../kjambunathan.github.io/elpa
 DOCROOT				= ./docs
 
 ORG_GIT_DIR			= .
-JABREF_GIT_DIR		= ./contrib/odt/JabRefChicagoForOrgmode
-
-JABREF_VERSION0		= $(shell git --git-dir=$(JABREF_GIT_DIR)/.git describe --abbrev=0)
-JABREF_VERSION		= $(JABREF_VERSION0).$(shell git --git-dir=$(JABREF_GIT_DIR)/.git log --format=oneline $(JABREF_VERSION0).. | wc -l)
-JABREF_VERSION_L	= $(shell $(BATCH) --eval '(prin1 (version-to-list "$(JABREF_VERSION)"))')
 
 
 
@@ -56,8 +51,8 @@ odtpkg: ELPA_PKG_VERSION_L			= $(shell $(BATCH) --eval '(prin1 (version-to-list 
 
 odtpkg: ELPA_PKG_DOC				= "OpenDocument Text Exporter for Org Mode"
 
-odtpkg: ELPA_PKG_REQ				= (org \"$(ELPA_PKG_VERSION0)\") (JabrefExportChicagoODF \"$(JABREF_VERSION)\")
-odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L)) (JabrefExportChicagoODF $(JABREF_VERSION_L))
+odtpkg: ELPA_PKG_REQ				= (org \"$(ELPA_PKG_VERSION0)\")
+odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L))
 
 odtpkg: ELPA_PKG_DIR				= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
 
@@ -82,7 +77,6 @@ odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el																\
 										etc/schema/od-manifest-schema.rnc											\
 										etc/schema/od-schema.rnc													\
 										etc/schema/schemas.xml														\
-										contrib/lisp/ox-jabref.el													\
 										contrib/odt/LibreOffice/OrgModeUtilities.oxt								\
 										testing/examples/odt/														\
 										docs/																		\
