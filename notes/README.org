@@ -38,226 +38,298 @@ kjambunathan@debian:~/src/ox-odt$ git log -1 --pretty=oneline 40ef7af622cb461527
 40ef7af622cb461527555538965b7a6a023e76d2 (tag: my-common-ancestor) org-element: Elements can accept multiple secondary strings
 #+END_EXAMPLE
 
-
 * Ongoing state of the merge
 
 Patches that are to be merged are in the root ~./todo[N]/~ directory.
 
 Patches that have already been merged are in ~./done[N]~ directory
 
-* Commits that are exclusive to this branch
-
-#+BEGIN_EXAMPLE
-kjambunathan@debian:~/src/org-mode-ox-odt$ git describe
-release_9.1.14-157-gf8c51feb6
-#+END_EXAMPLE
-
-#+BEGIN_EXAMPLE
-kjambunathan@debian:~/src/org-mode-ox-odt$ git log --reverse --format=oneline my-common-ancestor.. -- lisp/ox-odt.el >> notes/README.org
-#+END_EXAMPLE
-
-fd8c843692e4c487bd03ed0d71b0bac69112b335 ox-odt: Fix bugs in metadata generation
-16cea3d7b74e34945355cf434a684890f4c52cb2 ox: Remove `comment' special value for `org-export-with-creator'
-e9fd19968b69f3acd102c393336d9d93a72de624 ox: Always insert creator in metadata
-79c0aa21ca2657f2ea7272040bce3ff4754bab1b ox: Remove #+KEYWORD and #+DESCRIPTION
-a780080fcf38ca6412658323eae9367a17a12bdf ox: Add #+SUBTITLE property in some backends
-459033265295723cbfb0fccb3577acbfdc9d0285 Export back-ends: Use `org-export-get-reference'
-e0567c9cacc3a13d21a24ba3058d653a335ae9cb Export back-ends: Use `org-export-file-uri'
-aad7dd24864f3ce988a67061a391d85e649aa375 ox-odt: Fix bug links without labels.
-8e89c0e3b40bb2a140bbbb85def17b1c190eb158 ox-odt: Allow attaching SVG images by default
-690e25d9323276ccf013197c71619dbfe1382baa ox-odt: Fix defcustom keywords
-d81e6b52b7a02bb3401f2f17dedc746b63eeecc7 Backport commit 6711a21 from Emacs master branch
-c115c7b4e86b68fe4f903636252a8b22b46a044f org-compat: Use different font-lock-ensure alias
-0cec91d0392c06cc6504b1cbd63d0a8fd3974789 Backport commit b884ff3 from Emacs master branch
-6b04312e85f04219aeaa7c7f9669a51ec2cbec17 Backport commit 96794d2 from Emacs master branch
-6f9184a294e4e7914041c2ae42ef147d11e9ebec Merge branch 'maint' into backport-master
-3a81c7ee6f392463db1db4b3e77a0e0411032382 Backport commit 0c856a2 from Emacs master branch
-8d00cd896614a6e794765bdcfc7ee9bedd6dc075 ox-odt: Fix footnote export
-17a225621c73b4990bd4458924a249aa0a11650e ox-odt: Small refactoring
-5adb8bcfa2d3611eaa6c69aab23103e60d28bd57 ox-odt: Tiny fix
-c290921a0d3a90d7efb702e89c955421a6090116 ox-odt: Prevent internal links to target table of contents
-c86a10b0bcc930379ebc9364e6e9e22ba082a64f Backport commit 284c470 from Emacs master branch
-cc0d491739b6c81282dfd86330f646d3e4e92b60 Backport commit ab11a1c from Emacs master branch
-4ca1179c9e9c707267ac3738cc7c8442001b204b ox-odt: Use lexical binding
-07e16c2fc5687de5e1761bbf4ba3cf1777de15eb Use setq-local and defvar-local.
-54318add34f09ff39d3fd034a4c1a89f60fd8759 Change export block syntax
-6bc48c5f4124a56b84e87b04020d255d126d2aa8 Update copyright years
-6345de2d05412113954efd6881d7d5e5a29586cd Merge branch 'maint'
-a4edee4069007591d0159df518936a2699123c6e org-compat: Update font-lock-ensure alias
-23ca3fa100c2fd8e3dab839fba5ca205e32d83d5 Merge branch 'maint'
-07ee690dce504c6082d5ebbe90e6cf4478e07586 ox-odt: Fix End of file during parsing error
-16dbf6ded6f79c0b7797856004b0ebc5fe49fb04 Merge branch 'maint'
-21ef130752bdfb0ae841d53dd1458b5a505236af ox-odt: Fix styles location
-b2411769cfa3bd5267b08bb266ac502ec58a786e Merge branch 'maint'
-af8e3d84ee18609a83e03af44efc5601700d57fc ox: Provide offset to [+-]n in SRC/EXAMPLE export
-0ac099a6f8f58770c583de450a665be755a95b60 Remove final parts of XEmacs compatibility code
-ee7aa9878f4ae76fce63be763e7825c654719f1b Deprecate `org-no-warnings' in favor of `with-no-warnings'
-b2091f6d75ee10928b12d115dc3286e479f303d5 Move obsolete declarations into "org-compat.el"
-72461eaeaf0317a211a01d31f85eeed0d0ab7b0a Use `string-match-p' instead of `org-string-match-p'
-2b99f910e1c0d1f4701772f9bedf66894e16c403 ox-odt: Use cl-lib
-c4da20a2f33a3e859df6a5d9d8f95e3a46e453ec Silence byte-compiler
-67c29aa1e8b1ffd4dcfb0d86822e42a8139cf203 ox-odt: Remove obnoxious messages when compiling library
-ab21e2b72d504c13e035757a4765d02f8e938968 Use file-name-extension where appropriate
-48e7f17bc6df8bf7d6ed8d34c849beefb7262dfc Use assq instead of assoc with quoted symbols
-140aacbf2f57e207a33417bb446060de52a4b312 Use ‘eq’ instead of ‘equal’ for symbols
-d9070419119cf6b19f2f471aa2eb81ec3d9b0d0f Change :version in defcustoms from "25.1" to "25.2"
-0c0bc8419093a1034ae5e1cdb2a63b04ae8267fc Change "Org-mode" into "Org mode"
-1a88cf920e5090c311f77ba3f74183aa51253fb5 org-element: Improve support for pseudo objects and elements
-73694b21d7233c88bbd6e67eefaf8f4c321e4863 ox-odt.el: Fix LaTeX formulae in opendocument exports
-b7cb9b54d53fa4e246138791ccc863ae8f927860 Backport commit eeecac7 from Emacs
-5ffb373a2ca6833617e344154c3dc1b877ec4784 Implement `org-export-insert-image-links'
-3469830e3d95c6176fb91017463c5ef4140dd1c0 ox-odt: Fix typo
-713f785017e908333caddd244fcc685745e78539 Update copyright years
-0d3683f2cd5490f213b471385d76479f819e2f41 Merge branch 'maint'
-1749dfe091308d33799de20fb839cb3604afacc2 ox-odt: Fix verse environment
-400d46e547d265623e8af75dc436b67526def04c Merge branch 'maint'
-7c710f6f57ab7dcc539511cc9c51ee350a966fce Change :version in defcustoms from "25.2" to "26.1"
-7278899697ef146ed7048245a9a75a09922f46e0 Merge branch 'maint'
-7b065b1d0a0811304a7599b9feb1c239df1a48db ox-odt: Include #+latex_header when converting LaTeX to PNG
-09e61233ed5a24687e20b7dc18a1c985d423fb24 Merge branch 'maint'
-9d81860593dd12a8ee6ce9637fe4e4b92d4cf19e Preparing to merge my ox-odt changes to Orgmode.org master
-06bfe66aec27459994c3eb5e40db0cec40823f17 ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
-c06478c9d99be23ecfda9b33edb33bad860659fd Revert "ox-odt.el (org-odt-table-style-format): Use %s for inserting the rel-width property as a string"
-8071ce913c1a34b1cbfed4920066d4d2b714c68f Revert "Fix ox-odt bugs"
-be9840d204e37939b354c2361e1a6cbee2bd474a ox-odt: Support for typesetting Description lists as in LaTeX
-f1e4f96edc0228fdbcb7db544cf00d72530ed7f1 ox-odt.el: Fix handling of ODT attributes
-92f0ee559d166cb9539f17134373f50cd332cab3 ox-odt.el: Support for pagebreaks, custom paragraph styles.
-6fc6c7468473a7e03f18cbd9fe53cb902c9770ef ox-odt.el: Specify cell widths using `:widths' attribute
-4578504b92175733bde483a2e13f26691852d752 ox-odt.el: Don't allow table row to split across pages
-271212243d8923297c494588c9ef5a7c1c7fdb8d ox-odt.el: Support hrule and table attributes in list tables
-40bfe609ed5e71ef1ee3365eedb0b363135fe386 ox-odt.el: Explicitly set coding system of XML files to 'utf-8
-8072610932d29be81bd1af3a76b2da504d969c66 ox-odt.el: Fix issues seen with ODT files having multiple images
-65d7400a9472d175fd83107564172c9d6d59ee74 ox-odt.el: Fix paths of data and styles directories
-2d25f217e11a2bf22837acad082f6d80883238fe ox-odt.el (generated-autoload-file): Don't set it
-b5afbc2f459bc06cc144649848efa659bf1ee606 ox-odt.el (org-odt-schema-dir-list): Add git and elpa paths
-c51f4ba71ccaa08b8723b2acfe77ba9d46d12a53 ox-odt.el: Fix cell borders
-befa2c8b3d7dbefb5d539c4c17624d8899d56870 ox-odt.el: Cope with empty title
-d0fe9e23b53dae59e643d6f27d69f7b1f3c17d77 ox-odt.el: Support for page nos. etc as part of xref-es
-1bf39dfd76f8cd29b04495fe698d6b3dab126311 Use a "OrgPageBreakDefault" as default PAGEBREAK style
-b2a15b5c383624e1a2f77f57ceae95d43190b586 ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
-99008bbb89f5e3908ea78a6eacee7710cc461168 Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
-82ea45464dfc7dea63c8a4e4c0e44c2bfd3e987f ox-odt: Use `org-element-lineage' instead of `org-export-get-genealogy'
-d105d1e5746ec69778648288c1b5a5ccdff79651 ox-odt: Fix invocation of `org-format-latex'
-19723fd47abef8272477e91e17489ca7f3842825 ox-odt.el (org-odt-special-block): Preserve case
-4b8ffd3c20b671bae50b8728b3ca74bc283a4308 ox-odt.el: Remove some export options associated to variables
-0a7ced81c391e20c857d8b5ce8eb912bd54e5965 ox-odt.el: Use options instead of hard-coded variables
-ee2d0e43aeebe647b61a7bb9315630c0eeac8ebd ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
-d6e349ec787755a8fdbd4c35d0041383842c056a ox-odt.el: Misc. changes
-cb1f884ee690717ed0194804c7bad2263f05cfc9 ox-odt.el: Fix exporting radio link with missing radio target
-5b1989cba2acb4f4dfbae0ac841331e19de35c37 ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
-11dbb5a3581c95a0b99b30e36963a6ef0b76b36c ox-odt.el: Support `:with-title'
-4c40f0109f059a00e815841d88c14c9c1aec2f1d ox-odt.el: Support `:with-title'
-b577fdd5f2aa38506d2c06314b6841b26cb52986 ox-odt.el: Enumerate footnotes based on body text
-1d7dd0ab565eea48bbfd287d55138c79e1e412b6 ox-odt.el: Update copyright years
-d84859213045a552e12e519c7ed01522d903db88 ox-odt.el: Use scope param in org-export-footnote-* calls
-96b4bbb568a473844b8ed1d6180c5eb38af7f157 ox-odt.el (org-odt-link): Fix custom link handling
-0f0513e07ef9312e4cdf0cff9de50fd563e5dde6 ox-odt.el (org-odt-template): Don't create empty paragraphs
-b5e1d0b85588d81824348f229090525963225a60 ox-odt.el: Preserve white space when converting LaTeX code.
-b3eedee14c5665c4102faa3e886d333196df1d15 ox-odt.el: Fix leading whitespace
-905d6ba8034bc5b1b2fa052d2197e0edce8d4896 ox-odt.el: Add support for JabRef
-df47e82848379451f51a2d156d169b30f0186e53 lisp/ox-odt.el: Use lexical binding
-32618d8025392b411b21062087e7b37b87a254bf lisp/ox-odt.el: Use `cl-lib'
-9ddb3a9f73c9796d1925abe128e50a610386d129 lisp/ox-odt.el: Add kludge to get past compilation errors
-ea8415d73f545671abee66ee6c7e14dd1cd55981 * lisp/ox-odt.el: Remove `:export-block' from backend definition
-b3c2eebf374ff841abea972ff7c090bddc273913 lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
-24574bbac348ae97b3c0539c75ba7ea4e72f3dd6 lisp/ox-odt.el: Improve list tables
-0adf1601c1c38e05a7e3571b9f90510e8a968205 Fix all loose ends with ODT's JabRef exporter
-850a66178d104339336cab725bf5755ea66659c8 lisp/ox-odt.el: Support \cite{} fragments
-9eea0f138ec591312da3ed57d3761c92d0bb19a2 lisp/ox-odt.el: Generate table of figures, listings and tables.
-d471baa13415eceb5bed29ad52a48a28cf8ae4b6 lisp/ox-odt.el: Support document transformation using LibreOffice macros
-364281914f0a41e8f0fca8ba4194ac01b47b9f58 * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
-9148fd363b387c2ba212c2c750b056a4a8c6996c lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
-0b446370bdeac279b65761b550be9ceb3416c568 lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs
-5c243da2d8b297be68c863177b738564df790fe8 lisp/ox-odt.el: Support column width and sizing of list tables
-00c05082e3b80b7463e321ba2426a5a33463731a lisp/ox-odt.el (org-odt--translate-list-tables): Fix regexp
-3355089d0a9b442040da30d0d422110532995ab7 * lisp/ox-odt.el: Minor refactoring
-dd10d04f2cdfdb0e27155c239a3ac094bb0f2e88 lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
-851b588dd80b5d59caa6ea9972cf2e6a54eb3620 lisp/ox-odt.el: In list tables, ignore col alignment cookies
-c397ae4f69e2ba2fefd0c4284cdf97c8d834b873 lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
-7b2484ed4029a0e2f40514117e606c3cfbee11ca lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'
-1329f6524e4f4565a8284d5cc83c1b090a48fb1b Revert "lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'"
-f983aa8ba0c55a4cf4376d941f418c7c5d664611 ox-odt.el, ox-jabref.el: Gracefully handle corner cases
-06ac3257fbd85a0de9ee635ddb674d87a69b3f31 lisp/ox-odt.el:  Handle case where #+ODT_STYLES_FILE is empty
-39b6bc6fa6607b13f9d00e611d04b97bf2369e70 Introduce keywords BIB_FILE and ODT_JABREF_CITATION_STYLE
-499057dafc5e0b31d4d48b5bd61bf76b8b7c5a6b lisp/ox-odt.el:  Allow \cite{} in captions
-58755fa15ddfeb8d985c916ba8bcb9609085e4c3 lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
-1ea275f423493af4d66b1c5c622de9c9d0a00425 lisp/ox-odt.el: Support OpenOffice sections
-a11d67b60d5714525db056c3bf71317214f36265 lisp/ox-odt.el: Handle relative filepaths correctly
-2fe725dfb1986ce0812f5e9957939c7874930f98 lisp/ox-odt.el: Transclude ODT links
-01e3274d5a2e328c824bb9b45ff42e37b893d38f lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
-3b6a2df254135a69acdbe5662aa55dd6a9ad4cc6 lisp/ox-odt.el: Allow customization of headline styles
-283c4683c74410553a257ca17e4d14a9a730f140 lisp/ox-odt.el: Improve support for pagebreaks
-c049488021621286b835af833ac0be551d9e4e7f lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
-73389e5eb4a7e09bc12efaa1f04aabe7da2ba6ac * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'
-bece81cb3b31beed1441fc5c1bb9cdd641b11c1f * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
-dd0f812d99718cc8191b7cb5625461b82a9fb596 * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
-f95fa831a89aba237d03406c4be7e72049a42775 * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
-5e4f6908d458e1422bf7d468b36807ee1206f31b * lisp/ox-odt.el: Fix previous commit
-b5475e18adcb28a1d2420a0b9acecdad34baae68 ox-odt: Rationalize paragraph style names used within tables
-1093b829b91083a07692305d15941ead3c9911bc * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template.  The paragraphs within the cells get styled *not* based on the template, but by "default" rules.
-d791a043724f7d724d15692118777ef1fc7f4b93 * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
-bda0add75d0bf26a4fd0a0db02c3edd61a2f51ec * lisp/ox-odt.el (org-odt-paragraph): Trim whitespace from paragraph contents
-97ce8bd2b1ef3011a36ceecc67c4bb92ce9be9fe * lisp/ox-odt.el (org-odt-headline): Minor Re-factoring
-f8f75e806fb34c00eda4f20a3f2ae87c969e0f50 * lisp/ox-odt.el (org-odt-headline): Minor refactoring
-c1d2f132319aad1846c39215f2cce7387741aeb0 * lisp/ox-odt.el (org-odt-headline): Minor refactoring
-bf7b8c1aed5f6e4904da89dfe7b9301803d7018e * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
-51b8dd673960e621ea9c2f77229c71de967b9eae * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
-417081c96e7a28e581c69885123c8a0f132be5b8 * lisp/ox-odt.el: Allow caption and name in list-tables
-82f3c3a1924149b2d8942e5330ddfb7736f65610 lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
-
 * Features that are exclusive to this branch
 
-#+BEGIN_EXAMPLE
-kjambunathan@debian:~/src/org-mode-ox-odt$ git describe
-release_9.1.14-157-gf8c51feb6
-#+END_EXAMPLE
+#+name: ox-odt-version
+#+begin_src sh :results output replace
+git describe
+#+end_src
 
 #+BEGIN_EXAMPLE
-kjambunathan@debian:~/src/org-mode-ox-odt$ git log --reverse --format=oneline my-common-ancestor.. -- lisp/ox-odt.el >> notes/README.org
+release_9.5.2-371-gfbc7b503a
 #+END_EXAMPLE
 
-be9840d204e37939b354c2361e1a6cbee2bd474a ox-odt: Support for typesetting Description lists as in LaTeX
-92f0ee559d166cb9539f17134373f50cd332cab3 ox-odt.el: Support for pagebreaks, custom paragraph styles.
-6fc6c7468473a7e03f18cbd9fe53cb902c9770ef ox-odt.el: Specify cell widths using `:widths' attribute
-271212243d8923297c494588c9ef5a7c1c7fdb8d ox-odt.el: Support hrule and table attributes in list tables
-d0fe9e23b53dae59e643d6f27d69f7b1f3c17d77 ox-odt.el: Support for page nos. etc as part of xref-es
-1bf39dfd76f8cd29b04495fe698d6b3dab126311 Use a "OrgPageBreakDefault" as default PAGEBREAK style
-b2a15b5c383624e1a2f77f57ceae95d43190b586 ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
-99008bbb89f5e3908ea78a6eacee7710cc461168 Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
-19723fd47abef8272477e91e17489ca7f3842825 ox-odt.el (org-odt-special-block): Preserve case
-4b8ffd3c20b671bae50b8728b3ca74bc283a4308 ox-odt.el: Remove some export options associated to variables
-0a7ced81c391e20c857d8b5ce8eb912bd54e5965 ox-odt.el: Use options instead of hard-coded variables
-ee2d0e43aeebe647b61a7bb9315630c0eeac8ebd ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
-5b1989cba2acb4f4dfbae0ac841331e19de35c37 ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
-11dbb5a3581c95a0b99b30e36963a6ef0b76b36c ox-odt.el: Support `:with-title'
-b577fdd5f2aa38506d2c06314b6841b26cb52986 ox-odt.el: Enumerate footnotes based on body text
-d84859213045a552e12e519c7ed01522d903db88 ox-odt.el: Use scope param in org-export-footnote-* calls
-96b4bbb568a473844b8ed1d6180c5eb38af7f157 ox-odt.el (org-odt-link): Fix custom link handling
-905d6ba8034bc5b1b2fa052d2197e0edce8d4896 ox-odt.el: Add support for JabRef
-ea8415d73f545671abee66ee6c7e14dd1cd55981 * lisp/ox-odt.el: Remove `:export-block' from backend definition
-24574bbac348ae97b3c0539c75ba7ea4e72f3dd6 lisp/ox-odt.el: Improve list tables
-850a66178d104339336cab725bf5755ea66659c8 lisp/ox-odt.el: Support \cite{} fragments
-9eea0f138ec591312da3ed57d3761c92d0bb19a2 lisp/ox-odt.el: Generate table of figures, listings and tables.
-d471baa13415eceb5bed29ad52a48a28cf8ae4b6 lisp/ox-odt.el: Support document transformation using LibreOffice macros
-364281914f0a41e8f0fca8ba4194ac01b47b9f58 * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
-9148fd363b387c2ba212c2c750b056a4a8c6996c lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
-5c243da2d8b297be68c863177b738564df790fe8 lisp/ox-odt.el: Support column width and sizing of list tables
-dd10d04f2cdfdb0e27155c239a3ac094bb0f2e88 lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
-851b588dd80b5d59caa6ea9972cf2e6a54eb3620 lisp/ox-odt.el: In list tables, ignore col alignment cookies
-c397ae4f69e2ba2fefd0c4284cdf97c8d834b873 lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
-39b6bc6fa6607b13f9d00e611d04b97bf2369e70 Introduce keywords BIB_FILE and ODT_JABREF_CITATION_STYLE
-58755fa15ddfeb8d985c916ba8bcb9609085e4c3 lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
-1ea275f423493af4d66b1c5c622de9c9d0a00425 lisp/ox-odt.el: Support OpenOffice sections
-2fe725dfb1986ce0812f5e9957939c7874930f98 lisp/ox-odt.el: Transclude ODT links
-01e3274d5a2e328c824bb9b45ff42e37b893d38f lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
-3b6a2df254135a69acdbe5662aa55dd6a9ad4cc6 lisp/ox-odt.el: Allow customization of headline styles
-283c4683c74410553a257ca17e4d14a9a730f140 lisp/ox-odt.el: Improve support for pagebreaks
-c049488021621286b835af833ac0be551d9e4e7f lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
-bece81cb3b31beed1441fc5c1bb9cdd641b11c1f * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
-dd0f812d99718cc8191b7cb5625461b82a9fb596 * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
-f95fa831a89aba237d03406c4be7e72049a42775 * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
-b5475e18adcb28a1d2420a0b9acecdad34baae68 ox-odt: Rationalize paragraph style names used within tables
-1093b829b91083a07692305d15941ead3c9911bc * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template.  The paragraphs within the cells get styled *not* based on the template, but by "default" rules.
-d791a043724f7d724d15692118777ef1fc7f4b93 * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
-bf7b8c1aed5f6e4904da89dfe7b9301803d7018e * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
-51b8dd673960e621ea9c2f77229c71de967b9eae * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
+#+name: ox-odt-features
+#+begin_src sh :results output replace
+# git log --reverse  --format=oneline my-common-ancestor.. -- ../lisp/ox-odt.el
+git log --format=oneline my-common-ancestor.. -- ../lisp/ox-odt.el
+#+end_src
+
+#+BEGIN_EXAMPLE
+39e5a0ae569edc3af7c160d5e602d1e341cf91a0 * etc/styles/OrgOdtStyles.xml(OrgFormulaBody, OrgFormulaCaptionFrame): Modified.
+3221803c7e98ee09a3433841a63a90b340f31ed0 * lisp/ox-odt.el:  Support for vertical alignment in col-cookies.  Extend FirstRow, FirstColumn etc. styles to `Org'-style table
+0745e92da5404fe519c8cdd4268eb1196d51fce2 * lisp/ox-odt.el (org-odt-link--inline-formula): Position formula number using frame (instead of a right-aligned tab)
+9f68437c55313bec47ee96c525eff866a36d0a37 * lisp/ox-odt.el (ODT_MATH_SYNTAX):  Add support for starmath
+cc29b1951a333099938774fe050aac95d82bcf5a * lisp/ox-odt.el: Minor fix
+1284a61236ab58427e7c65409f2255566d57c093 * lisp/ox-odt.el (ODT_VALIDATE, org-odt-vaidate): New keyword.  New command.
+9046fb2a1ebc35a6c3a1b0f1b043b87a7da04db9 * lisp/ox-odt.el (ODT_PRETTIFY-XML): New export keyword
+1a855d16a73bf2519b0f940737b93635eb96a3ef * lisp/ox-odt.el (org-odt-transform-processes): Add instruction for using `Reload' macro
+715efc99704da96df3a25b8e32cb4a5a2f91ca73 * lisp/ox-odt.el: Enclose standalone image (or formula) in OrgFigureBody (or OrgFormulaBody)
+0d66e2020be566061a37ba0754595420a0ad9f2e * lisp/ox-odt.el: Fix indentation
+64a11b05449657be44afc3db36c071584ab4a3db * lisp/ox-odt.el (ODT_APP): Preparing for export to Google Documents
+0ab33186b4c1b28f98dffa6cd917eb23989e22b5 * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Preserve whitespace in attrs
+a0171d7b069ad2aa67fda062043b0f42b5d76a1f * lisp/ox-odt.el (org-odt-special-block): New block `customshape'
+7ec30b54b7c9f9dc322c84e6642099b4ab561f57 * lisp/ox-odt.el: Honor user option `org-odt-styles-file'
+f948f731a5bf84307665ebd4250ce6b1215c0b55 * lisp/ox-odt.el (org-odt-yank-styles): New command
+12cf8a3640e1afaf4c1ee58a8b45e70d4dbdcfb4 * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix compilation errors
+424c8f54fccbf9121dcd1abf2f43efae2e01aefa * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix earlier commit
+927413d9065a2bd322d28cc76a57be88635b0725 * lisp/ox-odt.el (org-odt-table-suggest-spans): New command to generate `:span' attribute lines for a table. (org-odt--table-compute-spans): Workhorse helper for above command.
+803ae54b30b79bc86d838a94bc8e26c058f6f390 * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): Gracefully handle case where col align is unspecified
+cea0effe1e5866ba16bde9bb48b087c2227e29a9 * lisp/ox-odt.el: Support for `:col-cookies' attribute
+e90550e5df70e6385eb3f70733ba4644cbd9948d * lisp/ox-odt.el:  Add macro keyword-to-documentproperty and keyword ODT_DOCUMENT_PROPERTIES
+4ad25a393cadde87c9bb9e32aab61252af96a2ab * lisp/ox-odt.el (EXPERIMENTAL): Add support for transcluded tables
+1d18f7e49f98e4395af48176b9a13fa87c6f1179 * lisp/ox-odt.el (org-odt-table-style-spec): Fix styling of custom tables
+99f2851a2aae25a07cdb43d71441682b965158e8 * etc/styles/OrgOdtStyles.xml (OrgSubFigure, OrgSubListing, OrgSubTable): New styles.
+4785bf741fc3bd99458f2c042d43733cdfbbbc86 * lisp/ox-odt.el:  Handle the case where inner-frame is anchored to outer-frame
+93b338ae0929748e2d35c94fad926dce668635d4 * lisp/ox-odt.el:  Customize images through `:inner-frame' and `:outer-frame' attributes
+3b94d0c1cd99c500b4b7404d5c2816eb5d8ee446 * lisp/ox-odt.el: Allow `:span' attribute to span multiple lines
+4fd62f078391156d65e28f3c8717b4ec39ebb5a6 * lisp/ox-odt.el (org-odt-experimental-features): Add new feature `short-caption-as-label'.  Short captions are _ignored_ by default. (org-odt-format-label, org-odt--render-image/formula): Honor above setting.
+25cfd37dd102c624bb14815502317da1062509a7 * lisp/ox-odt.el: Now size table columns using `:widths' attribute
+cf528989684f0e061d547d4e7f82bccc42afff45 * lisp/ox-odt.el: Support pagebreak before/after a table
+98cbe76521c66d3bfb6eadacd5626bbeb3cf3951 * lisp/ox-odt.el (org-odt-experimental-features): New
+286a9b789db842cfa3a2fa68e4383bf6101da10c * lisp/ox-odt.el:  Honour LANGUAGE keyword
+774c32566f217a2470fd0d9bc943108ea2bc4ba3 * lisp/ox-odt.el:  Support for spanned row and columns in Org tables
+33eb2bc464affbfdf651611c9f74a572db09544a * lisp/ox-odt.el: Typeset checkboxes with non-ascii / unicode characters
+662b94b9ec9af2d5798fb8900c3819a5ccf09f28 * lisp/ox-odt.el: Fix typesetting of PROPERTIES drawer
+34b8f163b7011c0522a33852619a95b4e2b45aa1 * lisp/ox-odt.el (org-odt--translate-list-tables):  Support for list tables in LaTeX and HTML export
+f022150f3a046511dba18a509de621ec35daf075 * lisp/ox-odt.el: Fix file corruption with image/formula in headlines
+839df08c56915a9981ecffeb23a53b0475416631 * lisp/ox-odt.el (org-odt-headline): Fix double counting of formulae
+cd43292473595f812b467b7e976e54901de57f27 * lisp/ox-odt.el (org-odt-paragraph): Fix styling of center and quote blocks
+9333dfb1820f45067ce3e32fb7d9ed1b7a31bd8e * lisp/ox-odt.el (org-odt-link): Properly export urls that have `&' etc in them
+80beda3722a63a459ef07eff842767f291735fc0 * lisp/ox-odt.el: Fix style of todo keywords in TOC
+68dd0a916a3c01b5d654136077fe79a217f12662 * lisp/ox-odt.el (org-odt-endnote-regexp): Support for generating endnotes
+d202ed49a54061768235613a3195465d6d8500a8 * lisp/ox-odt.el: Honor `:style' attribute of `quote' blocks
+6daba74ce6d7d8d32735ca27e8725f1a2fbe6a42 * lisp/ox-odt.el (org-odt-write-styles-file):  Re-define page layouts with ease
+8ee4a48fd6cd96f065882e75d2ff56f9aefef23d * lisp/ox-odt.el (org-odt-write-styles-file): Minor change
+e7c42f87a9c4f1e5598dd863b455ebf898eab8cd * lisp/ox-odt.el:  More fixes issues with nested tables
+de834e34735556501a5fe1305c61bd91a68ee2bd * lisp/ox-odt.el (org-odt--translate-list-tables): Fix bug with nested table
+707be1660415a4702d32ba3bbef560eb02efb7b3 * lisp/ox-odt.el (ODT_PREFERRED_OUTPUT_FORMAT): New in buffer option
+a3617844733daf5b643d2e6e20aab183a8a7b33a * lisp/ox-odt.el (org-odt--translate-list-tables): Continue earlier commit
+944fbad652a40005abe76215cab1a8e5bb5045a6 * lisp/ox-odt.el (org-odt--translate-list-tables): Handle nested list-tables
+0d23ca80c0ceb59a49f283a0664d1bab738e10e6 * lisp/ox-odt.el (org-odt-write-mimetype-file): Fix file corruption
+ae1bd5071faf6bba47f6825a6dfb3699f52c2610 * lisp/ox-odt.el (org-odt-item): Honor start counter of a list item. See (info "(org) Plain lists").
+a04d551f096a05910b10a93818473d0a3c4c9064 * lisp/ox-odt.el: Center the image in relation to it's caption.
+aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165 * lisp/ox-odt.el (org-odt-link--inline-image): Remove cruft
+6866dda1f0a4d923463f59208ceebba301e382ec * lisp/ox-odt.el:  Image captions can now be wider than the image width
+7110e5cd5c6f1e5b2d52e702b125629cec825924 * lisp/ox-odt.el:  De-couple theme used for exported src blocks from the Emacs theme in use
+c16ac77343fded0e69f5a5f1f45c51d33a69d278 * lisp/ox-odt.el (org-odt--render-image/formula): Use `Standard' paragraph style for inner frame
+fd206748fcb7ae4db0b126128ed3296226b95ee3 * lisp/ox-odt.el: Handle subtitle
+3e00989833f3d193ed4b6a9c09ef77cb554a616e * lisp/ox-odt.el: Now export to OpenDocument master file with `C-c C-e o m'
+46183e9182275562fffd1c878aff679c77d4cf63 * lisp/ox-odt.el (org-odt-write-meta-file): Handle date correctly
+0a8a1161a0b9d58b048ddc65c04ada4692efe623 * lisp/ox-odt.el: Add `org-odt-export-{to|as}-odt-backend'
+49bf77c6577746550ba5a21bf8293ce214f558ac * lisp/ox-odt.el:  Implement (i) body-only export and (ii) export to buffer
+4631820f3737194ff799029c87d6889bbea6b656 * lisp/ox-odt.el: Improve numbering of source blocks
+72be87ea8a85f0658b1739744fd096db6111e2a4 * lisp/ox-odt.el: Prettify XML files, if needed, before they are written to disk
+c18b2827d763eedca10b704ad6290d17179713b4 * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword
+7c2c3d99aa97ee1ef3febd176f28024c14a28cfd * lisp/ox-odt.el: Fix earlier commit
+769de895f72045c656dcded1345bc768b6fd5aff * lisp/ox-odt.el (org-odt-template): Simplify
+cc1a80edc104b68b423fe1c3fcc04fee6ba8b725 * lisp/ox-odt.el (org-odt-manifest-file-entries): Remove var
+b86a804927a12f7339386cb6c85e7ce8ea81759c * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant
+7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5 * lisp/ox-odt.el (org-odt-automatic-styles, org-odt-object-counters): Remove these vars
+9cb0ab9ccea64100b7b3b7f9caebda676bd57cde * lisp/ox-odt.el (org-odt-text:section): Renamed from `org-odt-format-section'. Change signature. (org-odt-link, org-odt-special-block, org-odt-table): Related changes.
+d9518ac902510bc3d5f2030620ecda6cce32d50c * lisp/ox-odt.el (:odt-object-counters): New
+b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4 * lisp/ox-odt.el: Remove `draw:name' attribute in `draw:frame' element
+1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d * lisp/ox-odt.el: Remove vars `org-odt-embedded-images-count' & `org-odt-embedded-formulas-count'
+904060258b4946841d28c946b908fb371d3295b8 * lisp/ox-odt.el: Gracefully typeset formula that has *no* caption, but only a label
+f6ad3ff52dea8f6cf0ea45f4571a5b87cf41f11f * lisp/ox-odt.el: Translate latex fragments in caption
+979ae8d43fd078fe0dc6f715e7a380070969141b * lisp/ox-odt.el: Table caption goes above the table
+709bc8312dc950df95057bcb3b937feabbdfde1b * lisp/ox-odt.el: Misc. change
+c8116be0a69849fc68d51646ab97dcea0874d90f * lisp/ox-odt.el: Support for category mapping (from say, a table to figure)
+aa67928c5e2dbb0214fd5adbc8d1fcf93481def1 * lisp/ox-odt.el (org-odt-caption-and-numbering-settings) (org-odt-caption-and-xref-settings): Add entry for `:SUBENTITY'. (org-odt-template, org-odt-format-label): Handle `:SUBENTITY'. (org-odt--get-captioned-parent) (org-odt--element-secondary-category): New helper routines.
+877bf74c7620c360e6ceecc751c1165ee0bc8493 * lisp/ox-odt.el: Modify enumeration logic in anticipation of support for subentities
+d9aef3b19002a764f0c40e707ea8c1092a6aeb57 * lisp/ox-odt.el: Enumerate src-blocks or tables within a `list-table'
+9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff * lisp/ox-odt.el: Replace `org-odt-category-map-alist' with `org-odt-caption-and-numbering-settings'
+1f4740bb86e2d108b31355a6f0bf5a4980f791b9 * lisp/ox-odt.el: Preparing for adding support for sub-figures etc.
+40ac60898d5ba787aecc46f8f11f1e2f936173c5 * lisp/ox-odt.el: Handle the cases where styles and/or content template file are left unspecified
+1af756b42dd160f795fbf75beab6956627ba5e26 * lisp/ox-odt.el: Handle formula label correctly
+73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2 * lisp/ox-odt.el: Rename some variables for consistency
+bc0f3cc2362968f499883a7789c375cac5934fc5 * lisp/ox-odt.el:  Paragraph style to be used for captions is now configurable
+8dc38db76f6ab27b656c29bda0077a2be550a25c * lisp/ox-odt.el: In a captioned image / formula, caption and image go in paragraphs of their own
+d8c0f453b575a3482f8b7c34cc9de1561f235d14 * lisp/ox-odt.el: Honor `:caption-position' in `org-odt-caption-and-xref-settings'
+81ff8979f27b3532f9f72d45a0b4ff29235a6a44 * lisp/ox-odt.el (org-odt--element-category): New
+b1e70e37a81e3bcd21f9af1393b1cc1278e370b3 * lisp/ox-odt.el: Remove `org-export-solidify-link-text'.  Use `org-export-get-reference' instead.
+9d754c0b1ada13197c0ea86bab7b2effcea0cbdd * lisp/ox-odt.el: Remove `function' around lambda forms
+e652fc529de83ff8173bec3350737222fed36c47 * lisp/ox-odt.el: Introduce paragraph blocks.
+072c1f54863a1eeef07d12510e18c9dbb585a803 * lisp/ox-odt.el (org-odt-data-dir): Remove it
+945e6831343fd8e8b355aca970ecee6ba99368f3 * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE, ODT_EXTRA_IMAGES): Change syntax and/or semantics
+f4237879c04e86a7cc6e109ab6776f529e69bfae * lisp/ox-odt.el: Replace `mapc' with `dolist'.  Also some whitespace cleanups.
+44a720dca7b647352eedcecf9f1120818058139e * lisp/ox-odt.el (ODT_EXTRA_IMAGES): Use this to specify image files referenced by styles.xml
+78b6a1258305cd5c87e8b6ec6082d6c716c8deb2 * lisp/ox-odt.el (ODT_EXTRA_AUTOMATIC_STYLES, ODT_MASTER_STYLES): Use these options to control page styles and layouts
+6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3 lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update Package-Requires to 9.2.1
+a34abc398845af18d18f7a46b930290fd90f9206 * lisp/ox-odt.el: Handle cite fragments even when the parser doesn't support cite objects
+b464b61c733e4e667703ab4b9e9581f274ccd420 * lisp/ox-odt.el (org-odt-hfy-face-to-css): Honor background color
+22ca6417cd038e0fe7aad5736f8fb8dccb81c453 * lisp/ox-odt.el (org-odt-transform-processes): Fix :type of this option
+ecbaf18a15be3179e82ea10c3332b85e825350cf lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
+2396344595c3a35df809e0c1d4f3f1f3996c9a6f * lisp/ox-odt.el: Allow caption and name in list-tables
+40d3e9ee84165572a1e52474a08b094594c7025d * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
+2e9409632bde8e65af02dea55a33fae4075cdd2d * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
+ef951e32f4d852dafe595e81b479dd0e071ecd49 * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+4b98f0da058f61e10470218748fb69170b398360 * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+6463b26b31c7a6eb33024da878c4176698a36cc8 * lisp/ox-odt.el (org-odt-headline): Minor Re-factoring
+25787b1f2800455d2ecf368aa20c7212132f7e19 * lisp/ox-odt.el (org-odt-paragraph): Trim whitespace from paragraph contents
+07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259 * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+6941f81951c2a9fb5ebb098376982bbae0448f6f * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template.  The paragraphs within the cells get styled *not* based on the template, but by "default" rules.
+252d671d9eb01424809898ba435095f6ee1dcf38 ox-odt: Rationalize paragraph style names used within tables
+208a38f5e21e4d2ebd3fd6e37ea4988897203002 * lisp/ox-odt.el: Fix previous commit
+294f8fa18913e0f90e0889c120e2656bb6ee0122 * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
+c77f0da167e918e62f5479c56991b4fe0868052b * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
+4235a4bc89685f8a61c8d7f7271aeb1d71d0c526 * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
+53e9160bd128135050564ccc86d24f52ba48f80e * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'
+d01d4129c81172c77d761b4ddae7741d7bc780d1 lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
+9f9a39edf8d86c1540e09301b5dae27348578ced lisp/ox-odt.el: Improve support for pagebreaks
+51a23cf9c8b4b32bf8ca26ce516ff7357ac5842b lisp/ox-odt.el: Allow customization of headline styles
+3480c66f3fad99fd04f3eaf8fd5cf88a62f7f626 lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
+b37d9b2a72d3a6a83068b93b81ced6707b80182c lisp/ox-odt.el: Transclude ODT links
+145f1c3a35527087bc267d2b37b1bdd77bf02d90 lisp/ox-odt.el: Handle relative filepaths correctly
+90045053d36bcf3cb5fc2ccdc546700821f2f9f5 lisp/ox-odt.el: Support OpenOffice sections
+73a299d46cf0aa231b42eb7730cf8001b49c67d9 lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
+5c05cec684524cc5595215d9810762f773d5e288 lisp/ox-odt.el:  Allow \cite{} in captions
+dbe3995d5e1f14c03b82fb724321ccf7c9b89727 Introduce keywords BIB_FILE and ODT_JABREF_CITATION_STYLE
+29abb97cf5fdaa730df8cb1d29a292fff8e607b7 lisp/ox-odt.el:  Handle case where #+ODT_STYLES_FILE is empty
+7e25aae7158194bd4d76568485b0c3b9b43d0a4e ox-odt.el, ox-jabref.el: Gracefully handle corner cases
+3557eb09dd5c59aed64151391ebac66ec8aa75cd Revert "lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'"
+ce9906282ce6475eb869fd59baff54bc52b3217e lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'
+4560eb5e429b7f30eb0a9bb47c2463815434988f lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
+0f2ae078ec1e323fe5952e7a173605db2c4f0c78 lisp/ox-odt.el: In list tables, ignore col alignment cookies
+600b075a30ba414be077d1213c434374568d99ec lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
+9a2eb32660b9b2f941549b00eed1f84f8c50f56b * lisp/ox-odt.el: Minor refactoring
+2d9083f998fe36f0a48131c6e2f1402d1693e089 lisp/ox-odt.el (org-odt--translate-list-tables): Fix regexp
+55f83d4e531ebca43bcac9c428df586a823f108a lisp/ox-odt.el: Support column width and sizing of list tables
+157b5efe9db4bb260c0ec3147d8149ae867528fb lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs
+3141527b8e7649b05d02af77c52a56510d766763 lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
+3ddc198fad274de3d47f6965de239bf101056a11 * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
+0349b7d58ad45c7295d6a4d0a4645479f0bf5f5a lisp/ox-odt.el: Support document transformation using LibreOffice macros
+88a044f90df0807d602d70b2f2838787799ffea4 lisp/ox-odt.el: Generate table of figures, listings and tables.
+2183227e6b7b91e2f14d4ef260000fa28abe7bd1 lisp/ox-odt.el: Support \cite{} fragments
+e44643e8c14a8cdc48a701276afc27e2b8521c33 Fix all loose ends with ODT's JabRef exporter
+1197cde5e87e3c447bdfd00507ee12e9ee7ec615 lisp/ox-odt.el: Improve list tables
+87dfb928f899db9259f382ccef312b0ca5214c2a lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
+3c0b2d4258580a4b6259998939eebefd52b2b5a4 * lisp/ox-odt.el: Remove `:export-block' from backend definition
+5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2 lisp/ox-odt.el: Add kludge to get past compilation errors
+348b08b6d64fbcb7d664929f80fb0f04ebe25c73 lisp/ox-odt.el: Use `cl-lib'
+5e25808b5292eff445a676394721d9dfe9858734 lisp/ox-odt.el: Use lexical binding
+600a30790eb868524f9d230a951c7b64c376d39e ox-odt.el: Add support for JabRef
+137a793be614aa9c15216946819ea0ac94ede48f ox-odt.el: Fix leading whitespace
+13e4ed94ddb3c0eb1e0f00c0769d451c0de36c9d ox-odt.el: Preserve white space when converting LaTeX code.
+7018bab4a97432485391991729fbf1f0fdbec71e ox-odt.el (org-odt-template): Don't create empty paragraphs
+f141bfa086e828d91f41ca3d8ea034bcaca665a3 ox-odt.el (org-odt-link): Fix custom link handling
+6a057013030dcf24703d0524fe0d720cf3a6b106 ox-odt.el: Use scope param in org-export-footnote-* calls
+6b57ccfb03251a22cfb028efb5d766a2602e815a ox-odt.el: Update copyright years
+ec8e10c3620139f01680fb65ac483635d7a869f4 ox-odt.el: Enumerate footnotes based on body text
+1ebf7288358eb8fdb8391f648ee16409ff2c0893 ox-odt.el: Support `:with-title'
+caf11f92c303581691160001e2530d33eb67789c ox-odt.el: Support `:with-title'
+8411bbefc066c9f4cc2976e14dff58aa1af097e5 ox-odt.el (org-odt-link): Use `org-export-custom-protocol-maybe'.
+0fd769033635af5425144ba97569cf553aef186c ox-odt.el: Fix exporting radio link with missing radio target
+075a71da7486180df0eedc29384798c86b6f7d75 ox-odt.el: Misc. changes
+054175b96e5a65c4e9fa7731c2059ecc51657fe0 ox-odt: Implement `org-odt-format-{headline, inlinetask}-default-function'
+b00162b45bc730d0a97ce0fdda4c1a3a2220aaf1 ox-odt.el: Use options instead of hard-coded variables
+3d4f6e2ed7a50628d5f1f0b0bb0589e7268a36a8 ox-odt.el: Remove some export options associated to variables
+9463904c714c47b310c2b7f48950c363e496b14b ox-odt.el (org-odt-special-block): Preserve case
+823290f9ebe293316a0a6d3f989949c12f721bec ox-odt: Fix invocation of `org-format-latex'
+06067fbd8bcd4d2059f9c756b942a15177975492 ox-odt: Use `org-element-lineage' instead of `org-export-get-genealogy'
+0907fe182bb223804c28d2dddc5594900586ffe4 Correctly check for standard-value of `org-odt-caption-and-xref-settings'.
+4aff9c9a697c6335d63add6c0dfbcf5d73629b3d ox-odt.el: Support for custom para style within SPECIAL-BLOCKs
+5d1452b669eb22b06420805292d10c250f61dfd8 Use a "OrgPageBreakDefault" as default PAGEBREAK style
+8a2fc2f324eb980f50ea219f41b944624f983262 ox-odt.el: Support for page nos. etc as part of xref-es
+2bde8d3ea1c82151cb79b74d485101d6f817eeb7 ox-odt.el: Cope with empty title
+b65818e4126517c4ad8d832bd28e953984e8bfa4 ox-odt.el: Fix cell borders
+e6175f48a56d0124910ee87e7721e53740837493 ox-odt.el (org-odt-schema-dir-list): Add git and elpa paths
+5148d2b355df876cdaf07b73f2be17001371151b ox-odt.el (generated-autoload-file): Don't set it
+dc3f8b217dc47e7f89697dc3acc718b0ee5d0202 ox-odt.el: Fix paths of data and styles directories
+22387862d78c39c08a023761109183a0591c5228 ox-odt.el: Fix issues seen with ODT files having multiple images
+472985f824b52e66322161d5cf4f209bf028300d ox-odt.el: Explicitly set coding system of XML files to 'utf-8
+6d814d9957b5a502a457e8994eccf4ac761009f9 ox-odt.el: Support hrule and table attributes in list tables
+6bd6b42fbd33f5b69ed43b94fdd016df4ef25ba5 ox-odt.el: Don't allow table row to split across pages
+762dd52f011dd563c8716b06f570d0a06c541045 ox-odt.el: Specify cell widths using `:widths' attribute
+f4db2240d05b0fb554904b76106639c652bf9198 ox-odt.el: Support for pagebreaks, custom paragraph styles.
+5334d5ae6a341bc827a8b3135c136fdaa1918ff3 ox-odt.el: Fix handling of ODT attributes
+38a345e320db558a65879cfa8cbe340d1e00253e ox-odt: Support for typesetting Description lists as in LaTeX
+3e11c76f099392cc4d2c205254d42264a9efca83 Revert "Fix ox-odt bugs"
+0b93248819cf882c2c8fc45c26e6d723430189fb Revert "ox-odt.el (org-odt-table-style-format): Use %s for inserting the rel-width property as a string"
+6d7fec56b3202662f40ed0db85581ecec5a95983 ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
+16c8187db1df91086a188f1e21ff4e251f38b695 Backport commit d5f6ff99c from Emacs
+f584d37a67c7e199957c040973dd85e9606e9469 Update copyright year
+5dfbe46b1e1ebeeaa4ca15cedf3cf8345de64f39 ox-odt: Fix typo
+9056d2b706f102a01907c96085d1354577c91d45 ox-odt: Fix last commit
+bea916d9f62ab2e251c9d3be021fb2243364686f ox-odt: Improve styles file handling
+bfb946c7daacf5f7226ed1019370570c49a5409a ox-odt: Read list values in ODT_STYLES_FILE
+17edaf8c14e9999f87b2a038ababb8d9dcf887d3 "src block" -> "source block" in documentation and comments
+30498ef932bc35c26e3e58278f4987a67480b446 ox-odt: Fix `org-odt-template' styles file retrieval
+ec8590d5e29bbdc5d58c623e8bac5e40eb68b27d Backport commit 69107f347 from Emacs
+b289a65be71cc5ec8df393928f84df90787ced55 Use https for links to orgmode.org
+3e1641ef0aa01ae39f90a3cb532136484de617bb Update copyright years
+08fa2ae056e4f34bf6960098cafadd72aa811bfa Fix some defcustoms types
+adfbfd42b2982ca8865c9f9e289d888fe294a8b1 Backport commit a89f0b6f3 from Emacs
+827af5987348665edd4a632e827925b947c00f96 Fix links without contents in table of contents' entries
+ff0dcf52a5e258af82f3eaf1f8ec3b7cd022cb6b Backport commit bc511a64f from Emacs
+6496d0ca956b91de7204989111db826644eaac30 Correct defcustom version information
+845138473e53e11f4ee0ce4385701ace9ff35337 Merge branch 'maint'
+0a77f042ea2bd803b5575720289b238d11eeeb84 ox-odt: Small fix
+c01b62305e4bd69a26da9838ce4a86a73f01c92e Merge branch 'maint'
+18a48b5861a6d90e020d4d0b47cb15654e85d7a7 Fix ODT priority styling
+09e61233ed5a24687e20b7dc18a1c985d423fb24 Merge branch 'maint'
+7b065b1d0a0811304a7599b9feb1c239df1a48db ox-odt: Include #+latex_header when converting LaTeX to PNG
+7278899697ef146ed7048245a9a75a09922f46e0 Merge branch 'maint'
+7c710f6f57ab7dcc539511cc9c51ee350a966fce Change :version in defcustoms from "25.2" to "26.1"
+400d46e547d265623e8af75dc436b67526def04c Merge branch 'maint'
+1749dfe091308d33799de20fb839cb3604afacc2 ox-odt: Fix verse environment
+0d3683f2cd5490f213b471385d76479f819e2f41 Merge branch 'maint'
+713f785017e908333caddd244fcc685745e78539 Update copyright years
+3469830e3d95c6176fb91017463c5ef4140dd1c0 ox-odt: Fix typo
+5ffb373a2ca6833617e344154c3dc1b877ec4784 Implement `org-export-insert-image-links'
+b7cb9b54d53fa4e246138791ccc863ae8f927860 Backport commit eeecac7 from Emacs
+73694b21d7233c88bbd6e67eefaf8f4c321e4863 ox-odt.el: Fix LaTeX formulae in opendocument exports
+1a88cf920e5090c311f77ba3f74183aa51253fb5 org-element: Improve support for pseudo objects and elements
+0c0bc8419093a1034ae5e1cdb2a63b04ae8267fc Change "Org-mode" into "Org mode"
+d9070419119cf6b19f2f471aa2eb81ec3d9b0d0f Change :version in defcustoms from "25.1" to "25.2"
+140aacbf2f57e207a33417bb446060de52a4b312 Use ‘eq’ instead of ‘equal’ for symbols
+48e7f17bc6df8bf7d6ed8d34c849beefb7262dfc Use assq instead of assoc with quoted symbols
+ab21e2b72d504c13e035757a4765d02f8e938968 Use file-name-extension where appropriate
+67c29aa1e8b1ffd4dcfb0d86822e42a8139cf203 ox-odt: Remove obnoxious messages when compiling library
+c4da20a2f33a3e859df6a5d9d8f95e3a46e453ec Silence byte-compiler
+2b99f910e1c0d1f4701772f9bedf66894e16c403 ox-odt: Use cl-lib
+72461eaeaf0317a211a01d31f85eeed0d0ab7b0a Use `string-match-p' instead of `org-string-match-p'
+b2091f6d75ee10928b12d115dc3286e479f303d5 Move obsolete declarations into "org-compat.el"
+ee7aa9878f4ae76fce63be763e7825c654719f1b Deprecate `org-no-warnings' in favor of `with-no-warnings'
+0ac099a6f8f58770c583de450a665be755a95b60 Remove final parts of XEmacs compatibility code
+af8e3d84ee18609a83e03af44efc5601700d57fc ox: Provide offset to [+-]n in SRC/EXAMPLE export
+b2411769cfa3bd5267b08bb266ac502ec58a786e Merge branch 'maint'
+21ef130752bdfb0ae841d53dd1458b5a505236af ox-odt: Fix styles location
+16dbf6ded6f79c0b7797856004b0ebc5fe49fb04 Merge branch 'maint'
+07ee690dce504c6082d5ebbe90e6cf4478e07586 ox-odt: Fix End of file during parsing error
+23ca3fa100c2fd8e3dab839fba5ca205e32d83d5 Merge branch 'maint'
+a4edee4069007591d0159df518936a2699123c6e org-compat: Update font-lock-ensure alias
+6345de2d05412113954efd6881d7d5e5a29586cd Merge branch 'maint'
+6bc48c5f4124a56b84e87b04020d255d126d2aa8 Update copyright years
+54318add34f09ff39d3fd034a4c1a89f60fd8759 Change export block syntax
+07e16c2fc5687de5e1761bbf4ba3cf1777de15eb Use setq-local and defvar-local.
+4ca1179c9e9c707267ac3738cc7c8442001b204b ox-odt: Use lexical binding
+cc0d491739b6c81282dfd86330f646d3e4e92b60 Backport commit ab11a1c from Emacs master branch
+c86a10b0bcc930379ebc9364e6e9e22ba082a64f Backport commit 284c470 from Emacs master branch
+c290921a0d3a90d7efb702e89c955421a6090116 ox-odt: Prevent internal links to target table of contents
+5adb8bcfa2d3611eaa6c69aab23103e60d28bd57 ox-odt: Tiny fix
+17a225621c73b4990bd4458924a249aa0a11650e ox-odt: Small refactoring
+8d00cd896614a6e794765bdcfc7ee9bedd6dc075 ox-odt: Fix footnote export
+3a81c7ee6f392463db1db4b3e77a0e0411032382 Backport commit 0c856a2 from Emacs master branch
+6f9184a294e4e7914041c2ae42ef147d11e9ebec Merge branch 'maint' into backport-master
+6b04312e85f04219aeaa7c7f9669a51ec2cbec17 Backport commit 96794d2 from Emacs master branch
+0cec91d0392c06cc6504b1cbd63d0a8fd3974789 Backport commit b884ff3 from Emacs master branch
+c115c7b4e86b68fe4f903636252a8b22b46a044f org-compat: Use different font-lock-ensure alias
+d81e6b52b7a02bb3401f2f17dedc746b63eeecc7 Backport commit 6711a21 from Emacs master branch
+690e25d9323276ccf013197c71619dbfe1382baa ox-odt: Fix defcustom keywords
+8e89c0e3b40bb2a140bbbb85def17b1c190eb158 ox-odt: Allow attaching SVG images by default
+aad7dd24864f3ce988a67061a391d85e649aa375 ox-odt: Fix bug links without labels.
+e0567c9cacc3a13d21a24ba3058d653a335ae9cb Export back-ends: Use `org-export-file-uri'
+459033265295723cbfb0fccb3577acbfdc9d0285 Export back-ends: Use `org-export-get-reference'
+a780080fcf38ca6412658323eae9367a17a12bdf ox: Add #+SUBTITLE property in some backends
+79c0aa21ca2657f2ea7272040bce3ff4754bab1b ox: Remove #+KEYWORD and #+DESCRIPTION
+e9fd19968b69f3acd102c393336d9d93a72de624 ox: Always insert creator in metadata
+16cea3d7b74e34945355cf434a684890f4c52cb2 ox: Remove `comment' special value for `org-export-with-creator'
+fd8c843692e4c487bd03ed0d71b0bac69112b335 ox-odt: Fix bugs in metadata generation
+#+END_EXAMPLE
