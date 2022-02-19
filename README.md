@@ -24,7 +24,7 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
 
 See [Top (OpenDocument Text Exporter for Emacs’ Org Mode)](https://kjambunathan.gitlab.io/org-mode-ox-odt/).
 
-If you are an existing user of OpenDocument exporter, start with [What is New (OpenDocument Text Exporter for Emacs’ Org Mode)](https://kjambunathan.gitlab.io/org-mode-ox-odt/What-is-New.html#What-is-New)
+If you are an existing user of OpenDocument exporter, start with [What is New (OpenDocument Text Exporter for Emacs’ Org Mode)](https://kjambunathan.gitlab.io/org-mode-ox-odt/What-is-New.html).
 
 ## Getting Help
 
