@@ -70,7 +70,9 @@ user of the stock Emacs backend, and want to learn about new features
 
 - Maintainer :: Jambunathan K <kjambuanthan at gmail.com>
 
-- BugReports :: https://github.com/kjambunathan/org-mode-ox-odt/issues
+- Bug Reports :: https://github.com/kjambunathan/org-mode-ox-odt/issues
+
+- Help, Questions & Suggestions :: https://github.com/kjambunathan/org-mode-ox-odt/discussions
 
 - License ::
 
@@ -78,7 +80,7 @@ user of the stock Emacs backend, and want to learn about new features
 
   - ELPA URL :: https://kjambunathan.github.io/elpa/
 
-  - User Manual (online HTML) :: https://kjambunathan.github.io/org-mode-ox-odt/
+  - User Manual (online HTML) :: https://kjambunathan.gitlab.io/org-mode-ox-odt/
 
   # - User Manual (PDF) :: https://kjambunathan.github.io/org-mode-ox-odt/org-odt.pdf
 

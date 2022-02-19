@@ -144,8 +144,11 @@ Author
 Maintainer
      Jambunathan K <kjambuanthan at gmail.com>
 
-BugReports
+Bug Reports
      <https://github.com/kjambunathan/org-mode-ox-odt/issues>
+
+Help, Questions & Suggestions
+     <https://github.com/kjambunathan/org-mode-ox-odt/discussions>
 
 License
 
@@ -154,7 +157,7 @@ Downloads
           <https://kjambunathan.github.io/elpa/>
 
      User Manual (online HTML)
-          <https://kjambunathan.github.io/org-mode-ox-odt/>
+          <https://kjambunathan.gitlab.io/org-mode-ox-odt/>
 
 
 File: org-odt.info,  Node: Structure of ELPA tar,  Next: Getting Started with ODT export,  Prev: Project Summary,  Up: Top
@@ -1776,75 +1779,75 @@ File: org-odt.info,  Node: What is New,  Prev: Variable Index,  Up: Top
 Tag Table:
 Node: Top75
 Node: Project Summary4193
-Node: Structure of ELPA tar4873
-Node: Getting Started with ODT export6355
-Node: Pre-requisites for ODT export6670
-Ref: Pre-requisites for ODT export-Footnote-17644
-Ref: Pre-requisites for ODT export-Footnote-27688
-Ref: Pre-requisites for ODT export-Footnote-37732
-Ref: Pre-requisites for ODT export-Footnote-47778
-Ref: Pre-requisites for ODT export-Footnote-57825
-Ref: Pre-requisites for ODT export-Footnote-67872
-Ref: Pre-requisites for ODT export-Footnote-77919
-Ref: Pre-requisites for ODT export-Footnote-87965
-Ref: Pre-requisites for ODT export-Footnote-98013
-Node: Installation8189
-Node: Configuration8922
-Node: ODT export commands11091
-Node: Exporting to ODT11296
-Node: Extending ODT export11927
-Node: Automatically exporting to other formats12928
-Node: Converting between document formats13606
-Node: Applying custom styles14286
-Node: Applying custom styles through keywords14563
-Node: Skeletal structure of stylesxml15070
-Node: Skeletal structure of contentsxml16018
-Node: ODT_EXTRA_STYLES16810
-Node: ODT_AUTOMATIC_STYLES17917
-Node: ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES19163
-Node: Applying custom styles through a style template26233
-Node: Applying custom styles - the easy way27051
-Node: Using third-party styles and templates28240
-Node: Links in ODT export28895
-Node: List Tables in ODT export29533
-Node: Examples30663
-Node: A list table with rules column size and alignments31400
-Node: List table with table and figures33269
-Node: List table can contain other tables34000
-Node: Tables in ODT export34866
-Ref: Tables in ODT export-Footnote-137037
-Node: Images in ODT export37130
-Node: Embedding images37435
-Node: Embedding clickable images37820
-Node: Sizing and scaling of embedded images38319
-Ref: Sizing and scaling of embedded images-Footnote-140056
-Node: Anchoring of images40285
-Node: Math formatting in ODT export40850
-Node: Working with LaTeX math snippets41290
-Ref: Working with LaTeX math snippets-Footnote-143304
-Node: Working with MathML or OpenDocument formula files43480
-Node: Labels and captions in ODT export44061
-Node: Literal examples in ODT export45503
-Ref: Literal examples in ODT export-Footnote-146415
-Node: Advanced topics in ODT export46530
-Node: Configuring a document converter47279
-Node: Working with OpenDocument style files48672
-Node: Factory styles49226
-Node: Overriding factory styles50624
-Node: Creating one-off styles52109
-Node: Customizing tables in ODT export54332
-Ref: Customizing tables in ODT export-Footnote-155023
-Node: Custom table styles - an illustration55127
-Node: Custom table styles - the nitty-gritty56533
-Ref: Custom table styles - the nitty-gritty-Footnote-160198
-Ref: Custom table styles - the nitty-gritty-Footnote-260290
-Node: Validating OpenDocument XML60637
-Ref: Validating OpenDocument XML-Footnote-161684
-Node: Main Index61744
-Node: Key Index63440
-Node: Command and Function Index63739
-Node: Variable Index64450
-Node: What is New66559
+Node: Structure of ELPA tar4972
+Node: Getting Started with ODT export6454
+Node: Pre-requisites for ODT export6769
+Ref: Pre-requisites for ODT export-Footnote-17743
+Ref: Pre-requisites for ODT export-Footnote-27787
+Ref: Pre-requisites for ODT export-Footnote-37831
+Ref: Pre-requisites for ODT export-Footnote-47877
+Ref: Pre-requisites for ODT export-Footnote-57924
+Ref: Pre-requisites for ODT export-Footnote-67971
+Ref: Pre-requisites for ODT export-Footnote-78018
+Ref: Pre-requisites for ODT export-Footnote-88064
+Ref: Pre-requisites for ODT export-Footnote-98112
+Node: Installation8288
+Node: Configuration9021
+Node: ODT export commands11190
+Node: Exporting to ODT11395
+Node: Extending ODT export12026
+Node: Automatically exporting to other formats13027
+Node: Converting between document formats13705
+Node: Applying custom styles14385
+Node: Applying custom styles through keywords14662
+Node: Skeletal structure of stylesxml15169
+Node: Skeletal structure of contentsxml16117
+Node: ODT_EXTRA_STYLES16909
+Node: ODT_AUTOMATIC_STYLES18016
+Node: ODT_MASTER_STYLES and ODT_EXTRA_AUTOMATIC_STYLES19262
+Node: Applying custom styles through a style template26332
+Node: Applying custom styles - the easy way27150
+Node: Using third-party styles and templates28339
+Node: Links in ODT export28994
+Node: List Tables in ODT export29632
+Node: Examples30762
+Node: A list table with rules column size and alignments31499
+Node: List table with table and figures33368
+Node: List table can contain other tables34099
+Node: Tables in ODT export34965
+Ref: Tables in ODT export-Footnote-137136
+Node: Images in ODT export37229
+Node: Embedding images37534
+Node: Embedding clickable images37919
+Node: Sizing and scaling of embedded images38418
+Ref: Sizing and scaling of embedded images-Footnote-140155
+Node: Anchoring of images40384
+Node: Math formatting in ODT export40949
+Node: Working with LaTeX math snippets41389
+Ref: Working with LaTeX math snippets-Footnote-143403
+Node: Working with MathML or OpenDocument formula files43579
+Node: Labels and captions in ODT export44160
+Node: Literal examples in ODT export45602
+Ref: Literal examples in ODT export-Footnote-146514
+Node: Advanced topics in ODT export46629
+Node: Configuring a document converter47378
+Node: Working with OpenDocument style files48771
+Node: Factory styles49325
+Node: Overriding factory styles50723
+Node: Creating one-off styles52208
+Node: Customizing tables in ODT export54431
+Ref: Customizing tables in ODT export-Footnote-155122
+Node: Custom table styles - an illustration55226
+Node: Custom table styles - the nitty-gritty56632
+Ref: Custom table styles - the nitty-gritty-Footnote-160297
+Ref: Custom table styles - the nitty-gritty-Footnote-260389
+Node: Validating OpenDocument XML60736
+Ref: Validating OpenDocument XML-Footnote-161783
+Node: Main Index61843
+Node: Key Index63539
+Node: Command and Function Index63838
+Node: Variable Index64549
+Node: What is New66658
 
 End Tag Table
 

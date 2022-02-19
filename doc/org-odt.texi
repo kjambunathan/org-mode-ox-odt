@@ -162,8 +162,11 @@ Jambunathan K <kjambuanthan at gmail.com>
 @item Maintainer
 Jambunathan K <kjambuanthan at gmail.com>
 
-@item BugReports
+@item Bug Reports
 @uref{https://github.com/kjambunathan/org-mode-ox-odt/issues}
+
+@item Help, Questions & Suggestions
+@uref{https://github.com/kjambunathan/org-mode-ox-odt/discussions}
 
 @item License
 
@@ -174,7 +177,7 @@ Jambunathan K <kjambuanthan at gmail.com>
 @uref{https://kjambunathan.github.io/elpa/}
 
 @item User Manual (online HTML)
-@uref{https://kjambunathan.github.io/org-mode-ox-odt/}
+@uref{https://kjambunathan.gitlab.io/org-mode-ox-odt/}
 @end table
 @end table
 
