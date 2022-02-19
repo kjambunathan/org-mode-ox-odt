@@ -131,6 +131,21 @@ odtmanual:
 	mv doc/org-odt.pdf $(DOCROOT)
 	make -C doc clean
 
+## `gitlabpages` is a target that needs to be run on a gitlab checkout
+##  - origin :: git@gitlab.com:kjambunathan/org-mode-ox-odt.git
+##  - github :: git@github.com:kjambunathan/org-mode-ox-odt.git
+gitlabpages:
+	git reset --hard origin/master
+	git clean -d -f -x
+	git pull --rebase github master
+	git rm -r public
+	git commit -am "* public: Removed"
+	zip -rTq docs.zip docs
+	unzip -j docs.zip -d public
+	git add public
+	git commit -am "* public: Copy over docs/ for publishing"
+	git push --force
+
 # Local Variables:
 # tab-width: 4
 # End:
