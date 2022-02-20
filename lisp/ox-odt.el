@@ -90,12 +90,10 @@
     (underline . org-odt-underline)
     (verbatim . org-odt-verbatim)
     (verse-block . org-odt-verse-block)
-    (citation . org-odt-citation))
-  ;; :export-block "ODT"			; FIXME
+    ;; (citation . org-odt-citation)
+    )
   :filters-alist '((:filter-parse-tree
-		    . (org-odt--translate-cite-fragments
-		       org-odt--collect-cite-keys
-		       org-odt--translate-latex-fragments
+		    . (org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables
 		       org-odt--transclude-sole-footnote-references-in-a-table)))
@@ -150,12 +148,6 @@
     (:odt-footnote-braces nil nil org-odt-footnote-braces t)
     (:odt-footnote-separator nil nil org-odt-footnote-separator t)
 
-    ;; Org has no *native* support Bibliographies and Citations .  So,
-    ;; strictly speaking, the following "BIB_FILE" keyword is ODT only
-    ;; and should be prefixed with "ODT_".  However, since the
-    ;; Bibliography file option makes sense for *all* backends,
-    ;; skipping the "ODT_" prefix, makes much sense.
-    (:bib-file "BIB_FILE" nil nil t)
     ;; Other variables.
     (:odt-fontify-srcblocks nil nil org-odt-fontify-srcblocks)
     (:odt-format-drawer-function nil nil org-odt-format-drawer-function)
@@ -4243,11 +4235,6 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		(replace-match (org-odt--translate (org-trim (match-string 1 template)) :utf-8 info)
 			       t t template 1)
 	      template))))))
-     ;; Handle BIBLIOGRAPHY.  Ignore it.
-     ((string= key "BIBLIOGRAPHY")
-      ;; Citation Processors (see ox-jabref.el) may handle this by
-      ;; registering their own transcoders.
-      (ignore))
      ((string= key "PAGEBREAK")
 
       ;; Pagebreaks created this way are a mere expedience.  These
@@ -7345,82 +7332,6 @@ contextual information."
 
 
 ;;; Filters
-
-;;;; Citations
-
-(defun org-odt--translate-cite-fragments (tree _backend info)
-  "Translate all \\cite{} LaTeX fragments in TREE to `citation-reference'.
-Return the translated tree.
-
-`citation-reference' is a non-standard element (stricly speaking,
-an object) used internally by the ODT exporter.  See
-`org-odt-citation-transcoders'.
-
-Modify INFO plist by appending a `:citations-alist' property.
-The value of this property is a list where each element is of the
-form (CITE-KEY . CITATION-REFERENCE), with CITATION-REFERENCE
-being the first element that references CITE-KEY.  The list is
-sorted in reverse order of appearance of CITE-KEYs in the
-exported file."
-  (org-element-map tree 'latex-fragment
-    (lambda (latex-*)
-      (let* ((latex-frag (org-element-property :value latex-*)))
-	(when (string-match "\\\\cite{\\(.*?\\)}" latex-frag)
-	  ;; LaTeX fragment matches \cite{...}
-	  (let* ((value (match-string 1 latex-frag))
-		 (cite-keys (split-string value ",")))
-	    (let* (;; Translate the LaTeX fragment to a new `citation'
-		   ;; object.
-		   (citation (apply 'org-element-adopt-elements
-				    (list 'citation (list :parenthetical nil))
-				    (mapcar (lambda (cite-key)
-					      (list 'citation-reference
-						    (list :key
-							  cite-key)))
-					    cite-keys))))
-	      ;; Yes. Stash a copy of the original LaTeX fragment in
-	      ;; to the new `citation' object.
-	      (org-element-put-property citation :replaces (copy-sequence latex-*))
-	      ;; Does the Org parser support native `citation' and
-	      ;; `citation-reference'objects?
-	      (if (not (memq 'citation org-element-all-objects))
-		  ;; No. Stash the new `citation' object in to the
-		  ;; LaTeX fragment.
-		  (org-element-put-property latex-* :replaced-by citation)
-		;; Replace the original LaTeX fragment with the
-		;; `citation' object.
-		(org-element-set-element latex-* citation)))))))
-    info nil nil '--with-affiliated)
-  tree)
-
-(defun org-odt--collect-cite-keys (tree _backend info)
-  "Collect cite keys (in reverse order) in to INFO.
-
-Modify INFO plist by appending a `:citations-alist' property.
-The value of this property is a list where each element is of the
-form (CITE-KEY . CITATION), with CITATION
-being the first element that references CITE-KEY.  The list is
-sorted in reverse order of appearance of CITE-KEYs in the
-exported file."
-  (let (citations-alist)
-    (org-element-map tree '(citation 'latex-fragment)
-      (lambda (el)
-	(let* ((citation (cl-case (org-element-type el)
-			   (citation el)
-			   (latex-fragment (org-element-property :replaced-by el))
-			   (t nil)))
-	       (cite-keys (org-element-map citation 'citation-reference
-			    (lambda (citation-reference)
-			      (org-element-property :key citation-reference)))))
-	  (dolist (cite-key cite-keys)
-	    (setq cite-key (org-trim cite-key))
-	    (unless (assoc cite-key citations-alist)
-	      (push (cons cite-key citation) citations-alist)))))
-      info nil nil '--with-affiliated)
-    ;; Modify INFO by side-effects.
-    (nconc info (list :citations-alist citations-alist)))
-  tree)
-
 
 ;;;; LaTeX fragments
 
