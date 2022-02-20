@@ -1,7 +1,24 @@
 #+bibliography: "novices.bib"
 
-#+cite_export: csl /home/kjambunathan/src1/org-mode-ox-odt/testing/examples/odt/vancouver-brackets.csl
-# #+cite_export: csl /home/kjambunathan/src1/org-mode-ox-odt/testing/examples/odt/chicago-author-date.csl
+# #+cite_export: csl american-chemical-society.csl
+# #+cite_export: csl american-medical-association.csl
+# #+cite_export: csl american-political-science-association.csl
+# #+cite_export: csl american-sociological-association.csl
+# #+cite_export: csl apa.csl
+# #+cite_export: csl chicago-author-date.csl
+# #+cite_export: csl chicago-fullnote-bibliography.csl
+# #+cite_export: csl chicago-note-bibliography.csl
+# #+cite_export: csl elsevier-harvard.csl
+# #+cite_export: csl harvard-cite-them-right.csl
+# #+cite_export: csl ieee.csl
+# #+cite_export: csl journal-of-the-acm.csl
+# #+cite_export: csl modern-humanities-research-association.csl
+# #+cite_export: csl modern-language-association.csl
+# #+cite_export: csl nature.csl
+# #+cite_export: csl vancouver-brackets.csl
+# #+cite_export: csl vancouver.csl
+
+#+cite_export: csl chicago-author-date.csl
 
 Nicola L. C. Talbot in his book [cite:@novices; p. 97] says,
 
@@ -41,3 +58,7 @@ See
 - https://lists.gnu.org/archive/html/emacs-orgmode/2021-04/msg00227.html
 
 - https://lists.gnu.org/archive/html/emacs-orgmode/2021-04/msg00790.html
+
+# Local Variables:
+# org-cite-csl-styles-dir: "./"
+# End:
