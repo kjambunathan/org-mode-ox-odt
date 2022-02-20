@@ -34,7 +34,7 @@ pkg:
 	echo ";; no-byte-compile: t"											>> $(ELPA_PKG_NAME)-pkg.el
 	echo ";; End:"															>> $(ELPA_PKG_NAME)-pkg.el
 	tar $(ELPA_PKG_TAR_ARGS) -cf $(ELPA_PKG_DIR).tar $(foreach file, $(ELPA_PKG_FILES), $(ELPA_PKG_DIR)/$(file))
-	$(BATCH) -l package-x --eval '(let ((package-archive-upload-base "$(SERVROOT)")) (with-demoted-errors (package-upload-file "$(ELPA_PKG_DIR).tar")))'
+	$(BATCH) -l package-x --eval '(let ((package-archive-upload-base "$(SERVROOT)")) (with-demoted-errors "Error: %S" (package-upload-file "$(ELPA_PKG_DIR).tar")))'
 	-@$(RM) $(ELPA_PKG_DIR) $(ELPA_PKG_DIR).tar $(ELPA_PKG_NAME)-pkg.el
 
 
