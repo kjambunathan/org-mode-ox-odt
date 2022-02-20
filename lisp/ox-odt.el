@@ -3811,8 +3811,9 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
   (org-odt-do-format-code (org-element-property :value fixed-width) info))
 
 (defun org-odt--endnote-p (footnote-reference info)
-  (string-match-p (plist-get info :odt-endnote-regexp)
-		  (org-element-property :label footnote-reference)))
+  (let ((label (org-element-property :label footnote-reference)))
+    (when (stringp label)
+      (string-match-p (plist-get info :odt-endnote-regexp) label))))
 
 ;;;; Footnote Definition
 
