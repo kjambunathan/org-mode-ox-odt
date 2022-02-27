@@ -3179,7 +3179,7 @@ holding export options."
     (insert contents)
     ;; Write content.xml.
     (let ((coding-system-for-write 'utf-8))
-      (write-file
+      (write-region nil nil
        (concat (plist-get info :odt-zip-dir) "content.xml")))
     ;; Create a manifest entry for content.xml.
     (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
@@ -3427,7 +3427,7 @@ holding export options."
       (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Write styles.xml
       (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
+	(write-region nil nil (concat (plist-get info :odt-zip-dir) "styles.xml"))))))
 
 
 ;;;; Write meta.xml
@@ -3504,7 +3504,7 @@ holding export options."
       (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Write meta.xml.
       (let ((coding-system-for-write 'utf-8))
-	(write-file (concat (plist-get info :odt-zip-dir) "meta.xml"))))
+	(write-region nil nil (concat (plist-get info :odt-zip-dir) "meta.xml"))))
 
     ;; Add meta.xml in to manifest.
     (org-odt-create-manifest-file-entry info "text/xml" "meta.xml")))
@@ -3541,7 +3541,7 @@ holding export options."
     (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
     ;; Write manifest.xml
     (let ((coding-system-for-write 'utf-8))
-      (write-file (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
+      (write-region nil nil (concat (plist-get info :odt-zip-dir) "META-INF/manifest.xml")))))
 
 ;;;; Prettify XML files
 
@@ -3555,7 +3555,7 @@ holding export options."
 	  ;; Prettify output if needed.
 	  (indent-region (point-min) (point-max))
 	  (let ((coding-system-for-write 'utf-8))
-	    (write-file file)))))))
+	    (write-region nil nil file)))))))
 
 ;;;; Zip XML files to OpenDocument format
 
@@ -8081,7 +8081,7 @@ MathML source to kill ring depending on the value of
 				      (org-kill-new (buffer-string)))
 
 				    (let ((coding-system-for-write 'utf-8))
-				      (write-file (concat (plist-get info :odt-zip-dir) "content.xml")))
+				      (write-region nil nil (concat (plist-get info :odt-zip-dir) "content.xml")))
 				    (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
 				;; org-odt-write-styles-file
 				;; org-odt-write-meta-file
@@ -8161,7 +8161,7 @@ format, `org-odt-preferred-output-format' or XML format."
 		   (with-temp-buffer
 		     (insert output)
 		     (let ((coding-system-for-write 'utf-8))
-		       (write-file outfile)))
+		       (write-region nil nil outfile)))
 		   (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
 		     (org-kill-new output))
 		   outfile)
@@ -8173,7 +8173,7 @@ format, `org-odt-preferred-output-format' or XML format."
 	      (with-temp-buffer
 		(insert output)
 		(let ((coding-system-for-write 'utf-8))
-		  (write-file outfile)))
+		  (write-region nil nil outfile)))
 	      (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
 		(org-kill-new output))
 	      outfile)))))))
