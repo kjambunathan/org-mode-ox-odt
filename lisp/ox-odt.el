@@ -6447,6 +6447,31 @@ modifications to account for nested tables."
 	    info nil 'table-cell))
 	(gethash table-row cache)))))
 
+(defun org-odt-table-dimensions (table info)
+  "Return TABLE dimensions.
+
+INFO is a plist used as a communication channel.
+
+Return value is a CONS like (ROWS . COLUMNS) where
+ROWS (resp. COLUMNS) is the number of exportable
+rows (resp. columns).
+
+This is based on `org-export-table-dimensions', with suitable
+modifications to account for nested tables."
+  (let (first-row (columns 0) (rows 0))
+    ;; Set number of rows, and extract first one.
+    (org-element-map table 'table-row
+      (lambda (row)
+	(when (eq (org-element-property :type row) 'standard)
+	  (cl-incf rows)
+	  (unless first-row (setq first-row row))))
+      info nil 'table-row)
+    ;; Set number of columns.
+    (org-element-map first-row 'table-cell
+      (lambda (_) (cl-incf columns)) info nil 'table-cell)
+    ;; Return value.
+    (cons rows columns)))
+
 (defun org-odt-table-cell-address (table-cell info)
   "Return address of a regular TABLE-CELL object.
 
@@ -6496,7 +6521,7 @@ modifications to account for nested tables."
 	 (table-dimensions (cond
 			    (usecolrowgroupsp
 			     (org-odt--table-get-group-dimensions table info))
-			    (t (org-export-table-dimensions table info))))
+			    (t (org-odt-table-dimensions table info))))
 	 (rmax (car table-dimensions)) (cmax (cdr table-dimensions))
 	 (cell-style-selectors (if style-spec (nth 2 style-spec) nil)))
     (cond
@@ -6578,7 +6603,7 @@ modifications to account for nested tables."
 		  "")))))
 
 (defun org-odt--table-cell-widths (table info)
-  (let* ((num-columns (cdr (org-export-table-dimensions table info)))
+  (let* ((num-columns (cdr (org-odt-table-dimensions table info)))
 	 (widths
 	  (cond
 	   ;; Case 1: Widths comes from `:widths'.
@@ -6611,7 +6636,8 @@ modifications to account for nested tables."
 			 (or widths (make-list num-columns 1))))
 
     (unless (= (length widths) num-columns)
-      (user-error "You haven't specified widths of all columns"))
+      (user-error "You haven't specified widths of all columns: widths is %d, columns is %d"
+                  (length widths) num-columns))
 
     (let* ((cum-width (apply #'+ widths))
 	   (normalized-cum-width 1000))
@@ -7004,7 +7030,7 @@ contextual information."
 		  (t
 		   (format "\n<table:table-column table:style-name=\"%s\" table:number-columns-repeated=\"%d\"/>"
 			   column-style
-			   (cdr (org-export-table-dimensions table info))))))))
+			   (cdr (org-odt-table-dimensions table info))))))))
 	    (text (concat
 		   ;; begin table.
 		   (format
