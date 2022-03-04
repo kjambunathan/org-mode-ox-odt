@@ -17,8 +17,8 @@
 * List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode
 
 A /near-comprehensive/ list of features that are /exclusive/ to
-[[https://github.com/kjambunathan/org-mode-ox-odt][/the enhanced ODT
-exporter/]].  The features listed here /exclusive/ in the sense that
+/[[https://github.com/kjambunathan/org-mode-ox-odt][the enhanced ODT
+exporter]]/.  The features listed here /exclusive/ in the sense that
 these are not available with the official Emacs.  You can use this
 list to learn about a feature and explore it further.  Each entry you
 see below is a commit log of the feature, and it includes
