@@ -3,7 +3,7 @@
 #+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:nil
 #+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
 #+options: timestamp:t title:t toc:nil todo:t |:t
-#+title: OX-ODT FEATURES
+#+title: List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode
 #+date: <2022-03-04 Fri>
 #+author: Jambunathan K
 #+email: kjambunathan@gmail.com
@@ -13,12 +13,20 @@
 #+creator: Emacs 29.0.50 (Org mode 9.5.2)
 #+cite_export:
 
-A /near-comprehensive/ list of features that are /exclusive/ to the
-/enhanced ODT exporter/.  The features listed here are not available
-with the official Emacs.  You can use this /crude/ list to learn about
-or explore a feature.  Each entry you see below is a commit log of the
-feature, and it links to the associated commit and issues.
 
+* List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode
+
+A /near-comprehensive/ list of features that are /exclusive/ to
+[[https://github.com/kjambunathan/org-mode-ox-odt][/the enhanced ODT
+exporter/]].  The features listed here /exclusive/ in the sense that
+these are not available with the official Emacs.  You can use this
+list to learn about a feature and explore it further.  Each entry you
+see below is a commit log of the feature, and it includes
+
+- an example snippet for exercising the feature
+- a link to the commit that introduced the feature
+- a link to the issue which warranted the introduction of the feature
+  
 This document is a feeder for The
 [[https://kjambunathan.gitlab.io/org-mode-ox-odt/][OpenDocument
 Exporter User Guide]].
@@ -29,6 +37,7 @@ is New]] section lists only /some/ interesting subsets of the features
 listed here.
 
 * Summary of ~ox-odt~ features (with snippets and screenshots)          :TOC:
+- [[#list-of-features-that-are-exclusive-to-the-enhanced-opendocument-exporter-for-org-mode][List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode]]
 - [[#nest-tables-using-a-transcluded-table][Nest Tables using a ~Transcluded Table~]]
 - [[#style-a-griddedtable][Style a ~GriddedTable~]]
 - [[#numbered-equation][Numbered Equation]]
