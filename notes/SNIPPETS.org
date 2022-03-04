@@ -13,10 +13,6 @@
 #+creator: Emacs 29.0.50 (Org mode 9.5.2)
 #+cite_export:
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d41960570ae5dbf6ca8e2c88bca5a0142a6cb581][commit d41960570ae5dbf6ca8e2c88bca5a0142a6cb581]]
-
-    * lisp/ox-odt.el: Update copyright year
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7387b78192f4f68c1a4213a216db39059b84be76][commit 7387b78192f4f68c1a4213a216db39059b84be76]]
 
     * lisp/ox-odt.el (org-odt-table-dimensions): New.  Replaces `org-export-table-dimensions'
@@ -84,45 +80,6 @@
         |-------------+----------+-----------+------------+------------|
         |             | LastRow  |           |            |            |
         #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f49abb9b11d082ab2b762e5bc09ce4ec8491b35b][commit f49abb9b11d082ab2b762e5bc09ce4ec8491b35b]]
-
-    * lisp/ox-odt.el: Use `write-region' instead of `write-file'
-    
-    * lisp/ox-odt.el (org-odt-write-contents-file):
-    (org-odt-write-styles-file):
-    (org-odt-write-meta-file):
-    (org-odt-write-manifest-file):
-    (org-odt-prettify-xml-files-maybe):
-    (org-odt-export-as-odf):
-    (org-odt-export-to-odt-backend):
-    (org-odt-export-to-odt-backend): Use `write-region' instead of
-    `write-file'.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/165][issue#165]] and https://github.com/hlissner/doom-emacs/issues/6149.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3fa02aab07c521a8a36d44e41d19acbfd48c61f8][commit 3fa02aab07c521a8a36d44e41d19acbfd48c61f8]]
-
-    * lisp/ox-odt.el: Citation-related cleanups
-    
-    * lisp/ox-odt.el (odt): `org-odt-citation' is no longer used.
-    (org-odt--translate-cite-fragments, org-odt--collect-cite-keys):
-    Remove these.
-    (BIB_FILE): Remove it
-    (org-odt-keyword): No need to check for BIBLIOGRAPHY keyword.
-    
-    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/164][issue#164]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9c24d61db09aa568641705b193518c492de3d966][commit 9c24d61db09aa568641705b193518c492de3d966]]
-
-    * lisp/ox-odt.el (org-odt--endnote-p): Handle inline footnotes
-    
-    * lisp/ox-odt.el (org-odt--endnote-p): Gracefully handle inline
-    footnotes.  Fixes the error while exporting
-    `./testing/examples/odt/citation-new-1.org' with
-    `chicago-note-bibliography.csl' format.
-    
-    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/164][issue#164]].
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/39e5a0ae569edc3af7c160d5e602d1e341cf91a0][commit 39e5a0ae569edc3af7c160d5e602d1e341cf91a0]]
 
@@ -346,14 +303,6 @@
         \end{equation*}
         #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cc29b1951a333099938774fe050aac95d82bcf5a][commit cc29b1951a333099938774fe050aac95d82bcf5a]]
-
-    * lisp/ox-odt.el: Minor fix
-    
-    * lisp/ox-odt.el (org-odt-format-label):
-    (org-odt-link--inline-image): Handle the case where ODT_APP is
-    empty.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1284a61236ab58427e7c65409f2255566d57c093][commit 1284a61236ab58427e7c65409f2255566d57c093]]
 
     * lisp/ox-odt.el (ODT_VALIDATE, org-odt-vaidate): New keyword.  New command.
@@ -434,13 +383,6 @@
     
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/149][issue#149]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0d66e2020be566061a37ba0754595420a0ad9f2e][commit 0d66e2020be566061a37ba0754595420a0ad9f2e]]
-
-    * lisp/ox-odt.el: Fix indentation
-    
-    * lisp/ox-odt.el (org-odt-format-label-for-lo):
-    (org-odt-format-label-for-gdocs):  Re-indent.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/64a11b05449657be44afc3db36c071584ab4a3db][commit 64a11b05449657be44afc3db36c071584ab4a3db]]
 
     * lisp/ox-odt.el (ODT_APP): Preparing for export to Google Documents
@@ -498,15 +440,6 @@
     
     Preparing for export to 'Google Documents'.  See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/136][issue#136]], [[https://github.com/kjambunathan/org-mode-ox-odt/issues/137][issue#137]] and [[https://github.com/kjambunathan/org-mode-ox-odt/issues/145][issue#145]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0ab33186b4c1b28f98dffa6cd917eb23989e22b5][commit 0ab33186b4c1b28f98dffa6cd917eb23989e22b5]]
-
-    * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Preserve whitespace in attrs
-    
-    * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Invoke `tidy` with
-    `--literal-attributes=yes'.  Also fix a compilation error.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/148][issue#148]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a0171d7b069ad2aa67fda062043b0f42b5d76a1f][commit a0171d7b069ad2aa67fda062043b0f42b5d76a1f]]
 
     * lisp/ox-odt.el (org-odt-special-block): New block `customshape'
@@ -562,15 +495,6 @@
         ,#+end_customshape
         #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7ec30b54b7c9f9dc322c84e6642099b4ab561f57][commit 7ec30b54b7c9f9dc322c84e6642099b4ab561f57]]
-
-    * lisp/ox-odt.el: Honor user option `org-odt-styles-file'
-    
-    * lisp/ox-odt.el: Initialize `:odt-styles-file' with the value of
-    user option `org-odt-styles-file'.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/143][issue#143]]
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f948f731a5bf84307665ebd4250ce6b1215c0b55][commit f948f731a5bf84307665ebd4250ce6b1215c0b55]]
 
     * lisp/ox-odt.el (org-odt-yank-styles): New command
@@ -588,22 +512,6 @@
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/140][issue#140]].
     
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/141][issue#141]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/12cf8a3640e1afaf4c1ee58a8b45e70d4dbdcfb4][commit 12cf8a3640e1afaf4c1ee58a8b45e70d4dbdcfb4]]
-
-    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix compilation errors
-    
-    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix compilation errors
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/114][issue#114]]
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/424c8f54fccbf9121dcd1abf2f43efae2e01aefa][commit 424c8f54fccbf9121dcd1abf2f43efae2e01aefa]]
-
-    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix earlier commit
-    
-    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix earlier commit.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/114][issue#114]].
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/927413d9065a2bd322d28cc76a57be88635b0725][commit 927413d9065a2bd322d28cc76a57be88635b0725]]
 
@@ -705,17 +613,6 @@
             | H        |          |          |
             |----------+----------+----------|
         #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/803ae54b30b79bc86d838a94bc8e26c058f6f390][commit 803ae54b30b79bc86d838a94bc8e26c058f6f390]]
-
-    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): Gracefully handle case where col align is unspecified
-    
-    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
-    Handle the case where the no alignment is specified.
-    (org-odt--table-col-cookies): When there is no explicit align
-    specified, return nil.
-    
-    Fix [[https://github.com/kjambunathan/org-mode-ox-odt/issues/126][issue#126]].
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cea0effe1e5866ba16bde9bb48b087c2227e29a9][commit cea0effe1e5866ba16bde9bb48b087c2227e29a9]]
 
@@ -1703,71 +1600,6 @@
     Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/92][issue#92]].  See also
     https://github.com/kjambunathan/org-mode-ox-odt/issues/91#issuecomment-877929487.
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f022150f3a046511dba18a509de621ec35daf075][commit f022150f3a046511dba18a509de621ec35daf075]]
-
-    * lisp/ox-odt.el: Fix file corruption with image/formula in headlines
-    
-    * lisp/ox-odt.el (org-odt-format-headline--wrap):
-    `org-export-data-with-backend' works with a new communication
-    channel that is locally bound.  As a result any state--for
-    example a manifest entry for an inline image or formula that
-    is part of the headline--that is stashed in to the
-    communication channel during the course of the call becomes
-    unavailable for subsequent calls.  Loss of manifest entries
-    will make LibreOffice think that the generated ODT file is
-    "corruption" .  So, use `org-export-data-with-backend' with
-    caution.
-    
-    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/87][issue#87]].
-    
-    Here is a sample snippet to test drive this fix
-    
-        * An inline image [[./image.png]] in this headline
-    
-    TODO: Check what happens to TOC entries when there are inline
-    images / formula in the headline.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/839df08c56915a9981ecffeb23a53b0475416631][commit 839df08c56915a9981ecffeb23a53b0475416631]]
-
-    * lisp/ox-odt.el (org-odt-headline): Fix double counting of formulae
-    
-    When there is a math formula in a headline, there is double counting
-    of formulae. Fix it.
-    
-    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/87][issue#87]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cd43292473595f812b467b7e976e54901de57f27][commit cd43292473595f812b467b7e976e54901de57f27]]
-
-    * lisp/ox-odt.el (org-odt-paragraph): Fix styling of center and quote blocks
-    
-    * lisp/ox-odt.el (org-odt-paragraph): Quote and center blocks
-    were (wrongly) using the default `Text_20_body' style instead
-    of their own `OrgCenter' and `Quotations' paragragraph styles
-    because of a thinko. Fix it.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9333dfb1820f45067ce3e32fb7d9ed1b7a31bd8e][commit 9333dfb1820f45067ce3e32fb7d9ed1b7a31bd8e]]
-
-    * lisp/ox-odt.el (org-odt-link): Properly export urls that have `&' etc in them
-    
-    * lisp/ox-odt.el (org-odt-link): Use `xml-escape-string'.
-    This fixes urls that have a `&' etc in them.
-    
-    Here is a test snippet:
-    
-      [[https://twitter.com/search?q=%23emacs&src=typed_query][#emacs - Twitter Search / Twitter]]
-    
-    Fixes pull request [[https://github.com/kjambunathan/org-mode-ox-odt/issues/75][issue#75]] by @PierreTechoueyres.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/80beda3722a63a459ef07eff842767f291735fc0][commit 80beda3722a63a459ef07eff842767f291735fc0]]
-
-    * lisp/ox-odt.el: Fix style of todo keywords in TOC
-    
-    * lisp/ox-odt.el (org-odt-format-toc-headline)
-    (org-odt-format-headline-default-function): Use `todo-type'
-    instead of `org-done-keywords'.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/78][issue#78]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/68dd0a916a3c01b5d654136077fe79a217f12662][commit 68dd0a916a3c01b5d654136077fe79a217f12662]]
 
     * lisp/ox-odt.el (org-odt-endnote-regexp): Support for generating endnotes
@@ -1985,13 +1817,6 @@
     
     Add endnote support.  Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/74][issue#74]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d202ed49a54061768235613a3195465d6d8500a8][commit d202ed49a54061768235613a3195465d6d8500a8]]
-
-    * lisp/ox-odt.el: Honor `:style' attribute of `quote' blocks
-    
-    * lisp/ox-odt.el (org-odt-paragraph): Honor`:style' attribute
-    of `quote' blocks.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6daba74ce6d7d8d32735ca27e8725f1a2fbe6a42][commit 6daba74ce6d7d8d32735ca27e8725f1a2fbe6a42]]
 
     * lisp/ox-odt.el (org-odt-write-styles-file):  Re-define page layouts with ease
@@ -2024,13 +1849,6 @@
     
         Some text
     #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/8ee4a48fd6cd96f065882e75d2ff56f9aefef23d][commit 8ee4a48fd6cd96f065882e75d2ff56f9aefef23d]]
-
-    * lisp/ox-odt.el (org-odt-write-styles-file): Minor change
-    
-    * lisp/ox-odt.el (org-odt-write-styles-file): Check for styles
-    file early.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e7c42f87a9c4f1e5598dd863b455ebf898eab8cd][commit e7c42f87a9c4f1e5598dd863b455ebf898eab8cd]]
 
@@ -2233,15 +2051,6 @@
     
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/65][issue#65]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0d23ca80c0ceb59a49f283a0664d1bab738e10e6][commit 0d23ca80c0ceb59a49f283a0664d1bab738e10e6]]
-
-    * lisp/ox-odt.el (org-odt-write-mimetype-file): Fix file corruption
-    
-    * lisp/ox-odt.el (org-odt-write-mimetype-file): Don't use
-    `write-file'.  Use `write-region' instead.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/62][issue#62]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ae1bd5071faf6bba47f6825a6dfb3699f52c2610][commit ae1bd5071faf6bba47f6825a6dfb3699f52c2610]]
 
     * lisp/ox-odt.el (org-odt-item): Honor start counter of a list item.
@@ -2262,22 +2071,6 @@
         3. [@3] Third item
         4. Fourth item
         #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a04d551f096a05910b10a93818473d0a3c4c9064][commit a04d551f096a05910b10a93818473d0a3c4c9064]]
-
-    * lisp/ox-odt.el: Center the image in relation to it's caption.
-    
-    * lisp/ox-odt.el (org-odt--render-image/formula): Center the image
-    in relation to it's caption.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/61][issue#61]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165][commit aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165]]
-
-    * lisp/ox-odt.el (org-odt-link--inline-image): Remove cruft
-    
-    * lisp/ox-odt.el (org-odt-link--inline-image): Remove dubious ODT
-    attributes `:style' and `:attributes'.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6866dda1f0a4d923463f59208ceebba301e382ec][commit 6866dda1f0a4d923463f59208ceebba301e382ec]]
 
@@ -2367,27 +2160,6 @@
     ,#+END_SRC
     #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c16ac77343fded0e69f5a5f1f45c51d33a69d278][commit c16ac77343fded0e69f5a5f1f45c51d33a69d278]]
-
-    * lisp/ox-odt.el (org-odt--render-image/formula): Use `Standard' paragraph style for inner frame
-    
-    * lisp/ox-odt.el (org-odt--render-image/formula): Use
-    `Standard' style instead of `Text_20_body' style for paragraph
-    enclosing the inner frame.
-    
-    Temporarily fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/59][issue#59]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/fd206748fcb7ae4db0b126128ed3296226b95ee3][commit fd206748fcb7ae4db0b126128ed3296226b95ee3]]
-
-    * lisp/ox-odt.el: Handle subtitle
-    
-    * etc/styles/OrgOdtStyles.xml (OrgDocInfo): New style.
-    (OrgTitle, OrgSubtitle): Modified.
-    * lisp/ox-odt.el (org-odt-inner-template)
-    (org-odt-write-meta-file): Handle `:subtitle'.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/58][issue#58]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3e00989833f3d193ed4b6a9c09ef77cb554a616e][commit 3e00989833f3d193ed4b6a9c09ef77cb554a616e]]
 
     * lisp/ox-odt.el: Now export to OpenDocument master file with `C-c C-e o m'
@@ -2406,13 +2178,6 @@
     previous change.
     (org-odt-export-as-odf): Initialize the `:output-file' in the
     communication channel.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/46183e9182275562fffd1c878aff679c77d4cf63][commit 46183e9182275562fffd1c878aff679c77d4cf63]]
-
-    * lisp/ox-odt.el (org-odt-write-meta-file): Handle date correctly
-    
-    * lisp/ox-odt.el (org-odt-write-meta-file): Don't emit a date
-    if it isn't in Org timestamp format.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0a8a1161a0b9d58b048ddc65c04ada4692efe623][commit 0a8a1161a0b9d58b048ddc65c04ada4692efe623]]
 
@@ -2450,41 +2215,6 @@
     `org-odt-export-to-odt', and generalized to any OpenDocument
     backend.
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4631820f3737194ff799029c87d6889bbea6b656][commit 4631820f3737194ff799029c87d6889bbea6b656]]
-
-    * lisp/ox-odt.el: Improve numbering of source blocks
-    
-    * lisp/ox-odt.el (org-odt-do-format-code): Modified.
-    (org-odt-format-code): Use it.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/72be87ea8a85f0658b1739744fd096db6111e2a4][commit 72be87ea8a85f0658b1739744fd096db6111e2a4]]
-
-    * lisp/ox-odt.el: Prettify XML files, if needed, before they are written to disk
-    
-    * lisp/ox-odt.el (org-odt-write-contents-file)
-    (org-odt-write-styles-file)
-    (org-odt-write-meta-file, org-odt-write-manifest-file)
-    (org-odt-template, org-odt-export-as-odf): No need to call
-    `org-odt-prettify-xml-files-maybe'.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c18b2827d763eedca10b704ad6290d17179713b4][commit c18b2827d763eedca10b704ad6290d17179713b4]]
-
-    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword
-    
-    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword in
-    the communication channel.
-    (org-odt-export-to-odt): Don't let-bind `hfy-user-sheet-assoc'
-    here.  Instead let-bind it later in `org-odt-do-format-code'
-    wherein one can access the communication channel.
-    (org-odt-write-styles-file): Use above keyword.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7c2c3d99aa97ee1ef3febd176f28024c14a28cfd][commit 7c2c3d99aa97ee1ef3febd176f28024c14a28cfd]]
-
-    * lisp/ox-odt.el: Fix earlier commit
-    
-    * lisp/ox-odt.el (org-odt--convert): Check value of
-    `org-odt-preferred-output-format'.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/769de895f72045c656dcded1345bc768b6fd5aff][commit 769de895f72045c656dcded1345bc768b6fd5aff]]
 
     * lisp/ox-odt.el (org-odt-template): Simplify
@@ -2511,99 +2241,6 @@
     (org-odt-transform): Misc changes.
     (org-odt-convert-capabilities): Add entry for OpenDocument
     formula files.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cc1a80edc104b68b423fe1c3fcc04fee6ba8b725][commit cc1a80edc104b68b423fe1c3fcc04fee6ba8b725]]
-
-    * lisp/ox-odt.el (org-odt-manifest-file-entries): Remove var
-    
-    * lisp/ox-odt.el (org-odt-write-manifest-file): Change
-    signature.  Add this as filter function for final output.
-    (org-odt-write-mimetype-file): New.  Extracted from
-    `org-odt-template'.  Add this as filter function for final
-    output.
-    (:odt-manifest-file-entries): New variable in the
-    communication channel.  Replaces
-    `org-odt-manifest-file-entries'.
-    (org-odt-manifest-file-entries): Remove var.  See above.
-    (org-odt-create-manifest-file-entry):
-    (org-odt--copy-image-file, org-odt-link--inline-image):
-    (org-odt--copy-formula-file, org-odt-link--inline-formula):
-    Change signature.
-    (org-odt-template, org-odt--export-wrap)
-    (org-odt-export-as-odf, org-odt-export-to-odt): Simplify
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b86a804927a12f7339386cb6c85e7ce8ea81759c][commit b86a804927a12f7339386cb6c85e7ce8ea81759c]]
-
-    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant
-    
-    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant.
-    (org-odt-file-extensions): Remove it. Subsumed by
-    `org-odt-file-extensions-alist'.
-    
-    Also propagate above changes.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5][commit 7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5]]
-
-    * lisp/ox-odt.el (org-odt-automatic-styles, org-odt-object-counters): Remove these vars
-    
-    * lisp/ox-odt.el (org-odt-automatic-styles)
-    (org-odt-object-counters): : Remove these vars.  Use
-    `:odt-automatic-styles' and `:odt-object-counters' in the
-    communication channel.
-    (org-odt-export-to-odt): Remove references to the above vars.
-    (org-odt-add-automatic-style): Fold this in to
-    `org-odt--get-derived-paragraph-style' and `org-odt--table'
-    and remove it.
-    (org-odt--get-derived-paragraph-style): Change signature.
-    Append automatic style, if any, to `:odt-automatic-styles'.
-    (org-odt-headline, org-odt-paragraph): Use new signature of
-    `org-odt--get-derived-paragraph-style'.
-    (org-odt--table): Append automatic style, if any, to
-    `:odt-automatic-styles'.
-    (org-odt-template): No need to handle automatic styles for
-    tables and paragraphs specially.  They are already added to
-    `:odt-automatic-styles' as and when they are encountered.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9cb0ab9ccea64100b7b3b7f9caebda676bd57cde][commit 9cb0ab9ccea64100b7b3b7f9caebda676bd57cde]]
-
-    * lisp/ox-odt.el (org-odt-text:section): Renamed from `org-odt-format-section'.
-    Change signature.
-    (org-odt-link, org-odt-special-block, org-odt-table): Related
-    changes.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d9518ac902510bc3d5f2030620ecda6cce32d50c][commit d9518ac902510bc3d5f2030620ecda6cce32d50c]]
-
-    * lisp/ox-odt.el (:odt-object-counters): New
-    
-    * lisp/ox-odt.el (:odt-object-counters): New key in the
-    communication channel.
-    (:odt-embedded-formulas-count, :odt-embedded-images-count):
-    Remove these keys from the communication channel.  Use
-    `:odt-object-counters' instead.
-    (org-odt--count-object, org-odt--name-object): New functions.
-    (org-odt-link--inline-image, org-odt-link--inline-formula):
-    Use `org-odt--count-object'.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4][commit b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4]]
-
-    * lisp/ox-odt.el: Remove `draw:name' attribute in `draw:frame' element
-    
-    * lisp/ox-odt.el (org-odt--frame): Remove `draw:name'
-    attribute in `draw:frame' element.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d][commit 1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d]]
-
-    * lisp/ox-odt.el: Remove vars `org-odt-embedded-images-count' & `org-odt-embedded-formulas-count'
-    
-    * lisp/ox-odt.el (org-odt-embedded-formulas-count)
-    (org-odt-embedded-images-count): Remove these global
-    variables.  Replace these with `:odt-embedded-formulas-count'
-    and `:odt-embedded-images-count' keys in the communication
-    channel.
-    (org-odt--copy-image-file, org-odt--copy-formula-file): Change
-    signature.
-    (org-odt-link--inline-image, org-odt-link--inline-formula)
-    (org-odt-export-to-odt): Related changes.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/904060258b4946841d28c946b908fb371d3295b8][commit 904060258b4946841d28c946b908fb371d3295b8]]
 
@@ -2696,23 +2333,6 @@
     See https://lists.gnu.org/archive/html/emacs-orgmode/2015-02/msg00908.html
     
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/52][issue#52]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/979ae8d43fd078fe0dc6f715e7a380070969141b][commit 979ae8d43fd078fe0dc6f715e7a380070969141b]]
-
-    * lisp/ox-odt.el: Table caption goes above the table
-    
-    * lisp/ox-odt.el (org-odt-caption-and-xref-settings): Table
-    caption goes above the table.  This is what the LaTeX exporter
-    does by default.
-    
-    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/55][issue#55]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/709bc8312dc950df95057bcb3b937feabbdfde1b][commit 709bc8312dc950df95057bcb3b937feabbdfde1b]]
-
-    * lisp/ox-odt.el: Misc. change
-    
-    * lisp/ox-odt.el (org-odt--element-category): Replace
-    `when-let' with an equivalent construct.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c8116be0a69849fc68d51646ab97dcea0874d90f][commit c8116be0a69849fc68d51646ab97dcea0874d90f]]
 
@@ -2863,15 +2483,6 @@
     
     See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/877bf74c7620c360e6ceecc751c1165ee0bc8493][commit 877bf74c7620c360e6ceecc751c1165ee0bc8493]]
-
-    * lisp/ox-odt.el: Modify enumeration logic in anticipation of support for subentities
-    
-    * lisp/ox-odt.el (org-odt-format-label): While numbering an
-    element, iterate over all captionable entities--link,
-    src-block and table--instead of iterating over the elements of
-    same type as the element being numbered.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d9aef3b19002a764f0c40e707ea8c1092a6aeb57][commit d9aef3b19002a764f0c40e707ea8c1092a6aeb57]]
 
     * lisp/ox-odt.el: Enumerate src-blocks or tables within a `list-table'
@@ -2919,53 +2530,6 @@
         - a subtable [[subtable]]
         #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff][commit 9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff]]
-
-    * lisp/ox-odt.el: Replace `org-odt-category-map-alist' with `org-odt-caption-and-numbering-settings'
-    
-    * lisp/ox-odt.el (org-odt-category-map-alist): Remove it.
-    (org-odt-caption-and-numbering-settings): New. Replaces
-    `org-odt-category-map-alist'.
-    (org-odt-toc-templates, org-odt-template)
-    (org-odt-format-label): Related changes.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1f4740bb86e2d108b31355a6f0bf5a4980f791b9][commit 1f4740bb86e2d108b31355a6f0bf5a4980f791b9]]
-
-    * lisp/ox-odt.el: Preparing for adding support for sub-figures etc.
-    
-    * lisp/ox-odt.el (org-odt--enumerate): Remove it.  Fold it
-    into `org-odt-format-label'.
-    (org-odt-category-map-alist): Remove references to `org-odt--enumerate'.
-    (org-odt-format-label): See above.
-    
-    Preparing for adding support for sub-figures etc.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/40ac60898d5ba787aecc46f8f11f1e2f936173c5][commit 40ac60898d5ba787aecc46f8f11f1e2f936173c5]]
-
-    * lisp/ox-odt.el: Handle the cases where styles and/or content template file are left unspecified
-    
-    * lisp/ox-odt.el (org-odt-template): Gracefully handle the
-    cases when styles and/or content template file are left
-    unspecified.  These files, if they use relative paths, are
-    expanded relative to directory of input file.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1af756b42dd160f795fbf75beab6956627ba5e26][commit 1af756b42dd160f795fbf75beab6956627ba5e26]]
-
-    * lisp/ox-odt.el: Handle formula label correctly
-    
-    * lisp/ox-odt.el (org-odt-format-label): Handle formula label
-    correctly.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2][commit 73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2]]
-
-    * lisp/ox-odt.el: Rename some variables for consistency
-    
-    * lisp/ox-odt.el (org-odt-category-map-alist): Label the list
-    elements with (CATEGORY-HANDLE OD-VARIABLE ENTITY-NAME
-    CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
-    (org-odt-toc-templates, org-odt-format-label): Rename
-    variables to match the above convention.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/bc0f3cc2362968f499883a7789c375cac5934fc5][commit bc0f3cc2362968f499883a7789c375cac5934fc5]]
 
     * lisp/ox-odt.el:  Paragraph style to be used for captions is now configurable
@@ -2976,13 +2540,6 @@
     the paragraph style specified in `org-odt-category-map-alist'.
     (org-odt-toc-templates, org-odt--render-image/formula)
     (org-odt-src-block, org-odt--table): Related changes.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/8dc38db76f6ab27b656c29bda0077a2be550a25c][commit 8dc38db76f6ab27b656c29bda0077a2be550a25c]]
-
-    * lisp/ox-odt.el: In a captioned image / formula, caption and image go in paragraphs of their own
-    
-    * lisp/ox-odt.el (org-odt--render-image/formula): Put
-    caption and image in paragraphs of their own.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d8c0f453b575a3482f8b7c34cc9de1561f235d14][commit d8c0f453b575a3482f8b7c34cc9de1561f235d14]]
 
@@ -2999,22 +2556,6 @@
     
     Honor `:caption-position' specified in
     `org-odt-caption-and-xref-settings'.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/81ff8979f27b3532f9f72d45a0b4ff29235a6a44][commit 81ff8979f27b3532f9f72d45a0b4ff29235a6a44]]
-
-    * lisp/ox-odt.el (org-odt--element-category): New
-    
-    * lisp/ox-odt.el (org-odt--element-category): Extracted from
-    `org-odt-format-label'.
-    (org-odt-format-label, org-odt--enumerate):  Use it.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b1e70e37a81e3bcd21f9af1393b1cc1278e370b3][commit b1e70e37a81e3bcd21f9af1393b1cc1278e370b3]]
-
-    * lisp/ox-odt.el: Remove `org-export-solidify-link-text'.  Use `org-export-get-reference' instead.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9d754c0b1ada13197c0ea86bab7b2effcea0cbdd][commit 9d754c0b1ada13197c0ea86bab7b2effcea0cbdd]]
-
-    * lisp/ox-odt.el: Remove `function' around lambda forms
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e652fc529de83ff8173bec3350737222fed36c47][commit e652fc529de83ff8173bec3350737222fed36c47]]
 
@@ -3076,16 +2617,6 @@
     
     See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/072c1f54863a1eeef07d12510e18c9dbb585a803][commit 072c1f54863a1eeef07d12510e18c9dbb585a803]]
-
-    * lisp/ox-odt.el (org-odt-data-dir): Remove it
-    
-    * lisp/ox-odt.el (org-odt-data-dir): Remove it.
-    (org-odt-schema-dir-list, org-odt-styles-dir-list): Propagate above change.
-    (org-odt-styles-dir, org-odt-schema-dir): Simplify. Make it
-    less noisy.
-    (org-odt-template): Minor change.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/945e6831343fd8e8b355aca970ecee6ba99368f3][commit 945e6831343fd8e8b355aca970ecee6ba99368f3]]
 
     * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE, ODT_EXTRA_IMAGES): Change syntax and/or semantics
@@ -3100,10 +2631,6 @@
     
     (org-odt-template): Honor above change in syntax and/or
     semantics.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f4237879c04e86a7cc6e109ab6776f529e69bfae][commit f4237879c04e86a7cc6e109ab6776f529e69bfae]]
-
-    * lisp/ox-odt.el: Replace `mapc' with `dolist'.  Also some whitespace cleanups.
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/44a720dca7b647352eedcecf9f1120818058139e][commit 44a720dca7b647352eedcecf9f1120818058139e]]
 
@@ -3199,51 +2726,6 @@
             #+end_example
     
     See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]]
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3][commit 6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3]]
-
-    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update Package-Requires to 9.2.1
-    
-    * lisp/ox-odt.el (Package-Requires): Set it to Org
-    9.2.1. Also update Copyright years.
-    
-    * contrib/lisp/ox-jabref.el (Package-Requires): Set it to
-    ox-odt 9.2.1. Also update Copyright year.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a34abc398845af18d18f7a46b930290fd90f9206][commit a34abc398845af18d18f7a46b930290fd90f9206]]
-
-    * lisp/ox-odt.el: Handle cite fragments even when the parser doesn't support cite objects
-    
-    * lisp/ox-odt.el (org-odt-latex-fragment)
-    (org-odt--translate-cite-fragments)
-    (org-odt--collect-cite-keys): Handle cite fragments even when
-    the Org parser doesn't support `citation' and
-    `citation-reference' objects.
-    * testing/examples/odt/masterdocument.org: Modified to
-    exercise above change.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b464b61c733e4e667703ab4b9e9581f274ccd420][commit b464b61c733e4e667703ab4b9e9581f274ccd420]]
-
-    * lisp/ox-odt.el (org-odt-hfy-face-to-css): Honor background color
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/22ca6417cd038e0fe7aad5736f8fb8dccb81c453][commit 22ca6417cd038e0fe7aad5736f8fb8dccb81c453]]
-
-    * lisp/ox-odt.el (org-odt-transform-processes): Fix :type of this option
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ecbaf18a15be3179e82ea10c3332b85e825350cf][commit ecbaf18a15be3179e82ea10c3332b85e825350cf]]
-
-    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
-    
-    * lisp/ox-odt.el: Update library headers
-    * contrib/lisp/ox-jabref.el: Update library headers
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2396344595c3a35df809e0c1d4f3f1f3996c9a6f][commit 2396344595c3a35df809e0c1d4f3f1f3996c9a6f]]
-
-    * lisp/ox-odt.el: Allow caption and name in list-tables
-    
-    * lisp/ox-odt.el (org-odt--translate-list-tables): Allow caption and name.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/47][issue#47]].
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/40d3e9ee84165572a1e52474a08b094594c7025d][commit 40d3e9ee84165572a1e52474a08b094594c7025d]]
 
@@ -3466,24 +2948,6 @@
     
     Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/44][issue#44]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ef951e32f4d852dafe595e81b479dd0e071ecd49][commit ef951e32f4d852dafe595e81b479dd0e071ecd49]]
-
-    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4b98f0da058f61e10470218748fb69170b398360][commit 4b98f0da058f61e10470218748fb69170b398360]]
-
-    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6463b26b31c7a6eb33024da878c4176698a36cc8][commit 6463b26b31c7a6eb33024da878c4176698a36cc8]]
-
-    * lisp/ox-odt.el (org-odt-headline): Minor Re-factoring
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/25787b1f2800455d2ecf368aa20c7212132f7e19][commit 25787b1f2800455d2ecf368aa20c7212132f7e19]]
-
-    * lisp/ox-odt.el (org-odt-paragraph): Trim whitespace from paragraph contents
-    
-    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/45][issue#45]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259][commit 07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259]]
 
     * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
@@ -3546,34 +3010,6 @@
     
             Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/39][issue#39]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/252d671d9eb01424809898ba435095f6ee1dcf38][commit 252d671d9eb01424809898ba435095f6ee1dcf38]]
-
-    ox-odt: Rationalize paragraph style names used within tables
-    
-    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
-    In tables that are styled using table templates, use
-    `Contents' as suffix for paragraph stylenames instead of
-    `TableParagraph'.
-    (org-odt-table-styles): Update docstring to reflect above
-    change.
-    * etc/styles/OrgOdtContentTemplate.xml
-    (OrgEquationFirstColumnContents)
-    (OrgEquationLastColumnContents, CustomContents)
-    (CustomLastRowContents, CustomLastColumnContents)
-    (CustomFirstRowContents, CustomFirstColumnContents): Renamed
-    from their counterparts.
-    
-    Preparing the ground for addressing [[https://github.com/kjambunathan/org-mode-ox-odt/issues/39][issue#39]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/208a38f5e21e4d2ebd3fd6e37ea4988897203002][commit 208a38f5e21e4d2ebd3fd6e37ea4988897203002]]
-
-    * lisp/ox-odt.el: Fix previous commit
-    
-    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE): New in buffer option.
-    (org-odt-template): Honor above option.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/37][issue#37]].
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/294f8fa18913e0f90e0889c120e2656bb6ee0122][commit 294f8fa18913e0f90e0889c120e2656bb6ee0122]]
 
     * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
@@ -3623,10 +3059,6 @@
 
     * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
     
-    * lisp/ox-odt.el (ODT_EXTRA_STYLES): New option.
-    (org-odt-template): Add above option to the end of
-    "<office:styles>...</office:styles>".
-    
     Use this option to define common styles.  When using
     LibreOffice, these styles are visible via the stylist.
     
@@ -3644,14 +3076,6 @@
         Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
         Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
         #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/53e9160bd128135050564ccc86d24f52ba48f80e][commit 53e9160bd128135050564ccc86d24f52ba48f80e]]
-
-    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'
-    
-    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/35][issue#35]].
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d01d4129c81172c77d761b4ddae7741d7bc780d1][commit d01d4129c81172c77d761b4ddae7741d7bc780d1]]
 
@@ -3790,13 +3214,6 @@
     
     More changes for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/31][issue#31]].
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/145f1c3a35527087bc267d2b37b1bdd77bf02d90][commit 145f1c3a35527087bc267d2b37b1bdd77bf02d90]]
-
-    lisp/ox-odt.el: Handle relative filepaths correctly
-    
-    * lisp/ox-odt.el (org-odt-link): Unescape and url encode
-    protocol urls.  Prepend relative file paths with "../".
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/90045053d36bcf3cb5fc2ccdc546700821f2f9f5][commit 90045053d36bcf3cb5fc2ccdc546700821f2f9f5]]
 
     lisp/ox-odt.el: Support OpenOffice sections
@@ -3859,60 +3276,6 @@
         nisl, tincidunt et, mattis eget, convallis nec, purus.
     #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5c05cec684524cc5595215d9810762f773d5e288][commit 5c05cec684524cc5595215d9810762f773d5e288]]
-
-    lisp/ox-odt.el:  Allow \cite{} in captions
-    
-    * lisp/ox-odt.el (org-odt--translate-cite-fragments):
-    (org-odt--collect-cite-keys): Descend in to affiliated
-    keywords.
-    
-    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/32][issue#32]].
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/29abb97cf5fdaa730df8cb1d29a292fff8e607b7][commit 29abb97cf5fdaa730df8cb1d29a292fff8e607b7]]
-
-    lisp/ox-odt.el:  Handle case where #+ODT_STYLES_FILE is empty
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7e25aae7158194bd4d76568485b0c3b9b43d0a4e][commit 7e25aae7158194bd4d76568485b0c3b9b43d0a4e]]
-
-    ox-odt.el, ox-jabref.el: Gracefully handle corner cases
-    
-    * lisp/ox-odt.el (org-odt-citation): Improve transcoding.
-    * lisp/ox-odt.el (org-odt--translate-cite-fragments): Store
-    the original \cite{} fragment in the new object.
-    * contrib/lisp/ox-jabref.el (org-jabref-citation): Gracefully
-    handle case where a cite key cannot be translated to a valid
-    text.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3557eb09dd5c59aed64151391ebac66ec8aa75cd][commit 3557eb09dd5c59aed64151391ebac66ec8aa75cd]]
-
-    Revert "lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'"
-    
-    This reverts commit 7b2484ed4029a0e2f40514117e606c3cfbee11ca.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ce9906282ce6475eb869fd59baff54bc52b3217e][commit ce9906282ce6475eb869fd59baff54bc52b3217e]]
-
-    lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4560eb5e429b7f30eb0a9bb47c2463815434988f][commit 4560eb5e429b7f30eb0a9bb47c2463815434988f]]
-
-    lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
-    
-    * lisp/ox-odt.el (org-odt-paragraph): Handle verse blocks
-    * lisp/ox-odt.el (org-odt-verse-block): Use
-    `org-odt-paragraph' to infer paragraph styles.
-    
-    Fixes  kjambunathan/org-mode-ox-odt#26.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0f2ae078ec1e323fe5952e7a173605db2c4f0c78][commit 0f2ae078ec1e323fe5952e7a173605db2c4f0c78]]
-
-    lisp/ox-odt.el: In list tables, ignore col alignment cookies
-    
-    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
-    Ignore col alignment cookies on list tables.
-    
-    This works around issue kjambunathan/org-mode-ox-odt#25.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/600b075a30ba414be077d1213c434374568d99ec][commit 600b075a30ba414be077d1213c434374568d99ec]]
 
     lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
@@ -3922,40 +3285,6 @@
     (org-odt-table-cell--get-paragraph-styles): Update docstring.
     
     Fixes  kjambunathan/org-mode-ox-odt#24.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9a2eb32660b9b2f941549b00eed1f84f8c50f56b][commit 9a2eb32660b9b2f941549b00eed1f84f8c50f56b]]
-
-    * lisp/ox-odt.el: Minor refactoring
-    
-    * lisp/ox-odt.el (org-odt-table-cell): Extract
-    `org-odt-table-cell--get-paragraph-styles'.
-    (org-odt-table-cell--get-paragraph-styles): New helper function.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2d9083f998fe36f0a48131c6e2f1402d1693e089][commit 2d9083f998fe36f0a48131c6e2f1402d1693e089]]
-
-    lisp/ox-odt.el (org-odt--translate-list-tables): Fix regexp
-    
-    * lisp/ox-odt.el (org-odt--translate-list-tables): Use
-    beginning of string instead of beginning of line in regexp.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/55f83d4e531ebca43bcac9c428df586a823f108a][commit 55f83d4e531ebca43bcac9c428df586a823f108a]]
-
-    lisp/ox-odt.el: Support column width and sizing of list tables
-    
-    * lisp/ox-odt.el (org-odt--translate-list-tables): Add support
-    for column grouping and sizing.  Column alignment is not
-    supported.
-    
-    Fixes  kjambunathan/org-mode-ox-odt#23.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/157b5efe9db4bb260c0ec3147d8149ae867528fb][commit 157b5efe9db4bb260c0ec3147d8149ae867528fb]]
-
-    lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs
-    
-    * lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs.
-    
-    Partially fixes  kjambunathan/org-mode-ox-odt#22, by not creating
-     multiple paragraphs with "OrgTitle".
 
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3141527b8e7649b05d02af77c52a56510d766763][commit 3141527b8e7649b05d02af77c52a56510d766763]]
 
@@ -3997,97 +3326,6 @@
         (3) #+TOC: tables
         #+end_example
 
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2183227e6b7b91e2f14d4ef260000fa28abe7bd1][commit 2183227e6b7b91e2f14d4ef260000fa28abe7bd1]]
-
-    lisp/ox-odt.el: Support \cite{} fragments
-    
-    * lisp/ox-odt.el (org-odt--translate-cite-fragments): New filter.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e44643e8c14a8cdc48a701276afc27e2b8521c33][commit e44643e8c14a8cdc48a701276afc27e2b8521c33]]
-
-    Fix all loose ends with ODT's JabRef exporter
-    
-    * lisp/ox-odt.el (org-odt--collect-cite-keys): Format of
-    citation object has changed in the exporter.  Catch up with it.
-    
-    * contrib/lisp/ox-jabref.el (org-export--collect-tree-properties): Renamed
-    from `org-export-collect-tree-properties'.
-    (ox-jabref-unload-function):  Propagate above name change.
-    (org-jabref-citation): Format of citation object has changed in the exporter.
-    Catch up with it.
-    
-    * contrib/lisp/ox-jabref.el: Use lexical-binding.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1197cde5e87e3c447bdfd00507ee12e9ee7ec615][commit 1197cde5e87e3c447bdfd00507ee12e9ee7ec615]]
-
-    lisp/ox-odt.el: Improve list tables
-    
-    * lisp/ox-odt.el (org-odt--translate-list-tables): Improve
-    list tables.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/87dfb928f899db9259f382ccef312b0ca5214c2a][commit 87dfb928f899db9259f382ccef312b0ca5214c2a]]
-
-    lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
-    
-    * lisp/ox-odt.el (org-odt-htmlfontify-string): Replace
-    `org-no-warnings' with `with-no-warnings'.
-    
-    * lisp/ox-odt.el (org-odt--translate-description-lists/latex)
-    (org-odt--translate-description-lists/html): Use `eq' instead
-    of `equal'.
-    
-    * lisp/ox-odt.el (org-odt--translate-latex-fragments):
-    Propagate signature change for `org-format-latex'.
-    
-    * lisp/ox-odt.el (org-odt-table): Use "Org mode", or "Org",
-    instead of "Org-mode" in comment and docstrings.
-    
-    * lisp/ox-odt.el (org-odt-table-cell): Use `org-element-class'.
-    
-    * lisp/ox-odt.el (org-odt-get-table-cell-styles): Use `assq'
-    instead of `assoc'.
-    
-    * lisp/ox-odt.el (org-odt-do-format-code): Use
-    `org-font-lock-ensure' instead of `font-lock-ensure'.
-    
-    * lisp/ox-odt.el (org-odt--copy-formula-file): Use `file-name-extension'.
-    
-    * lisp/ox-odt.el (org-odt-footnote-reference): Only inline
-    footnotes are to be wrapped within a paragraph.
-    
-    * lisp/ox-odt.el (org-odt-template): Use `setq-local' instead
-    of `make-local-variable'.
-    
-    * lisp/ox-odt.el (org-odt-template, org-odt--export-wrap):
-    Change (message (format ...)) to (message ...), and likewise
-    for ‘error’.  This lessens the probability of confusion when
-    the output of ‘format’ contains ‘%’.
-    
-    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Use
-    `string-match-p' instead of `org-string-match-p'.
-    
-    * lisp/ox-odt.el (org-odt-template): Do not call `read' on an empty
-    string.
-    
-    * lisp/ox-odt.el (org-odt-toc): Ignore targets, links and
-    footnote references from table of contents.
-    
-    * lisp/ox-odt.el (org-odt-table-styles): Don't quote nil and t
-    in doc strings.
-    
-    * lisp/ox-odt.el (org-odt-inline-image-rules): Add svg.
-    
-    * lisp/ox-odt.el (org-odt-format-headline-function)
-    (org-odt-format-inlinetask-function): Update :version
-    (org-odt-inline-image-rules): Update :version and :package-version
-    
-    *lisp/ox-odt.el: (org-odt-automatic-styles)
-    (org-odt-category-map-alist)
-    (org-odt-format-headline-function, org-odt-table-styles):
-    Backslash cleanup in Elisp source files.
-    
-    * lisp/ox-odt.el: Update Copyright years.
-
 * [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3c0b2d4258580a4b6259998939eebefd52b2b5a4][commit 3c0b2d4258580a4b6259998939eebefd52b2b5a4]]
 
     * lisp/ox-odt.el: Remove `:export-block' from backend definition
@@ -4117,27 +3355,3 @@
     
       ,#+INCLUDE: "file.org" export html
     #+end_example
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2][commit 5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2]]
-
-    lisp/ox-odt.el: Add kludge to get past compilation errors
-    
-    * lisp/ox-odt.el: Temporarily define `org-export-solidify-link-text'
-    to get past compilation errors.
-    
-    Per commit 459033265295723cbfb0fccb3577acbfdc9d0285 merge, use
-    `org-export-get-reference' and remove
-    `org-export-solidify-link-text'.  Until then, make do with this
-    workaround.
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/348b08b6d64fbcb7d664929f80fb0f04ebe25c73][commit 348b08b6d64fbcb7d664929f80fb0f04ebe25c73]]
-
-    lisp/ox-odt.el: Use `cl-lib'
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5e25808b5292eff445a676394721d9dfe9858734][commit 5e25808b5292eff445a676394721d9dfe9858734]]
-
-    lisp/ox-odt.el: Use lexical binding
-
-* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6d7fec56b3202662f40ed0db85581ecec5a95983][commit 6d7fec56b3202662f40ed0db85581ecec5a95983]]
-
-    ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
