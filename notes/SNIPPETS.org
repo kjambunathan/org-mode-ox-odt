@@ -13,6 +13,21 @@
 #+creator: Emacs 29.0.50 (Org mode 9.5.2)
 #+cite_export:
 
+A /near-comprehensive/ list of features that are /exclusive/ to the
+/enhanced ODT exporter/.  The features listed here are not available
+with the official Emacs.  You can use this /crude/ list to learn about
+or explore a feature.  Each entry you see below is a commit log of the
+feature, and it links to the associated commit and issues.
+
+This document is a feeder for The
+[[https://kjambunathan.gitlab.io/org-mode-ox-odt/][OpenDocument
+Exporter User Guide]].
+
+Note that the guide, particularly the
+[[https://kjambunathan.gitlab.io/org-mode-ox-odt/What-is-New.html][What
+is New]] section lists only /some/ interesting subsets of the features
+listed here.
+
 * Summary of ~ox-odt~ features (with snippets and screenshots)          :TOC:
 - [[#nest-tables-using-a-transcluded-table][Nest Tables using a ~Transcluded Table~]]
 - [[#style-a-griddedtable][Style a ~GriddedTable~]]
