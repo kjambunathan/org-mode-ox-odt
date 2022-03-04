@@ -26,7 +26,7 @@ See [Top (OpenDocument Text Exporter for Emacs’ Org Mode)](https://kjambunatha
 
 If you are an existing user of OpenDocument exporter, start with [What is New (OpenDocument Text Exporter for Emacs’ Org Mode)](https://kjambunathan.gitlab.io/org-mode-ox-odt/What-is-New.html).
 
-If you want a /near complete/, but a /crude/ list of features start with [List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode](https://github.com/kjambunathan/org-mode-ox-odt/blob/master/notes/SNIPPETS.org#handle-nested-list-tables-part-1).
+If you want a /near complete/, but a /crude/ list of features start with [List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode](https://github.com/kjambunathan/org-mode-ox-odt/blob/master/notes/SNIPPETS.org).
 
 ## Blog-style artciles
 
