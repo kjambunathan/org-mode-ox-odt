@@ -1,0 +1,4143 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+options: author:t broken-links:mark c:nil creator:nil
+#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:nil
+#+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+options: timestamp:t title:t toc:nil todo:t |:t
+#+title: OX-ODT FEATURES
+#+date: <2022-03-04 Fri>
+#+author: Jambunathan K
+#+email: kjambunathan@gmail.com
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 29.0.50 (Org mode 9.5.2)
+#+cite_export:
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d41960570ae5dbf6ca8e2c88bca5a0142a6cb581][commit d41960570ae5dbf6ca8e2c88bca5a0142a6cb581]]
+
+    * lisp/ox-odt.el: Update copyright year
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7387b78192f4f68c1a4213a216db39059b84be76][commit 7387b78192f4f68c1a4213a216db39059b84be76]]
+
+    * lisp/ox-odt.el (org-odt-table-dimensions): New.  Replaces `org-export-table-dimensions'
+    
+    * lisp/ox-odt.el (org-odt-table-dimensions): New.  Replaces `org-export-table-dimensions'
+    (org-odt--table-cell-get-cell-variant, org-odt--table-cell-widths)
+    (org-odt--table): Use `org-odt-table-dimensions' instead of
+    `org-export-table-dimensions'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/155][issue#155]].
+    
+    Here is a snippet to exercise this change
+    
+        #+begin_example
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :rel-width 100
+        ,#+ATTR_ODT: :col-cookies "| <3>    | <3>       | <2>                                                                      |"
+        | [fn:us] | [fn:india] | An American is taller than an Indian by 10cms. and heavier by around 25kg |
+    
+        [fn:us]
+    
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :span "@1$1{1:4}"
+        ,#+ATTR_ODT: :span "@3$4{2:1}"
+        | United States of America |        |        |
+        |--------------------------+--------+--------|
+        |                          | Height | Weight |
+        |--------------------------+--------+--------|
+        | Males                    | 1.77m  | 90.6kg |
+        |--------------------------+--------+--------|
+        | Females                  | 1.63m  | 77.1kg |
+    
+        [fn:india]
+    
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :span "@1$1{1:4}"
+        ,#+ATTR_ODT: :span "@3$4{2:1}"
+        | India   |        |        |
+        |---------+--------+--------|
+        |         | Height | Weight |
+        |---------+--------+--------|
+        | Males   | 1.66m  | 59.6kg |
+        |---------+--------+--------|
+        | Females | 1.55m  | 52.5kg |
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/901ed3be98b169d822b11db808f252f39687968d][commit 901ed3be98b169d822b11db808f252f39687968d]]
+
+    * lisp/ox-odt.el (org-odt--table): Honor ODT attributes of a custom table
+    
+    * lisp/ox-odt.el (org-odt--table): Honor ODT attributes of a
+    custom table.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/154][issue#154]].
+    
+    Here is a test snippet for exercising this change
+    
+        #+begin_example
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :rel-width 50
+        |             | FirstRow |           |            |            |
+        |-------------+----------+-----------+------------+------------|
+        | FirstColumn | EvenRow  | OddColumn | EvenColumn | LastColumn |
+        |             |  OddRow  |           |            |            |
+        |-------------+----------+-----------+------------+------------|
+        |             | LastRow  |           |            |            |
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f49abb9b11d082ab2b762e5bc09ce4ec8491b35b][commit f49abb9b11d082ab2b762e5bc09ce4ec8491b35b]]
+
+    * lisp/ox-odt.el: Use `write-region' instead of `write-file'
+    
+    * lisp/ox-odt.el (org-odt-write-contents-file):
+    (org-odt-write-styles-file):
+    (org-odt-write-meta-file):
+    (org-odt-write-manifest-file):
+    (org-odt-prettify-xml-files-maybe):
+    (org-odt-export-as-odf):
+    (org-odt-export-to-odt-backend):
+    (org-odt-export-to-odt-backend): Use `write-region' instead of
+    `write-file'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/165][issue#165]] and https://github.com/hlissner/doom-emacs/issues/6149.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3fa02aab07c521a8a36d44e41d19acbfd48c61f8][commit 3fa02aab07c521a8a36d44e41d19acbfd48c61f8]]
+
+    * lisp/ox-odt.el: Citation-related cleanups
+    
+    * lisp/ox-odt.el (odt): `org-odt-citation' is no longer used.
+    (org-odt--translate-cite-fragments, org-odt--collect-cite-keys):
+    Remove these.
+    (BIB_FILE): Remove it
+    (org-odt-keyword): No need to check for BIBLIOGRAPHY keyword.
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/164][issue#164]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9c24d61db09aa568641705b193518c492de3d966][commit 9c24d61db09aa568641705b193518c492de3d966]]
+
+    * lisp/ox-odt.el (org-odt--endnote-p): Handle inline footnotes
+    
+    * lisp/ox-odt.el (org-odt--endnote-p): Gracefully handle inline
+    footnotes.  Fixes the error while exporting
+    `./testing/examples/odt/citation-new-1.org' with
+    `chicago-note-bibliography.csl' format.
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/164][issue#164]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/39e5a0ae569edc3af7c160d5e602d1e341cf91a0][commit 39e5a0ae569edc3af7c160d5e602d1e341cf91a0]]
+
+    * etc/styles/OrgOdtStyles.xml(OrgFormulaBody, OrgFormulaCaptionFrame): Modified.
+    
+    * lisp/ox-odt.el (org-odt-link--inline-formula): Use tab to
+    separate the equation and it's label.
+    (org-odt--render-image/formula-for-lo)
+    (org-odt--render-image/formula-for-gdocs):  Change anchor type of
+    "OrgFormulaCaptionFrame" to "as-char".
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/158][issue#158]].  See also [[https://github.com/kjambunathan/org-mode-ox-odt/issues/152][issue#152]].
+    
+    Here is an Org snippet to exercise this change:
+    
+        #+begin_example
+        ,#+options: toc:nil author:nil tex:t latex:t :H 10
+        ,#+odt_math_syntax: starmath
+    
+        \\
+    
+        ,#+Name: 1
+        \begin{equation}
+                { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+Name: 2
+        \begin{equation}
+    
+        { nitalic tan ( %alpha + %beta )  = nitalic { tan (%alpha + %beta) } over {1 - tan (%alpha) tan (%beta) } }
+        \end{equation}
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3221803c7e98ee09a3433841a63a90b340f31ed0][commit 3221803c7e98ee09a3433841a63a90b340f31ed0]]
+
+    * lisp/ox-odt.el:  Support for vertical alignment in col-cookies.  Extend FirstRow, FirstColumn etc. styles to `Org'-style table
+    
+    * lisp/ox-odt.el (org-odt-table-template-props): New user variable.
+    (org-odt-table-paragraph-styles): New variable that lists the
+    properties of default paragraph styles that occur in an Org-style
+    table.
+    (org-odt--table-cell-build-paragraph-styles): Build default paragraph styles used
+    with an Org-style table.
+    (org-odt--table-cell-build-table-cell-styles): Build default table-cell styles.
+    (org-odt-inner-template): Write default table-cell styles as
+    automatic styles in content.xml.
+    (org-odt-write-styles-file): Write default paragraph styles used
+    with an Org-style table.
+    (org-odt-paragraph): Remove check for table-cell.
+    (org-odt--table-cell-get-paragraph-style)
+    (org-odt--table-cell-get-cell-span)
+    (org-odt--table-cell-get-group-address)
+    (org-odt--table-cell-get-cell-variant)
+    (org-odt--table-cell-get-cell-style)
+    (org-odt--table-get-cell-spans)
+    (org-odt--table-get-group-dimensions)
+    (org-odt--table-get-rowgroup-numbers)
+    (org-odt--table-get-colgroup-numbers): New helpers for typesetting
+    a table-cell.
+    (org-odt--table-col-cookies): Support for valigns in `col-cookies'.
+    (org-odt--table-cell-widths): Honor widths specified right within
+    the table.
+    (org-odt-table-cell): Modified.
+    
+    * etc/styles/OrgOdtContentTemplate.xml (OrgTblCell*)
+    (Custom*TableCell): Remove these table-cell styles.  These are
+    replaced with the equivalent `OrgTable*Cell', `CustomTable*Cell'
+    styles.  The new styles are now generated with in `org-odt-inner-template'
+    as part of `org-odt--table-cell-build-table-cell-styles'.
+    
+    (OrgEquation*): Remove these table-related styles.  Equations no
+    longer uses table for typesetting.
+    
+    (Custom*Contents): Remove these styles.  These are replaced with
+    `CustomTable*Contents' style.  The new styles are generated in
+    `org-odt-write-styles-file' as part of
+    `org-odt--table-cell-build-paragraph-styles'.
+    
+    (Custom): Bring it on parity with `Org' table style.  Specifically,
+    increase the relative width and add a bottom margin.
+    
+    * etc/styles/OrgOdtStyles.xml (OrgTable*): Remove these styles.  These
+    are replaced with `OrgTable*Contents' styles.  The new styles are
+    generated in `org-odt-write-styles-file' as part of
+    `org-odt--table-cell-build-paragraph-styles'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/122][issue#122]].
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/123][issue#123]].
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/132][issue#132]].
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/139][issue#139]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0745e92da5404fe519c8cdd4268eb1196d51fce2][commit 0745e92da5404fe519c8cdd4268eb1196d51fce2]]
+
+    * lisp/ox-odt.el (org-odt-link--inline-formula): Position formula number using frame (instead of a right-aligned tab)
+    
+    * etc/styles/OrgOdtStyles.xml (Formula): New style for formula
+    captions.
+    (OrgDisplayFormula): Modified.
+    (OrgFormulaNumberFrame): New style for frame that encloses the
+    formula number.
+    
+    * lisp/ox-odt.el (org-odt-caption-and-numbering-settings): Assign
+    a unique caption style to math formulae.
+    (org-odt-link--inline-formula): Formula number is no longer
+    flushed right with a tab.  Instead it is flushed right by
+    typesetting within a frame that is flushed right.
+    (org-odt--render-image/formula-for-lo): Misc. changes.
+    (org-odt--render-image/formula-for-gdocs): Copy over
+    `org-odt--render-image/formula-for-lo' verbatim.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/152][issue#152]].
+    
+    Here is a sample snippet to test drive this change:
+    
+        #+begin_example
+        ,* Using Starmath fragments
+    
+        ,#+options: tex:t
+        ,#+odt_math_syntax: starmath
+    
+        When ${ a <> 0 }$, there are two solutions to \( { a x ^ 2 + b x + c = 0 } \)
+        and they are
+    
+        $${ x  = frac { { - b +- sqrt { b ^ 2 - 4 a c } } } { { 2 a } }}$$
+    
+        A trigonometric equation
+    
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+NAME: starmatheqn1
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+CAPTION: A trigonometric identity
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+NAME: starmatheqn2
+        ,#+CAPTION: A trigonometric identity
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        Links to equations [[starmatheqn1]] and [[starmatheqn2]].
+    
+        Links to  equations [[starmatheqn1][Equation 1]] and
+        [[starmatheqn2][Equation 2]].
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9f68437c55313bec47ee96c525eff866a36d0a37][commit 9f68437c55313bec47ee96c525eff866a36d0a37]]
+
+    * lisp/ox-odt.el (ODT_MATH_SYNTAX):  Add support for starmath
+    
+    * lisp/ox-odt.el (ODT_MATH_SYNTAX): New export keyword.
+    (org-odt-math-syntax): New user option.  It can be one of "latex"
+    or "starmath".
+    (org-odt--extract-starmath-from-latex-frag)
+    (org-create-math-formula-from-starmath): New helper functions for
+    dealing with starmath fragments.
+    (org-odt--translate-latex-fragments): Modified.
+    (org-odt-export-as-odf): Modified.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/87][issue#87]].
+    
+    Here is a sample snippet to test drive this change
+    
+        #+begin_example
+        ,* Using Starmath fragments
+    
+        ,#+options: tex:t
+        ,#+odt_math_syntax: starmath
+    
+        When ${ a <> 0 }$, there are two solutions to \( { a x ^ 2 + b x + c = 0 } \)
+        and they are
+    
+        $${ x  = frac { { - b +- sqrt { b ^ 2 - 4 a c } } } { { 2 a } }}$$
+    
+        A trigonometric equation
+    
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+NAME: starmatheqn
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,#+CAPTION: A trigonometric identity
+        \begin{equation}
+         { nitalic cos { ( θ + ϕ ) } = nitalic cos { ( θ ) } nitalic cos { ( ϕ ) } - nitalic sin { ( θ ) } nitalic sin { ( ϕ ) } }
+        \end{equation}
+    
+        ,* COMMENT Using LaTeX Fragment
+    
+        ,#+options: tex:dvipng
+        ,#+odt_math_syntax: latex
+    
+        When $a \ne 0$, there are two solutions to \(ax^2 + bx + c = 0\) and they are
+    
+        $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
+    
+        A trigonometric equation
+    
+        \begin{equation*}
+        \cos(\theta+\phi)=\cos(\theta)\cos(\phi)−\sin(\theta)\sin(\phi)
+        \end{equation*}
+    
+        ,#+NAME: latexeqn
+        \begin{equation*}
+        \cos(\theta+\phi)=\cos(\theta)\cos(\phi)−\sin(\theta)\sin(\phi)
+        \end{equation*}
+    
+        ,#+CAPTION: A trigonometric identity
+        \begin{equation*}
+        \cos(\theta+\phi)=\cos(\theta)\cos(\phi)−\sin(\theta)\sin(\phi)
+        \end{equation*}
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cc29b1951a333099938774fe050aac95d82bcf5a][commit cc29b1951a333099938774fe050aac95d82bcf5a]]
+
+    * lisp/ox-odt.el: Minor fix
+    
+    * lisp/ox-odt.el (org-odt-format-label):
+    (org-odt-link--inline-image): Handle the case where ODT_APP is
+    empty.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1284a61236ab58427e7c65409f2255566d57c093][commit 1284a61236ab58427e7c65409f2255566d57c093]]
+
+    * lisp/ox-odt.el (ODT_VALIDATE, org-odt-vaidate): New keyword.  New command.
+    
+    * lisp/ox-odt.el (ODT_VALIDATE): New keyword.
+    (org-odt-validate): New user option corresponding to the above
+    keyword.
+    (org-odt--validate-target): New.
+    (org-odt-validate):  New command.
+    (org-odt-template): Run validator on exported file, before it is
+    transformed and converted.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/125][issue#125]].
+    
+    Here is a simple snippet to configure and run the validator:
+    
+        #+begin_example
+        ,#+odt_preferred_output_format: pdf
+    
+        ,#+odt_validate: abort
+        # #+odt_validate: noabort
+    
+        ,#+begin_src emacs-lisp :exports results :results silent
+        (custom-set-variables
+         '(org-odt-validate-process
+           '("java" "-jar" "/home/kjambunathan/Downloads/odfvalidator-0.10.0-jar-with-dependencies.jar" "-v" "%i"))
+         )
+        org-odt-vaidate-process
+        ,#+end_src
+    
+        A very simple document.
+    
+        # Local Variables:
+        # org-export-use-babel: t
+        # End:
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9046fb2a1ebc35a6c3a1b0f1b043b87a7da04db9][commit 9046fb2a1ebc35a6c3a1b0f1b043b87a7da04db9]]
+
+    * lisp/ox-odt.el (ODT_PRETTIFY-XML): New export keyword
+    
+    * lisp/ox-odt.el (ODT_PRETTIFY-XML): New export keyword to control
+    prettfication of XML output.  The value can be unspecified or one
+    of `tidy' or `tidy+indent'.
+    (org-odt-prettify-xml): Change type from a 2-valued boolean to a
+    3-valued string.
+    (org-odt-prettify-xml-buffer): Change signature.  Make it
+    interactive.  Honor in-buffer / interactive settings for
+    prettification. Invoke `tidy' with the following args
+    "--vertical-space no" and "--indent no"
+    (org-odt-inner-template):
+    (org-odt-write-styles-file):
+    (org-odt-write-meta-file):
+    (org-odt-write-manifest-file): Related changes.
+    
+    More fixes for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/140][issue#140]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1a855d16a73bf2519b0f940737b93635eb96a3ef][commit 1a855d16a73bf2519b0f940737b93635eb96a3ef]]
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Add instruction for using `Reload' macro
+    
+    * lisp/ox-odt.el (org-odt-transform-processes): Update docstring.
+    Add a note on how the `Reload' macro is to be used.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/111][issue#111]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/715efc99704da96df3a25b8e32cb4a5a2f91ca73][commit 715efc99704da96df3a25b8e32cb4a5a2f91ca73]]
+
+    * lisp/ox-odt.el: Enclose standalone image (or formula) in OrgFigureBody (or OrgFormulaBody)
+    
+    * etc/styles/OrgOdtStyles.xml (OrgFigureBody, OrgSubFigureBody)
+    (OrgFormulaBody, OrgSubFormulaBody): New paragraph styles.
+    
+    * lisp/ox-odt.el (org-odt-link--inline-image):
+    (org-odt-link--inline-formula, org-odt-paragraph)
+    (org-odt--translate-latex-fragments): Enclose standalone image /
+    formula in one of the above paragraph styles.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/149][issue#149]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0d66e2020be566061a37ba0754595420a0ad9f2e][commit 0d66e2020be566061a37ba0754595420a0ad9f2e]]
+
+    * lisp/ox-odt.el: Fix indentation
+    
+    * lisp/ox-odt.el (org-odt-format-label-for-lo):
+    (org-odt-format-label-for-gdocs):  Re-indent.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/64a11b05449657be44afc3db36c071584ab4a3db][commit 64a11b05449657be44afc3db36c071584ab4a3db]]
+
+    * lisp/ox-odt.el (ODT_APP): Preparing for export to Google Documents
+    
+    * lisp/ox-odt.el: New export export keyword `:odt-app'.  A
+    `ODT_APP' is the end-user application which will be used to
+    process the exported document downstream.  For example,
+    LibreOffice and Google Documents are examples of ODT_APPs.
+    Experience suggests that an application that is produced for
+    consumption by LibreOffice may not be suitable for consumption by
+    other apps like Google Documents.  This is because these other
+    apps are NOT "full-fledged" OpenDocument apps and support only a
+    subset of features that is expressible OpenDocument format.  The
+    value of this keyword, can be used to tailor output to a specific
+    app.  Currently, the value can be one of nil (="lo") or "gdocs".
+    
+    As on this date (early Dec. 2021), Google Docs has the following
+    limitations:
+    
+    1. No support for caption numbering.  Specifically, no support for
+         `text:sequence' and `text:sequence-ref' elements.
+    
+    2. No support for image caption (as recommended by LibreOffice
+    Guides).
+    
+    Accordingly, adapters are needed for typesetting the following:
+    
+    - captions to images/formulae
+    - cross-references to captioned image/formulae
+    
+    (org-odt-format-label, org-odt--render-image/formula): Make these
+    app-specific.  Use `org-odt--get-app-function', to route it to
+    app-specific handlers.
+    
+    (org-odt--get-app-function): New.  Return app-specific handlers for
+    `render-image/formula' and `format-label'.
+    
+    (org-odt-format-label-for-lo, org-odt--render-image/formula-for-lo):
+    LibreOffice-specific handlers for `render-image/formula' and
+    `format-label'.  These are verbatim copies of current
+    `org-odt-format-label' and `org-odt--render-image/formula'.
+    (org-odt-format-label-for-gdocs,
+    
+    org-odt--render-image/formula-for-gdocs): 'Google Documents'-specific
+    handlers for `render-image/formula' and `format-label'.  These are
+    verbatim copies of current `org-odt-format-label' and
+    `org-odt--render-image/formula'.  In other words, even though `Google
+    Documents'-specific handlers are in place, the specifics aren't taken
+    care of yet.
+    
+    (org-odt-link--inline-image, org-odt-link--inline-formula): Introduce
+    new ODT attribute `:app' for captioned images/formulae.  Have
+    `org-odt-link--inline-formula' ignore the document-wide and
+    element-specfic app value.
+    
+    Preparing for export to 'Google Documents'.  See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/136][issue#136]], [[https://github.com/kjambunathan/org-mode-ox-odt/issues/137][issue#137]] and [[https://github.com/kjambunathan/org-mode-ox-odt/issues/145][issue#145]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0ab33186b4c1b28f98dffa6cd917eb23989e22b5][commit 0ab33186b4c1b28f98dffa6cd917eb23989e22b5]]
+
+    * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Preserve whitespace in attrs
+    
+    * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Invoke `tidy` with
+    `--literal-attributes=yes'.  Also fix a compilation error.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/148][issue#148]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a0171d7b069ad2aa67fda062043b0f42b5d76a1f][commit a0171d7b069ad2aa67fda062043b0f42b5d76a1f]]
+
+    * lisp/ox-odt.el (org-odt-special-block): New block `customshape'
+    
+    * lisp/ox-odt.el (org-odt-special-block): Add new special block
+    `customshape'.  The immediate need such a special block is to
+    develop (and test) documents, specifially documents with captioned
+    images, which can be imported in to Google Docs without any
+    rendering isssues.
+    (org-odt--draw:custom-shape): New function for
+    generating `<draw:custom-shape ...>...</draw:custom-shape>'.
+    (org-odt-paragraph): Handle `customshape' blocks.
+    
+    See ['A simple document with a captioned image (produced in
+    LibreOffice by hand) isn't displayed properly when uploaded to
+    Google Docs'](https://github.com/kjambunathan/org-mode-ox-odt/issues/136)
+    and ['Writer typesets identically defined automatic and custom
+    graphic-styles differently'](https://bugs.documentfoundation.org/show_bug.cgi?id=145987)
+    
+    Here is a sample snippet to test drive this feature:
+    
+        #+begin_example
+        ,#+odt_automatic_styles: <style:style style:name="OrgShape"
+        ,#+odt_automatic_styles:              style:family="graphic">
+        ,#+odt_automatic_styles:   <style:graphic-properties draw:auto-grow-height="true"
+        ,#+odt_automatic_styles:                             draw:textarea-horizontal-align="justify"
+        ,#+odt_automatic_styles:                             draw:textarea-vertical-align="middle"
+        ,#+odt_automatic_styles:                             draw:wrap-influence-on-position="once-concurrent"
+        ,#+odt_automatic_styles:                             fo:min-height="0cm"
+        ,#+odt_automatic_styles:                             fo:min-width="0cm"
+        ,#+odt_automatic_styles:                             fo:padding-bottom="0.125cm"
+        ,#+odt_automatic_styles:                             fo:padding-left="0.25cm"
+        ,#+odt_automatic_styles:                             fo:padding-right="0.25cm"
+        ,#+odt_automatic_styles:                             fo:padding-top="0.125cm"
+        ,#+odt_automatic_styles:                             fo:wrap-option="wrap"
+        ,#+odt_automatic_styles:                             style:flow-with-text="false"
+        ,#+odt_automatic_styles:                             style:horizontal-pos="center"
+        ,#+odt_automatic_styles:                             style:horizontal-rel="paragraph"
+        ,#+odt_automatic_styles:                             style:number-wrapped-paragraphs="no-limit"
+        ,#+odt_automatic_styles:                             style:run-through="foreground"
+        ,#+odt_automatic_styles:                             style:vertical-pos="top"
+        ,#+odt_automatic_styles:                             style:vertical-rel="paragraph"
+        ,#+odt_automatic_styles:                             style:wrap="none" />
+        ,#+odt_automatic_styles:   <style:paragraph-properties style:writing-mode="lr-tb" />
+        ,#+odt_automatic_styles: </style:style>
+    
+        [[./org-mode-unicorn.png]]
+    
+        ,#+ATTR_ODT: :anchor "paragraph" :style "OrgShape" :width 3
+        ,#+begin_customshape
+          Aliqua esse aute non lorem ullamco sint consequat in incididunt
+          qui excepteur reprehenderit
+        ,#+end_customshape
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7ec30b54b7c9f9dc322c84e6642099b4ab561f57][commit 7ec30b54b7c9f9dc322c84e6642099b4ab561f57]]
+
+    * lisp/ox-odt.el: Honor user option `org-odt-styles-file'
+    
+    * lisp/ox-odt.el: Initialize `:odt-styles-file' with the value of
+    user option `org-odt-styles-file'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/143][issue#143]]
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f948f731a5bf84307665ebd4250ce6b1215c0b55][commit f948f731a5bf84307665ebd4250ce6b1215c0b55]]
+
+    * lisp/ox-odt.el (org-odt-yank-styles): New command
+    
+    * lisp/ox-odt.el (org-odt-prettify-xml-buffer): Use HTML tidy to
+    create pretty XML.
+    (org-odt-yank-styles): New command to insert custom styles in to
+    `org-mode' buffer.
+    (org-odt-inner-template):
+    (org-odt-write-styles-file):
+    (org-odt-write-meta-file):
+    (org-odt-write-manifest-file): Use `org-odt-prettify-xml-buffer'
+    (org-odt-prettify-xml): Mention `org-odt-prettify-xml-buffer'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/140][issue#140]].
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/141][issue#141]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/12cf8a3640e1afaf4c1ee58a8b45e70d4dbdcfb4][commit 12cf8a3640e1afaf4c1ee58a8b45e70d4dbdcfb4]]
+
+    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix compilation errors
+    
+    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix compilation errors
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/114][issue#114]]
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/424c8f54fccbf9121dcd1abf2f43efae2e01aefa][commit 424c8f54fccbf9121dcd1abf2f43efae2e01aefa]]
+
+    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix earlier commit
+    
+    * lisp/ox-odt.el (org-odt-table-suggest-spans): Fix earlier commit.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/114][issue#114]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/927413d9065a2bd322d28cc76a57be88635b0725][commit 927413d9065a2bd322d28cc76a57be88635b0725]]
+
+    * lisp/ox-odt.el (org-odt-table-suggest-spans): New command to
+    generate `:span' attribute lines for a table.
+    (org-odt--table-compute-spans): Workhorse helper for above
+    command.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/114][issue#114]].
+    
+    Here is a sample snippet to test drive the above change:
+    
+        #+begin_example
+        If you want to produce the following table
+    
+            ,#+begin_example
+            +----------+----------+----------+
+            |Column 1  |Column 2  |Column 3  |
+            +----------+----------+----------+
+            |A         |B                    |
+            |          +----------+----------+
+            |          |C         |D         |
+            +----------+----------+----------+
+            |E         |F                    |
+            +----------+                     |
+            |G         |                     |
+            +----------+---------------------+
+            |H                               |
+            +--------------------------------+
+            ,#+end_example
+    
+        you will start with the following Org table:
+    
+            ,#+ATTR_ODT: :style "GriddedTable"
+            |----------+----------+----------|
+            | Column 1 | Column 2 | Column 3 |
+            |----------+----------+----------|
+            | A        | B        |          |
+            |          | C        | D        |
+            | E        | F        |          |
+            | G        |          |          |
+            | H        |          |          |
+            |----------+----------+----------|
+    
+        When you invoke ~M-x org-odt-table-suggest-spans~ on this table,
+        you will get the following result
+    
+            ,#+ATTR_ODT: :style "GriddedTable"
+            ,#+ATTR_ODT: :span "@1$3{2:1}"
+            ,#+ATTR_ODT: :span "@2$1{2:1} @2$2{1:2}"
+            ,#+ATTR_ODT: :span "@3$3{4:1}"
+            ,#+ATTR_ODT: :span "@4$2{3:2}"
+            ,#+ATTR_ODT: :span "@5$1{1:3}"
+            ,#+ATTR_ODT: :span "@6$1{1:3}"
+            |----------+----------+----------|
+            | Column 1 | Column 2 | Column 3 |
+            |----------+----------+----------|
+            | A        | B        |          |
+            |          | C        | D        |
+            | E        | F        |          |
+            | G        |          |          |
+            | H        |          |          |
+            |----------+----------+----------|
+    
+        If you export this table, you will get a table with col and
+        rowspans but in a "wrong" way. In order to get the desired
+        spans, you have to do the following "edits"
+    
+             ,#+begin_src diff
+             ,,#+ATTR_ODT: :style "GriddedTable"
+            -#+ATTR_ODT: :span "@1$3{2:1}"
+             ,,#+ATTR_ODT: :span "@2$1{2:1} @2$2{1:2}"
+            -#+ATTR_ODT: :span "@3$3{4:1}"
+            -#+ATTR_ODT: :span "@4$2{3:2}"
+            -#+ATTR_ODT: :span "@5$1{1:3}"
+            +#+ATTR_ODT: :span "@4$2{2:2}"
+             ,,#+ATTR_ODT: :span "@6$1{1:3}"
+             ,#+end_src
+    
+        That is,
+    
+            - Ignore /~:span~-suggestions/ for first, third and fifth rows
+            - Modify the /~:span~-suggestions/ on fifth row
+            - Retain other /~:span~-suggestions/ on other rows
+    
+        and end up with the table like this:
+    
+            ,#+ATTR_ODT: :style "GriddedTable"
+            ,#+ATTR_ODT: :span "@2$1{2:1} @2$2{1:2}"
+            ,#+ATTR_ODT: :span "@4$2{2:2}"
+            ,#+ATTR_ODT: :span "@6$1{1:3}"
+            |----------+----------+----------|
+            | Column 1 | Column 2 | Column 3 |
+            |----------+----------+----------|
+            | A        | B        |          |
+            |          | C        | D        |
+            | E        | F        |          |
+            | G        |          |          |
+            | H        |          |          |
+            |----------+----------+----------|
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/803ae54b30b79bc86d838a94bc8e26c058f6f390][commit 803ae54b30b79bc86d838a94bc8e26c058f6f390]]
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles): Gracefully handle case where col align is unspecified
+    
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    Handle the case where the no alignment is specified.
+    (org-odt--table-col-cookies): When there is no explicit align
+    specified, return nil.
+    
+    Fix [[https://github.com/kjambunathan/org-mode-ox-odt/issues/126][issue#126]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cea0effe1e5866ba16bde9bb48b087c2227e29a9][commit cea0effe1e5866ba16bde9bb48b087c2227e29a9]]
+
+    * lisp/ox-odt.el: Support for `:col-cookies' attribute
+    
+    * lisp/ox-odt.el (org-odt--table-col-cookies): New function to
+    handle `:col-cookies' attribute.
+    (org-odt--table-cell-widths):  Modified.  Return widths from
+    `:col-cookies' when there is no explicit `:widths' attribute.
+    (org-odt-table-cell--get-paragraph-styles): Use above functions.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/121][issue#121]]
+    
+    Here is an Org snippet to test drive this feature:
+    
+        #+begin_example
+        ,#+begin_src emacs-lisp :exports results :results silent
+        (add-to-list 'org-odt-experimental-features 'transclude-sole-footnote-references-in-a-table)
+        ,#+end_src
+    
+        ,#+CAPTION: Regular Table
+        ,#+ATTR_ODT: :col-cookies  "|  <c>  |       | <l3>  | <c3>  | <2>   |  <r3> | <>    |"
+        | <l1>  |  <r1> | <r2>  | <r4>  | <l8>  | <c16> | <l1>  |
+        | Col-1 | Col-2 | Col-3 | Col-4 | Col-5 | Col-6 | Col-7 |
+        |-------+-------+-------+-------+-------+-------+-------|
+        |  C1   |    L1 | L3    |  C3   | L2    |    R3 | L1    |
+    
+        ,#+CAPTION: List Table
+        ,#+ATTR_ODT: :col-cookies  "|  <c>  |       | <l3>  | <c3>  | <2>   |  <r3> | <>    |"
+        ,#+ATTR_ODT: :list-table t
+        -
+          - Co1-1
+          - Col-2
+          - Col-3
+          - Col-4
+          - Col-5
+          - Col-6
+          - Co-7
+        - ----------------
+          - C1
+          - L1
+          - L3
+          - C3
+          - L2
+          - R3
+          - L1
+    
+        ,#+CAPTION: Transcluded Table
+        ,#+ATTR_ODT: :col-cookies  "|  <c>  |       | <l3>  | <c3>  | <2>   |  <r3> | <>     |"
+        | Col-1 | Col-2 | Col-3 | Col-4 | Col-5 | Col-6 | Col-7  |
+        |-------+-------+-------+-------+-------+-------+--------|
+        |  C1   | L1    | L3    |  C3   | L2    |    R3 | [fn:1] |
+    
+        [fn:1]
+    
+        L1
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e90550e5df70e6385eb3f70733ba4644cbd9948d][commit e90550e5df70e6385eb3f70733ba4644cbd9948d]]
+
+    * lisp/ox-odt.el:  Add macro keyword-to-documentproperty and keyword ODT_DOCUMENT_PROPERTIES
+    
+    * lisp/ox-odt.el (ODT_DOCUMENT_PROPERTIES, ODT_EXTRA_META): New keywords.
+    (org-odt-global-macros): New user option.  Add ODT-specific macro
+    named `keyword-to-documentproperty'.  This is the ODT counterpart
+    of `org-export-global-macros'.
+    (org-odt--define-custom-field, org-odt--use-custom-field): New
+    helpers for defining and using user-defined variables.
+    (org-odt-keyword): Collect user-defined keyword/value pairs in
+    ODT_DOCUMENT_PROPERTIES for inclusion in meta.xml.
+    (org-odt-write-meta-file): Write user-requested entries to
+    meta.xml.
+    (org-odt-export-before-processing-function): New.  Add it to
+    `org-export-before-processing-hook'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/117][issue#117]].
+    
+    Here is an Org snippet to test drive this change:
+    
+        #+begin_example
+        ,#+ODT_DOCUMENT_PROPERTIES: DOC-TITLE
+        ,#+DOC-TITLE: Custom fields
+    
+        ,#+MACRO: DocTitle {{{keyword-to-documentproperty(DOC-TITLE)}}}
+    
+        The name of the document is {{{DocTitle}}}.
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4ad25a393cadde87c9bb9e32aab61252af96a2ab][commit 4ad25a393cadde87c9bb9e32aab61252af96a2ab]]
+
+    * lisp/ox-odt.el (EXPERIMENTAL): Add support for transcluded tables
+    
+    * lisp/ox-odt.el (org-odt-experimental-features): Add new feature
+    transcluded tabes.
+    (org-odt--table-type): New
+    (org-odt--transclude-sole-footnote-references-in-a-table): New.
+    (org-odt-table-cell--get-paragraph-styles): Use
+    `org-odt--table-type.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/112][issue#112]].
+    
+    Here is an Org snippet to test drive this feature:
+    
+        #+begin_example
+        ,#+begin_src emacs-lisp :exports results :results silent
+        (add-to-list 'org-odt-experimental-features 'transclude-sole-footnote-references-in-a-table)
+        ,#+end_src
+    
+        This /list table/ is equivalent to
+    
+        ,#+ATTR_ODT: :widths "2,1,1,8"
+        ,#+ATTR_ODT: :list-table t
+        - | /    | <    | >    |      |
+        -
+          - Day
+          - Min Temp
+          - Max Temp
+          - Summary
+        - ----------------
+          - Monday
+          - 11C
+          - 22C
+          -
+            1. A clear day with lots of sunshine.
+            2. Late in the day, a strong breeze will bring down the temperatures.
+        - ----------------
+          - Tuesday
+          - 9C
+          - 19C
+          -
+            1. Cloudy with rain, across many northern regions.
+            2. Clear spells across most of Scotland and Northern Ireland, but
+               rain reaching the far northwest.
+    
+        this /transcluded table/.
+    
+        ,#+ATTR_ODT: :widths "2,1,1,8"
+        | /       | <        | >        |         |
+        | Day     | Min Temp | Max Temp | Summary |
+        |---------+----------+----------+---------|
+        | Monday  | 11C      | 22C      | [fn:1]  |
+        |---------+----------+----------+---------|
+        | Tuesday | 9C       | 19C      | [fn:2]  |
+    
+        [fn:1]
+    
+        1. A clear day with lots of sunshine.
+        2. Late in the day, a strong breeze will bring down the temperatures.
+    
+        [fn:2]
+    
+            1. Cloudy with rain, across many northern regions.
+            2. Clear spells across most of Scotland and Northern Ireland, but
+               rain reaching the far northwest.
+    
+        # Local Variables:
+        # shm-program-name: t
+        # End:
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1d18f7e49f98e4395af48176b9a13fa87c6f1179][commit 1d18f7e49f98e4395af48176b9a13fa87c6f1179]]
+
+    * lisp/ox-odt.el (org-odt-table-style-spec): Fix styling of custom tables
+    
+    * lisp/ox-odt.el (org-odt-table-style-spec): Fix a bug styling of
+    custom tables.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/110][issue#110]].  See the bug for a recipe.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/99f2851a2aae25a07cdb43d71441682b965158e8][commit 99f2851a2aae25a07cdb43d71441682b965158e8]]
+
+    * etc/styles/OrgOdtStyles.xml (OrgSubFigure, OrgSubListing, OrgSubTable): New styles.
+    
+    * etc/styles/OrgOdtStyles.xml (OrgSubFigure, OrgSubListing)
+    (OrgSubTable): New styles.
+    
+    * lisp/ox-odt.el (org-odt-format-label): Use above styles for
+    captioning of sub-entities.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/109][issue#109]]
+    
+    Here is an Org snippet to test drive the above change:
+    
+        #+begin_example
+        ,#+odt_extra_styles: <style:style style:name="MyOrgImageCaptionFrame" style:family="graphic"
+        ,#+odt_extra_styles:              style:parent-style-name="OrgImageCaptionFrame">
+        ,#+odt_extra_styles:   <style:graphic-properties style:horizontal-pos="center"
+        ,#+odt_extra_styles:                             style:horizontal-rel="paragraph" draw:opacity="0%" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+odt_extra_styles: <style:style style:name="MyOrgDisplayImage" style:family="graphic"
+        ,#+odt_extra_styles:              style:parent-style-name="OrgDisplayImage">
+        ,#+odt_extra_styles:   <style:graphic-properties style:run-through="background"
+        ,#+odt_extra_styles:                             style:wrap="run-through"
+        ,#+odt_extra_styles:                             style:number-wrapped-paragraphs="no-limit"
+        ,#+odt_extra_styles:                             style:vertical-pos="middle" style:vertical-rel="frame"
+        ,#+odt_extra_styles:                             style:horizontal-pos="center" style:horizontal-rel="page"
+        ,#+odt_extra_styles:                             style:mirror="none" fo:clip="rect(0cm, 0cm, 0cm, 0cm)"
+        ,#+odt_extra_styles:                             draw:luminance="0%" draw:contrast="0%" draw:red="0%"
+        ,#+odt_extra_styles:                             draw:green="0%" draw:blue="0%" draw:gamma="100%"
+        ,#+odt_extra_styles:                             draw:color-inversion="false" draw:image-opacity="100%"
+        ,#+odt_extra_styles:                             draw:color-mode="standard"
+        ,#+odt_extra_styles:                             draw:wrap-influence-on-position="once-concurrent" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+odt_extra_styles: <style:style style:name="OrgSubFigure" style:family="paragraph"
+        ,#+odt_extra_styles:              style:parent-style-name="Figure">
+        ,#+odt_extra_styles:   <style:paragraph-properties fo:text-align="end"
+        ,#+odt_extra_styles:                               style:justify-single-word="false" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+begin_src emacs-lisp :results silent :exports results
+        (setcar (cdr (memq :caption-format (assoc ':SUBENTITY: org-odt-caption-and-xref-settings)))
+                '("(" counter ")"))
+        ,#+end_src
+    
+        ,#+CAPTION: Animals
+        ,#+ATTR_ODT: :list-table t
+        ,#+ATTR_ODT: :category "figure"
+        -
+           -
+              ,#+NAME: dog1
+              ,#+ATTR_ODT: :width 7.1
+              ,#+ATTR_ODT: :outer-frame  (style "MyOrgImageCaptionFrame" extra "draw:z-index=\"1\"")
+              ,#+ATTR_ODT: :inner-frame  (style "MyOrgDisplayImage" anchor "frame" extra "draw:z-index=\"0\"")
+              [[./org-mode-unicorn.png]]
+           -
+              ,#+NAME: goat1
+              ,#+ATTR_ODT: :width 7.1
+              ,#+ATTR_ODT: :outer-frame  (style "MyOrgImageCaptionFrame" extra "draw:z-index=\"1\"")
+              ,#+ATTR_ODT: :inner-frame  (style "MyOrgDisplayImage" anchor "frame" extra "draw:z-index=\"0\"")
+              [[./ansteel.jpg]]
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4785bf741fc3bd99458f2c042d43733cdfbbbc86][commit 4785bf741fc3bd99458f2c042d43733cdfbbbc86]]
+
+    * lisp/ox-odt.el:  Handle the case where inner-frame is anchored to outer-frame
+    
+    * lisp/ox-odt.el (org-odt--render-image/formula): Handle the case
+    when the inner frame is marked as being anchored to a frame.
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/109][issue#109]].
+    
+    Here is a sample snippet to test drive this change:
+    
+        #+begin_example
+        ,#+odt_extra_styles: <style:style style:name="OrgDisplayImageAnchoredToFrame" style:family="graphic"
+        ,#+odt_extra_styles:              style:parent-style-name="OrgDisplayImage">
+        ,#+odt_extra_styles:   <style:graphic-properties style:vertical-pos="middle"
+        ,#+odt_extra_styles:                             style:vertical-rel="frame" style:mirror="none"
+        ,#+odt_extra_styles:                             fo:clip="rect(0cm, 0cm, 0cm, 0cm)" draw:luminance="0%"
+        ,#+odt_extra_styles:                             draw:contrast="0%" draw:red="0%" draw:green="0%"
+        ,#+odt_extra_styles:                             draw:blue="0%" draw:gamma="100%" draw:color-inversion="false"
+        ,#+odt_extra_styles:                             draw:image-opacity="100%" draw:color-mode="standard" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+odt_extra_styles: <style:style style:name="OrgDisplayImageAnchoredNWToFrame"
+        ,#+odt_extra_styles:              style:family="graphic"
+        ,#+odt_extra_styles:              style:parent-style-name="OrgDisplayImageAnchoredToFrame">
+        ,#+odt_extra_styles:   <style:graphic-properties fo:min-height="0cm" svg:x="0cm" svg:y="0cm"
+        ,#+odt_extra_styles:                             fo:margin-left="0cm" fo:margin-right="0cm"
+        ,#+odt_extra_styles:                             fo:margin-top="0cm" fo:margin-bottom="0cm"
+        ,#+odt_extra_styles:                             style:run-through="foreground" style:wrap="right"
+        ,#+odt_extra_styles:                             style:number-wrapped-paragraphs="no-limit"
+        ,#+odt_extra_styles:                             style:wrap-contour="false" style:vertical-pos="top"
+        ,#+odt_extra_styles:                             style:vertical-rel="paragraph" style:horizontal-pos="left"
+        ,#+odt_extra_styles:                             style:horizontal-rel="page" fo:background-color="transparent"
+        ,#+odt_extra_styles:                             draw:fill="none"
+        ,#+odt_extra_styles:                             draw:wrap-influence-on-position="once-concurrent" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+begin_src emacs-lisp :results silent :exports results
+        (setcar (cdr (memq :caption-format (assoc ':SUBENTITY: org-odt-caption-and-xref-settings)))
+                '("(" counter ")"))
+        ,#+end_src
+    
+        ,#+ATTR_ODT: :list-table t
+        -
+           -
+              ,#+NAME: dog1
+              ,#+CAPTION:
+              ,#+ATTR_ODT: :width (7 . 8) :height (5 . 7)
+              ,#+ATTR_ODT: :inner-frame (style "OrgDisplayImageAnchoredToFrame" anchor "frame")
+              [[./org-mode-unicorn.png]]
+           -
+              ,#+NAME: goat1
+              ,#+CAPTION:
+              ,#+ATTR_ODT: :width (7 . 8) :height (5 . 7)
+              ,#+ATTR_ODT: :inner-frame (style   "OrgDisplayImageAnchoredToFrame" anchor "frame")
+              [[./ansteel.jpg]]
+    
+        ,#+ATTR_ODT: :list-table t
+        -
+           -
+              ,#+NAME: dog1
+              ,#+CAPTION:
+              ,#+ATTR_ODT: :width (7 . 8) :height (5 . 7)
+              ,#+ATTR_ODT: :inner-frame (style "OrgDisplayImageAnchoredNWToFrame" anchor "frame")
+              [[./org-mode-unicorn.png]]
+           -
+              ,#+NAME: goat1
+              ,#+CAPTION:
+              ,#+ATTR_ODT: :width (7 . 8) :height (5 . 7)
+              ,#+ATTR_ODT: :inner-frame (style   "OrgDisplayImageAnchoredNWToFrame" anchor "frame")
+              [[./ansteel.jpg]]
+    
+        # Local Variables:
+        # org-export-use-babel: t
+        # End:
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/93b338ae0929748e2d35c94fad926dce668635d4][commit 93b338ae0929748e2d35c94fad926dce668635d4]]
+
+    * lisp/ox-odt.el:  Customize images through `:inner-frame' and `:outer-frame' attributes
+    
+    * lisp/ox-odt.el (org-odt-link--inline-image):
+    (org-odt--render-image/formula): Allow customization of _both_
+    inner and outer frames of an image through `:inner-frame' and
+    `outer-frame' attribute.
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/109][issue#109]].
+    
+    Here is an org snippet to test drive this change:
+    
+        #+begin_example
+        ,#+odt_extra_styles: <style:style style:name="MyOrgImageCaptionFrame"
+        ,#+odt_extra_styles:          style:family="graphic"
+        ,#+odt_extra_styles:          style:parent-style-name="OrgImageCaptionFrame">
+        ,#+odt_extra_styles:   <style:graphic-properties draw:opacity="0%" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+odt_extra_styles: <style:style style:name="MyOrgDisplayImage" style:family="graphic"
+        ,#+odt_extra_styles:          style:parent-style-name="OrgDisplayImage">
+        ,#+odt_extra_styles:   <style:graphic-properties style:run-through="background"
+        ,#+odt_extra_styles:                         draw:opacity="100%" />
+        ,#+odt_extra_styles: </style:style>
+    
+        ,#+NAME: goat
+        ,#+CAPTION[([[goat]])]:
+        ,#+ATTR_ODT: :width 7.1
+        ,#+ATTR_ODT: :outer-frame  (style "MyOrgImageCaptionFrame" extra  "draw:z-index=\"1\"")
+        ,#+ATTR_ODT: :inner-frame  (style "MyOrgDisplayImage" extra  "draw:z-index=\"0\"")
+        [[./org-mode-unicorn.png]]
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3b94d0c1cd99c500b4b7404d5c2816eb5d8ee446][commit 3b94d0c1cd99c500b4b7404d5c2816eb5d8ee446]]
+
+    * lisp/ox-odt.el: Allow `:span' attribute to span multiple lines
+    
+    * lisp/ox-odt.el (org-odt--read-attribute): Modified signature.
+    (org-odt-table-cell-types): Allow the `:span' attribute to split
+    across multiple lines.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/108][issue#108]]
+    
+    Here is a sample snippet to exercise the above change:
+    
+        #+begin_example
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :span "@1$1{3:1}  @1$2{1:8}"
+        ,#+ATTR_ODT: :span "@2$2{1:2} @2$4{1:2} @2$6{1:2} @2$8{1:2}"
+        |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+        | Region | Sales |     |     |     |     |     |     |     |
+        |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+        |        | Q1    |     |  Q2 |     |  Q3 |     |  Q4 |     |
+        |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+        |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+        |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+        | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+        | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+        |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4fd62f078391156d65e28f3c8717b4ec39ebb5a6][commit 4fd62f078391156d65e28f3c8717b4ec39ebb5a6]]
+
+    * lisp/ox-odt.el (org-odt-experimental-features): Add new feature
+    `short-caption-as-label'.  Short captions are _ignored_ by
+    default.
+    (org-odt-format-label, org-odt--render-image/formula): Honor above
+    setting.
+    
+    * etc/styles/OrgOdtStyles.xml (Frame_20_contents, OrgFigureText):
+    New paragraph styles for use with above feature.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/109][issue#109]].
+    
+    Here is a short snippet for test driving the above change.  Before
+    exporting ensure that the symbol `short-caption-as-label' is enabled
+    in `org-odt-experimental-features'.
+    
+        #+begin_example
+        ,#+CAPTION: A Mythical Beast
+        [[./org-mode-unicorn.png]]
+    
+        ,#+CAPTION[Unicorn]: A Mythical Beast
+        [[./org-mode-unicorn.png]]
+    
+        ,#+ATTR_ODT: :style "Text_20_body_20_bold"
+        ,#+CAPTION[Unicorn]: A Mythical Beast
+        [[./org-mode-unicorn.png]]
+    
+        ,#+NAME: table
+        ,#+CAPTION: Animals
+        ,#+ATTR_ODT: :category "figure"
+        ,#+ATTR_ODT: :list-table t
+        -
+            -
+                ,#+NAME: dog
+                ,#+CAPTION[([[dog]])]: A Dog
+                [[./org-mode-unicorn.png]]
+            -
+                ,#+NAME: goat
+                ,#+CAPTION[([[goat]])]: A Goat
+                [[./org-mode-unicorn.png]]
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/25cfd37dd102c624bb14815502317da1062509a7][commit 25cfd37dd102c624bb14815502317da1062509a7]]
+
+    * lisp/ox-odt.el: Now size table columns using `:widths' attribute
+    
+    * lisp/ox-odt.el (org-odt--name-object):  Modified.
+    (org-odt--table-cell-widths): Cease using cookies for shrinking
+    the columns.  Instead use the `:widths' value of `ATTR_ODT'
+    property.  `:widths', contrary to the name, are in fact
+    relative column widths.  Internally, they are normalized to add up
+    to 1000, an arbitrarily high value.
+    (org-odt--table): Use the `:widths' attribute as described above.
+    (org-odt-table-cell): Cease using spanned columns for sizing the
+    columns.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/107][issue#107]].
+    
+    Here is a sample snippet to test drive this change:
+    
+        #+begin_example
+        ,#+CAPTION: A 2 column table with columns in ratio 2:1
+        ,#+ATTR_ODT: :widths "200, 100"
+        ,#+ATTR_ODT: :style "GriddedTable"
+        | <l10> | <l20> |
+        | a     | b     |
+        | c     | d     |
+    
+        ,#+CAPTION: A 2 column table with columns in ratio 2:1, and with some spanned cells
+        ,#+ATTR_ODT: :widths "200, 100"
+        ,#+ATTR_ODT: :style "GriddedTable"
+        ,#+ATTR_ODT: :span "@1$2{2:1}"
+        | <l10> | <l20> |
+        | a     | b     |
+        | c     | d     |
+    
+        ,#+CAPTION: A multi column table, occupying 60% with,  with columns in ratio 35:15:15:15:20, and with vertical and horizontal rules
+        ,#+ATTR_ODT: :widths "35, 15, 15, 15, 20"
+        ,#+ATTR_ODT: :rel-width 60
+        | Area/Month    |   Jan |   Feb |   Mar |   Sum |
+        |---------------+-------+-------+-------+-------|
+        | /             |     < |       |       |     < |
+        | <l13>         |  <r5> |  <r5> |  <r5> |  <r6> |
+        | North America |     1 |    21 |   926 |   948 |
+        | Middle East   |     6 |    75 |   844 |   925 |
+        | Asia Pacific  |     9 |    27 |   790 |   826 |
+        |---------------+-------+-------+-------+-------|
+        | Sum           |    16 |   123 |  2560 |  2699 |
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cf528989684f0e061d547d4e7f82bccc42afff45][commit cf528989684f0e061d547d4e7f82bccc42afff45]]
+
+    * lisp/ox-odt.el: Support pagebreak before/after a table
+    
+    * lisp/ox-odt.el (org-odt-table-style-format): Modified.
+    (org-odt--table): Support for page break before and after a table.
+    The behaviour mimics what the LibreOffice v7.2.1.2 (Community
+    edition) permits.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/106][issue#106]].
+    
+    Here is an org snippet to test drive above change:
+    
+        #+begin_example
+        ,* No page breaks
+    
+        Some text before table
+    
+        ,#+CAPTION: No page breaks
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Simple page break before
+    
+        Some text before table
+    
+        ,#+CAPTION: Simple page break before
+        ,#+ATTR_ODT: :page-break t
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break before with page style
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break before with "OrgTitlePage"
+        ,#+ATTR_ODT: :page-break t :page-style "OrgTitlePage"
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break before with page style and page number 10
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break before with "OrgPage" and page number 10
+        ,#+ATTR_ODT: :page-break t :page-style "OrgPage" :page-number 10
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break before with just a page number 20
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break before with page number 20
+        ,#+ATTR_ODT: :page-break t :page-number 20
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Simple page break after
+    
+        Some text before table
+    
+        ,#+CAPTION: Simple page break after
+        ,#+ATTR_ODT: :page-break "after"
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break after with page style
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break after with "OrgTitlePage"
+        ,#+ATTR_ODT: :page-break "after" :page-style "OrgTitlePage"
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break after with page style and page number 30
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break after with "OrgPage" and page number 30
+        ,#+ATTR_ODT: :page-break "after" :page-style "OrgPage" :page-number 30
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Page break after with just a page number 40
+    
+        Some text before table
+    
+        ,#+CAPTION: Page break after with page number 40
+        ,#+ATTR_ODT: :page-break "after" :page-number 40
+        | a | b |
+        | c | d |
+    
+        Some text after table
+    
+        ,* Rest of text with no more tables
+    
+        Rest of text with no more tables
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/98cbe76521c66d3bfb6eadacd5626bbeb3cf3951][commit 98cbe76521c66d3bfb6eadacd5626bbeb3cf3951]]
+
+    * lisp/ox-odt.el (org-odt-experimental-features): New
+    
+    * lisp/ox-odt.el (org-odt-experimental-features): New user option.
+    The default setting turns ON the support for LANGUAGE keyword.
+    (org-odt-write-styles-file): Honour above option.
+    
+    Also, turn do `menu-bar--toggle-truncate-long-lines` so that the
+    long inline comment in `org-odt-write-styles-file' is rendered in
+    a readabe way.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/80][issue#80]].
+    
+    Here is a sample snippet to experiment with:
+    
+        #+begin_example
+        ,#+LANGUAGE: es_ES
+    
+        Phrases in this document are translations of "I can eat glass and it
+        doesn't hurt me" in to various languages.  They are taken from [[https://kermitproject.org/utf8.html][UTF-8
+        Sampler]].
+    
+        ,* What to do when `language` feature is OFF
+    
+        Use the following setting
+    
+        ,#+begin_src emacs-lisp :results silent :exports none
+          (setq org-odt-experimental-features nil)
+        ,#+end_src
+    
+        # When `language` feature is OFF, the LANGUAGE keyword won't be
+        # honored, obviously.
+    
+        # # <---- START OPTION 1a ....
+    
+        # # When the ~language~ feature is OFF, the locale-setting defined with
+        # # ~LANGUAGE~ keyword will NOT work (obviously).  But you can set the
+        # # locale (in addition to other things like font size etc) as part of
+        # # the ~Standard~ style.  Defining ~Standard~ is the old way of doing
+        # # things.  With this option, font size and locale gets picked up from
+        # # the ~Standard~ style. That is, you get a 10pt German document.
+    
+        # #+odt_extra_styles: <style:style style:name="Standard" style:family="paragraph" style:class="text">
+        # #+odt_extra_styles:  <style:text-properties fo:font-size="10pt" fo:language="de" fo:country="DE"/>
+        # #+odt_extra_styles: </style:style>
+    
+        # # .... END OPTION 1a ---->
+    
+        # <---- START OPTION 1b ....
+    
+        # Instead of setting up ~Standard~ style as above, you can also set up
+        # an ~OrgUser~ style , as defined below.  With this option, the
+        # default font size and locale definition gets picked up from
+        # ~OrgUser~ style. That is, you will (again) get a 10pt German
+        # document.  Setting up ~OrgUser~ style is _the_ NEW and RECOMMENDED
+        # way of doing things.  Defining ~OrgUser~ will ensure that your
+        # document exports along the expected lines as you turn ON or OFF the
+        # experimental ~language~ feature.
+    
+        ,#+odt_extra_styles: <style:style style:name="OrgUser" style:family="paragraph" style:class="text">
+        ,#+odt_extra_styles:  <style:text-properties fo:font-size="10pt" fo:language="de" fo:country="DE"/>
+        ,#+odt_extra_styles: </style:style>
+    
+        # .... END OPTION 1b ---->
+    
+        ,* What to do when `language` feature is ON
+    
+        ,#+begin_src emacs-lisp  :results silent :exports none
+          (setq org-odt-experimental-features '(language))
+        ,#+end_src
+    
+        # # <---- START OPTION 2a ....
+    
+        # # Setting up ~Standard~ style is the old way of doing things.  When
+        # # you stick to the old way of doing things, the locale setting in
+        # # LANGUAGE will NOT take effect, instead the locale (and font) setting
+        # # from the ~Standard~ style will be the one in effect.  That is, you
+        # # will get a 10pt German document.
+    
+        # #+odt_extra_styles: <style:style style:name="Standard" style:family="paragraph" style:class="text">
+        # #+odt_extra_styles:  <style:text-properties fo:font-size="10pt" fo:language="de" fo:country="DE"/>
+        # #+odt_extra_styles: </style:style>
+    
+        # # .... END OPTION 2a ---->
+    
+        # <---- START OPTION 2b ....
+    
+        # Setting up ~OrgUser~ style (instead of the ~Standard~ style) is the
+        # NEW and RIGHT way of doing this.  With this setting the font size in
+        # ~OrgUser~, and locale setting in ~LANGUAGE~ will take effect.  That
+        # is, you will now get a 10pt Spanish document.  Setting up ~OrgUser~
+        # style is _the_ NEW and RECOMMENDED way of doing things.  Defining
+        # ~OrgUser~ will ensure that your document exports along the expected
+        # lines as you turn ON or OFF the experimental ~language~ feature.
+    
+        ,#+odt_extra_styles: <style:style style:name="OrgUser" style:family="paragraph" style:class="text">
+        ,#+odt_extra_styles:  <style:text-properties fo:font-size="10pt" fo:language="de" fo:country="DE"/>
+        ,#+odt_extra_styles: </style:style>
+    
+        # .... END OPTION 2b ---->
+    
+        Phrases in this document are translations of "I can eat glass and it
+        doesn't hurt me" in to various languages.  They are taken from [[https://kermitproject.org/utf8.html][UTF-8
+        Sampler]].
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/286a9b789db842cfa3a2fa68e4383bf6101da10c][commit 286a9b789db842cfa3a2fa68e4383bf6101da10c]]
+
+    * lisp/ox-odt.el:  Honour LANGUAGE keyword
+    
+    * lisp/ox-odt.el (org-odt-locales-alist): New variable.  All
+    supported locales on Debian.
+    
+    (org-odt--translate): New function.  Thin wrapper around
+    `org-export-translate'.
+    
+    (org-odt-update-locale): Choose value of LANGUAGE from available
+    locales, and hook it up with Org's TAB key.
+    
+    (org-odt-toc, org-odt-keyword, org-odt-format-label): Use
+    `org-odt--translate' instead of `org-export-translate'.
+    
+    (org-odt-write-styles-file): Modified.  Set language of body text
+    based on LANGUAGE keyword.
+    
+    This is an EXPERIMENTAL feature.  Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/80][issue#80]].
+    
+    Also
+    
+    - Fix Copyright years
+    - Bump `fill-column' to 100.
+    
+    Here is a sample snippet to test-drive this change:
+    
+        #+begin_example
+        # -*- coding: utf-8; -*-
+    
+        ,* Arabic
+    
+        ,#+language: ar_OM
+    
+        أنا قادر على أكل الزجاج و هذا لا يؤلمني
+    
+        ,* COMMENT Chinese (simplified)
+    
+        ,#+language: zh
+    
+        我能吞下玻璃而不伤身体。
+    
+        ,* COMMENT English
+    
+        # #+language: en_IN
+    
+        I can eat glass and it doesn't hurt me.
+    
+        ,* COMMENT Hebrew
+    
+        ,#+language: he
+    
+        אני יכול לאכול זכוכית וזה לא מזיק לי
+    
+        ,* COMMENT Hindi
+    
+        ,#+language: hi
+    
+        मैं काँच खा सकता हूँ और मुझे उससे कोई चोट नहीं पहुंचती
+    
+        ,* COMMENT Japanese
+    
+        ,#+language: ja
+    
+        私はガラスを食べられます。それは私を傷つけません。
+    
+        ,* COMMENT Korean
+    
+        ,#+language: ko
+    
+        나는 유리를 먹을 수 있어요. 그래도 아프지 않아요
+    
+        ,* COMMENT German
+    
+        ,#+language: de_CH
+    
+        Ich kann Glas essen, ohne mir zu schaden.
+    
+        ,* COMMENT Spanish
+    
+        ,#+language: es_AR
+    
+        Puedo comer vidrio, no me hace daño.
+    
+        ,* COMMENT Tamil
+    
+        ,#+language: ta_IN
+    
+        நான் கண்ணாடி சாப்பிடுவேன், அதனால் எனக்கு ஒரு கேடும் வராது.
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/774c32566f217a2470fd0d9bc943108ea2bc4ba3][commit 774c32566f217a2470fd0d9bc943108ea2bc4ba3]]
+
+    * lisp/ox-odt.el:  Support for spanned row and columns in Org tables
+    
+    * lisp/ox-odt.el (org-odt-table-cell-types): New.
+    (org-odt-table-cell): Add support for `:span' table attribute.
+    `:span' attribute can used to designate table cells that span
+    multiple rows and/or columns.
+    
+    This is an EXPERIMENTAL feature.  There is probably a better syntax
+    for `:span' attributes.
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/104][issue#104]].
+    
+    See also https://github.com/kjambunathan/org-mode-ox-odt/discussions/102.
+    
+    Here is a test case for this feature:
+    
+        #+begin_example
+        An ‘org’ table like the one below
+    
+            ,#+ATTR_ODT: :style "GriddedTable"
+            ,#+ATTR_ODT: :span "@1$1{3:1} @1$2{1:8} @2$2{1:2} @2$4{1:2} @2$6{1:2} @2$8{1:2}"
+            |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+            | Region | Sales |     |     |     |     |     |     |     |
+            |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+            |        | Q1    |     |  Q2 |     |  Q3 |     |  Q4 |     |
+            |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+            |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+            |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+            | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+            | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+            |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    
+        is equivalent to the following ‘table.el’-table with row and
+        column spans
+    
+            ,#+begin_example
+            +--------+-------------------------------------------------+
+            | Region |                      Sales                      |
+            |        +-------------+-----------+-----------+-----------+
+            |        | Q1          |    Q2     |    Q3     |    Q4     |
+            |        +-------+-----+-----+-----+-----+-----+-----+-----+
+            |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+            +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+            | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+            +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+            | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+            +--------+-------+-----+-----+-----+-----+-----+-----+-----+
+            ,#+end_example
+    
+        ----------------
+    
+        This ~org~ table is
+    
+            ,#+ATTR_ODT: :style "GriddedTable"
+            ,#+ATTR_ODT: :span "@2$1{2:1} @2$2{1:2} @4$2{2:2} @6$1{1:3}"
+            |----------+----------+----------|
+            | Column 1 | Column 2 | Column 3 |
+            |----------+----------+----------|
+            | A        | B        |          |
+            |          | C        | D        |
+            | E        | F        |          |
+            | G        |          |          |
+            | H        |          |          |
+            |----------+----------+----------|
+    
+        equivalent to the following ~table.el~ table.
+    
+            ,#+begin_example
+            +----------+----------+----------+
+            |Column 1  |Column 2  |Column 3  |
+            +----------+----------+----------+
+            |A         |B                    |
+            |          +----------+----------+
+            |          |C         |D         |
+            +----------+----------+----------+
+            |E         |F                    |
+            +----------+                     |
+            |G         |                     |
+            +----------+---------------------+
+            |H                               |
+            +--------------------------------+
+            ,#+end_example
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/33eb2bc464affbfdf651611c9f74a572db09544a][commit 33eb2bc464affbfdf651611c9f74a572db09544a]]
+
+    * lisp/ox-odt.el: Typeset checkboxes with non-ascii / unicode characters
+    
+    * lisp/ox-odt.el (org-odt--checkbox): Typeset checkboxes using
+    non-ascii / unicode string.  Preferntially, use utf-8 values of
+    the following entities (a) checkboxon (b) checkboxoff (c)
+    checkboxwip, if defined, in `org-entities-user'.  See docstring
+    for details.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/99][issue#99]].
+    
+    Here is a snippet for test driving this change:
+    
+            #+begin_example
+            ,#+options: e:t
+            ,#+begin_src emacs-lisp :results silent :exports none
+              (dolist (new-entity
+                       '(
+                         ;; ("name"         "LaTeX"         "LaTeX mathp"  "HTML"        "ASCII"  "Latin1"  "utf-8")
+                            ("checkboxon"   "\\boxtimes"    t              "&#x1F5F7;"  "[x]"    "[x]"     "&#x1F5F7;") ; 🗷 - BALLOT BOX WITH BOLD SCRIPT X
+                            ("checkboxoff"  "\\square"      t              "&#x1F78F;"  "[ ]"    "[ ]"     "&#x1F78F;") ; 🞏 - MEDIUM WHITE SQUARE
+                            ("checkboxwip"  "\\boxminus"    t              "&#x2BBD;"   "[-]"    "[-]"     "&#x2BBD;" ) ; ⮽ - BALLOT BOX WITH LIGHT X
+                            ))
+                (map-delete org-entities-user (car new-entity))
+                (customize-set-variable 'org-entities-user (cons new-entity org-entities-user))
+                (customize-save-variable 'org-entities-user org-entities-user))
+            ,#+end_src
+    
+            - [-] Organize party [1/4]
+              - [-] call people [2/3]
+                - [ ] Peter
+                - [X] Sarah
+                - [X] Sam
+              - [ ] order food
+              - [ ] think about what music to play
+              - [X] talk to the neighbors
+    
+            - \checkboxwip Organize party
+              - \checkboxwip call people
+                - \checkboxoff Peter
+                - \checkboxon Sarah
+                - \checkboxon Sam
+              - \checkboxoff order food
+              - \checkboxoff think about what music to play
+              - \checkboxon talk to the neighbors
+            #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/662b94b9ec9af2d5798fb8900c3819a5ccf09f28][commit 662b94b9ec9af2d5798fb8900c3819a5ccf09f28]]
+
+    * lisp/ox-odt.el: Fix typesetting of PROPERTIES drawer
+    
+    * etc/styles/OrgOdtStyles.xml(OrgPropertyName)
+    (OrgPropertyValue, OrgPropertiesBlock)
+    (OrgPropertiesBlockLastLine): New styles.
+    
+    * lisp/ox-odt.el (org-odt-node-property)
+    (org-odt-property-drawer):  Use above styles.
+    
+    Here is an org snippet for testing this fix.
+    
+        #+begin_example
+        ,#+options: prop:t
+    
+        ,* CD collection
+        ,** Classic
+        ,*** Goldberg Variations
+            :PROPERTIES:
+            :Title:     Goldberg Variations
+            :Composer:  J.S. Bach
+            :Artist:    Glenn Gould
+            :Publisher: Deutsche Grammophon
+            :NDisks:    1
+            :END:
+    
+        Some text.
+        #+end_example
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/95][issue#95]].  For typesetting PROPERTIES drawer as a table,
+    you can use the Emacs Lisp recipe at
+    https://github.com/kjambunathan/org-mode-ox-odt/issues/95#issuecomment-903298917.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/34b8f163b7011c0522a33852619a95b4e2b45aa1][commit 34b8f163b7011c0522a33852619a95b4e2b45aa1]]
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables):  Support for list tables in LaTeX and HTML export
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Carry over
+    HTML and LaTeX attributes from original list to the new table.
+    
+    Here is a recipe for exporting a list table to LaTeX:
+    
+        #+begin_example
+        ,#+ATTR_LATEX: :environment longtable :align {|p{0.1\linewidth}|p{0.2\linewidth}|p{0.2\linewidth}|p{0.5\linewidth}|}
+        ,#+ATTR_ODT: :list-table t
+        - | /    | <    | >    |      |
+        - | <l2> | <l1> | <l1> | <l8> |
+        -
+          - Day
+          - Min Temp
+          - Max Temp
+          - Summary
+        - ----------------
+          - Monday
+          - 11C
+          - 22C
+          -
+            1. A clear day with lots of sunshine.
+            2. Late in the day, a strong breeze will bring down the temperatures.
+        - ----------------
+          - Tuesday
+          - 9C
+          - 19C
+          -
+            1. Cloudy with rain, across many northern regions.
+            2. Clear spells across most of Scotland and Northern Ireland, but
+               rain reaching the far northwest.
+        #+end_example
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/92][issue#92]].  See also
+    https://github.com/kjambunathan/org-mode-ox-odt/issues/91#issuecomment-877929487.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f022150f3a046511dba18a509de621ec35daf075][commit f022150f3a046511dba18a509de621ec35daf075]]
+
+    * lisp/ox-odt.el: Fix file corruption with image/formula in headlines
+    
+    * lisp/ox-odt.el (org-odt-format-headline--wrap):
+    `org-export-data-with-backend' works with a new communication
+    channel that is locally bound.  As a result any state--for
+    example a manifest entry for an inline image or formula that
+    is part of the headline--that is stashed in to the
+    communication channel during the course of the call becomes
+    unavailable for subsequent calls.  Loss of manifest entries
+    will make LibreOffice think that the generated ODT file is
+    "corruption" .  So, use `org-export-data-with-backend' with
+    caution.
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/87][issue#87]].
+    
+    Here is a sample snippet to test drive this fix
+    
+        * An inline image [[./image.png]] in this headline
+    
+    TODO: Check what happens to TOC entries when there are inline
+    images / formula in the headline.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/839df08c56915a9981ecffeb23a53b0475416631][commit 839df08c56915a9981ecffeb23a53b0475416631]]
+
+    * lisp/ox-odt.el (org-odt-headline): Fix double counting of formulae
+    
+    When there is a math formula in a headline, there is double counting
+    of formulae. Fix it.
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/87][issue#87]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cd43292473595f812b467b7e976e54901de57f27][commit cd43292473595f812b467b7e976e54901de57f27]]
+
+    * lisp/ox-odt.el (org-odt-paragraph): Fix styling of center and quote blocks
+    
+    * lisp/ox-odt.el (org-odt-paragraph): Quote and center blocks
+    were (wrongly) using the default `Text_20_body' style instead
+    of their own `OrgCenter' and `Quotations' paragragraph styles
+    because of a thinko. Fix it.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9333dfb1820f45067ce3e32fb7d9ed1b7a31bd8e][commit 9333dfb1820f45067ce3e32fb7d9ed1b7a31bd8e]]
+
+    * lisp/ox-odt.el (org-odt-link): Properly export urls that have `&' etc in them
+    
+    * lisp/ox-odt.el (org-odt-link): Use `xml-escape-string'.
+    This fixes urls that have a `&' etc in them.
+    
+    Here is a test snippet:
+    
+      [[https://twitter.com/search?q=%23emacs&src=typed_query][#emacs - Twitter Search / Twitter]]
+    
+    Fixes pull request [[https://github.com/kjambunathan/org-mode-ox-odt/issues/75][issue#75]] by @PierreTechoueyres.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/80beda3722a63a459ef07eff842767f291735fc0][commit 80beda3722a63a459ef07eff842767f291735fc0]]
+
+    * lisp/ox-odt.el: Fix style of todo keywords in TOC
+    
+    * lisp/ox-odt.el (org-odt-format-toc-headline)
+    (org-odt-format-headline-default-function): Use `todo-type'
+    instead of `org-done-keywords'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/78][issue#78]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/68dd0a916a3c01b5d654136077fe79a217f12662][commit 68dd0a916a3c01b5d654136077fe79a217f12662]]
+
+    * lisp/ox-odt.el (org-odt-endnote-regexp): Support for generating endnotes
+    
+    * lisp/ox-odt.el (org-odt-endnote-regexp): A footnote whose label
+    matches this regexp is exported as an endnote.
+    
+    (org-odt-endnote-anchor-format)
+    (org-odt-endnote-braces)
+    (org-odt-endnote-separator): New custom variables for endnote
+    export.
+    
+    (org-odt-footnote-anchor-format, org-odt-footnote-braces)
+    (org-odt-footnote-separator): New custom variables for footnote
+    export.
+    
+    (:odt-endnote-anchor-format, :odt-endnote-braces)
+    (:odt-endnote-separator, :odt-footnote-anchor-format)
+    (:odt-footnote-braces, :odt-footnote-separator): New keys matching
+    the above custom variables in communication channel.
+    
+    (org-odt-inner-template): Add automatic styles defined with
+    `#+odt_automatic_styles: ' to the beginning of the
+    "<office:automatic-styles>..."</office:automatic-styles>".
+    Experimentation suggests that if there are duplicate definitiions
+    for a style of a given name, the definition of the one at the
+    beginning takes precedence.
+    
+    (org-odt--endnote-p): New predicate function to check if a
+    footnote reference or definition should export to an endnote.
+    
+    (org-odt--format-footnote-definition): New, optional param
+    `note-class' controls if the output is a footnote or a endnote
+    definition.
+    
+    (org-odt-footnote-reference): Modified to emit both
+    note-definition / note-references of either of the note classes:
+    footnote or endnote.  Also honor the new custom variables above.
+    
+    (org-odt-paragraph): Check if a note is footnote or endnote, and
+    emit corresponding paragraph styles.
+    
+    Here are two Org snippets to exercise above changes:
+    
+    Snippet 1:  Generate document that has both footnotes and endnotes
+    ----------------------------------------------------------------
+    
+        #+begin_example
+        ,#+title: Generate document with both footnotes and endnotes
+    
+        # COMMENT: Treat footnotes with labels starting with `en' as endnotes
+        ,#+odt_endnote_regexp: ^en
+    
+        # COMMENT: Treat all footnotes as endnotes
+        # #+odt_endnote_regexp: .
+    
+        # COMMENT: Treat all footnotes as footnotes
+        # #+odt_endnote_regexp: ^$
+    
+        Body text[fn:1][fn:2]
+    
+        Body text[fn:en1][fn:en2]
+    
+        ,* Footnotes
+    
+        [fn:1] Footnote one
+        [fn:2] Footnote two
+    
+        [fn:en1] Endnote one
+        [fn:en2] Endnote two
+    
+        ,#+BIND: org-odt-endnote-separator ", "
+        ,#+BIND: org-odt-endnote-braces ("<text:span text:style-name=\"Bold\">[" . "]</text:span>")
+        ,#+BIND: org-odt-endnote-anchor-format "%s"
+    
+        ,#+BIND: org-odt-footnote-separator ", "
+        ,#+BIND: org-odt-footnote-braces ("<text:span text:style-name=\"OrgSuperscript\">" . "</text:span>")
+        ,#+BIND: org-odt-footnote-anchor-format "%s"
+    
+        # Local Variables:
+        # org-export-allow-bind-keywords: t
+        # End:
+        #+end_example
+    
+    Snippet 2: Generate legal-style endnotes
+    ----------------------------------------------------------------
+    
+        #+begin_example
+        ,#+title: Generate legal-style endnotes
+    
+        # COMMENT: Any footnote whose label starts with "en" is an endnote
+        # ----------------------------------------------------------------
+    
+        ,#+odt_endnote_regexp: ^en
+    
+        # COMMENT: Surround the endnote anchor in *body text* with square
+        #          bracket, and embolden the whole
+        # ----------------------------------------------------------------
+        ,#+BIND: org-odt-endnote-anchor-format "<text:span text:style-name=\"Bold\">[%s]</text:span>"
+    
+        # COMMENT: Embolden the endnote anchor in *notes* area
+        # ----------------------------------------------------------------
+    
+        ,#+odt_extra_styles: <style:style style:name="Endnote_20_Symbol"
+        ,#+odt_extra_styles:              style:display-name="Endnote Symbol" style:family="text">
+        ,#+odt_extra_styles:   <style:text-properties fo:font-weight="bold"/>
+        ,#+odt_extra_styles: </style:style>
+    
+        # COMMENT: ... and also surround it with square brackets
+        # ----------------------------------------------------------------
+    
+        ,#+odt_extra_styles: <text:notes-configuration
+        ,#+odt_extra_styles:     text:note-class="endnote"
+        ,#+odt_extra_styles:     text:default-style-name="Endnote"
+        ,#+odt_extra_styles:     text:citation-style-name="Endnote_20_Symbol"
+        ,#+odt_extra_styles:     text:citation-body-style-name="Endnote_20_anchor"
+        ,#+odt_extra_styles:     text:master-page-name="Endnote"
+        ,#+odt_extra_styles:     style:num-prefix="[" style:num-suffix="] "
+        ,#+odt_extra_styles:     style:num-format="1" text:start-value="0"/>
+    
+        # COMMENT: Enclose paragraph in a section, if it contains atleast one endnote
+        # ----------------------------------------------------------------
+    
+        ,#+begin_src emacs-lisp :results none
+        (require 'ox-odt)
+        (setcdr
+         (assq 'paragraph (org-export-backend-transcoders
+                           (org-export-get-backend 'odt)))
+         (defun my-org-odt-paragraph (paragraph contents info)
+           "Enclose paragraph in a section, if it contains atleast one endnote."
+           (let ((contents (org-odt-paragraph paragraph contents info)))
+             (if (org-element-map paragraph '(footnote-reference)
+                   (lambda (fnr)
+                     (when (org-export-footnote-first-reference-p fnr info nil t)
+                       (org-odt--endnote-p fnr info)))
+                   info 'first-match)
+                 (org-odt-text:section paragraph contents info)
+               contents))))
+        ,#+end_src
+    
+        # COMMENT: Collect endnotes right after the section
+        # ----------------------------------------------------------------
+    
+        ,#+odt_automatic_styles: <style:style style:name="OrgSection" style:family="section">
+        ,#+odt_automatic_styles:   <style:section-properties fo:background-color="transparent"
+        ,#+odt_automatic_styles:                         style:editable="true">
+        ,#+odt_automatic_styles:     <style:columns fo:column-count="1"
+        ,#+odt_automatic_styles:                fo:column-gap="0cm"/>
+        ,#+odt_automatic_styles:     <style:background-image/>
+        ,#+odt_automatic_styles:     <text:notes-configuration text:note-class="endnote"/>
+        ,#+odt_automatic_styles:   </style:section-properties>
+        ,#+odt_automatic_styles: </style:style>
+    
+        # COMMENT: Remove the ruler above the endnote section
+        # ----------------------------------------------------------------
+    
+        ,#+odt_extra_automatic_styles: <style:page-layout style:name="Mpm1" style:page-usage="mirrored">
+        ,#+odt_extra_automatic_styles:   <style:page-layout-properties
+        ,#+odt_extra_automatic_styles:       fo:page-width="21.001cm"
+        ,#+odt_extra_automatic_styles:       fo:page-height="29.7cm" style:num-format="1"
+        ,#+odt_extra_automatic_styles:       style:print-orientation="portrait" fo:margin-top="2cm"
+        ,#+odt_extra_automatic_styles:       fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm"
+        ,#+odt_extra_automatic_styles:       style:writing-mode="lr-tb" style:layout-grid-color="#c0c0c0"
+        ,#+odt_extra_automatic_styles:       style:layout-grid-lines="20" style:layout-grid-base-height="0.706cm"
+        ,#+odt_extra_automatic_styles:       style:layout-grid-ruby-height="0.353cm" style:layout-grid-mode="none"
+        ,#+odt_extra_automatic_styles:       style:layout-grid-ruby-below="false" style:layout-grid-print="false"
+        ,#+odt_extra_automatic_styles:       style:layout-grid-display="false" style:footnote-max-height="0cm">
+        ,#+odt_extra_automatic_styles:     <style:columns
+        ,#+odt_extra_automatic_styles:       fo:column-count="1" fo:column-gap="0cm"/>
+        ,#+odt_extra_automatic_styles:     <style:footnote-sep
+        ,#+odt_extra_automatic_styles:       style:width="0.018cm"
+        ,#+odt_extra_automatic_styles:       style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm"
+        ,#+odt_extra_automatic_styles:       style:line-style="none" style:adjustment="left" style:rel-width="25%"
+        ,#+odt_extra_automatic_styles:       style:color="#000000"/>
+        ,#+odt_extra_automatic_styles:   </style:page-layout-properties>
+        ,#+odt_extra_automatic_styles:   <style:header-style/>
+        ,#+odt_extra_automatic_styles:   <style:footer-style>
+        ,#+odt_extra_automatic_styles:     <style:header-footer-properties
+        ,#+odt_extra_automatic_styles:       fo:min-height="0.6cm"
+        ,#+odt_extra_automatic_styles:       fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm"
+        ,#+odt_extra_automatic_styles:       fo:background-color="transparent" style:dynamic-spacing="false"
+        ,#+odt_extra_automatic_styles:       draw:fill="none"/>
+        ,#+odt_extra_automatic_styles:   </style:footer-style>
+        ,#+odt_extra_automatic_styles: </style:page-layout>
+    
+        Aliquam erat volutpat.  Donec pretium[fn:en4] posuere tellus.
+        Curabitur lacinia pulvinar nibh.  Fusce suscipit, wisi[fn:en5] nec
+        facilisis facilisis, est dui fermentum leo, quis tempor ligula erat
+        quis odio.  Nam euismod tellus id erat.  Nullam rutrum.
+    
+        In id erat non orci  commodo lobortis.  Donec hendrerit tempor tellus.
+        Mauris mollis tincidunt  felis.  Vivamus id enim.   Cum sociis natoque
+        penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+    
+        [fn:en4]  Lorem ipsum  dolor sit  amet, consectetuer  adipiscing elit.
+        Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor,
+        at  vulputate  neque  nulla  lacinia  eros.   Aliquam  erat  volutpat.
+        Pellentesque dapibus  suscipit ligula.   In id  erat non  orci commodo
+        lobortis.  Etiam  laoreet quam sed  arcu.  Donec at pede.   Proin quam
+        nisl, tincidunt et, mattis eget, convallis nec, purus.  Nam vestibulum
+        accumsan nisl.
+    
+        [fn:en5] Etiam vel tortor sodales tellus ultricies commodo.  Curabitur
+        lacinia  pulvinar   nibh.   Phasellus   purus.   Donec   vitae  dolor.
+        Pellentesque  condimentum, magna  ut suscipit  hendrerit, ipsum  augue
+        ornare nulla, non luctus diam neque sit amet urna.  Nullam eu ante vel
+        est convallis dignissim.  Etiam laoreet  quam sed arcu.  Mauris mollis
+        tincidunt felis.
+    
+        # Local Variables:
+        # org-export-allow-bind-keywords: t
+        # eval: (org-babel-execute-buffer)
+        # End:
+        #+end_example
+    
+    Add endnote support.  Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/74][issue#74]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d202ed49a54061768235613a3195465d6d8500a8][commit d202ed49a54061768235613a3195465d6d8500a8]]
+
+    * lisp/ox-odt.el: Honor `:style' attribute of `quote' blocks
+    
+    * lisp/ox-odt.el (org-odt-paragraph): Honor`:style' attribute
+    of `quote' blocks.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6daba74ce6d7d8d32735ca27e8725f1a2fbe6a42][commit 6daba74ce6d7d8d32735ca27e8725f1a2fbe6a42]]
+
+    * lisp/ox-odt.el (org-odt-write-styles-file):  Re-define page layouts with ease
+    
+    * lisp/ox-odt.el (org-odt-write-styles-file): Insert styles
+    defined with '#+ODT_EXTRA_AUTOMATIC_STYLES: ...' right after
+    the opening tag of "<office:automatic-styles>
+    ... </<office:automatic-styles>".
+    
+    With the above change, one can override the default page layouts very
+    easily.
+
+    #+begin_example
+    For example, use the below snippet to create a document that
+    is ⅓ the A4-size.
+    
+        # The default styles uses A4-sized pages i.e., 21cm x 29.7cm.
+        # Override, those sizes to use ⅓ those sizes.
+    
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="Mpm1" style:page-usage="mirrored">
+        # #+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="7.00cm" fo:page-height="10.0cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  </style:page-layout-properties>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:header-style/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:footer-style>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  </style:footer-style>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+    
+        Some text
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/8ee4a48fd6cd96f065882e75d2ff56f9aefef23d][commit 8ee4a48fd6cd96f065882e75d2ff56f9aefef23d]]
+
+    * lisp/ox-odt.el (org-odt-write-styles-file): Minor change
+    
+    * lisp/ox-odt.el (org-odt-write-styles-file): Check for styles
+    file early.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e7c42f87a9c4f1e5598dd863b455ebf898eab8cd][commit e7c42f87a9c4f1e5598dd863b455ebf898eab8cd]]
+
+    * lisp/ox-odt.el:  More fixes issues with nested tables
+    
+    * lisp/ox-odt.el (org-odt-table-row-number)
+    (org-odt-table-cell-address): New helper functions that work
+    correctly in presence of nested tables.
+    (org-odt--table-cell-widths): Make it work for nested tables.
+    (org-odt-get-table-cell-styles)
+    (org-odt-table-cell--get-paragraph-styles)
+    (org-odt-table-cell): Use above helper functions.
+    
+    Here is a test case:
+    
+        #+begin_example
+        ,#+CAPTION: A =org= table and a =list table= within a table
+        ,#+ATTR_ODT: :list-table t
+        -
+          -
+    
+            ,#+CAPTION: Org snippet for a =list-table=
+            ,#+begin_example
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+            ,#+end_example
+          -
+    
+            ,#+CAPTION: The equivalent Org table
+            | Row 1, Col 1 | Row 1, Col 2 |
+            | Row 2, Col 1 | Row 2, Col 2 |
+    
+          -
+            ,#+CAPTION: How the list table is rendered in ODT
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/68][issue#68]].
+    
+    Here is another one:
+    
+        #+begin_example
+        ,#+ATTR_ODT: :list-table t
+        -
+          - Comments
+          - Dog
+          - Cat
+        - --------
+          - This table contains
+            - A Dog
+            - A cat
+    
+            | Animal | What it does |
+            |--------+--------------|
+            | Dog    | Barks        |
+            | Cat    | News         |
+          -
+            ,#+Caption: A Dog
+            [[./org-mode-unicorn.png]]
+          -
+            ,#+Caption: A Cat
+            [[./org-mode-unicorn.png]]
+        - --------
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/66][issue#66]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/de834e34735556501a5fe1305c61bd91a68ee2bd][commit de834e34735556501a5fe1305c61bd91a68ee2bd]]
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Fix bug with nested table
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Fix check
+    for homogenity when there is a table within a table.
+    
+    Here is a test-case:
+    
+        #+begin_example
+        ,#+ATTR_ODT: :list-table t
+        -
+          -
+    
+            ,#+CAPTION: Org snippet for a =list-table=
+            ,#+begin_example
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+            ,#+end_example
+          -
+    
+            ,#+CAPTION: The equivalent Org table
+            | Row 1, Col 1 | Row 1, Col 2 |
+            | Row 2, Col 1 | Row 2, Col 2 |
+    
+          -
+            ,#+CAPTION: How the list table is rendered in ODT
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/68][issue#68]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/707be1660415a4702d32ba3bbef560eb02efb7b3][commit 707be1660415a4702d32ba3bbef560eb02efb7b3]]
+
+    * lisp/ox-odt.el (ODT_PREFERRED_OUTPUT_FORMAT): New in buffer option
+    
+    * lisp/ox-odt.el: New in buffer option ODT_PREFERRED_OUTPUT_FORMAT.
+    (org-odt--convert):  Honor above changes.
+    
+    #+begin_example
+    Use the following snippet to export to `docx' format.
+    
+        ,#+odt_preferred_output_format: docx
+    
+        Some text.
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a3617844733daf5b643d2e6e20aab183a8a7b33a][commit a3617844733daf5b643d2e6e20aab183a8a7b33a]]
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Continue earlier commit
+    
+    * ox-odt.el (org-odt--translate-list-tables): Continue
+    previous commit.
+    
+    Previous commit failed to parse the special table row
+    correctly, and it resulted in a regression
+    
+        #+begin_example
+        ,#+ATTR_ODT: :list-table t
+        - |<1> |<2> |<3> |
+        -
+          - What is it?
+          - How it looks in an =org= document
+          - How it is rendered with =odt= backend
+        -
+          - A =list table=
+          - Some text
+          - More text
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/65][issue#65]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/944fbad652a40005abe76215cab1a8e5bb5045a6][commit 944fbad652a40005abe76215cab1a8e5bb5045a6]]
+
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Handle nested list-tables
+    
+    * ox-odt.el (org-odt--translate-list-tables): Fool `ox'
+    library in to thinking that a `table-cell' is a greater
+    element.  This is essential for rendering list-tables within
+    another list-table as a table.
+    
+    Here is a sample snippet that exercises the above use-case.
+    
+        #+begin_example
+        ,#+ATTR_ODT: :list-table t
+        -
+          - What is it?
+          - How it looks in an =org= document
+          - How it is rendered with =odt= backend
+        -
+          - A =list table=
+          -
+            ,#+begin_example
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+            ,#+end_example
+          -
+            ,#+ATTR_ODT: :list-table t
+            -
+              - Row 1, Col 1
+              - Row 1, Col 2
+            -
+              - Row 2, Col 1
+              - Row 2, Col 2
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/65][issue#65]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0d23ca80c0ceb59a49f283a0664d1bab738e10e6][commit 0d23ca80c0ceb59a49f283a0664d1bab738e10e6]]
+
+    * lisp/ox-odt.el (org-odt-write-mimetype-file): Fix file corruption
+    
+    * lisp/ox-odt.el (org-odt-write-mimetype-file): Don't use
+    `write-file'.  Use `write-region' instead.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/62][issue#62]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ae1bd5071faf6bba47f6825a6dfb3699f52c2610][commit ae1bd5071faf6bba47f6825a6dfb3699f52c2610]]
+
+    * lisp/ox-odt.el (org-odt-item): Honor start counter of a list item.
+    See (info "(org) Plain lists").
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/62][issue#62]].
+    
+    Here is a sample snippet to exercise above change
+    
+        #+begin_example
+        Some text
+    
+        1. First item
+        2. Second item
+    
+        Some intervening text
+    
+        3. [@3] Third item
+        4. Fourth item
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a04d551f096a05910b10a93818473d0a3c4c9064][commit a04d551f096a05910b10a93818473d0a3c4c9064]]
+
+    * lisp/ox-odt.el: Center the image in relation to it's caption.
+    
+    * lisp/ox-odt.el (org-odt--render-image/formula): Center the image
+    in relation to it's caption.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/61][issue#61]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165][commit aa9fc7987b7fbcd18d8838ded49c5f5a1f6d1165]]
+
+    * lisp/ox-odt.el (org-odt-link--inline-image): Remove cruft
+    
+    * lisp/ox-odt.el (org-odt-link--inline-image): Remove dubious ODT
+    attributes `:style' and `:attributes'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6866dda1f0a4d923463f59208ceebba301e382ec][commit 6866dda1f0a4d923463f59208ceebba301e382ec]]
+
+    * lisp/ox-odt.el:  Image captions can now be wider than the image width
+    
+    * lisp/ox-odt.el (org-odt-link--inline-image): The ODT
+    attribute `:width` can be one of:
+    
+    (i) a number (say `w1')
+        #+ATTR_ODT: :width 3
+        [[./img.png]]
+    
+    (ii) cons of two numbers (say `(w1 . w2)')
+        #+ATTR_ODT: :width (3 . 5)
+        [[./img.png]]
+    
+    (iii) a list of two numbers (say `(w1 w2)')
+        #+ATTR_ODT: :width (3 5)
+        [[./img.png]]
+    
+    Likewise for `:height'.
+    
+    `w1 x h1' controls the size of an embedded image.  `w2 x h2' controls
+    the size of the the frame that encloses the image /and/ the caption.
+    
+    (org-odt---image-size): Renamed from `org-odt--image-size'.
+    
+    (org-odt--image-size): New .
+    
+    (org-odt--render-image/formula): Honor ODT attributes `:width'
+    and `:height'
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/61][issue#61]].
+    
+    Here is a sample test snippet that demonstrates the above feature:
+    
+        #+begin_example
+        ,#+attr_odt: :width 3
+        ,#+caption: This is a very long long long long long long long long caption.
+        [[./org-mode-unicorn.png]]
+    
+        ,#+attr_odt: :width (3 7)
+        ,#+caption: This is a very long long long long long long long long caption.
+        [[./org-mode-unicorn.png]]
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7110e5cd5c6f1e5b2d52e702b125629cec825924][commit 7110e5cd5c6f1e5b2d52e702b125629cec825924]]
+
+    * lisp/ox-odt.el:  De-couple theme used for exported src blocks from the Emacs theme in use
+    
+    * lisp/ox-odt.el (org-odt-write-styles-file): Add
+    user-specified styles _after_ the dynamically generated source
+    block styles.
+    
+    Fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/60][issue#60]].
+    
+    #+begin_example
+    For example, the following snippet will export to the same set
+    of colors--adwaita, in this case--irrespective of the user
+    theme in effect.
+    
+    ,#+odt_extra_styles: <style:style style:name="OrgSrcFontLockStringFace" style:family="text">
+    ,#+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#4e9a06" />
+    ,#+odt_extra_styles:  </style:style>
+    ,#+odt_extra_styles:
+    ,#+odt_extra_styles: <style:style style:name="OrgSrcFontLockDocFace" style:family="text">
+    ,#+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#4e9a06" />
+    ,#+odt_extra_styles:  </style:style>
+    ,#+odt_extra_styles:  <style:style style:name="OrgSrcBlock" style:family="paragraph" style:parent-style-name="Preformatted_20_Text">
+    ,#+odt_extra_styles:    <style:paragraph-properties fo:background-color="#ededed" fo:padding="0.049cm" fo:border="0.51pt solid [[https://github.com/kjambunathan/org-mode-ox-odt/issues/000000][issue#000000]]" style:shadow="none">
+    ,#+odt_extra_styles:     <style:background-image/>
+    ,#+odt_extra_styles:    </style:paragraph-properties>
+    ,#+odt_extra_styles:    <style:text-properties fo:color="#2e3436"/>
+    ,#+odt_extra_styles:   </style:style>
+    ,#+odt_extra_styles:
+    ,#+odt_extra_styles: <style:style style:name="OrgSrcFontLockFunctionNameFace" style:family="text">
+    ,#+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#00578e" />
+    ,#+odt_extra_styles:  </style:style>
+    ,#+odt_extra_styles:
+    ,#+odt_extra_styles: <style:style style:name="OrgSrcFontLockKeywordFace" style:family="text">
+    ,#+odt_extra_styles:   <style:text-properties fo:background-color="#ededed" fo:color="#a52a2a" />
+    ,#+odt_extra_styles:  </style:style>
+    ,#+BEGIN_SRC emacs-lisp
+     (defun helloworld ()
+       ""
+       (message "hello world"))
+    ,#+END_SRC
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c16ac77343fded0e69f5a5f1f45c51d33a69d278][commit c16ac77343fded0e69f5a5f1f45c51d33a69d278]]
+
+    * lisp/ox-odt.el (org-odt--render-image/formula): Use `Standard' paragraph style for inner frame
+    
+    * lisp/ox-odt.el (org-odt--render-image/formula): Use
+    `Standard' style instead of `Text_20_body' style for paragraph
+    enclosing the inner frame.
+    
+    Temporarily fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/59][issue#59]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/fd206748fcb7ae4db0b126128ed3296226b95ee3][commit fd206748fcb7ae4db0b126128ed3296226b95ee3]]
+
+    * lisp/ox-odt.el: Handle subtitle
+    
+    * etc/styles/OrgOdtStyles.xml (OrgDocInfo): New style.
+    (OrgTitle, OrgSubtitle): Modified.
+    * lisp/ox-odt.el (org-odt-inner-template)
+    (org-odt-write-meta-file): Handle `:subtitle'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/58][issue#58]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3e00989833f3d193ed4b6a9c09ef77cb554a616e][commit 3e00989833f3d193ed4b6a9c09ef77cb554a616e]]
+
+    * lisp/ox-odt.el: Now export to OpenDocument master file with `C-c C-e o m'
+    
+    * lisp/ox-odt.el: Add new OpenDocument backend for creating
+    master (i.e., *.odm) files.
+    (org-odt-export-to-odm): New command.  Bind it to keystroke
+    `m' in the submenu for OpenDocument export.  i.e., Use`C-c C-e
+    o m' to export to OpenDocument master file.
+    (:odt-out-file): Remove keyword from the communication
+    channel.  Use `:output-file' instead.
+    (:odt-file-extension): Remove keyword from the the
+    communication channel. Use filename extension of the
+    `:output-file' instead.
+    (org-odt-write-mimetype-file, org-odt-zip): Changes related to
+    previous change.
+    (org-odt-export-as-odf): Initialize the `:output-file' in the
+    communication channel.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/46183e9182275562fffd1c878aff679c77d4cf63][commit 46183e9182275562fffd1c878aff679c77d4cf63]]
+
+    * lisp/ox-odt.el (org-odt-write-meta-file): Handle date correctly
+    
+    * lisp/ox-odt.el (org-odt-write-meta-file): Don't emit a date
+    if it isn't in Org timestamp format.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0a8a1161a0b9d58b048ddc65c04ada4692efe623][commit 0a8a1161a0b9d58b048ddc65c04ada4692efe623]]
+
+    * lisp/ox-odt.el: Add `org-odt-export-{to|as}-odt-backend'
+    
+    * lisp/ox-odt.el (org-odt-export-to-odt-backend): New.
+    Extracted from `org-odt-export-to-odt' and generalized to
+    _any_ OpenDocument backend.
+    (org-odt-export-to-odt): Use `org-odt-export-to-odt-backend'.
+    (org-odt-export-as-odt-backend): New.  Extracted from
+    `org-odt-export-as-odt' and generalized to _any_ OpenDocument
+    backend.
+    (org-odt-export-as-odt): Use `org-odt-export-as-odt-backend'.
+    
+    Preparing to support export to OpenDocument presentation (odp)
+    format.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/49bf77c6577746550ba5a21bf8293ce214f558ac][commit 49bf77c6577746550ba5a21bf8293ce214f558ac]]
+
+    * lisp/ox-odt.el:  Implement (i) body-only export and (ii) export to buffer
+    
+    * lisp/ox-odt.el (org-odt-export-as-odt): New command to
+    export just the contents as an XML buffer.  It can be invoked
+    with `C-c C-e o x'.
+    (org-odt-write-contents-file): Modified.  Now, it handles
+    writing of the contents to disk.  The assembling of contents
+    happens now as part of `org-odt-inner-template'.
+    (org-odt-inner-template): Extracted from
+    `org-odt-write-contents-file'.  See above.
+    (org-odt-export-to-odt): Honour body-only export.  When
+    body-only is non-nil, export just the contents.xml file.
+    ca
+    cke
+    (org-odt-export-to-odt-backend): New.  Extracted from
+    `org-odt-export-to-odt', and generalized to any OpenDocument
+    backend.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4631820f3737194ff799029c87d6889bbea6b656][commit 4631820f3737194ff799029c87d6889bbea6b656]]
+
+    * lisp/ox-odt.el: Improve numbering of source blocks
+    
+    * lisp/ox-odt.el (org-odt-do-format-code): Modified.
+    (org-odt-format-code): Use it.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/72be87ea8a85f0658b1739744fd096db6111e2a4][commit 72be87ea8a85f0658b1739744fd096db6111e2a4]]
+
+    * lisp/ox-odt.el: Prettify XML files, if needed, before they are written to disk
+    
+    * lisp/ox-odt.el (org-odt-write-contents-file)
+    (org-odt-write-styles-file)
+    (org-odt-write-meta-file, org-odt-write-manifest-file)
+    (org-odt-template, org-odt-export-as-odf): No need to call
+    `org-odt-prettify-xml-files-maybe'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c18b2827d763eedca10b704ad6290d17179713b4][commit c18b2827d763eedca10b704ad6290d17179713b4]]
+
+    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword
+    
+    * lisp/ox-odt.el (:odt-hfy-user-sheet-assoc): New keyword in
+    the communication channel.
+    (org-odt-export-to-odt): Don't let-bind `hfy-user-sheet-assoc'
+    here.  Instead let-bind it later in `org-odt-do-format-code'
+    wherein one can access the communication channel.
+    (org-odt-write-styles-file): Use above keyword.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7c2c3d99aa97ee1ef3febd176f28024c14a28cfd][commit 7c2c3d99aa97ee1ef3febd176f28024c14a28cfd]]
+
+    * lisp/ox-odt.el: Fix earlier commit
+    
+    * lisp/ox-odt.el (org-odt--convert): Check value of
+    `org-odt-preferred-output-format'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/769de895f72045c656dcded1345bc768b6fd5aff][commit 769de895f72045c656dcded1345bc768b6fd5aff]]
+
+    * lisp/ox-odt.el (org-odt-template): Simplify
+    
+    * lisp/ox-odt.el (DESCRIPTION, KEYWORDS, SUBTITLE): Allow
+    these in buffer settings.
+    (org-odt-zip-dir): Remove it.
+    (:odt-zip-dir): New keyword in the communication channel.
+    Replaces `org-odt-zip-dir'.
+    (org-odt-inner-template): New.
+    (org-odt-write-contents-file, org-odt-write-styles-file)
+    (org-odt-write-meta-file, org-odt-write-mimetype-file)
+    (org-odt-write-manifest-file)
+    (org-odt-prettify-xml-files-maybe, org-odt-zip)
+    (org-odt-cleanup-xml-buffers, org-odt--transform-target)
+    (org-odt--convert): New functions extracted from
+    `org-odt-template'.
+    (org-odt-template): Use above functions.
+    (org-odt--export-wrap):  Remove macro.
+    (org-odt-create-manifest-file-entry)
+    (org-odt-export-as-odf, org-odt-export-to-odt)
+    (org-odt--copy-image-file, org-odt--copy-formula-file):
+    Propagate above changes.
+    (org-odt-transform): Misc changes.
+    (org-odt-convert-capabilities): Add entry for OpenDocument
+    formula files.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/cc1a80edc104b68b423fe1c3fcc04fee6ba8b725][commit cc1a80edc104b68b423fe1c3fcc04fee6ba8b725]]
+
+    * lisp/ox-odt.el (org-odt-manifest-file-entries): Remove var
+    
+    * lisp/ox-odt.el (org-odt-write-manifest-file): Change
+    signature.  Add this as filter function for final output.
+    (org-odt-write-mimetype-file): New.  Extracted from
+    `org-odt-template'.  Add this as filter function for final
+    output.
+    (:odt-manifest-file-entries): New variable in the
+    communication channel.  Replaces
+    `org-odt-manifest-file-entries'.
+    (org-odt-manifest-file-entries): Remove var.  See above.
+    (org-odt-create-manifest-file-entry):
+    (org-odt--copy-image-file, org-odt-link--inline-image):
+    (org-odt--copy-formula-file, org-odt-link--inline-formula):
+    Change signature.
+    (org-odt-template, org-odt--export-wrap)
+    (org-odt-export-as-odf, org-odt-export-to-odt): Simplify
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b86a804927a12f7339386cb6c85e7ce8ea81759c][commit b86a804927a12f7339386cb6c85e7ce8ea81759c]]
+
+    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant
+    
+    * lisp/ox-odt.el (org-odt-file-extensions-alist): New constant.
+    (org-odt-file-extensions): Remove it. Subsumed by
+    `org-odt-file-extensions-alist'.
+    
+    Also propagate above changes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5][commit 7b0666ff0ce7ad0bbe27ffe43173a815b0e660f5]]
+
+    * lisp/ox-odt.el (org-odt-automatic-styles, org-odt-object-counters): Remove these vars
+    
+    * lisp/ox-odt.el (org-odt-automatic-styles)
+    (org-odt-object-counters): : Remove these vars.  Use
+    `:odt-automatic-styles' and `:odt-object-counters' in the
+    communication channel.
+    (org-odt-export-to-odt): Remove references to the above vars.
+    (org-odt-add-automatic-style): Fold this in to
+    `org-odt--get-derived-paragraph-style' and `org-odt--table'
+    and remove it.
+    (org-odt--get-derived-paragraph-style): Change signature.
+    Append automatic style, if any, to `:odt-automatic-styles'.
+    (org-odt-headline, org-odt-paragraph): Use new signature of
+    `org-odt--get-derived-paragraph-style'.
+    (org-odt--table): Append automatic style, if any, to
+    `:odt-automatic-styles'.
+    (org-odt-template): No need to handle automatic styles for
+    tables and paragraphs specially.  They are already added to
+    `:odt-automatic-styles' as and when they are encountered.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9cb0ab9ccea64100b7b3b7f9caebda676bd57cde][commit 9cb0ab9ccea64100b7b3b7f9caebda676bd57cde]]
+
+    * lisp/ox-odt.el (org-odt-text:section): Renamed from `org-odt-format-section'.
+    Change signature.
+    (org-odt-link, org-odt-special-block, org-odt-table): Related
+    changes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d9518ac902510bc3d5f2030620ecda6cce32d50c][commit d9518ac902510bc3d5f2030620ecda6cce32d50c]]
+
+    * lisp/ox-odt.el (:odt-object-counters): New
+    
+    * lisp/ox-odt.el (:odt-object-counters): New key in the
+    communication channel.
+    (:odt-embedded-formulas-count, :odt-embedded-images-count):
+    Remove these keys from the communication channel.  Use
+    `:odt-object-counters' instead.
+    (org-odt--count-object, org-odt--name-object): New functions.
+    (org-odt-link--inline-image, org-odt-link--inline-formula):
+    Use `org-odt--count-object'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4][commit b581fb52d2a74cec6fdcfe51bba8f1a5470fc1d4]]
+
+    * lisp/ox-odt.el: Remove `draw:name' attribute in `draw:frame' element
+    
+    * lisp/ox-odt.el (org-odt--frame): Remove `draw:name'
+    attribute in `draw:frame' element.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d][commit 1a8127bc8cbdae1dcfa03b0fc390d3bcf98e9e1d]]
+
+    * lisp/ox-odt.el: Remove vars `org-odt-embedded-images-count' & `org-odt-embedded-formulas-count'
+    
+    * lisp/ox-odt.el (org-odt-embedded-formulas-count)
+    (org-odt-embedded-images-count): Remove these global
+    variables.  Replace these with `:odt-embedded-formulas-count'
+    and `:odt-embedded-images-count' keys in the communication
+    channel.
+    (org-odt--copy-image-file, org-odt--copy-formula-file): Change
+    signature.
+    (org-odt-link--inline-image, org-odt-link--inline-formula)
+    (org-odt-export-to-odt): Related changes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/904060258b4946841d28c946b908fb371d3295b8][commit 904060258b4946841d28c946b908fb371d3295b8]]
+
+    * lisp/ox-odt.el: Gracefully typeset formula that has *no* caption, but only a label
+    
+    * lisp/ox-odt.el (org-odt--target): Remove newlines. This is
+    to avoid extraneous spaces in the exported document.
+    
+    (org-odt-format-label): Co-locate the bookmark for label with
+    the sequence number created for it.
+    
+    Test case:
+    
+        #+begin_example
+        ,* Images
+    
+        This image has /no/ caption or label.
+    
+        [[./org-mode-unicorn.png]]
+    
+        This image has /no/ caption, but has a label.
+    
+        ,#+NAME: img:1
+        [[./org-mode-unicorn.png]]
+    
+        This image has a caption, but /no/ label.
+    
+        ,#+CAPTION: Caption, but no label
+        [[./org-mode-unicorn.png]]
+    
+        This image has /both/ a caption and a label.
+    
+        ,#+NAME: img:2
+        ,#+CAPTION: Caption, and label
+        [[./org-mode-unicorn.png]]
+    
+        ,* Formulas
+    
+        This formula has /no/ caption or label.
+    
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+    
+        This formula has /no/ caption, but has a label.
+    
+        ,#+NAME: fml:1
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+    
+        This formula has a caption, but has /no/ label.
+    
+        ,#+CAPTION: Caption, but no label
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+    
+        This formula has /both/ a caption and a label.
+    
+        ,#+NAME: fml:2
+        ,#+CAPTION: Caption, but no label
+           \begin{equation*}
+             e = \frac{1}{2}mv^2
+           \end{equation*}
+    
+        ,* Links to above images and formulas
+    
+        Links to images: [[img:1]], [[img:2]] & [[img:1][Image 1]], [[img:2][Image 2]]
+    
+        Links to formulas: [[fml:1]], [[fml:2]] &  [[fml:1][Formula 1]], [[fml:2][Formula 2]]
+        #+end_example
+    
+    Fix [[https://github.com/kjambunathan/org-mode-ox-odt/issues/55][issue#55]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f6ad3ff52dea8f6cf0ea45f4571a5b87cf41f11f][commit f6ad3ff52dea8f6cf0ea45f4571a5b87cf41f11f]]
+
+    * lisp/ox-odt.el: Translate latex fragments in caption
+    
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Translate latex
+    fragments in caption.
+    
+    Test case:
+    
+        #+begin_example
+        ,#+CAPTION: $a$
+        | a |
+        #+end_example
+    
+    See https://lists.gnu.org/archive/html/emacs-orgmode/2015-02/msg00908.html
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/52][issue#52]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/979ae8d43fd078fe0dc6f715e7a380070969141b][commit 979ae8d43fd078fe0dc6f715e7a380070969141b]]
+
+    * lisp/ox-odt.el: Table caption goes above the table
+    
+    * lisp/ox-odt.el (org-odt-caption-and-xref-settings): Table
+    caption goes above the table.  This is what the LaTeX exporter
+    does by default.
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/55][issue#55]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/709bc8312dc950df95057bcb3b937feabbdfde1b][commit 709bc8312dc950df95057bcb3b937feabbdfde1b]]
+
+    * lisp/ox-odt.el: Misc. change
+    
+    * lisp/ox-odt.el (org-odt--element-category): Replace
+    `when-let' with an equivalent construct.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c8116be0a69849fc68d51646ab97dcea0874d90f][commit c8116be0a69849fc68d51646ab97dcea0874d90f]]
+
+    * lisp/ox-odt.el: Support for category mapping (from say, a table to figure)
+    
+    * lisp/ox-odt.el (org-odt-caption-and-numbering-settings):
+    Replace (a) the variable "Illustration" with "Figure" (b) the
+    style "Illustration" with "Figure".
+    (org-odt-category-attribute-to-category): New.  Alist that
+    maps a `:category' atrribute to category
+    (org-odt--element-category): Honor `:category' attribute.
+    
+    #+begin_example
+    An element can forced to be of a certain category by the use of
+    `:category' property.  For example, the following table will be
+    captioned as if it is a figure.
+    
+        ,#+NAME: table
+        ,#+CAPTION: A Table
+        ,#+ATTR_ODT: :category "figure"
+        | 1 | 2 |
+        | 3 | 4 |
+    
+    This property is particularly useful while typesetting side-by-side
+    figures using a table like the one below.
+    
+        ,#+NAME: table
+        ,#+CAPTION: Animals
+        ,#+ATTR_ODT: :category "figure"
+        ,#+ATTR_ODT: :list-table t
+        -
+          -
+            ,#+NAME: dog
+            ,#+CAPTION: A Dog
+            [[./dog.png]]
+          -
+            ,#+NAME: goat
+            ,#+CAPTION: A Goat
+            [[./goat.png]]
+    #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/aa67928c5e2dbb0214fd5adbc8d1fcf93481def1][commit aa67928c5e2dbb0214fd5adbc8d1fcf93481def1]]
+
+    * lisp/ox-odt.el (org-odt-caption-and-numbering-settings)
+    (org-odt-caption-and-xref-settings): Add entry for
+    `:SUBENTITY'.
+    (org-odt-template, org-odt-format-label): Handle `:SUBENTITY'.
+    (org-odt--get-captioned-parent)
+    (org-odt--element-secondary-category): New helper routines.
+    
+    Introduce category `:SUBENTITY'.
+    
+    An element is of type `:SUBENTITY' when it is captioned, and
+    is itself contained within another captioned element.
+    Subentities occur, for example, when a captioned image,
+    src-block or table is included within a list table.
+    Subentities have their own rules on how they are captioned and
+    numbered.
+    
+    When counting, a) the first subentity within a captioned
+    element gets assigned a value of 1 and (b) all subentities,
+    irrespective of their specific category--be it an image, a
+    src-block or a table--are considered.
+    
+    A subentity's number a) doesn't include chapter number and b)
+    use alphabets.
+    
+    Here is a test case that demonstrates numbering of regular
+    entities and sub-entities.
+    
+        #+begin_example
+        ,#+TOC: figures
+        ,#+TOC: tables
+        ,#+TOC: listings
+    
+        ,* Composite Table
+    
+        ,#+NAME: list-table
+        ,#+CAPTION: A Table that *contains* a paragraph, a figure, a source listing and another table
+        ,#+ATTR_ODT: :list-table t
+        - | /    | <    |
+        - | <c> | <c> |
+        -
+          - Some text
+          -
+            ,#+ATTR_ODT:
+            ,#+NAME: subfigure
+            ,#+CAPTION: This is a figure within a table
+            [[./org-mode-unicorn.png]]
+        - ----------
+          -
+            ,#+NAME: sublisting
+            ,#+CAPTION: This is a  source listing within a table
+            ,#+BEGIN_SRC elisp
+            (defun hello-world ()
+              (message "Hello World"))
+            ,#+END_SRC
+          -
+            ,#+NAME: subtable
+            ,#+CAPTION: This is a table within a table
+            | 1 | 2 |
+            | 3 | 4 |
+    
+        Table [[list-table]] contains
+        - a subfigure [[subfigure]]
+        - a sub-listing [[sublisting]]
+        - a subtable [[subtable]]
+    
+        This document contains
+        - a figure [[figure]]
+        - a listing [[listing]]
+        - an equation [[equation]]
+        - a table [[table]]
+    
+        ,* Image
+    
+        ,#+ATTR_ODT:
+        ,#+NAME: figure
+        ,#+CAPTION: An Image
+        [[./org-mode-unicorn.png]]
+    
+        ,* Source Block
+    
+        ,#+NAME: listing
+        ,#+CAPTION: A Source Listing
+        ,#+BEGIN_SRC elisp
+        (defun hello-world ()
+          (message "Hello World"))
+        ,#+END_SRC
+    
+        ,* Equation
+    
+        ,#+NAME: equation
+        ,#+CAPTION: An Equation
+           \begin{equation}
+             e = \frac{1}{2}mv^2
+           \end{equation}
+    
+        ,* Table
+    
+        ,#+NAME: table
+        ,#+CAPTION: A Table
+        | 1 | 2 |
+        | 3 | 4 |
+        #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/877bf74c7620c360e6ceecc751c1165ee0bc8493][commit 877bf74c7620c360e6ceecc751c1165ee0bc8493]]
+
+    * lisp/ox-odt.el: Modify enumeration logic in anticipation of support for subentities
+    
+    * lisp/ox-odt.el (org-odt-format-label): While numbering an
+    element, iterate over all captionable entities--link,
+    src-block and table--instead of iterating over the elements of
+    same type as the element being numbered.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d9aef3b19002a764f0c40e707ea8c1092a6aeb57][commit d9aef3b19002a764f0c40e707ea8c1092a6aeb57]]
+
+    * lisp/ox-odt.el: Enumerate src-blocks or tables within a `list-table'
+    
+    * lisp/ox-odt.el (org-odt-format-label): Fool ox.el in to
+    traversing deep in to tables, so that a src-block or a table
+    within a list table isn't skipped during enumeration.
+    
+    Here is a test case for the above changes.
+    
+        #+begin_example
+        ,#+TOC: figures
+        ,#+TOC: tables
+        ,#+TOC: listings
+    
+        ,#+NAME: list-table
+        ,#+CAPTION: A Table that *contains* a paragraph, a figure, a source listing and another table
+        ,#+ATTR_ODT: :list-table t
+        - | /    | <    |
+        - | <c> | <c> |
+        -
+          - Some text
+          -
+            ,#+ATTR_ODT:
+            ,#+NAME: subfigure
+            ,#+CAPTION: This is a figure within a table
+            [[./org-mode-unicorn.png]]
+        - ----------
+          -
+            ,#+NAME: sublisting
+            ,#+CAPTION: This is a  source listing within a table
+            ,#+BEGIN_SRC elisp
+            (defun hello-world ()
+              (message "Hello World"))
+            ,#+END_SRC
+          -
+            ,#+NAME: subtable
+            ,#+CAPTION: This is a table within a table
+            | 1 | 2 |
+            | 3 | 4 |
+    
+        Table [[list-table]] contains
+        - a subfigure [[subfigure]]
+        - a sub-listing [[sublisting]]
+        - a subtable [[subtable]]
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff][commit 9cf0c6e9804d6fd84ba488ff43bf17f1ba6d09ff]]
+
+    * lisp/ox-odt.el: Replace `org-odt-category-map-alist' with `org-odt-caption-and-numbering-settings'
+    
+    * lisp/ox-odt.el (org-odt-category-map-alist): Remove it.
+    (org-odt-caption-and-numbering-settings): New. Replaces
+    `org-odt-category-map-alist'.
+    (org-odt-toc-templates, org-odt-template)
+    (org-odt-format-label): Related changes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1f4740bb86e2d108b31355a6f0bf5a4980f791b9][commit 1f4740bb86e2d108b31355a6f0bf5a4980f791b9]]
+
+    * lisp/ox-odt.el: Preparing for adding support for sub-figures etc.
+    
+    * lisp/ox-odt.el (org-odt--enumerate): Remove it.  Fold it
+    into `org-odt-format-label'.
+    (org-odt-category-map-alist): Remove references to `org-odt--enumerate'.
+    (org-odt-format-label): See above.
+    
+    Preparing for adding support for sub-figures etc.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/40ac60898d5ba787aecc46f8f11f1e2f936173c5][commit 40ac60898d5ba787aecc46f8f11f1e2f936173c5]]
+
+    * lisp/ox-odt.el: Handle the cases where styles and/or content template file are left unspecified
+    
+    * lisp/ox-odt.el (org-odt-template): Gracefully handle the
+    cases when styles and/or content template file are left
+    unspecified.  These files, if they use relative paths, are
+    expanded relative to directory of input file.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1af756b42dd160f795fbf75beab6956627ba5e26][commit 1af756b42dd160f795fbf75beab6956627ba5e26]]
+
+    * lisp/ox-odt.el: Handle formula label correctly
+    
+    * lisp/ox-odt.el (org-odt-format-label): Handle formula label
+    correctly.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2][commit 73b4afab6c23da49d939f38ea4d01ab8cd0ef2c2]]
+
+    * lisp/ox-odt.el: Rename some variables for consistency
+    
+    * lisp/ox-odt.el (org-odt-category-map-alist): Label the list
+    elements with (CATEGORY-HANDLE OD-VARIABLE ENTITY-NAME
+    CAPTION-STYLE-NAME ENUMERATOR-PREDICATE)
+    (org-odt-toc-templates, org-odt-format-label): Rename
+    variables to match the above convention.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/bc0f3cc2362968f499883a7789c375cac5934fc5][commit bc0f3cc2362968f499883a7789c375cac5934fc5]]
+
+    * lisp/ox-odt.el:  Paragraph style to be used for captions is now configurable
+    
+    * lisp/ox-odt.el (org-odt-category-map-alist): Add a new entry
+    that specifies the paragraph style to be used for caption.
+    (org-odt-format-label): Return caption as a paragraph and use
+    the paragraph style specified in `org-odt-category-map-alist'.
+    (org-odt-toc-templates, org-odt--render-image/formula)
+    (org-odt-src-block, org-odt--table): Related changes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/8dc38db76f6ab27b656c29bda0077a2be550a25c][commit 8dc38db76f6ab27b656c29bda0077a2be550a25c]]
+
+    * lisp/ox-odt.el: In a captioned image / formula, caption and image go in paragraphs of their own
+    
+    * lisp/ox-odt.el (org-odt--render-image/formula): Put
+    caption and image in paragraphs of their own.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d8c0f453b575a3482f8b7c34cc9de1561f235d14][commit d8c0f453b575a3482f8b7c34cc9de1561f235d14]]
+
+    * lisp/ox-odt.el: Honor `:caption-position' in `org-odt-caption-and-xref-settings'
+    
+    * lisp/ox-odt.el (org-odt-format-label): When requesting a
+    definition, return caption position in addition to caption and
+    short caption.
+    (org-odt-link--inline-image, org-odt-link--inline-formula):
+    Misc.  changes.
+    (org-odt--render-image/formula): Anchor captioned image and
+    captioned formula as "as-char".  Honor caption position.
+    (org-odt-src-block, org-odt--table): Honor caption position.
+    
+    Honor `:caption-position' specified in
+    `org-odt-caption-and-xref-settings'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/81ff8979f27b3532f9f72d45a0b4ff29235a6a44][commit 81ff8979f27b3532f9f72d45a0b4ff29235a6a44]]
+
+    * lisp/ox-odt.el (org-odt--element-category): New
+    
+    * lisp/ox-odt.el (org-odt--element-category): Extracted from
+    `org-odt-format-label'.
+    (org-odt-format-label, org-odt--enumerate):  Use it.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b1e70e37a81e3bcd21f9af1393b1cc1278e370b3][commit b1e70e37a81e3bcd21f9af1393b1cc1278e370b3]]
+
+    * lisp/ox-odt.el: Remove `org-export-solidify-link-text'.  Use `org-export-get-reference' instead.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9d754c0b1ada13197c0ea86bab7b2effcea0cbdd][commit 9d754c0b1ada13197c0ea86bab7b2effcea0cbdd]]
+
+    * lisp/ox-odt.el: Remove `function' around lambda forms
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e652fc529de83ff8173bec3350737222fed36c47][commit e652fc529de83ff8173bec3350737222fed36c47]]
+
+    * lisp/ox-odt.el: Introduce paragraph blocks.
+    
+    * lisp/ox-odt.el (org-odt-special-block, org-odt-paragraph):
+    Introduce paragraph blocks.
+    
+        #+begin_example
+        A paragraph block is a special block, where the enclosed
+        paragraphs gets collapsed in to a single paragraph.
+    
+        For example, a block like this
+    
+        ,#+begin_paragraph
+            I have apples, oranges and
+    
+            bananas.
+        ,#+end_paragraph
+    
+        is typeset as if it were just a single paragraph like this.
+    
+           I have apples, oranges and bananas.
+    
+        Paragraph blocks are most useful for creating multiple
+        ,*captioned* images in a single paragraph.
+    
+        For example, to construct two side-by-side images (that are
+        also captioned), do
+    
+        ,#+ATTR_ODT: :style "OrgCenter"
+        ,#+begin_paragraph
+            ,#+ATTR_ODT: :width 5 :anchor "as-char"
+            ,#+CAPTION: First Figure
+            [[./org-mode-unicorn.png]]
+    
+            ,#+ATTR_ODT: :width 5 :anchor "as-char"
+            ,#+CAPTION: Second Figure
+            [[./org-mode-unicorn.png]]
+        ,#+end_paragraph
+    
+        Here is another example,
+    
+        ,#+ATTR_ODT: :style "OrgCenter"
+        ,#+begin_paragraph
+            ,#+ATTR_ODT: :width 5 :anchor "as-char"
+            ,#+CAPTION: First Figure
+            [[./org-mode-unicorn.png]]
+    
+            ,#+ATTR_ODT: :width 5 :anchor "as-char"
+            ,#+CAPTION: Second Figure
+            [[./org-mode-unicorn.png]]
+    
+            ,#+ATTR_ODT: :width 10 :anchor "as-char"
+            ,#+CAPTION: Third Figure
+            [[./org-mode-unicorn.png]]
+        ,#+end_paragraph
+        #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/072c1f54863a1eeef07d12510e18c9dbb585a803][commit 072c1f54863a1eeef07d12510e18c9dbb585a803]]
+
+    * lisp/ox-odt.el (org-odt-data-dir): Remove it
+    
+    * lisp/ox-odt.el (org-odt-data-dir): Remove it.
+    (org-odt-schema-dir-list, org-odt-styles-dir-list): Propagate above change.
+    (org-odt-styles-dir, org-odt-schema-dir): Simplify. Make it
+    less noisy.
+    (org-odt-template): Minor change.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/945e6831343fd8e8b355aca970ecee6ba99368f3][commit 945e6831343fd8e8b355aca970ecee6ba99368f3]]
+
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE, ODT_EXTRA_IMAGES): Change syntax and/or semantics
+    
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE, ODT_STYLES_FILE):
+    Change syntax.  These are plain strings, instead of
+    `read'-able strings.
+    (ODT_EXTRA_IMAGES): When specified with a relative path, if
+    ODT_STYLES_FILE is a OpenDocument file, the relative path is
+    expanded against the root of the archive file.  Otherwise, the
+    path is expanded against the directory of input Org file.
+    
+    (org-odt-template): Honor above change in syntax and/or
+    semantics.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/f4237879c04e86a7cc6e109ab6776f529e69bfae][commit f4237879c04e86a7cc6e109ab6776f529e69bfae]]
+
+    * lisp/ox-odt.el: Replace `mapc' with `dolist'.  Also some whitespace cleanups.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/44a720dca7b647352eedcecf9f1120818058139e][commit 44a720dca7b647352eedcecf9f1120818058139e]]
+
+    * lisp/ox-odt.el (ODT_EXTRA_IMAGES): Use this to specify image files referenced by styles.xml
+    
+    * lisp/ox-odt.el (ODT_EXTRA_IMAGES): New keyword. Use this to
+    specify image files referenced by styles.xml
+    (org-odt-template): Copy over the above images to the exported
+    file.
+    (org-odt--copy-image-file): Add an optional argument to
+    control the name of the copied over file.
+    
+    Add support for creating page styles with background images.
+    
+    Here is a test case that exercises the use of above keyword.
+    
+        #+begin_example
+        $ find .
+        .
+        ./Pictures
+        ./Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png
+        ./pagestyles.org
+    
+        $ cat pagestyles.org
+    
+        ,#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+        ,#+OPTIONS: author:nil broken-links:nil c:nil creator:nil
+        ,#+OPTIONS: d:(not "LOGBOOK") date:nil e:t email:nil f:t inline:t num:t
+        ,#+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+        ,#+OPTIONS: timestamp:t title:nil toc:nil todo:t |:t
+        ,#+TITLE: How to customize page styles and layouts
+        ,#+AUTHOR: Jambunathan K
+    
+        ,#+ODT_EXTRA_IMAGES: Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png
+    
+        ,#+ODT_EXTRA_STYLES: <draw:fill-image draw:name="org-mode-unicorn" xlink:href="Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>
+    
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="MyTitlePageLayout">
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:layout-grid-color="#c0c0c0" style:layout-grid-lines="20" style:layout-grid-base-height="0.706cm" style:layout-grid-ruby-height="0.353cm" style:layout-grid-mode="none" style:layout-grid-ruby-below="false" style:layout-grid-print="false" style:layout-grid-display="false" draw:fill="bitmap" draw:fill-image-name="org-mode-unicorn" draw:fill-image-width="0cm" draw:fill-image-height="0cm" style:repeat="repeat" draw:fill-image-ref-point-x="0%" draw:fill-image-ref-point-y="0%" draw:fill-image-ref-point="center" draw:tile-repeat-offset="0% vertical" style:footnote-max-height="0cm">
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:background-image xlink:href="Pictures/10000201000000A2000000B0B55B7ABDC4CED431.png" xlink:type="simple" xlink:actuate="onLoad"/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  </style:page-layout-properties>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:header-style/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:footer-style/>
+        ,#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+    
+        ,#+ODT_MASTER_STYLES: <style:master-page style:name="MyTitlePage" style:page-layout-name="MyTitlePageLayout" style:next-style-name="OrgFrontMatterPage"/>
+    
+        ,#+ATTR_ODT: :style "OrgCenter" :page-style "MyTitlePage" :page-break t
+        Phasellus purus.  Nunc eleifend leo vitae magna.  Suspendisse potenti.
+        Vivamus id enim.  Suspendisse potenti.
+        #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/78b6a1258305cd5c87e8b6ec6082d6c716c8deb2][commit 78b6a1258305cd5c87e8b6ec6082d6c716c8deb2]]
+
+    * lisp/ox-odt.el (ODT_EXTRA_AUTOMATIC_STYLES, ODT_MASTER_STYLES): Use these options to control page styles and layouts
+    
+    * lisp/ox-odt.el (ODT_EXTRA_AUTOMATIC_STYLES)
+    (ODT_MASTER_STYLES): New in-buffer options.  Use the former to
+    create custom page layouts.  Use the latter to create custom
+    page styles.
+    (org-odt-template): Append the value of
+    `ODT_EXTRA_AUTOMATIC_STYLES' to
+    "</office:automatic-styles>...</office:automatic-styles>".
+    Append the value of `ODT_MASTER_STYLES' to the end of
+    "</office:master-styles>...</office:master-styles>".
+    
+    Here is a sample snippet to exercise the above feature.
+    
+            #+begin_example
+            ,#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+            ,#+OPTIONS: author:nil broken-links:nil c:nil creator:nil
+            ,#+OPTIONS: d:(not "LOGBOOK") date:nil e:t email:nil f:t inline:t num:t
+            ,#+OPTIONS: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+            ,#+OPTIONS: timestamp:t title:nil toc:nil todo:t |:t
+            ,#+TITLE: How to customize page styles and layouts
+            ,#+AUTHOR: Jambunathan K
+    
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES: <style:page-layout style:name="MyFirstPageLayout">
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" fo:background-color="#ffff00" style:writing-mode="lr-tb" style:layout-grid-color="#c0c0c0" style:layout-grid-lines="20" style:layout-grid-base-height="0.706cm" style:layout-grid-ruby-height="0.353cm" style:layout-grid-mode="none" style:layout-grid-ruby-below="false" style:layout-grid-print="false" style:layout-grid-display="false" draw:fill="solid" draw:fill-color="#ffff00" style:footnote-max-height="0cm">
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES:   <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES:  </style:page-layout-properties>
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:header-style/>
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES:  <style:footer-style/>
+            ,#+ODT_EXTRA_AUTOMATIC_STYLES: </style:page-layout>
+    
+            ,#+ODT_MASTER_STYLES: <style:master-page style:name="MyFirstPage" style:page-layout-name="MyFirstPageLayout" style:next-style-name="OrgFrontMatterPage"/>
+    
+            ,#+ATTR_ODT: :style "OrgCenter" :page-style "MyFirstPage" :page-break t
+            This page has yellow background.
+            #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/53][issue#53]]
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3][commit 6cef0cd40932ad6a0221e035b4ecc0d15f8f95e3]]
+
+    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update Package-Requires to 9.2.1
+    
+    * lisp/ox-odt.el (Package-Requires): Set it to Org
+    9.2.1. Also update Copyright years.
+    
+    * contrib/lisp/ox-jabref.el (Package-Requires): Set it to
+    ox-odt 9.2.1. Also update Copyright year.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a34abc398845af18d18f7a46b930290fd90f9206][commit a34abc398845af18d18f7a46b930290fd90f9206]]
+
+    * lisp/ox-odt.el: Handle cite fragments even when the parser doesn't support cite objects
+    
+    * lisp/ox-odt.el (org-odt-latex-fragment)
+    (org-odt--translate-cite-fragments)
+    (org-odt--collect-cite-keys): Handle cite fragments even when
+    the Org parser doesn't support `citation' and
+    `citation-reference' objects.
+    * testing/examples/odt/masterdocument.org: Modified to
+    exercise above change.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b464b61c733e4e667703ab4b9e9581f274ccd420][commit b464b61c733e4e667703ab4b9e9581f274ccd420]]
+
+    * lisp/ox-odt.el (org-odt-hfy-face-to-css): Honor background color
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/22ca6417cd038e0fe7aad5736f8fb8dccb81c453][commit 22ca6417cd038e0fe7aad5736f8fb8dccb81c453]]
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Fix :type of this option
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ecbaf18a15be3179e82ea10c3332b85e825350cf][commit ecbaf18a15be3179e82ea10c3332b85e825350cf]]
+
+    lisp/ox-odt.el, contrib/lisp/ox-jabref.el: Update library headers
+    
+    * lisp/ox-odt.el: Update library headers
+    * contrib/lisp/ox-jabref.el: Update library headers
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2396344595c3a35df809e0c1d4f3f1f3996c9a6f][commit 2396344595c3a35df809e0c1d4f3f1f3996c9a6f]]
+
+    * lisp/ox-odt.el: Allow caption and name in list-tables
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Allow caption and name.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/47][issue#47]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/40d3e9ee84165572a1e52474a08b094594c7025d][commit 40d3e9ee84165572a1e52474a08b094594c7025d]]
+
+    * lisp/ox-odt.el (org-odt-transform-processes): New macro `Reload'
+    
+    * contrib/odt/OrgModeUtilities.oxt (Reload): New.
+    * lisp/ox-odt.el (org-odt-transform-processes): Add above
+    macro.
+    
+    Fulfill a request made as part of [[https://github.com/kjambunathan/org-mode-ox-odt/issues/46][issue#46]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2e9409632bde8e65af02dea55a33fae4075cdd2d][commit 2e9409632bde8e65af02dea55a33fae4075cdd2d]]
+
+    * lisp/ox-odt.el (org-odt-headline): Explicitly number headlines using a list style
+    
+    * lisp/ox-odt.el (org-odt-headline): Use list styles to explicitly
+    number headlines.  In the example below, pay particular attention to
+    headline nodes `Resources' and `Glossary'.  They are defined as below
+    and specify a `:list-style' attribute.
+    
+        #+begin_example
+        ,* Resources
+        :PROPERTIES:
+        :ATTR_ODT: :style-prefix "_5f_Appendix_5f_Heading_5f_"   :list-style "_5f_Appendix_5f_Numbering"
+        :END:
+    
+        ,* Glossary
+        :PROPERTIES:
+        :ATTR_ODT: :style-prefix "_5f_EndMatter_5f_Heading_5f_" :list-style ""
+        :END:
+        #+end_example
+    
+    As a result,
+    
+    (1) all headlines beginning at (and after) `Resources' but before
+        `Glossary' would follow the numbering style of
+        "_5f_Appendix_5f_Numbering".
+    
+        Custom numbering begins at the node `Resources' because it has an
+        explicit :list-style "..."  attribute.  This custom numbering is
+        continued on to all the subsequent headlines i.e., to all it's
+        child headlines (and their children) and it's following sibling
+        nodes (and their children).  Custom numbering terminates at node
+        `Glossary' because it undefines the list style through :list-style
+        "". So, the node `Glossary' and all the following headlines would
+        revert to the default outline numbering.
+    
+    (2) Rest of the headlines would use numbering as defined by
+        <text:outline-style style:name="Outline">...</text:outline-style>
+    
+    EXAMPLE:
+    
+            #+begin_example
+            ,#+ODT_EXTRA_STYLES: <text:outline-style style:name="Outline">
+            ,#+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="1" style:num-prefix="Chapter " style:num-suffix=". " style:num-format="1">
+            ,#+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            ,#+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-0.762cm" fo:margin-left="0.762cm"/>
+            ,#+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            ,#+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            ,#+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="2" style:num-prefix="Section " style:num-suffix="." style:num-format="1" text:display-levels="2">
+            ,#+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            ,#+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="space" fo:text-indent="-1.016cm" fo:margin-left="1.016cm"/>
+            ,#+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            ,#+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            ,#+ODT_EXTRA_STYLES:   <text:outline-level-style text:level="3" style:num-format="">
+            ,#+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            ,#+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="listtab" text:list-tab-stop-position="1.27cm" fo:text-indent="-1.27cm" fo:margin-left="1.27cm"/>
+            ,#+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            ,#+ODT_EXTRA_STYLES:   </text:outline-level-style>
+            ,#+ODT_EXTRA_STYLES: </text:outline-style>
+    
+            ,#+ODT_EXTRA_STYLES: <style:style style:name="_5f_FrontMatter_5f_Heading_5f_1" style:display-name="_FrontMatter_Heading_1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:list-style-name="">
+            ,#+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            ,#+ODT_EXTRA_STYLES: </style:style>
+    
+            ,#+ODT_EXTRA_STYLES: <style:style style:name="_5f_Appendix_5f_Heading_5f_1" style:display-name="_Appendix_Heading_1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:list-style-name="_5f_Appendix_5f_Numbering">
+            ,#+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            ,#+ODT_EXTRA_STYLES:   <style:text-properties fo:color="#0047ff" fo:font-size="15pt" fo:font-weight="bold"/>
+            ,#+ODT_EXTRA_STYLES: </style:style>
+            ,#+ODT_EXTRA_STYLES: <style:style style:name="_5f_Appendix_5f_Heading_5f_2" style:display-name="_Appendix_Heading_2" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="2" style:list-style-name="_5f_Appendix_5f_Numbering" style:class="text"/>
+    
+            ,#+ODT_EXTRA_STYLES: <text:list-style style:name="_5f_Appendix_5f_Numbering" style:display-name="_Appendix_Numbering">
+            ,#+ODT_EXTRA_STYLES:   <text:list-level-style-number text:level="1" text:style-name="Numbering_20_Symbols" style:num-prefix="Appendix " style:num-suffix=". " style:num-format="A">
+            ,#+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            ,#+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-1.27cm" fo:margin-left="1.27cm"/>
+            ,#+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            ,#+ODT_EXTRA_STYLES:   </text:list-level-style-number>
+            ,#+ODT_EXTRA_STYLES:   <text:list-level-style-number text:level="2" style:num-prefix="Section " style:num-suffix=". " style:num-format="1" text:display-levels="2">
+            ,#+ODT_EXTRA_STYLES:     <style:list-level-properties text:list-level-position-and-space-mode="label-alignment">
+            ,#+ODT_EXTRA_STYLES:       <style:list-level-label-alignment text:label-followed-by="nothing" fo:text-indent="-1.905cm" fo:margin-left="1.905cm"/>
+            ,#+ODT_EXTRA_STYLES:     </style:list-level-properties>
+            ,#+ODT_EXTRA_STYLES:   </text:list-level-style-number>
+            ,#+ODT_EXTRA_STYLES: </text:list-style>
+    
+            ,#+ODT_EXTRA_STYLES: <style:style style:name="_5f_EndMatter_5f_Heading_5f_1" style:display-name="_EndMatter_Heading_1" style:family="paragraph" style:parent-style-name="_5f_FrontMatter_5f_Heading_5f_1" style:next-style-name="Text_20_body">
+            ,#+ODT_EXTRA_STYLES:   <style:paragraph-properties style:page-number="auto"/>
+            ,#+ODT_EXTRA_STYLES: </style:style>
+    
+            ,* Copyright
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_FrontMatter_5f_Heading_5f_"
+            :END:
+    
+            Aliquam erat volutpat.  Cum sociis natoque penatibus et magnis dis
+            parturient montes, nascetur ridiculus mus.  Etiam vel neque nec dui
+            dignissim bibendum.  Mauris mollis tincidunt felis.  Nulla posuere.
+    
+            ,* Introduction
+    
+            Donec vitae dolor.  Nullam eu ante vel est convallis dignissim.  Donec
+            hendrerit tempor tellus.  Donec neque quam, dignissim in, mollis nec,
+            sagittis eu, wisi.  Phasellus lacus.  Vivamus id enim.  Aliquam erat
+            volutpat.  Etiam vel tortor sodales tellus ultricies commodo.  Sed
+            diam.
+    
+            ,** What Is XML?
+    
+            Nullam libero mauris, consequat quis, varius et, dictum id, arcu.
+            Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo,
+            quis tempor ligula erat quis odio.  Nullam tempus.  Fusce commodo.
+    
+            ,** Where Did XML Come From?
+    
+            Donec posuere augue in quam.  Mauris mollis tincidunt felis.
+            Phasellus purus.  Mauris ac felis vel velit tristique imperdiet.  Cum
+            sociis natoque penatibus et magnis dis parturient montes, nascetur
+            ridiculus mus.  Nam vestibulum accumsan nisl.  Nunc aliquet, augue nec
+            adipiscing interdum, lacus tellus malesuada massa, quis varius mi
+            purus non odio.
+    
+            ,* Markup and Core Concepts
+    
+            Etiam laoreet quam sed arcu.  Nam vestibulum accumsan nisl.  Nulla
+            posuere.  Praesent fermentum tempor tellus.  Vivamus id enim.  Vivamus
+            id enim.  Mauris ac felis vel velit tristique imperdiet.
+    
+            ,** Tags
+    
+            Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Sed
+            bibendum.  Nam euismod tellus id erat.  Donec neque quam, dignissim
+            in, mollis nec, sagittis eu, wisi.
+    
+            ,** Documents
+    
+            Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada
+            massa, quis varius mi purus non odio.  Phasellus lacus.  Donec vitae
+            dolor.  Nunc rutrum turpis sed pede.  Pellentesque tristique imperdiet
+            tortor.  Fusce sagittis, libero non molestie mollis, magna orci
+            ultrices dolor, at vulputate neque nulla lacinia eros.  Fusce
+            suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis
+            tempor ligula erat quis odio.  Vivamus id enim.
+    
+            ,* Resources
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_Appendix_5f_Heading_5f_"   :list-style "_5f_Appendix_5f_Numbering"
+            :END:
+    
+            ,** Online
+    
+            Nulla posuere.  Nunc rutrum turpis sed pede.  Sed bibendum.  Etiam vel
+            neque nec dui dignissim bibendum.  Lorem ipsum dolor sit amet,
+            consectetuer adipiscing elit.  Fusce sagittis, libero non molestie
+            mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia
+            eros.  Nullam tempus.  Etiam vel tortor sodales tellus ultricies
+            commodo.
+    
+            ,** Books
+    
+            Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.  Nam
+            vestibulum accumsan nisl.  Nullam rutrum.  Pellentesque condimentum,
+            magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam
+            neque sit amet urna.
+    
+            - Integer placerat tristique nisl
+            - Integer placerat tristique nisl
+            - Nunc rutrum turpis sed pede
+            - Praesent augue
+              - Pellentesque tristique imperdiet tortor
+              - Donec pretium posuere tellus
+              - Sed diam
+              - Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus
+              - Donec hendrerit tempor tellus
+            - Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio
+    
+            ,* Taxonomy of Standards
+    
+            Nam vestibulum accumsan nisl.  Nullam rutrum.  Phasellus at dui in
+            ligula mollis ultricies.  Donec hendrerit tempor tellus.  Nulla
+            facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et
+            dictum nunc justo sit amet elit.
+    
+            ,** Markup and Structure
+    
+            Etiam vel tortor sodales tellus ultricies commodo.  Donec neque quam,
+            dignissim in, mollis nec, sagittis eu, wisi.  Lorem ipsum dolor sit
+            amet, consectetuer adipiscing elit.  Donec vitae dolor.  Phasellus at
+            dui in ligula mollis ultricies.  Fusce commodo.
+    
+            ,** Linking
+    
+            Cras placerat accumsan nulla.  Nullam eu ante vel est convallis
+            dignissim.  Proin neque massa, cursus ut, gravida ut, lobortis eget,
+            lacus.  Cras placerat accumsan nulla.  Pellentesque condimentum, magna
+            ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque
+            sit amet urna.
+    
+            ,* Glossary
+            :PROPERTIES:
+            :ATTR_ODT: :style-prefix "_5f_EndMatter_5f_Heading_5f_" :list-style ""
+            :END:
+    
+            Donec vitae dolor.  Nunc porta vulputate tellus.  Phasellus lacus.
+            Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Donec
+            at pede.  Aliquam feugiat tellus ut neque.
+    
+    This feature is based on the description (and sample document)
+    shared at
+    https://forum.openoffice.org/en/forum/viewtopic.php?f=7&t=19834#p93427.
+            #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/44][issue#44]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ef951e32f4d852dafe595e81b479dd0e071ecd49][commit ef951e32f4d852dafe595e81b479dd0e071ecd49]]
+
+    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4b98f0da058f61e10470218748fb69170b398360][commit 4b98f0da058f61e10470218748fb69170b398360]]
+
+    * lisp/ox-odt.el (org-odt-headline): Minor refactoring
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6463b26b31c7a6eb33024da878c4176698a36cc8][commit 6463b26b31c7a6eb33024da878c4176698a36cc8]]
+
+    * lisp/ox-odt.el (org-odt-headline): Minor Re-factoring
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/25787b1f2800455d2ecf368aa20c7212132f7e19][commit 25787b1f2800455d2ecf368aa20c7212132f7e19]]
+
+    * lisp/ox-odt.el (org-odt-paragraph): Trim whitespace from paragraph contents
+    
+    Partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/45][issue#45]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259][commit 07cd42a10fbeb43a68e14c3e7f202e7e5bb5f259]]
+
+    * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+    
+    * lisp/ox-odt.el: New in buffer option ODT_DISPLAY_OUTLINE_LEVEL
+    (org-odt--enumerate, org-odt--enumerate): Honor above option.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/40][issue#40]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6941f81951c2a9fb5ebb098376982bbae0448f6f][commit 6941f81951c2a9fb5ebb098376982bbae0448f6f]]
+
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    When a table specifies both a `:style' and `:p-style"
+    attribute, only the table cells (i.e., cell borders etc) get
+    styled as per the table template.  The paragraphs within the
+    cells get styled *not* based on the template, but by "default"
+    rules.
+    
+    This change is best understood using the following example.
+    
+    - in the first snippet, BOTH the cell borders and column
+    alignment are controlled by the table cookies.
+    
+    - in the second snippet, BOTH the cell borders and column
+    alignment are controlled by the template "GriddedTable".
+    i.e., table cookies are ineffectual.
+    
+    - in the third snippet, the cell borders are controlled by the
+    template "GriddedTable" while the column alignment is
+    determined by table cookies.
+    
+            #+begin_example
+            ,#+CAPTION: A table that is styled the ~Org~ way
+            ,#+ATTR_ODT: :p-style "OrgTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+    
+            ,#+CAPTION: A table that is styled the ~ODF~ way
+            ,#+ATTR_ODT: :style "GriddedTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+    
+            ,#+CAPTION: A table that is styled using a mix of ~Org~ _and_ ~ODF~ way
+            ,#+ATTR_ODT: :p-style "OrgTable" :style "GriddedTable"
+            |  <r> | <c>  | <l>  |
+            |    / | <    | >    |
+            | aaaa | bbbb | cccc |
+            |------+------+------|
+            | dddd | eeee | ffff |
+            | gggg | hhhh | iiii |
+            #+end_example
+    
+            Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/39][issue#39]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/252d671d9eb01424809898ba435095f6ee1dcf38][commit 252d671d9eb01424809898ba435095f6ee1dcf38]]
+
+    ox-odt: Rationalize paragraph style names used within tables
+    
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    In tables that are styled using table templates, use
+    `Contents' as suffix for paragraph stylenames instead of
+    `TableParagraph'.
+    (org-odt-table-styles): Update docstring to reflect above
+    change.
+    * etc/styles/OrgOdtContentTemplate.xml
+    (OrgEquationFirstColumnContents)
+    (OrgEquationLastColumnContents, CustomContents)
+    (CustomLastRowContents, CustomLastColumnContents)
+    (CustomFirstRowContents, CustomFirstColumnContents): Renamed
+    from their counterparts.
+    
+    Preparing the ground for addressing [[https://github.com/kjambunathan/org-mode-ox-odt/issues/39][issue#39]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/208a38f5e21e4d2ebd3fd6e37ea4988897203002][commit 208a38f5e21e4d2ebd3fd6e37ea4988897203002]]
+
+    * lisp/ox-odt.el: Fix previous commit
+    
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE): New in buffer option.
+    (org-odt-template): Honor above option.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/37][issue#37]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/294f8fa18913e0f90e0889c120e2656bb6ee0122][commit 294f8fa18913e0f90e0889c120e2656bb6ee0122]]
+
+    * lisp/ox-odt.el: New in buffer option ODT_CONTENT_TEMPLATE_FILE
+    
+    * lisp/ox-odt.el (ODT_CONTENT_TEMPLATE_FILE): New in buffer option.
+    (org-odt-template): Honor above option.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/37][issue#37]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/c77f0da167e918e62f5479c56991b4fe0868052b][commit c77f0da167e918e62f5479c56991b4fe0868052b]]
+
+    * lisp/ox-odt.el: Simplify creation of tables with custom paragraph styles
+    
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles)
+    (org-odt-template): See comments below.
+    
+    To create a table with custom paragraph styles, define *just* the
+    styles for the header and content cells.  These styles shouldn't be
+    *automatic* styles, but be *common* styles.  (With the current change,
+    you no longer have to define the paragraph styles for left, right and
+    center aligned cells.  The ODT exporter generates the "aligned" styles
+    for you.)
+    
+    Here is a sample snippet for you to try.
+    
+        #+begin_example
+        ,#+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_small" style:family="paragraph" style:parent-style-name="Text_20_body">
+        ,#+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="50%"/>
+        ,#+ODT_EXTRA_STYLES: </style:style>
+    
+        ,#+ODT_EXTRA_STYLES: <style:style style:name="MyOrgTableContents" style:family="paragraph" style:parent-style-name="Text_20_body_small"/>
+        ,#+ODT_EXTRA_STYLES: <style:style style:name="MyOrgTableHeading" style:family="paragraph" style:parent-style-name="MyOrgTableContents" style:class="extra">
+        ,#+ODT_EXTRA_STYLES:   <style:text-properties fo:font-weight="bold"/>
+        ,#+ODT_EXTRA_STYLES: </style:style>
+    
+        ,#+ATTR_ODT: :p-style "MyOrgTable"
+        |  <r> | <c>  | <l>  |
+        | aaaa | bbbb | cccc |
+        |------+------+------|
+        | dddd | eeee | ffff |
+        | gggg | hhhh | iiii |
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/24][issue#24]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4235a4bc89685f8a61c8d7f7271aeb1d71d0c526][commit 4235a4bc89685f8a61c8d7f7271aeb1d71d0c526]]
+
+    * lisp/ox-odt.el: Define *common* styles through #+ODT_EXTRA_STYLES: ...
+    
+    * lisp/ox-odt.el (ODT_EXTRA_STYLES): New option.
+    (org-odt-template): Add above option to the end of
+    "<office:styles>...</office:styles>".
+    
+    Use this option to define common styles.  When using
+    LibreOffice, these styles are visible via the stylist.
+    
+    For example, the snippet below first defines a *common* style
+    named "Text_20_body_small".  Subsequently, it applies that
+    style to a paragraph.
+    
+        #+begin_example
+        ,#+ODT_EXTRA_STYLES: <style:style style:name="Text_20_body_small" style:family="paragraph" style:parent-style-name="Text_20_body">
+        ,#+ODT_EXTRA_STYLES:   <style:text-properties fo:font-size="50%"/>
+        ,#+ODT_EXTRA_STYLES: </style:style>
+    
+        ,#+ATTR_ODT: :style "Text_20_body_small"
+        Nunc eleifend leo vitae magna.  Nunc eleifend leo vitae magna.
+        Curabitur lacinia pulvinar nibh.  Donec posuere augue in quam.
+        Aliquam posuere.  Nullam rutrum.  Aliquam posuere.
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/53e9160bd128135050564ccc86d24f52ba48f80e][commit 53e9160bd128135050564ccc86d24f52ba48f80e]]
+
+    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'
+    
+    * lisp/ox-odt.el (org-odt--read-attribute): Use `cl-case' instead of `case'.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/35][issue#35]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/d01d4129c81172c77d761b4ddae7741d7bc780d1][commit d01d4129c81172c77d761b4ddae7741d7bc780d1]]
+
+    lisp/ox-odt.el (org-odt-transform-processes):  New macro "Update All and Break Links"
+    
+    * contrib/odt/OrgModeUtilities.oxt (UpdateAll): Add a new
+    optional argument `removeFileLinks'.
+    * lisp/ox-odt.el (org-odt-transform-processes): Add new macro
+    "Update All and Break Links".  Removed macro
+    "Update indices and xrefs".
+    (org-odt-link): Misc. fixes.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9f9a39edf8d86c1540e09301b5dae27348578ced][commit 9f9a39edf8d86c1540e09301b5dae27348578ced]]
+
+    lisp/ox-odt.el: Improve support for pagebreaks
+    
+    * etc/styles/OrgOdtStyles.xml (OrgPageBreakDefault)
+    (OrgPageBreakLandscape):  Remove it.
+    
+    * lisp/ox-odt.el (org-odt-page-break-style-format): New constant.
+    (org-odt--get-derived-paragraph-style): New helper routine.
+    (org-odt--read-attribute): Improve.
+    (org-odt-keyword): Invert how PAGEBREAKs are handled.  Now,
+    PAGEBREAK keywords create an empty paragraph on the current
+    page, which is then *followed* with a new page.  (Previously,
+    this keyword created a new page, in which an empty paragraph
+    was created.)
+    (org-odt-paragraph, org-odt-headline, org-odt-special-block):
+    Use derived paragraph styles that honor the three new
+    properties: `:page-break', `:page-style', and `page:number'.
+    `:page-break' can take one of the following values: "before",
+    t, "after".  These properties correspond with the options
+    under Paragraph->Text Flow->Breaks. See
+    https://help.libreoffice.org/Writer/Text_Flow#Breaks.)
+    
+    #+begin_example
+    a) To shift a paragraph to a new page, use
+          ,#+ATTR_ODT: :pagebreak t
+          Blah blah blah blah ...
+    
+    b) To shift a paragraph to a new page, that uses a specific
+    page style, say "OrgFirstPage", use
+    
+          ,#+ATTR_ODT: :page-style "OrgFirstPage"
+          Blah blah blah blah ...
+    
+    c) To shift a paragraph to a new page, that uses a specific
+    page style, say "OrgFirstPage", and to begin numbering the
+    page from numeral 1, use
+    
+          ,#+ATTR_ODT: :page-style "OrgFirstPage" :page-number 1
+          Blah blah blah blah ...
+    
+    The above properties can also be applied to headlines.  For
+    example, to shift a headline to a new page, that uses a
+    specific page style, say "OrgFirstPage", and to begin
+    numbering the page from numeral 1, use
+    
+          ,* Copyright Statement
+          :PROPERTIES:
+          :ATTR_ODT: :page-number 1 :page-style "OrgFirstPage"
+          :END:
+    #+end_example
+    
+    See [[https://github.com/kjambunathan/org-mode-ox-odt/issues/29][issue#29]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/51a23cf9c8b4b32bf8ca26ce516ff7357ac5842b][commit 51a23cf9c8b4b32bf8ca26ce516ff7357ac5842b]]
+
+    lisp/ox-odt.el: Allow customization of headline styles
+    
+    * lisp/ox-odt.el (org-odt--read-attribute): Retrieve values
+    from ATTR_ODT property of a headline.
+    (org-odt-headline): Associate a style with
+    headlines.
+    
+    Use either of the following snippets to typeset the headline
+    with "Heading_20_1_unnumbered".  Note that in the second case,
+    the effective style is a concatenation of prefix, level and
+    suffix.
+    
+        #+begin_example
+        ,* Chapter 1
+         :PROPERTIES:
+         :ATTR_ODT:  :style "Heading_20_1_unnumbered"
+         :END:
+    
+        ,* Chapter 1
+         :PROPERTIES:
+         :ATTR_ODT:  :style-prefix "Heading_20_" :style-suffix "_unnumbered"
+         :END:
+        #+end_example
+    
+    A partial fix for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/29][issue#29]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3480c66f3fad99fd04f3eaf8fd5cf88a62f7f626][commit 3480c66f3fad99fd04f3eaf8fd5cf88a62f7f626]]
+
+    lisp/ox-odt.el: Export to OpenDocument master file with `#+ODT_FILE_EXTENSION: odm'
+    
+    * lisp/ox-odt.el (ODT_FILE_EXTENSION): New in buffer option.
+    (org-odt--export-wrap): Add mime type  for OpenDocument master files.
+    (org-odt-export-to-odt): Honor above export option.
+    
+    #+begin_example
+    Export an Org file to OpenDocument master file, when
+    
+        ,#+ODT_FILE_EXTENSION: odm
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/b37d9b2a72d3a6a83068b93b81ced6707b80182c][commit b37d9b2a72d3a6a83068b93b81ced6707b80182c]]
+
+    lisp/ox-odt.el: Transclude ODT links
+    
+    * lisp/ox-odt.el (org-odt--transclude-link-p): New.
+    (org-odt-link, org-odt-paragraph, org-odt-special-block):
+    Handle link transclusion.
+    (org-odt-table): Top level tables need not go in indented
+    section.
+    
+    #+begin_example
+    Use one of the following constructs to transclude a
+    subdocument in to the currently exported document.
+    
+        ,#+ATTR_ODT: :transclude t
+        [[file:subdocument1.odt]]
+        ,#+ATTR_ODT: :style \"OrgTwoColumnSection\"
+    
+        ,#+BEGIN_section
+          ,#+ATTR_ODT: :transclude t
+          [[file:subdocument1.odt]]
+        ,#+END_section
+    
+    Once the document is exported, use LibreOffice's
+    "Menu->Tools->Update->Update All" to do the actual
+    transclusion.
+    #+end_example
+    
+    More changes for [[https://github.com/kjambunathan/org-mode-ox-odt/issues/31][issue#31]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/145f1c3a35527087bc267d2b37b1bdd77bf02d90][commit 145f1c3a35527087bc267d2b37b1bdd77bf02d90]]
+
+    lisp/ox-odt.el: Handle relative filepaths correctly
+    
+    * lisp/ox-odt.el (org-odt-link): Unescape and url encode
+    protocol urls.  Prepend relative file paths with "../".
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/90045053d36bcf3cb5fc2ccdc546700821f2f9f5][commit 90045053d36bcf3cb5fc2ccdc546700821f2f9f5]]
+
+    lisp/ox-odt.el: Support OpenOffice sections
+    
+    * etc/styles/OrgOdtContentTemplate.xml (OrgSection)
+    (OrgTwoColumnSection, OrgThreeColumnSection)
+    (OrgTwoColumnSection-2-1, OrgTwoColumnSection-1-2): New
+    automatic section styles.
+    
+    * lisp/ox-odt.el (org-odt-special-block): New special-block of
+    type `section' which emits "<text:section>...</text:section>".
+    (org-odt-paragraph): A paragraph within a section get it's
+    style from `:p-style' attribute.
+    For example, the following snippet creates a 2-column section
+    section, with columns in ratio 2:1 and with paragraphs that
+    are centered.
+    
+        #+begin_example
+        ,#+ATTR_ODT: :style "OrgTwoColumnSection-1-2" :p-style "OrgCenter"
+        ,#+BEGIN_section
+          Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+          Pellentesque condimentum, magna ut suscipit hendrerit, ipsum
+          augue ornare nulla, non luctus diam neque sit amet urna.  Sed
+          id ligula quis est convallis tempor.  Nullam eu ante vel est
+          convallis dignissim.  Nullam tristique diam non turpis.  Donec
+          posuere augue in quam.  Aliquam erat volutpat.  Nam vestibulum
+          accumsan nisl.  Sed diam.  Proin quam nisl, tincidunt et,
+          mattis eget, convallis nec, purus.  Pellentesque dapibus
+          suscipit ligula.  Nunc porta vulputate tellus.  Mauris ac
+          felis vel velit tristique imperdiet.  Nunc porta vulputate
+          tellus.  Sed bibendum.  Nullam eu ante vel est convallis
+          dignissim.
+        ,#+END_section
+        #+end_example
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/31][issue#31]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/73a299d46cf0aa231b42eb7730cf8001b49c67d9][commit 73a299d46cf0aa231b42eb7730cf8001b49c67d9]]
+
+    lisp/ox-odt.el: Support `#+ODT_AUTOMATIC_STYLES: ...'
+    
+    * lisp/ox-odt.el (ODT_AUTOMATIC_STYLES): New option.
+    (org-odt-template): Append above value to
+    "<office:automatic-styles>...</office:automatic-styles>".
+    
+    #+begin_example
+    For example, the following snippet defines a custom paragraph
+    style that uses drop caps and applies that style to a paragraph,
+    presumably the first one in a chapter.
+    
+        ,#+ODT_AUTOMATIC_STYLES: <style:style style:name="DropCaps" style:family="paragraph" style:parent-style-name="Text_20_body">
+        ,#+ODT_AUTOMATIC_STYLES:  <style:paragraph-properties>
+        ,#+ODT_AUTOMATIC_STYLES:   <style:drop-cap style:lines="3"/>
+        ,#+ODT_AUTOMATIC_STYLES:  </style:paragraph-properties>
+        ,#+ODT_AUTOMATIC_STYLES: </style:style>
+    
+        ,#+ATTR_ODT: :style "DropCaps"
+        Ipsum dolor sit amet, consectetuer adipiscing elit. Donec
+        hendrerit tempor tellus. Donec pretium posuere tellus. Proin quam
+        nisl, tincidunt et, mattis eget, convallis nec, purus.
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5c05cec684524cc5595215d9810762f773d5e288][commit 5c05cec684524cc5595215d9810762f773d5e288]]
+
+    lisp/ox-odt.el:  Allow \cite{} in captions
+    
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments):
+    (org-odt--collect-cite-keys): Descend in to affiliated
+    keywords.
+    
+    Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/32][issue#32]].
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/29abb97cf5fdaa730df8cb1d29a292fff8e607b7][commit 29abb97cf5fdaa730df8cb1d29a292fff8e607b7]]
+
+    lisp/ox-odt.el:  Handle case where #+ODT_STYLES_FILE is empty
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/7e25aae7158194bd4d76568485b0c3b9b43d0a4e][commit 7e25aae7158194bd4d76568485b0c3b9b43d0a4e]]
+
+    ox-odt.el, ox-jabref.el: Gracefully handle corner cases
+    
+    * lisp/ox-odt.el (org-odt-citation): Improve transcoding.
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments): Store
+    the original \cite{} fragment in the new object.
+    * contrib/lisp/ox-jabref.el (org-jabref-citation): Gracefully
+    handle case where a cite key cannot be translated to a valid
+    text.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3557eb09dd5c59aed64151391ebac66ec8aa75cd][commit 3557eb09dd5c59aed64151391ebac66ec8aa75cd]]
+
+    Revert "lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'"
+    
+    This reverts commit 7b2484ed4029a0e2f40514117e606c3cfbee11ca.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/ce9906282ce6475eb869fd59baff54bc52b3217e][commit ce9906282ce6475eb869fd59baff54bc52b3217e]]
+
+    lisp/ox-odt.el: Replace `org-odt-automatic-styles' with `org-odt--automatic-styles'
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4560eb5e429b7f30eb0a9bb47c2463815434988f][commit 4560eb5e429b7f30eb0a9bb47c2463815434988f]]
+
+    lisp/ox-odt.el: Allow custom paragraph styles for verse blocks
+    
+    * lisp/ox-odt.el (org-odt-paragraph): Handle verse blocks
+    * lisp/ox-odt.el (org-odt-verse-block): Use
+    `org-odt-paragraph' to infer paragraph styles.
+    
+    Fixes  kjambunathan/org-mode-ox-odt#26.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0f2ae078ec1e323fe5952e7a173605db2c4f0c78][commit 0f2ae078ec1e323fe5952e7a173605db2c4f0c78]]
+
+    lisp/ox-odt.el: In list tables, ignore col alignment cookies
+    
+    * lisp/ox-odt.el (org-odt-table-cell--get-paragraph-styles):
+    Ignore col alignment cookies on list tables.
+    
+    This works around issue kjambunathan/org-mode-ox-odt#25.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/600b075a30ba414be077d1213c434374568d99ec][commit 600b075a30ba414be077d1213c434374568d99ec]]
+
+    lisp/ox-odt.el: Customize table paragraphs through  `:p-style' attribute
+    
+    * lisp/ox-odt.el (org-odt-paragraph): Use
+    `org-odt-table-cell--get-paragraph-styles'.
+    (org-odt-table-cell--get-paragraph-styles): Update docstring.
+    
+    Fixes  kjambunathan/org-mode-ox-odt#24.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/9a2eb32660b9b2f941549b00eed1f84f8c50f56b][commit 9a2eb32660b9b2f941549b00eed1f84f8c50f56b]]
+
+    * lisp/ox-odt.el: Minor refactoring
+    
+    * lisp/ox-odt.el (org-odt-table-cell): Extract
+    `org-odt-table-cell--get-paragraph-styles'.
+    (org-odt-table-cell--get-paragraph-styles): New helper function.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2d9083f998fe36f0a48131c6e2f1402d1693e089][commit 2d9083f998fe36f0a48131c6e2f1402d1693e089]]
+
+    lisp/ox-odt.el (org-odt--translate-list-tables): Fix regexp
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Use
+    beginning of string instead of beginning of line in regexp.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/55f83d4e531ebca43bcac9c428df586a823f108a][commit 55f83d4e531ebca43bcac9c428df586a823f108a]]
+
+    lisp/ox-odt.el: Support column width and sizing of list tables
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Add support
+    for column grouping and sizing.  Column alignment is not
+    supported.
+    
+    Fixes  kjambunathan/org-mode-ox-odt#23.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/157b5efe9db4bb260c0ec3147d8149ae867528fb][commit 157b5efe9db4bb260c0ec3147d8149ae867528fb]]
+
+    lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs
+    
+    * lisp/ox-odt.el (org-odt-template):  Don't emit empty paragraphs.
+    
+    Partially fixes  kjambunathan/org-mode-ox-odt#22, by not creating
+     multiple paragraphs with "OrgTitle".
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3141527b8e7649b05d02af77c52a56510d766763][commit 3141527b8e7649b05d02af77c52a56510d766763]]
+
+    lisp/ox-odt.el: Honor "local" spec in "#+TOC: ..." directive
+    
+    * lisp/ox-odt.el (org-odt-toc-templates): New.
+    (org-odt-keyword): Honor "local" spec in #+TOC directives
+    (org-odt-begin-toc, org-odt-end-toc): Modify ODT index
+    templates to support above keyword.
+    
+    Fixes kjambunathan/org-mode-ox-odt#21.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3ddc198fad274de3d47f6965de239bf101056a11][commit 3ddc198fad274de3d47f6965de239bf101056a11]]
+
+    * lisp/ox-odt.el (org-odt-transform-processes): Add a new transformer
+    
+    * lisp/ox-odt.el (org-odt-transform-processes): Suggest a new
+    transformer that optimizes column width of tables.
+    
+    Partially fixes kjambunathan/org-mode-ox-odt#16
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0349b7d58ad45c7295d6a4d0a4645479f0bf5f5a][commit 0349b7d58ad45c7295d6a4d0a4645479f0bf5f5a]]
+
+    lisp/ox-odt.el: Support document transformation using LibreOffice macros
+    
+    * lisp/ox-odt.el (org-odt-transform-processes): Add new user option.
+    (org-odt-caption-and-xref-settings): Update docstring.
+    (org-odt-transform): New.
+    (org-odt--export-wrap):  Use `org-odt-transform'.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/88a044f90df0807d602d70b2f2838787799ffea4][commit 88a044f90df0807d602d70b2f2838787799ffea4]]
+
+    lisp/ox-odt.el: Generate table of figures, listings and tables.
+    
+    * lisp/ox-odt.el (org-odt-keyword): Support following directives:
+        #+begin_example
+        (1) #+TOC: figures
+        (2) #+TOC: listings
+        (3) #+TOC: tables
+        #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/2183227e6b7b91e2f14d4ef260000fa28abe7bd1][commit 2183227e6b7b91e2f14d4ef260000fa28abe7bd1]]
+
+    lisp/ox-odt.el: Support \cite{} fragments
+    
+    * lisp/ox-odt.el (org-odt--translate-cite-fragments): New filter.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/e44643e8c14a8cdc48a701276afc27e2b8521c33][commit e44643e8c14a8cdc48a701276afc27e2b8521c33]]
+
+    Fix all loose ends with ODT's JabRef exporter
+    
+    * lisp/ox-odt.el (org-odt--collect-cite-keys): Format of
+    citation object has changed in the exporter.  Catch up with it.
+    
+    * contrib/lisp/ox-jabref.el (org-export--collect-tree-properties): Renamed
+    from `org-export-collect-tree-properties'.
+    (ox-jabref-unload-function):  Propagate above name change.
+    (org-jabref-citation): Format of citation object has changed in the exporter.
+    Catch up with it.
+    
+    * contrib/lisp/ox-jabref.el: Use lexical-binding.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/1197cde5e87e3c447bdfd00507ee12e9ee7ec615][commit 1197cde5e87e3c447bdfd00507ee12e9ee7ec615]]
+
+    lisp/ox-odt.el: Improve list tables
+    
+    * lisp/ox-odt.el (org-odt--translate-list-tables): Improve
+    list tables.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/87dfb928f899db9259f382ccef312b0ca5214c2a][commit 87dfb928f899db9259f382ccef312b0ca5214c2a]]
+
+    lisp/ox-odt.el: Manually merge some changes from Orgmode.org master
+    
+    * lisp/ox-odt.el (org-odt-htmlfontify-string): Replace
+    `org-no-warnings' with `with-no-warnings'.
+    
+    * lisp/ox-odt.el (org-odt--translate-description-lists/latex)
+    (org-odt--translate-description-lists/html): Use `eq' instead
+    of `equal'.
+    
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments):
+    Propagate signature change for `org-format-latex'.
+    
+    * lisp/ox-odt.el (org-odt-table): Use "Org mode", or "Org",
+    instead of "Org-mode" in comment and docstrings.
+    
+    * lisp/ox-odt.el (org-odt-table-cell): Use `org-element-class'.
+    
+    * lisp/ox-odt.el (org-odt-get-table-cell-styles): Use `assq'
+    instead of `assoc'.
+    
+    * lisp/ox-odt.el (org-odt-do-format-code): Use
+    `org-font-lock-ensure' instead of `font-lock-ensure'.
+    
+    * lisp/ox-odt.el (org-odt--copy-formula-file): Use `file-name-extension'.
+    
+    * lisp/ox-odt.el (org-odt-footnote-reference): Only inline
+    footnotes are to be wrapped within a paragraph.
+    
+    * lisp/ox-odt.el (org-odt-template): Use `setq-local' instead
+    of `make-local-variable'.
+    
+    * lisp/ox-odt.el (org-odt-template, org-odt--export-wrap):
+    Change (message (format ...)) to (message ...), and likewise
+    for ‘error’.  This lessens the probability of confusion when
+    the output of ‘format’ contains ‘%’.
+    
+    * lisp/ox-odt.el (org-odt--translate-latex-fragments): Use
+    `string-match-p' instead of `org-string-match-p'.
+    
+    * lisp/ox-odt.el (org-odt-template): Do not call `read' on an empty
+    string.
+    
+    * lisp/ox-odt.el (org-odt-toc): Ignore targets, links and
+    footnote references from table of contents.
+    
+    * lisp/ox-odt.el (org-odt-table-styles): Don't quote nil and t
+    in doc strings.
+    
+    * lisp/ox-odt.el (org-odt-inline-image-rules): Add svg.
+    
+    * lisp/ox-odt.el (org-odt-format-headline-function)
+    (org-odt-format-inlinetask-function): Update :version
+    (org-odt-inline-image-rules): Update :version and :package-version
+    
+    *lisp/ox-odt.el: (org-odt-automatic-styles)
+    (org-odt-category-map-alist)
+    (org-odt-format-headline-function, org-odt-table-styles):
+    Backslash cleanup in Elisp source files.
+    
+    * lisp/ox-odt.el: Update Copyright years.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3c0b2d4258580a4b6259998939eebefd52b2b5a4][commit 3c0b2d4258580a4b6259998939eebefd52b2b5a4]]
+
+    * lisp/ox-odt.el: Remove `:export-block' from backend definition
+    
+    Export block sytax is changed. See commit
+    54318add34f09ff39d3fd034a4c1a89f60fd8759.
+    
+    #+begin_example
+    Export blocks are explicitly marked as such at the syntax level to
+    disambiguate their parsing from special blocks.  The new syntax is
+    
+      ,#+BEGIN_EXPORT backend
+      ...
+      ,#+END_EXPORT
+    
+    instead of
+    
+      ,#+BEGIN_backend
+      ...
+      ,#+END_backend
+    
+    As a consequence, =INCLUDE= keywords syntax is modified, e.g.,
+    
+      ,#+INCLUDE: "file.org" HTML
+    
+    becomes
+    
+      ,#+INCLUDE: "file.org" export html
+    #+end_example
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2][commit 5c1e07a85b188cdb1bff7df33dbb3865e39f6ad2]]
+
+    lisp/ox-odt.el: Add kludge to get past compilation errors
+    
+    * lisp/ox-odt.el: Temporarily define `org-export-solidify-link-text'
+    to get past compilation errors.
+    
+    Per commit 459033265295723cbfb0fccb3577acbfdc9d0285 merge, use
+    `org-export-get-reference' and remove
+    `org-export-solidify-link-text'.  Until then, make do with this
+    workaround.
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/348b08b6d64fbcb7d664929f80fb0f04ebe25c73][commit 348b08b6d64fbcb7d664929f80fb0f04ebe25c73]]
+
+    lisp/ox-odt.el: Use `cl-lib'
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/5e25808b5292eff445a676394721d9dfe9858734][commit 5e25808b5292eff445a676394721d9dfe9858734]]
+
+    lisp/ox-odt.el: Use lexical binding
+
+* [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6d7fec56b3202662f40ed0db85581ecec5a95983][commit 6d7fec56b3202662f40ed0db85581ecec5a95983]]
+
+    ox-odt.el: Revert to 8ad20618d1ff574406dc1ad6e998f400
