@@ -18,12 +18,12 @@
 - [[#style-a-griddedtable][Style a ~GriddedTable~]]
 - [[#numbered-equation][Numbered Equation]]
 - [[#support-for-vertical-alignment-in-col-cookies--extend-firstrow-firstcolumn-etc-styles-to-org-style-table][Support for vertical alignment in col-cookies.  Extend FirstRow, FirstColumn etc. styles to `Org'-style table]]
-- [[#todo][TODO]]
+- [[#equations][Equations]]
 - [[#odt_math_syntax--add-support-for-starmath][(ODT_MATH_SYNTAX):  Add support for starmath]]
 - [[#odt_validate-org-odt-vaidate-new-keyword--new-command][(ODT_VALIDATE, org-odt-vaidate): New keyword.  New command.]]
 - [[#odt_prettify-xml-new-export-keyword][(ODT_PRETTIFY-XML): New export keyword]]
 - [[#org-odt-transform-processes-add-instruction-for-using-reload-macro][(org-odt-transform-processes): Add instruction for using `Reload' macro]]
-- [[#comment][COMMENT]]
+- [[#enclose-standalone-image-or-formula-in-orgfigurebody-or-orgformulabody][Enclose standalone image (or formula) in OrgFigureBody (or OrgFormulaBody)]]
 - [[#odt_app-preparing-for-export-to-google-documents][(ODT_APP): Preparing for export to Google Documents]]
 - [[#org-odt-special-block-new-block-customshape][(org-odt-special-block): New block `customshape']]
 - [[#org-odt-yank-styles-new-command][(org-odt-yank-styles): New command]]
@@ -32,8 +32,8 @@
 - [[#add-macro-keyword-to-documentproperty-and-keyword-odt_document_properties][Add macro keyword-to-documentproperty and keyword ODT_DOCUMENT_PROPERTIES]]
 - [[#experimental-add-support-for-transcluded-tables][(EXPERIMENTAL): Add support for transcluded tables]]
 - [[#styling-of-custom-tables][Styling of custom tables]]
-- [[#][]]
-- [[#todo-1][TODO]]
+- [[#using-styles-for-captioning-of-sub-entities][Using styles for captioning of sub-entities]]
+- [[#handle-the-case-where-inner-frame-is-anchored-to-outer-frame][Handle the case where inner-frame is anchored to outer-frame]]
 - [[#customize-images-through-inner-frame-and-outer-frame-attributes][Customize images through `:inner-frame' and `:outer-frame' attributes]]
 - [[#allow-span-attribute-to-span-multiple-lines][Allow `:span' attribute to span multiple lines]]
 - [[#org-odt-experimental-features-add-new-feature-short-caption-as-label--short-captions-are-_ignored_-by-default][(org-odt-experimental-features): Add new feature `short-caption-as-label'.  Short captions are _ignored_ by default.]]
@@ -50,8 +50,8 @@
 - [[#nested-tables][Nested Tables]]
 - [[#table-within-a-table][Table within a table]]
 - [[#odt_preferred_output_format-new-in-buffer-option][(ODT_PREFERRED_OUTPUT_FORMAT): New in buffer option]]
-- [[#handle-nested-list-tables][Handle nested list-tables]]
-- [[#handle-nested-list-tables-1][Handle nested list-tables]]
+- [[#handle-nested-list-tables-part-1][Handle nested list-tables (Part 1)]]
+- [[#handle-nested-list-tables-part-2][Handle nested list-tables (Part 2)]]
 - [[#honor-start-counter-of-a-list-item][Honor start counter of a list item.]]
 - [[#image-captions-can-now-be-wider-than-the-image-width][Image captions can now be wider than the image width]]
 - [[#de-couple-theme-used-for-exported-src-blocks-from-the-emacs-theme-in-use][De-couple theme used for exported src blocks from the Emacs theme in use]]
@@ -72,7 +72,7 @@
 - [[#org-odt-transform-processes-new-macro-reload][(org-odt-transform-processes): New macro `Reload']]
 - [[#explicitly-number-headlines-using-a-list-style][Explicitly number headlines using a list style]]
 - [[#new-in-buffer-option-odt_display_outline_level][New in buffer option ODT_DISPLAY_OUTLINE_LEVEL]]
-- [[#todo-2][TODO]]
+- [[#when-a-table-specifies-both-a-style-and-p-style-attribute-only-the-table-cells-ie-cell-borders-etc-get-styled-as-per-the-table-template][When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template]]
 - [[#new-in-buffer-option-odt_content_template_file][New in buffer option ODT_CONTENT_TEMPLATE_FILE]]
 - [[#simplify-creation-of-tables-with-custom-paragraph-styles][Simplify creation of tables with custom paragraph styles]]
 - [[#define-common-styles-through-odt_extra_styles-][Define *common* styles through #+ODT_EXTRA_STYLES: ...]]
@@ -88,7 +88,6 @@
 - [[#suggest-a-new-transformer-that-optimizes-column-width-of-tables][Suggest a new transformer that optimizes column width of tables]]
 - [[#support-document-transformation-using-libreoffice-macros-see-org-odt-transform-processes][Support document transformation using LibreOffice macros (See ~org-odt-transform-processes~)]]
 - [[#generate-table-of-figures-listings-and-tables][Generate table of figures, listings and tables.]]
-- [[#-1][]]
 
 * Nest Tables using a ~Transcluded Table~
 
@@ -230,7 +229,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/123][issue#123]].
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/132][issue#132]].
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/139][issue#139]].
 
-* TODO
+* Equations
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/0745e92da5404fe519c8cdd4268eb1196d51fce2][commit 0745e92da5404fe519c8cdd4268eb1196d51fce2]]
 
@@ -438,7 +437,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/125][issue#125]].
     
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/111][issue#111]].
 
-* COMMENT
+* Enclose standalone image (or formula) in OrgFigureBody (or OrgFormulaBody)
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/715efc99704da96df3a25b8e32cb4a5a2f91ca73][commit 715efc99704da96df3a25b8e32cb4a5a2f91ca73]]
 
@@ -862,7 +861,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/112][issue#112]].
     
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/110][issue#110]].  See the bug for a recipe.
 
-* 
+* Using styles for captioning of sub-entities
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/99f2851a2aae25a07cdb43d71441682b965158e8][commit 99f2851a2aae25a07cdb43d71441682b965158e8]]
 
@@ -929,7 +928,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/109][issue#109]]
               [[./ansteel.jpg]]
         #+end_example
 
-* TODO
+* Handle the case where inner-frame is anchored to outer-frame
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/4785bf741fc3bd99458f2c042d43733cdfbbbc86][commit 4785bf741fc3bd99458f2c042d43733cdfbbbc86]]
 
@@ -2007,7 +2006,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/68][issue#68]].
         Some text.
     #+end_example
 
-* Handle nested list-tables
+* Handle nested list-tables (Part 1)
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/a3617844733daf5b643d2e6e20aab183a8a7b33a][commit a3617844733daf5b643d2e6e20aab183a8a7b33a]]
 
@@ -2026,7 +2025,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/68][issue#68]].
     
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/65][issue#65]].
 
-* Handle nested list-tables
+* Handle nested list-tables (Part 2)
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/944fbad652a40005abe76215cab1a8e5bb5045a6][commit 944fbad652a40005abe76215cab1a8e5bb5045a6]]
 
@@ -2832,7 +2831,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/44][issue#44]].
 
 Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/40][issue#40]].
 
-* TODO
+* When a table specifies both a `:style' and `:p-style" attribute, only the table cells (i.e., cell borders etc) get styled as per the table template
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/6941f81951c2a9fb5ebb098376982bbae0448f6f][commit 6941f81951c2a9fb5ebb098376982bbae0448f6f]]
 
@@ -3125,19 +3124,19 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/31][issue#31]].
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/600b075a30ba414be077d1213c434374568d99ec][commit 600b075a30ba414be077d1213c434374568d99ec]]
 
-Fixes  kjambunathan/org-mode-ox-odt#24.
+Fixes  [[https://github.com/kjambunathan/org-mode-ox-odt/issues/24][issue#24]].
 
 * Honor "local" spec in "#+TOC: ..." directive
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3141527b8e7649b05d02af77c52a56510d766763][commit 3141527b8e7649b05d02af77c52a56510d766763]]
 
-Fixes kjambunathan/org-mode-ox-odt#21.
+Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/21][issue#21]].
 
 * Suggest a new transformer that optimizes column width of tables
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3ddc198fad274de3d47f6965de239bf101056a11][commit 3ddc198fad274de3d47f6965de239bf101056a11]]
 
-Partially fixes kjambunathan/org-mode-ox-odt#16
+Partially fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/16][issue#16]]
 
 * Support document transformation using LibreOffice macros (See ~org-odt-transform-processes~)
 
@@ -3153,7 +3152,7 @@ Partially fixes kjambunathan/org-mode-ox-odt#16
         (3) #+TOC: tables
         #+end_example
 
-* 
+* COMMENT Remove `:export-block' from backend definition
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/3c0b2d4258580a4b6259998939eebefd52b2b5a4][commit 3c0b2d4258580a4b6259998939eebefd52b2b5a4]]
 
