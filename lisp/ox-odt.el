@@ -1,6 +1,6 @@
 ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; coding: utf-8-emacs; -*-
 
-;; Copyright (C) 2010-2021 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2010-2022 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
