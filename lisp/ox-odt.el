@@ -4323,8 +4323,12 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 (defun org-odt--element-category (element info)
   (let ((category
 	 (cl-case (org-element-type element)
-	   (table :TABLE:)
-	   (src-block :LISTING:)
+	   (table
+	    (when (org-odt--enumerable-p element info)
+	      :TABLE:))
+	   (src-block
+	    (when (org-odt--enumerable-p element info)
+	      :LISTING:))
 	   ((link paragraph)
 	    (cond
 	     ((org-odt--enumerable-latex-image-p element info)
