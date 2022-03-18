@@ -6293,18 +6293,20 @@ holding contextual information."
 							  (format "Images/%04d.%s"
 								  (org-odt--count-object info :images)
 								  (file-name-extension path))))
-		 (draw-name (file-name-sans-extension (file-name-nondirectory internal-path)))
+		 (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path))))
 		 (parent-style style))
 	    (setq width (car widths)
 		  height (car heights)
 		  style (format "Org%s" (org-odt--name-object info 'graphic)))
-	    (plist-put info :odt-automatic-styles
-		       (concat (plist-get info :odt-automatic-styles)
+	    (plist-put info :odt-extra-styles
+		       (concat (plist-get info :odt-extra-styles)
 			       (format
 				"
 <draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
 				draw-name
-				internal-path)
+				internal-path)))
+	    (plist-put info :odt-automatic-styles
+		       (concat (plist-get info :odt-automatic-styles)
 			       (format org-odt-graphic-style-format
 				       style
 				       parent-style
