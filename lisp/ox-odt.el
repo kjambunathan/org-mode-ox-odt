@@ -285,6 +285,24 @@ standard Emacs.")
 "
   "Template for auto-generated Table styles.")
 
+(defconst org-odt-graphic-style-format
+  "
+<style:style style:name=\"%s\" style:parent-style-name=\"%s\"
+             style:family=\"graphic\">
+  <style:graphic-properties draw:fill=\"bitmap\"
+                            draw:fill-color=\"#ffffff\"
+                            draw:fill-image-height=\"100%%\"
+                            draw:fill-image-name=\"%s\"
+                            draw:fill-image-ref-point=\"top-left\"
+                            draw:fill-image-width=\"100%%\"
+                            style:repeat=\"no-repeat\"  
+                            >
+  </style:graphic-properties>
+</style:style>
+
+"
+  "Template for auto-generated graphic styles.")
+
 (defvar org-odt-src-block-paragraph-format
   "<style:style style:name=\"OrgSrcBlock\" style:family=\"paragraph\" style:parent-style-name=\"Preformatted_20_Text\">
    <style:paragraph-properties fo:background-color=\"%s\" fo:padding=\"0.049cm\" fo:border=\"0.51pt solid #000000\" style:shadow=\"none\">
@@ -4902,6 +4920,42 @@ SHORT-CAPTION are strings."
 	  (setq width (* scale width) height (* scale height)))))
     (cons width height)))
 
+(defun org-odt--do-image-size (path element info)
+  (setq path
+	(let* ((expanded-path (when path
+				(cond
+				 ((file-name-absolute-p path)
+				  (expand-file-name path))
+				 (t (expand-file-name path (file-name-directory
+							    (plist-get info :input-file))))))))
+	  (when (and expanded-path (file-readable-p expanded-path)) expanded-path)))
+  (when path
+    (let* ((width (org-odt--read-attribute element :width))
+	   (height (org-odt--read-attribute element :height))
+	   (scale (org-odt--read-attribute element :scale))
+	   ;; Handle `:width', `:height' and `:scale' properties.
+	   (size
+	    (let ((--user-dim
+		   (lambda (x)
+		     (pcase x
+		       ((and (or (pred null) (pred numberp)) x1)
+			(cons x1 nil))
+		       (`(,(and (or (pred null) (pred numberp)) x1) . ,(and (or (pred null) (pred numberp)) x2))
+			(cons x1 x2))
+		       (`(,(and (or (pred null) (pred numberp)) x1) ,(and (or (pred null) (pred numberp)) x2))
+			(cons x1 x2))
+		       (_ (cons nil nil))))))
+	      (org-odt--image-size
+	       path info
+	       (funcall --user-dim width)
+	       (funcall --user-dim height)
+	       scale
+	       nil			; embed-as
+	       "paragraph"		; FIXME
+	       )))
+	   (widths (car size)) (heights (cdr size)))
+      (list path widths heights))))
+
 (defun org-odt-link--inline-image (element info)
   "Return ODT code for an inline image.
 LINK is the link pointing to the inline image.  INFO is a plist
@@ -6210,11 +6264,51 @@ holding contextual information."
       ;; #+PAGEBREAK:
       ;;
       ;; Trailing text.
-      (let ((width (org-odt--read-attribute special-block :width))
-	    (height (org-odt--read-attribute special-block :height))
-	    (style (org-odt--read-attribute special-block :style))
-	    (extra (org-odt--read-attribute special-block :extra))
-	    (anchor (org-odt--read-attribute special-block :anchor)))
+      (pcase-let* ((`(,path ,widths ,heights)
+		    (org-odt--do-image-size
+		     (org-odt--read-attribute special-block :image) special-block info))
+		   (width (org-odt--read-attribute special-block :width))
+		   (height (org-odt--read-attribute special-block :height))
+		   (style (or (org-odt--read-attribute special-block :style)
+			      "OrgTextBoxFrame"))
+		   (extra (org-odt--read-attribute special-block :extra))
+		   (anchor (org-odt--read-attribute special-block :anchor)))
+	(when path
+          ;; A textbox can specify a fill image using the `:image'
+          ;; attribute.  
+          
+          ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
+          ;; #+begin_textbox
+          ;;     Org Mode Unicorn
+          ;; #+end_textbox
+
+          ;; You can use the above construct if you want the text within
+          ;; the textbox to sit on top of the image. In a sense, this is
+          ;; an alternative way to get a "captioned" figure.  Note that
+          ;; unlike the standard captioned figure, the figure created
+          ;; with this constrcut doesn't get enumerated or enter the
+          ;; table of figures.
+          (let* ((internal-path (org-odt--copy-image-file info
+							  path
+							  (format "Images/%04d.%s"
+								  (org-odt--count-object info :images)
+								  (file-name-extension path))))
+		 (draw-name (file-name-sans-extension (file-name-nondirectory internal-path)))
+		 (parent-style style))
+	    (setq width (car widths)
+		  height (car heights)
+		  style (format "Org%s" (org-odt--name-object info 'graphic)))
+	    (plist-put info :odt-automatic-styles
+		       (concat (plist-get info :odt-automatic-styles)
+			       (format
+				"
+<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
+				draw-name
+				internal-path)
+			       (format org-odt-graphic-style-format
+				       style
+				       parent-style
+				       draw-name)))))
 	(org-odt-paragraph special-block
 			   (org-odt--textbox contents width height
 					     style extra anchor)
