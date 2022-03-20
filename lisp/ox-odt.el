@@ -2161,6 +2161,51 @@ available:
 
 ;;; Internal functions
 
+;;;; XML to Lisp & vice versa
+
+(defun org-odt--xml-to-lisp (&optional xml)
+  (setq xml (or xml (buffer-substring-no-properties (region-beginning) (region-end))))
+  (with-temp-buffer
+    (insert xml)
+    (libxml-parse-xml-region (point-min) (point-max))))
+
+(defun org-odt--lisp-to-xml (element &optional depth)
+  (let* ((print-attributes
+	  (lambda (attributes)
+	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
+					   (format "%s=\"%s\"" attribute value))
+		       " "))))
+    (setq depth (or depth 0))
+    (cond
+     ((stringp element)
+      element)
+     ((symbolp (car element))
+      (let* ((name (car element))
+	     (attributes (cadr element))
+	     (contents (cddr element)))
+	(let ((prefix (make-string depth ? )))
+	  (cond
+	   ((null contents)
+	    (format "\n%s<%s %s/>"
+		    prefix name (funcall print-attributes attributes)))
+	   (t
+	    (format "\n%s<%s %s>%s\n%s</%s>"
+		    prefix
+		    name
+		    (funcall print-attributes attributes)
+		    (if (stringp contents) contents
+		      ;; (print-element contents (1+ depth))
+		      (org-odt--lisp-to-xml contents (1+ depth)))
+		    prefix
+		    name))))))
+     (t
+      (mapconcat #'identity
+		 (cl-loop for el in element collect
+			  ;; (print-element el (1+ depth))
+			  (org-odt--lisp-to-xml el (1+ depth)))
+		 "")))))
+
+
 ;;;; Date
 
 (defun org-odt--format-timestamp (timestamp &optional end iso-date-p)
@@ -2377,8 +2422,52 @@ LANGUAGE keyword."
 
 ;;;; Customshape
 
-(defun org-odt--draw:custom-shape (text width height style &optional
-					extra anchor-type)
+(defconst org-odt-shape-geometries-alist
+  `((rectangle .
+	       ,(org-odt--lisp-to-xml
+		 '(draw:enhanced-geometry
+		   ((svg:viewBox . "0 0 21600 21600")
+		    (draw:type . "rectangle")
+		    (draw:enhanced-path . "M 0 0 L 21600 0 21600 21600 0 21600 0 0 Z N")))))
+    (ellipse .
+	     ,(org-odt--lisp-to-xml
+	       '(draw:enhanced-geometry
+		 ((svg:viewBox . "0 0 21600 21600")
+		  (draw:glue-points . "10800 0 3163 3163 0 10800 3163 18437 10800 21600 18437 18437 21600 10800 18437 3163")
+		  (draw:text-areas . "3163 3163 18437 18437")
+		  (draw:type . "ellipse")
+		  (draw:enhanced-path . "U 10800 10800 10800 10800 0 360 Z N")))))))
+
+(cl-defun org-odt--graphic-style (&key style image height width)
+  (org-odt--lisp-to-xml
+   `(style:style
+     ((style:name . ,style)
+      (style:family . "graphic"))
+     (style:graphic-properties
+      ((draw:auto-grow-height . "false")
+       (svg:stroke-color . "#000000")
+       (svg:stroke-width . "0cm")
+       (draw:fill-color . "#ffffff")
+       ,@(when image
+	   `((draw:fill . "bitmap")
+	     (draw:fill-image-height . "100%")
+	     (draw:fill-image-name . ,image)
+	     (draw:fill-image-ref-point . "center")
+	     (draw:fill-image-width . "100%")))
+       (draw:textarea-horizontal-align . "justify")
+       (draw:textarea-vertical-align . "middle")
+       (fo:min-height . ,(format "%scm" (or width 1)))
+       (fo:min-width . ,(format "%scm" (or height 1)))
+       (style:horizontal-pos . "from-left")
+       (style:horizontal-rel . "paragraph")
+       (style:number-wrapped-paragraphs . "no-limit")
+       (style:repeat . "no-repeat")
+       (style:run-through . "foreground")
+       (style:vertical-pos . "from-top")
+       (style:wrap . "run-through"))))))
+
+(cl-defun org-odt--draw:custom-shape (&key text width height style
+					   anchor-type id other-id shape)
   ;; WARNING: `customshape' blocks are EXPERIMENTAL and pre-ALPHA
   ;; quality.  Don't use it in production.  See
   ;; `org-odt--draw:custom-shape' sample usage and other details.
@@ -2449,21 +2538,55 @@ LANGUAGE keyword."
   ;; Support for `customshape' is added to produce the ODT document
   ;; annexed in above LibreOffice bug report.  In other words,
   ;; `customshape' aren't meant for production use.
-  ;;
-  (format "
-<draw:custom-shape 
-                   draw:style-name=\"%s\"
-                   draw:text-style-name=\"%s\"
-                   svg:width=\"%0.2fcm\"
-                   svg:height=\"%0.2fcm\"
-                   text:anchor-type=\"%s\" %s>%s</draw:custom-shape>" ; draw:name=\"Shape 1\"
-	  style
-	  "Text_20_body"
-	  (or width 0.2)
-	  (or height 0.2)
-	  anchor-type
-	  (or extra "")
-	  text))
+  (concat (org-odt--lisp-to-xml
+	   `(draw:custom-shape
+	     ((text:anchor-type . ,(or anchor-type "as-char"))
+	      (svg:y . "0cm")
+	      (draw:z-index . "0")
+	      ;; (draw:name . "Shape 1")
+	      (draw:style-name . ,style)
+	      (draw:text-style-name . "Standard")
+	      ,@(when id
+		  `((xml:id . ,id)))
+	      ,@(when id
+		  `((draw:id . ,id)))
+	      (svg:width . ,(format "%scm" (or width 0.2)))
+	      (svg:height . ,(format "%scm" (or height 0.2))))
+	     ,(concat
+	       text
+	       (let ((shape (or shape 'rectangle)))
+		 (or (alist-get (intern (downcase shape))
+				org-odt-shape-geometries-alist)
+		     "")))))
+	  (when other-id
+	    (let* ((id1 id) (pt1 nil) (id2 nil) (pt2 nil))
+	      (when (string-match
+		     (rx-to-string
+		      '(and (optional (group (one-or-more (not ":")))) ":"
+			(group (one-or-more (any "0-9")))
+			(optional "<" "-" (optional ">"))
+			(group (one-or-more (not ":"))) ":"
+			(group (one-or-more (any "0-9")))))
+		     other-id)
+		(setq id1 id
+		      pt1 (match-string 2 other-id)
+		      id2 (match-string 3 other-id)
+		      pt2 (match-string 4 other-id)))
+	      (org-odt--lisp-to-xml
+	       `(draw:connector
+		 ((text:anchor-type . "paragraph")
+		  (draw:z-index . "2")
+		  (draw:name . "Shape2")
+		  (draw:style-name . "OrgConnector")
+		  (draw:text-style-name . "Standard")
+		  (draw:type . "line")
+		  (draw:start-shape . ,id1)
+		  (draw:end-shape . ,id2)
+		  (draw:start-glue-point . ,pt1)
+		  (draw:end-glue-point . ,pt2)
+		  (svg:d . "M2499 395l5999-3425")
+		  (svg:viewBox . "0 0 6001 3427"))
+		 (text:p nil)))))))
 
 ;;;; Table of Contents
 
@@ -6205,14 +6328,65 @@ holding contextual information."
       ;; WARNING: `customshape' blocks are EXPERIMENTAL and pre-ALPHA
       ;; quality.  Don't use it in production.  See
       ;; `org-odt--draw:custom-shape' for sample usage and other details.
-      (let ((width (org-odt--read-attribute special-block :width))
-	    (height (org-odt--read-attribute special-block :height))
-	    (style (org-odt--read-attribute special-block :style))
-	    (extra (org-odt--read-attribute special-block :extra))
-	    (anchor (org-odt--read-attribute special-block :anchor)))
+      (pcase-let* ((`(,path ,widths ,heights)
+		    (org-odt--do-image-size
+		     (org-odt--read-attribute special-block :image) special-block info))
+		   (style (format "Org%s" (org-odt--name-object info 'graphic)))
+		   ;; (extra (org-odt--read-attribute special-block :extra))
+		   (anchor (or (org-odt--read-attribute special-block :anchor) "as-char"))
+		   (width nil)
+		   (height nil))
+	(cond
+	 ((not path)
+	  (setq width (org-odt--read-attribute special-block :width))
+	  (setq height (org-odt--read-attribute special-block :height))
+	  (plist-put info :odt-automatic-styles
+		     (concat (plist-get info :odt-automatic-styles)
+			     (org-odt--graphic-style :style style
+						     :height height
+						     :width width))))
+	 (path
+	  ;; A textbox can specify a fill image using the `:image'
+	  ;; attribute.
+
+	  ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
+	  ;; #+begin_textbox
+	  ;;     Org Mode Unicorn
+	  ;; #+end_textbox
+
+	  ;; You can use the above construct if you want the text within
+	  ;; the textbox to sit on top of the image. In a sense, this is
+	  ;; an alternative way to get a "captioned" figure.  Note that
+	  ;; unlike the standard captioned figure, the figure created
+	  ;; with this constrcut doesn't get enumerated or enter the
+	  ;; table of figures.
+
+	  (setq width (car widths)
+		height (car heights))
+	  (let* ((internal-path (org-odt--copy-image-file info
+							  path
+							  (format "Images/%04d.%s"
+								  (org-odt--count-object info :images)
+								  (file-name-extension path))))
+		 (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path)))))
+	    (plist-put info :odt-extra-styles
+		       (concat (plist-get info :odt-extra-styles)
+			       (format
+				"
+<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
+				draw-name
+				internal-path)))
+	    (plist-put info :odt-automatic-styles
+		       (concat (plist-get info :odt-automatic-styles)
+			       (org-odt--graphic-style :style style :image draw-name :height height :width width))))))
 	(org-odt-paragraph special-block
-			   (org-odt--draw:custom-shape contents width height
-						       style extra anchor)
+			   (org-odt--draw:custom-shape :text (or contents "")
+			    :width width :height height :style style
+			    ;; :extra extra
+                            :anchor-type anchor
+			    :id (org-element-property :name special-block)
+			    :other-id (org-odt--read-attribute special-block :other-id)
+			    :shape (or (org-odt--read-attribute special-block :shape) "rectangle"))
 			   info)))
      ;; Annotation.
      ((string= type "annotation")
@@ -6274,25 +6448,24 @@ holding contextual information."
 		   (extra (org-odt--read-attribute special-block :extra))
 		   (anchor (org-odt--read-attribute special-block :anchor)))
 	(when path
-          ;; A textbox can specify a fill image using the `:image'
-          ;; attribute.  
-          
-          ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
-          ;; #+begin_textbox
-          ;;     Org Mode Unicorn
-          ;; #+end_textbox
+	  ;; A textbox can specify a fill image using the `:image'
+	  ;; attribute.
 
-          ;; You can use the above construct if you want the text within
-          ;; the textbox to sit on top of the image. In a sense, this is
-          ;; an alternative way to get a "captioned" figure.  Note that
-          ;; unlike the standard captioned figure, the figure created
-          ;; with this constrcut doesn't get enumerated or enter the
-          ;; table of figures.
-          (let* ((internal-path (org-odt--copy-image-file info
-							  path
-							  (format "Images/%04d.%s"
-								  (org-odt--count-object info :images)
-								  (file-name-extension path))))
+	  ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
+	  ;; #+begin_textbox
+	  ;;     Org Mode Unicorn
+	  ;; #+end_textbox
+
+	  ;; You can use the above construct if you want the text within
+	  ;; the textbox to sit on top of the image. In a sense, this is
+	  ;; an alternative way to get a "captioned" figure.  Note that
+	  ;; unlike the standard captioned figure, the figure created
+	  ;; with this constrcut doesn't get enumerated or enter the
+	  ;; table of figures.
+	  (let* ((internal-path (org-odt--copy-image-file
+				 info path (format "Images/%04d.%s"
+						   (org-odt--count-object info :images)
+						   (file-name-extension path))))
 		 (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path))))
 		 (parent-style style))
 	    (setq width (car widths)

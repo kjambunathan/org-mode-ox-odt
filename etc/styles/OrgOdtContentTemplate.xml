@@ -191,6 +191,10 @@
     </style:style>
     <!-- END: Custom Table Template -->
 
+    <style:style style:name="OrgConnector" style:family="graphic">
+      <style:graphic-properties draw:stroke="solid" svg:stroke-width="0.0cm" svg:stroke-color="#000000" draw:marker-start="" draw:marker-start-width="0.519cm" draw:marker-start-center="false" draw:marker-end="Arrowheads_20_2" draw:marker-end-width="0.617cm" draw:marker-end-center="false" draw:fill="none" draw:fill-color="#729fcf" draw:textarea-horizontal-align="justify" draw:textarea-vertical-align="middle" fo:padding-top="0.231cm" fo:padding-bottom="0.231cm" fo:padding-left="0.356cm" fo:padding-right="0.356cm" fo:wrap-option="wrap" draw:shadow="hidden" draw:shadow-offset-x="0.199cm" draw:shadow-offset-y="0.199cm" draw:shadow-color="#808080" style:run-through="foreground" style:wrap="run-through" style:number-wrapped-paragraphs="no-limit" style:vertical-pos="from-top" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph" draw:wrap-influence-on-position="once-concurrent" style:flow-with-text="false"/>
+    </style:style>
+    
   </office:automatic-styles>
 
   <office:body>
