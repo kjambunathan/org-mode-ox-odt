@@ -2590,51 +2590,52 @@ LANGUAGE keyword."
 
 ;;;; Table of Contents
 
-(defun org-odt-begin-toc (index-title max-depth &optional parent-depth)
-  (concat
-   (let ((scope (if (zerop parent-depth) "document" "chapter")))
-     (format "
-    <text:table-of-content text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Table of Contents\">
-     <text:table-of-content-source text:outline-level=\"%d\" text:use-outline-level=\"false\" text:use-index-source-styles=\"true\" text:index-scope=\"%s\">
-      <text:index-title-template text:style-name=\"Contents_20_Heading\">%s</text:index-title-template>
-" max-depth scope index-title))
-
-   (cl-loop for level from 1 to 10
-	    concat
-	    (format
-	     "
-      <text:table-of-content-entry-template text:outline-level=\"%d\" text:style-name=\"Contents_20_%d\">
-       <text:index-entry-link-start text:style-name=\"Internet_20_link\"/>
-       <text:index-entry-chapter/>
-       <text:index-entry-text/>
-       <text:index-entry-link-end/>
-      </text:table-of-content-entry-template>
-" level level))
-
-   (cl-loop for depth from (1+ parent-depth) to max-depth
-	    for level from 1
-	    concat
-	    (format
-	     "
-    <text:index-source-styles text:outline-level=\"%d\">
-      <text:index-source-style text:style-name=\"Heading_20_%d\"/>
-    </text:index-source-styles>
-"
-	     level depth))
-   (format  "
-     </text:table-of-content-source>
-
-     <text:index-body>
-      <text:index-title text:style-name=\"Sect1\" text:name=\"Table of Contents1_Head\">
-       <text:p text:style-name=\"Contents_20_Heading\">%s</text:p>
-      </text:index-title>
- " index-title)))
-
-(defun org-odt-end-toc ()
-  (format "
-     </text:index-body>
-    </text:table-of-content>
-"))
+(defun org-odt-toc/headlines (index-title max-depth &optional parent-depth toc-text need-page-number)
+  (let* ((scope (if (zerop parent-depth) "document" "chapter"))
+	 (style "OrgIndexSection"))
+    (org-odt--lisp-to-xml
+     `(text:table-of-content
+       ((text:style-name . ,style)
+	(text:protected . "false")
+	(text:name . "Table of Contents"))
+       (text:table-of-content-source
+	((text:outline-level . ,(format "%d" max-depth))
+	 (text:use-outline-level . "false")
+	 (text:use-index-source-styles . "true")
+	 (text:index-scope . ,scope))
+	(text:index-title-template
+	 ((text:style-name . "Contents_20_Heading"))
+	 ,index-title)
+	,@(cl-loop for level from 1 to 10 collect
+		   (org-odt--lisp-to-xml
+		    `(text:table-of-content-entry-template
+		      ((text:outline-level . ,(format "%d" level))
+		       (text:style-name . ,(format "Contents_20_%d" level)))
+		      (text:index-entry-link-start
+		       ((text:style-name . ,(if need-page-number "Index_20_Link" "Internet_20_link"))))
+		      (text:index-entry-chapter nil)
+		      (text:index-entry-text nil)
+		      ,@(when need-page-number
+			  `((text:index-entry-tab-stop
+			     ((style:type . "right")
+			      (style:leader-char . ".")))
+			    (text:index-entry-page-number nil)))
+		      (text:index-entry-link-end nil))))
+	,@(cl-loop for depth from (1+ parent-depth) to max-depth
+		   for level from 1 collect
+		   (org-odt--lisp-to-xml
+		    `(text:index-source-styles
+		      ((text:outline-level . ,(format "%d" level)))
+		      (text:index-source-style
+		       ((text:style-name . ,(format "Heading_20_%d" depth))))))))
+       (text:index-body nil
+			(text:index-title
+			 ((text:style-name . ,style)
+			  (text:name . "Table of Contents1_Head"))
+			 (text:p
+			  ((text:style-name . "Contents_20_Heading"))
+			  ,index-title))
+			,toc-text)))))
 
 (cl-defun org-odt-format-toc-headline
     (todo todo-type priority text tags
@@ -2705,8 +2706,7 @@ LANGUAGE keyword."
 				   style entry)))
 		       headlines "\n")))
 	(if (> parent-level 1) toc-text
-	  (concat (org-odt-begin-toc title depth parent-level) toc-text
-		  (org-odt-end-toc)))))))
+          (org-odt-toc/headlines title depth parent-level toc-text 'need-page-number))))))
 
 
 ;;;; Document styles
@@ -4342,8 +4342,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
      ;; and value in meta.xml.
      ((member key (mapcar #'upcase (plist-get info :odt-document-properties)))
       (plist-put info :odt-extra-meta (concat
-					 (plist-get info :odt-extra-meta)
-					 (org-odt--define-custom-field key value)))
+				       (plist-get info :odt-extra-meta)
+				       (org-odt--define-custom-field key value)))
       nil)
      ((string= key "ODT") value)
      ((string= key "INDEX")
@@ -4353,10 +4353,13 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       (let ((value (downcase value)))
 	(cond
 	 ((string-match "\\<headlines\\>" value)
-	  (let ((depth (or (and (string-match "[0-9]+" value)
-				(string-to-number (match-string 0 value)))
-			   (plist-get info :with-toc)))
-		(localp (string-match-p "\\<local\\>" value)))
+	  (let* ((depth (let ((with-toc (plist-get info :with-toc)))
+			  (cond
+			   ((string-match "[0-9]+" value)
+			    (string-to-number (match-string 0 value)))
+			   ((wholenump with-toc) with-toc)
+			   (t (plist-get info :headline-levels)))))
+		 (localp (string-match-p "\\<local\\>" value)))
 	    (when (wholenump depth) (org-odt-toc depth info (and localp keyword)))))
 	 ((or (string-match-p "\\<tables\\>" value)
 	      (string-match-p "\\<figures\\>" value)
@@ -4366,10 +4369,10 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 		 (template (assoc-default (car (split-string value)) org-odt-toc-templates)))
 	    ;; Specify the scope of the index.
 	    (if (string-match "<text:illustration-index-source\\(.\\|\n\\)*?>" template)
-		(setq  template (replace-match (concat (match-string 1 template)
-						       (format " text:index-scope=\"%s\""
-							       (if localp "chapter" "document")))
-					       t t template 1)))
+		(setq template (replace-match (concat (match-string 1 template)
+						      (format " text:index-scope=\"%s\""
+							      (if localp "chapter" "document")))
+					      t t template 1)))
 	    ;; Translate the title.
 	    (if (string-match "\\(?:<text:index-title-template.*>\\(?1:\\(?:.\\|\n\\)+?\\)</text:index-title-template>\\)"
 			      template)
@@ -4407,7 +4410,7 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       ;; aberration.
 
       (unless (org-odt--read-attribute keyword :page-break)
-	(org-element-put-property keyword :attr_odt (list ":page-break \"after\"") ))
+	(org-element-put-property keyword :attr_odt (list ":page-break \"after\"")))
 
       (org-odt-paragraph keyword "" info)))))
 
