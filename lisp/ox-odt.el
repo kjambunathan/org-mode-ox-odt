@@ -2609,8 +2609,9 @@ LANGUAGE keyword."
 
 ;;;; Table of Contents
 
-(defun org-odt-toc/headlines (index-title max-depth &optional parent-depth toc-text need-page-number)
-  (let* ((scope (if (zerop parent-depth) "document" "chapter"))
+(defun org-odt-toc/headlines (index-title rel-max-depth &optional parent-level toc-text need-page-number)
+  (let* ((max-depth (+ parent-level rel-max-depth))
+         (scope (if (zerop parent-level) "document" "chapter"))
 	 (style "OrgIndexSection"))
     (org-odt--lisp-to-xml
      `(text:table-of-content
@@ -2618,7 +2619,7 @@ LANGUAGE keyword."
 	(text:protected . "false")
 	(text:name . "Table of Contents"))
        (text:table-of-content-source
-	((text:outline-level . ,(format "%d" max-depth))
+	((text:outline-level . ,(format "%d" rel-max-depth))
 	 (text:use-outline-level . "false")
 	 (text:use-index-source-styles . "true")
 	 (text:index-scope . ,scope))
@@ -2640,7 +2641,7 @@ LANGUAGE keyword."
 			      (style:leader-char . ".")))
 			    (text:index-entry-page-number nil)))
 		      (text:index-entry-link-end nil))))
-	,@(cl-loop for depth from (1+ parent-depth) to max-depth
+	,@(cl-loop for depth from (1+ parent-level) to max-depth
 		   for level from 1 collect
 		   (org-odt--lisp-to-xml
 		    `(text:index-source-styles
@@ -2688,8 +2689,8 @@ LANGUAGE keyword."
   (format "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
 	  headline-label text))
 
-(defun org-odt-toc (depth info &optional scope)
-  (cl-assert (wholenump depth))
+(defun org-odt-toc (rel-max-depth info &optional scope)
+  (cl-assert (wholenump rel-max-depth))
   ;; When a headline is marked as a radio target, as in the example below:
   ;;
   ;; ** <<<Some Heading>>>
@@ -2704,9 +2705,11 @@ LANGUAGE keyword."
   ;; suppressed.
   (let* ((title (org-odt--translate "Table of Contents" :utf-8 info))
 	 (headlines (org-export-collect-headlines
-		     info (and (wholenump depth) depth) scope))
-	 (parent-level (or (and scope (org-export-get-relative-level
-				       (org-export-get-parent-headline scope) info))
+		     info (and (wholenump rel-max-depth) rel-max-depth) scope))
+	 (parent-level (or (when scope
+			     (let* ((parent-headline (org-export-get-parent-headline scope)))
+			       (when parent-headline
+				 (org-export-get-relative-level parent-headline info))))
 			   0))
 	 (backend (org-export-create-backend
 		   :parent (org-export-backend-name (plist-get info :back-end))
@@ -2724,8 +2727,7 @@ LANGUAGE keyword."
 			   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 				   style entry)))
 		       headlines "\n")))
-	(if (> parent-level 1) toc-text
-          (org-odt-toc/headlines title depth parent-level toc-text 'need-page-number))))))
+	(org-odt-toc/headlines title rel-max-depth parent-level toc-text 'need-page-number)))))
 
 
 ;;;; Document styles
@@ -4384,7 +4386,8 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			    (rel-depth rel-depth)
 			    ((wholenump with-toc) with-toc)
 			    (t (plist-get info :headline-levels))))))
-	     (when (wholenump depth) (org-odt-toc depth info (and localp keyword)))))
+	     (when (wholenump depth)
+               (org-odt-toc depth info (and localp keyword)))))
 	  (_
 	   (org-odt-toc/category :category entity-name
 				 :localp localp
