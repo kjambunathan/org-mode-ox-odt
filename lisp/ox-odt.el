@@ -382,37 +382,56 @@ See `org-odt-format-label'.")
 	   collect (cons (downcase (plist-get category-props :variable)) category))
   "See `org-odt--element-category'.")
 
-(defvar org-odt-toc-templates
-  (cl-loop for (category . category-props) in org-odt-caption-and-numbering-settings
-	   when (memq category '(:FIGURE: :LISTING: :TABLE:)) collect
-	   (let ((caption-sequence-format "text")
-		 (index-title (format "List of %ss" (plist-get category-props :entity-name))))
-	     (cons
-	      (downcase (concat (plist-get category-props :entity-name) "s"))
-	      (format
-	       "
-   <text:illustration-index text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Org Index1\">
-    <text:illustration-index-source text:caption-sequence-name=\"%s\" text:caption-sequence-format=\"%s\">
-     <text:index-title-template text:style-name=\"Org_20_Index_20_Heading\">%s</text:index-title-template>
-     <text:illustration-index-entry-template text:style-name=\"Org_20_Index\">
-      <text:index-entry-link-start text:style-name=\"Index_20_Link\"/>
-      <text:index-entry-text/>
-      <text:index-entry-tab-stop style:type=\"right\" style:leader-char=\".\"/>
-      <text:index-entry-page-number/>
-      <text:index-entry-link-end/>
-     </text:illustration-index-entry-template>
-    </text:illustration-index-source>
-    <text:index-body>
-      <text:index-title text:style-name=\"OrgIndexSection\" text:name=\"Org Index1_Head\">
-        <text:p text:style-name=\"Org_20_Index_20_Heading\">%s</text:p>
-      </text:index-title>
-    </text:index-body>
-   </text:illustration-index>
-"
-	       (plist-get category-props :variable)
-	       caption-sequence-format
-	       index-title
-	       index-title)))))
+(cl-defun org-odt-toc/category (&key category localp index-title contents)
+  (let ((category1 (assoc-default category '(("figures" . :FIGURE:)
+					     ("listings" . :LISTING:)
+					     ("tables" . :TABLE:)))))
+    (when category1
+      (let* ((category-props (alist-get category1 org-odt-caption-and-numbering-settings))
+	     (entity-name (plist-get category-props :entity-name))
+	     (variable (plist-get category-props :variable))
+	     (style-prefix (or "Org" variable))
+	     (caption-sequence-format "text")
+	     ;; Fill in the default values for unspecified params
+	     (scope (if localp "chapter" "document"))
+	     (index-title (or index-title
+			      (org-trim (format "List of %s" (capitalize entity-name)))))
+	     (contents (or contents
+			   (org-odt--lisp-to-xml
+			    `(text:p
+			      ((text:style-name . "Standard"))
+			      "PLS. UPDATE THIS INDEX"))))
+	     (index-style "OrgIndexSection"))
+	(org-odt--lisp-to-xml
+	 `(text:illustration-index
+	   ((text:style-name . ,index-style)
+	    (text:protected . "true")
+	    (text:name . ,(format "Table of %s" (capitalize entity-name))))
+	   (text:illustration-index-source
+	    ((text:caption-sequence-name . ,variable)
+	     (text:caption-sequence-format . ,caption-sequence-format)
+	     (text:index-scope . ,scope))
+	    (text:index-title-template
+	     ((text:style-name . ,(format "%s_20_Index_20_Heading" style-prefix)))
+	     ,index-title)
+	    (text:illustration-index-entry-template
+	     ((text:style-name . ,(format "%s_20_Index" style-prefix)))
+	     (text:index-entry-link-start
+	      ((text:style-name . "Index_20_Link")))
+	     (text:index-entry-text nil)
+	     (text:index-entry-tab-stop
+	      ((style:type . "right")
+	       (style:leader-char . ".")))
+	     (text:index-entry-page-number nil)
+	     (text:index-entry-link-end nil)))
+	   (text:index-body nil
+			    (text:index-title
+			     ((text:style-name . ,index-style)
+			      (text:name . ,(format "Table of %s Heading" (capitalize entity-name))))
+			     (text:p
+			      ((text:style-name . ,(format "%s_20_Index_20_Heading" style-prefix)))
+			      ,index-title))
+			    ,contents)))))))
 
 (defvar hfy-user-sheet-assoc)
 
@@ -4350,35 +4369,28 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
       ;; FIXME
       (ignore))
      ((string= key "TOC")
-      (let ((value (downcase value)))
-	(cond
-	 ((string-match "\\<headlines\\>" value)
-	  (let* ((depth (let ((with-toc (plist-get info :with-toc)))
-			  (cond
-			   ((string-match "[0-9]+" value)
-			    (string-to-number (match-string 0 value)))
-			   ((wholenump with-toc) with-toc)
-			   (t (plist-get info :headline-levels)))))
-		 (localp (string-match-p "\\<local\\>" value)))
-	    (when (wholenump depth) (org-odt-toc depth info (and localp keyword)))))
-	 ((or (string-match-p "\\<tables\\>" value)
-	      (string-match-p "\\<figures\\>" value)
-	      (string-match-p "\\<listings\\>" value))
-	  ;; Return an index template.
-	  (let* ((localp (string-match-p "\\<local\\>" value))
-		 (template (assoc-default (car (split-string value)) org-odt-toc-templates)))
-	    ;; Specify the scope of the index.
-	    (if (string-match "<text:illustration-index-source\\(.\\|\n\\)*?>" template)
-		(setq template (replace-match (concat (match-string 1 template)
-						      (format " text:index-scope=\"%s\""
-							      (if localp "chapter" "document")))
-					      t t template 1)))
-	    ;; Translate the title.
-	    (if (string-match "\\(?:<text:index-title-template.*>\\(?1:\\(?:.\\|\n\\)+?\\)</text:index-title-template>\\)"
-			      template)
-		(replace-match (org-odt--translate (org-trim (match-string 1 template)) :utf-8 info)
-			       t t template 1)
-	      template))))))
+      (let* ((value (downcase value))
+	     (entity-name (when (string-match (rx-to-string
+					       '(or "headlines" "tables" "figures" "listings"))
+					      value)
+			    (match-string 0 value)))
+	     (localp (string-match-p "\\<local\\>" value))
+	     (rel-depth (when (string-match "[0-9]+" value)
+			  (string-to-number (match-string 0 value)))))
+	(pcase entity-name
+	  ("headlines"
+	   (let* ((depth (let ((with-toc (plist-get info :with-toc)))
+			   (cond
+			    (rel-depth rel-depth)
+			    ((wholenump with-toc) with-toc)
+			    (t (plist-get info :headline-levels))))))
+	     (when (wholenump depth) (org-odt-toc depth info (and localp keyword)))))
+	  (_
+	   (org-odt-toc/category :category entity-name
+				 :localp localp
+				 :index-title (org-odt--translate
+					       (org-trim (format "List of %s" (capitalize entity-name)))
+					       :utf-8 info))))))
      ((string= key "PAGEBREAK")
 
       ;; Pagebreaks created this way are a mere expedience.  These
