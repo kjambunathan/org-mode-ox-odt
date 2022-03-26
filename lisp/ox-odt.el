@@ -4668,8 +4668,7 @@ SHORT-CAPTION are strings."
 	  (cl-case op
 	    ;; Case 1: Handle Label definition.
 	    (definition
-	     (list
-	      (let ((caption-text
+	     (let* ((caption-text
 		     ;; Label definition: Typically formatted as below:
 		     ;;     ENTITY-NAME SEQ-NO: LONG CAPTION
 		     ;; with translation for correct punctuation.
@@ -4704,6 +4703,8 @@ SHORT-CAPTION are strings."
 				     seqno))))
 				('caption (or caption ""))
 				(_ %)))))
+	       (list
+		:caption
 		(unless (string= caption-text "")
 		  (cl-case (or format-prop :caption-format)
 		    (:caption-format
@@ -4713,14 +4714,23 @@ SHORT-CAPTION are strings."
 				   (format "OrgSub%s" style)
 				 style))
 			     caption-text))
-		    (t caption-text))))
-	      short-caption
-	      (plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
-			 :caption-position)
-	      ;; Paragraph style for the "overlaid" short caption,
-	      ;; and the associated image/formula.
-	      (or (org-odt--read-attribute caption-from :style)
-		  (format "Org%sText" (plist-get category-props :caption-style)))))
+		    (t caption-text)))
+		:short-caption
+		short-caption
+		:caption-position
+		(plist-get (assoc-default secondary-category org-odt-caption-and-xref-settings)
+			   :caption-position)
+		:p-style
+		;; Paragraph style for the "overlaid" short caption,
+		;; and the associated image/formula.
+		(or (org-odt--read-attribute caption-from :style)
+		    (format "Org%sText" (plist-get category-props :caption-style)))
+		:caption-text
+		caption-text
+		:caption-style
+		(plist-get category-props :caption-style)
+		:subentityp
+		(eq secondary-category :SUBENTITY:))))
 	    ;; Case 2: Handle Label reference.
 	    (reference
 	     (cl-loop for % in (plist-get
@@ -4943,8 +4953,8 @@ used as a communication channel."
 	 (widths (car size)) (heights (cdr size))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
 	 (embed-as (if standalone-link-p "paragraph" "as-char"))
-	 (captions (org-odt-format-label element info 'definition))
-	 (caption (nth 0 captions))
+	 (captions-plist (org-odt-format-label element info 'definition))
+	 (caption (plist-get captions-plist :caption))
 	 (entity (concat (and caption "Captioned") embed-as "Image"))
 	 ;; Check if this link was created by LaTeX-to-PNG converter.
 	 (replaces (org-element-property
@@ -4958,7 +4968,7 @@ used as a communication channel."
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces))))
     (let ((contents (org-odt--render-image/formula entity href widths heights
-						   captions user-frame-params title desc)))
+						   captions-plist user-frame-params title desc)))
       (if standalone-link-p
 	  ;; Decorate contents with the paragraph style it needs to be
 	  ;; enclosed in.  The value of `:p-style' is probed in
@@ -4996,8 +5006,9 @@ used as a communication channel."
 						    (link (org-export-get-parent-element element))
 						    (t element))))
 				(org-odt--enumerable-p caption-from info))))
-	 (captions (org-odt-format-label element info 'definition))
-	 (label (car (org-odt-format-label element info 'definition :label-format)))
+	 (captions-plist (org-odt-format-label element info 'definition))
+	 (label (let ((plist (org-odt-format-label element info 'definition :label-format)))
+		  (plist-get plist :caption)))
 	 (entity
 	  (concat
 	   (when enumerable-link-p "Captioned")
@@ -5018,7 +5029,7 @@ used as a communication channel."
 	 (width nil) (height nil)
 	 (equation (org-odt--render-image/formula entity
 						  href width height
-						  (append captions (list label))
+						  (append captions-plist (list :label label))
 						  nil title desc)))
     (if (not standalone-link-p) equation
       ;; Decorate contents with the paragraph style it needs to be
@@ -5061,7 +5072,7 @@ used as a communication channel."
 ;;;; Targets
 
 (defun org-odt--render-image/formula (cfg-key href widths heights &optional
-					      captions user-frame-params
+					      captions-plist user-frame-params
 					      &rest title-and-desc)
   (let* ((frame-cfg-alist
 	  ;; Each element of this alist is of the form (CFG-HANDLE
@@ -5113,9 +5124,10 @@ used as a communication channel."
 	    ("CaptionedParagraphFormula"
 	     ("OrgCaptionedFormula" nil "as-char")
 	     ("OrgFormulaCaptionFrame" nil "as-char"))))
-	 (caption (nth 0 captions)) (short-caption (nth 1 captions))
-	 (caption-position (nth 2 captions))
-	 (label (nth 4 captions))
+	 (caption (plist-get captions-plist :caption))
+         (short-caption (plist-get captions-plist :short-caption))
+	 (caption-position (plist-get captions-plist :caption-position))
+	 (label (plist-get captions-plist :label))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
 	 (inner (nth 1 frame-cfg))
@@ -5168,11 +5180,11 @@ used as a communication channel."
 			(append inner title-and-desc))
 		 (when short-caption
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			   (nth 3 captions)
+			   (plist-get captions-plist :p-style)
 			   short-caption))))
 	       (t
 		(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			(nth 3 captions)
+			(plist-get captions-plist :p-style)
 			(concat
 			 short-caption
 			 (apply 'org-odt--frame href (car widths) (car heights)
@@ -6298,9 +6310,9 @@ and prefix with \"OrgSrc\".  For example,
 CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
   (let* ((_lang (org-element-property :language src-block))
-	 (captions (org-odt-format-label src-block info 'definition))
-	 (caption (nth 0 captions))
-	 (caption-position (nth 2 captions))
+	 (captions-plist (org-odt-format-label src-block info 'definition))
+	 (caption (plist-get captions-plist :caption))
+	 (caption-position (plist-get captions-plist :caption-position))
 	 (text (let ((--src-block (org-odt-format-code src-block info)))
 		 ;; Is `:textbox' property non-nil?
 		 (if (not (org-odt--read-attribute src-block :textbox)) --src-block
@@ -6935,9 +6947,10 @@ contextual information."
 	 "  Stripping the table from export."))))
     ;; Case 2: Native Org tables.
     (otherwise
-     (let* ((captions (org-odt-format-label table info 'definition))
-	    (caption (nth 0 captions)) (short-caption (nth 1 captions))
-	    (caption-position (nth 2 captions))
+     (let* ((captions-plist (org-odt-format-label table info 'definition))
+	    (caption (plist-get captions-plist :caption))
+            (short-caption (plist-get captions-plist :short-caption))
+	    (caption-position (plist-get captions-plist :caption-position))
 	    (custom-table-style (nth 1 (org-odt-table-style-spec table info)))
 	    (table-column-specs
 	     (lambda (table info)
