@@ -5150,12 +5150,12 @@ used as a communication channel."
       ;; Short caption, if specified, goes as part of inner frame.
       (setq inner (let ((frame-params (copy-sequence inner)))
 		    (when (or (cdr widths) (cdr heights))
-		      (setcar (cdr frame-params) nil))
-		    (setcar (cdr frame-params)
-			    (concat
-			     (cadr frame-params)
-			     (when (and (memq 'short-caption org-odt-experimental-features) short-caption)
-			       (format " draw:name=\"%s\" " short-caption))))
+		      (plist-put frame-params :extra nil))
+		    (plist-put frame-params :extra
+			       (concat
+				(plist-get frame-params :extra)
+				(when (and (memq 'short-caption org-odt-experimental-features) short-caption)
+				  (format " draw:name=\"%s\" " short-caption))))
 		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text
