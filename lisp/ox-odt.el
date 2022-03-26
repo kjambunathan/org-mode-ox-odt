@@ -4913,14 +4913,9 @@ used as a communication channel."
 	 (attr-from (cl-case (org-element-type element)
 		      (link (org-export-get-parent-element element))
 		      (t element)))
-	 ;; Handle `:anchor', `:style' and `:attributes' properties.
-	 ;; (user-frame-anchor
-	 ;;  (car (assoc-string (org-odt--read-attribute attr-from :anchor)
-	 ;; 		     '(("as-char") ("paragraph") ("page")) t)))
-	 ;; (user-frame-style nil)
-	 ;; (user-frame-attrs nil)
-	 ;; (user-frame-params
-	 ;;  (list user-frame-style user-frame-attrs user-frame-anchor))
+         ;; Gather `:inner-frame' and `outer-frame' attributes.
+         ;; A frame attribute is a list with values for `:style',
+         ;; `:extra' and `:anchor' in that order.
 	 (user-frame-params
 	  (cl-loop for which-frame in (list :inner-frame :outer-frame)
 		   for frame-params = (let ((value (org-odt--read-attribute attr-from which-frame)))
@@ -4928,8 +4923,6 @@ used as a communication channel."
 						 append (list (intern (format ":%s" a)) b)))
 		   collect (cl-loop for prop in '(:style :extra :anchor)
 				    collect (plist-get frame-params prop))))
-	 ;; (embed-as (or embed-as user-frame-anchor "paragraph"))
-	 ;;
 	 ;; Handle `:width', `:height' and `:scale' properties.
 	 (size
 	  (let ((--user-dim
@@ -5074,64 +5067,60 @@ used as a communication channel."
 (defun org-odt--render-image/formula (cfg-key href widths heights &optional
 					      captions-plist user-frame-params
 					      &rest title-and-desc)
-  (let* ((frame-cfg-alist
-	  ;; Each element of this alist is of the form (CFG-HANDLE
-	  ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
+  (let* (
+	 ;; Each element of this alist is of the form (CFG-HANDLE
+	 ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
 
-	  ;; CFG-HANDLE is the key to the alist.
+	 ;; CFG-HANDLE is the key to the alist.
 
-	  ;; INNER-FRAME-PARAMS and OUTER-FRAME-PARAMS specify the
-	  ;; frame params for INNER-FRAME and OUTER-FRAME
-	  ;; respectively.  See below.
+	 ;; INNER-FRAME-PARAMS and OUTER-FRAME-PARAMS specify the
+	 ;; frame params for INNER-FRAME and OUTER-FRAME
+	 ;; respectively.  See below.
 
-	  ;; Configurations that are meant to be applied to
-	  ;; non-captioned image/formula specifies no
-	  ;; OUTER-FRAME-PARAMS.
+	 ;; Configurations that are meant to be applied to
+	 ;; non-captioned image/formula specifies no
+	 ;; OUTER-FRAME-PARAMS.
 
-	  ;; TERMINOLOGY
-	  ;; ===========
-	  ;; INNER-FRAME :: Frame that directly surrounds an
-	  ;;                image/formula.
+	 ;; TERMINOLOGY
+	 ;; ===========
+	 ;; INNER-FRAME :: Frame that directly surrounds an
+	 ;;                image/formula.
 
-	  ;; OUTER-FRAME :: Frame that encloses the INNER-FRAME.  This
-	  ;;                frame also contains the caption, if any.
+	 ;; OUTER-FRAME :: Frame that encloses the INNER-FRAME.  This
+	 ;;                frame also contains the caption, if any.
 
-	  ;; FRAME-PARAMS :: List of the form (FRAME-STYLE-NAME
-	  ;;                 FRAME-ATTRIBUTES FRAME-ANCHOR).  Note
-	  ;;                 that these are the last three arguments
-	  ;;                 to `org-odt--frame'.
+	 ;; FRAME-PARAMS :: List of the form (FRAME-STYLE-NAME
+	 ;;                 FRAME-ATTRIBUTES FRAME-ANCHOR).  Note
+	 ;;                 that these are the last three arguments
+	 ;;                 to `org-odt--frame'.
 
-	  ;; Note that an un-captioned image/formula requires just an
-	  ;; INNER-FRAME, while a captioned image/formula requires
-	  ;; both an INNER and an OUTER-FRAME.
-	  '(("As-CharImage" ("OrgInlineImage" nil "as-char"))
-	    ("ParagraphImage" ("OrgDisplayImage" nil "paragraph"))
-	    ("PageImage" ("OrgPageImage" nil "page"))
-	    ("CaptionedAs-CharImage"
-	     ("OrgDisplayImage"
-	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
-	     ("OrgInlineImage" nil "as-char"))
-	    ("CaptionedParagraphImage"
-	     ("OrgDisplayImage"
-	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
-	     ("OrgImageCaptionFrame" nil "paragraph"))
-	    ("CaptionedPageImage"
-	     ("OrgDisplayImage"
-	      " style:rel-width=\"100%\" style:rel-height=\"scale\"" "paragraph")
-	     ("OrgPageImageCaptionFrame" nil "page"))
-	    ("As-CharFormula" ("OrgInlineFormula" nil "as-char"))
-	    ("ParagraphFormula" ("OrgDisplayFormula" nil "paragraph"))
-	    ("CaptionedParagraphFormula"
-	     ("OrgCaptionedFormula" nil "as-char")
-	     ("OrgFormulaCaptionFrame" nil "as-char"))))
+	 ;; Note that an un-captioned image/formula requires just an
+	 ;; INNER-FRAME, while a captioned image/formula requires
+	 ;; both an INNER and an OUTER-FRAME.
+	 
+	 (inner-frame-cfg-alist
+	  (let ((extra-attrs " style:rel-width=\"100%\" style:rel-height=\"scale\""))
+	    `(("As-CharImage" "OrgInlineImage" nil "as-char")
+	      ("ParagraphImage" "OrgDisplayImage" nil "paragraph")
+	      ("PageImage" "OrgPageImage" nil "page")
+	      ("CaptionedAs-CharImage" "OrgDisplayImage" ,extra-attrs "paragraph")
+	      ("CaptionedParagraphImage" "OrgDisplayImage" ,extra-attrs "paragraph")
+	      ("CaptionedPageImage" "OrgDisplayImage" ,extra-attrs "paragraph")
+	      ("As-CharFormula" "OrgInlineFormula" nil "as-char")
+	      ("ParagraphFormula" "OrgDisplayFormula" nil "paragraph")
+	      ("CaptionedParagraphFormula" "OrgCaptionedFormula" nil "as-char"))))
+	 (outer-frame-cfg-alist
+	  '(("CaptionedAs-CharImage" "OrgInlineImage" nil "as-char")
+	    ("CaptionedParagraphImage" "OrgImageCaptionFrame" nil "paragraph")
+	    ("CaptionedPageImage" "OrgPageImageCaptionFrame" nil "page")
+	    ("CaptionedParagraphFormula" "OrgFormulaCaptionFrame" nil "as-char")))
 	 (caption (plist-get captions-plist :caption))
-         (short-caption (plist-get captions-plist :short-caption))
+	 (short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
 	 (label (plist-get captions-plist :label))
 	 ;; Retrieve inner and outer frame params, from configuration.
-	 (frame-cfg (assoc-string cfg-key frame-cfg-alist t))
-	 (inner (nth 1 frame-cfg))
-	 (outer (nth 2 frame-cfg))
+	 (inner (assoc-string cfg-key inner-frame-cfg-alist t))
+	 (outer (assoc-string cfg-key outer-frame-cfg-alist t))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
 	 (inner-user (nth 0 user-frame-params))
 	 (outer-user (nth 1 user-frame-params))
