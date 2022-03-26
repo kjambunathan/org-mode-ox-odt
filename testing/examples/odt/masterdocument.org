@@ -1217,7 +1217,7 @@ a non-existent key [cite:@nonexistent]. Here I cite aristotle
 # Here I cite a book \cite{wilde} and an article \cite{moore}.  Cite
 # the article once more \cite{moore}.  
 
-#+BIBLIOGRAPHY: 
+# #+BIBLIOGRAPHY: 
 
 * Footnotes
 
