@@ -5126,8 +5126,8 @@ used as a communication channel."
 	 (caption-position (plist-get captions-plist :caption-position))
 	 (label (plist-get captions-plist :label))
 	 ;; Retrieve inner and outer frame params, from configuration.
-	 (inner (assoc-string cfg-key inner-frame-cfg-alist t))
-	 (outer (assoc-string cfg-key outer-frame-cfg-alist t))
+	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
+	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
 	 (inner-user (plist-get user-frame-params :inner-frame))
 	 (outer-user (plist-get user-frame-params :outer-frame)))
