@@ -124,6 +124,7 @@
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
+    (:odt-app "ODT_APP" nil nil t)
     ;; Keywords that affect meta.xml
     (:odt-document-properties "ODT_DOCUMENT_PROPERTIES" nil nil split)
     (:odt-extra-meta "ODT_EXTRA_META" nil nil newline)
@@ -4966,16 +4967,19 @@ used as a communication channel."
 			       (symbol-name (org-element-type replaces)))))
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
-	 (desc (and replaces (org-element-property :value replaces))))
-    (let ((contents (org-odt--render-image entity href widths heights
+	 (desc (and replaces (org-element-property :value replaces)))
+	 (app (or (plist-get info :odt-app) "lo")))
+    (let ((contents (org-odt--render-image app entity href widths heights
 					   captions-plist user-frame-params title desc)))
       (if standalone-link-p
 	  ;; Decorate contents with the paragraph style it needs to be
 	  ;; enclosed in.  The value of `:p-style' is probed in
 	  ;; `org-odt-paragraph'.
 	  (propertize contents :p-style
-		      (concat "Org" (if (org-odt--get-captioned-parent element info) "Sub" "")
-			      "FigureBody"))
+		      (concat "Org"
+			      (when (plist-get captions-plist :subentityp) "Sub")
+			      (plist-get captions-plist :caption-style)
+			      "Body"))
 	contents))))
 
 
@@ -5027,7 +5031,8 @@ used as a communication channel."
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
 	 (width nil) (height nil)
-	 (equation (org-odt--render-formula entity
+	 (app (or (plist-get info :odt-app) "lo"))
+	 (equation (org-odt--render-formula app entity
 					    href width height
 					    (append captions-plist (list :label label))
 					    nil title desc)))
@@ -5071,26 +5076,34 @@ used as a communication channel."
 
 ;;;; Targets
 
-(defun org-odt--render-image (cfg-key href widths heights &optional
-				      captions-plist user-frame-params
-				      &rest title-and-desc)
-  (let* ((caption (plist-get captions-plist :caption))
+(defun org-odt--render-image (app cfg-key href widths heights &optional
+				  captions-plist user-frame-params
+				  &rest title-and-desc)
+  (let* ((libreofficep (pcase app
+			 ("lo" t)
+			 (_ nil)))
+	 (caption (plist-get captions-plist :caption))
 	 (_short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
 	 (label (plist-get captions-plist :label))
 	 (inner-frame-cfg-alist
-	  (let ((extra " style:rel-width=\"100%\" style:rel-height=\"scale\""))
+	  (let ((extra (when libreofficep
+			 " style:rel-width=\"100%\" style:rel-height=\"scale\"")))
 	    `(("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	      ("CaptionedAs-CharImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
-
 	      ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
 	      ("CaptionedParagraphImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
-
+	      ("To-CharImage" :style "OrgToCharImage" :extra nil :anchor "char")
+	      ("CaptionedTo-CharImage" :style ,(cl-case caption-position
+						 (above "OrgToCharImageCaptionAbove")
+						 (below "OrgToCharImage"))
+	       :extra ,extra :anchor "char")
 	      ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
 	      ("CaptionedPageImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph"))))
 	 (outer-frame-cfg-alist
 	  '(("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	    ("CaptionedParagraphImage" :style "OrgImageCaptionFrame" :extra nil :anchor "paragraph")
+	    ("CaptionedTo-CharImage" :style "OrgToCharImage" :extra nil :anchor "char")
 	    ("CaptionedPageImage" :style "OrgPageImageCaptionFrame" :extra nil :anchor "page")))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
@@ -5120,22 +5133,25 @@ used as a communication channel."
 		      (plist-put frame-params :extra nil))
 		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
-      (let* ((text
-	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		      (plist-get captions-plist :p-style)
-		      (apply 'org-odt--wrap-frame href (car widths) (car heights)
-			     title-and-desc inner))))
-	(apply 'org-odt--wrap-textbox
-	       (cl-case caption-position
-		 (above (concat caption text))
-		 (t (concat text caption)))
-	       (or (cdr widths) (car widths))
-	       (or (cdr heights) (car heights))
-	       outer))))))
+      (let* ((text (concat
+		    (apply 'org-odt--wrap-frame href (car widths) (car heights)
+			   title-and-desc inner)
+		    (plist-get captions-plist :caption-text))))
+	(cond
+	 (libreofficep (apply 'org-odt--wrap-textbox
+			      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+				      (concat
+				       (when (plist-get captions-plist :subentityp) "Sub")
+				       (plist-get captions-plist :caption-style))
+				      text)
+			      (or (cdr widths) (car widths))
+			      (or (cdr heights) (car heights))
+			      outer))
+	 (t text)))))))
 
-(defun org-odt--render-formula (cfg-key href widths heights &optional
-					captions-plist user-frame-params
-					&rest title-and-desc)
+(defun org-odt--render-formula (_app cfg-key href widths heights &optional
+				     captions-plist user-frame-params
+				     &rest title-and-desc)
   (let* ((caption (plist-get captions-plist :caption))
 	 (_short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
