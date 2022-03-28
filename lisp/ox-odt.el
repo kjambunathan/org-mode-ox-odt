@@ -5074,7 +5074,11 @@ used as a communication channel."
 (defun org-odt--render-image/formula (cfg-key href widths heights &optional
 					      captions-plist user-frame-params
 					      &rest title-and-desc)
-  (let* (
+  (let* ((caption (plist-get captions-plist :caption))
+	 (short-caption (plist-get captions-plist :short-caption))
+	 (caption-position (plist-get captions-plist :caption-position))
+	 (label (plist-get captions-plist :label))
+
 	 ;; Each element of this alist is of the form (CFG-HANDLE
 	 ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
 
@@ -5107,24 +5111,31 @@ used as a communication channel."
 
 	 (inner-frame-cfg-alist
 	  (let ((extra " style:rel-width=\"100%\" style:rel-height=\"scale\""))
-	    `(("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
-	      ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
-	      ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
+	    `(
+	      ;; Image
+	      ("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	      ("CaptionedAs-CharImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
+
+	      ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
 	      ("CaptionedParagraphImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
+
+	      ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
 	      ("CaptionedPageImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
+
+	      ;; Formula
 	      ("As-CharFormula" :style "OrgInlineFormula" :extra nil :anchor "as-char")
+
 	      ("ParagraphFormula" :style "OrgDisplayFormula" :extra nil :anchor "paragraph")
 	      ("CaptionedParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char"))))
 	 (outer-frame-cfg-alist
-	  '(("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
+	  '(
+            ;; Image
+            ("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	    ("CaptionedParagraphImage" :style "OrgImageCaptionFrame" :extra nil :anchor "paragraph")
 	    ("CaptionedPageImage" :style "OrgPageImageCaptionFrame" :extra nil :anchor "page")
-	    ("CaptionedParagraphFormula" :style "OrgFormulaCaptionFrame" :extra nil :anchor "as-char")))
-	 (caption (plist-get captions-plist :caption))
-	 (short-caption (plist-get captions-plist :short-caption))
-	 (caption-position (plist-get captions-plist :caption-position))
-	 (label (plist-get captions-plist :label))
+
+            ;; Formula
+            ("CaptionedParagraphFormula" :style "OrgFormulaCaptionFrame" :extra nil :anchor "as-char")))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
 	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
