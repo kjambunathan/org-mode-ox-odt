@@ -4967,8 +4967,8 @@ used as a communication channel."
 	 ;; If yes, note down its contents.  It will go in to frame
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces))))
-    (let ((contents (org-odt--render-image/formula entity href widths heights
-						   captions-plist user-frame-params title desc)))
+    (let ((contents (org-odt--render-image entity href widths heights
+					   captions-plist user-frame-params title desc)))
       (if standalone-link-p
 	  ;; Decorate contents with the paragraph style it needs to be
 	  ;; enclosed in.  The value of `:p-style' is probed in
@@ -5027,10 +5027,10 @@ used as a communication channel."
 	 ;; description.  This quite useful for debugging.
 	 (desc (and replaces (org-element-property :value replaces)))
 	 (width nil) (height nil)
-	 (equation (org-odt--render-image/formula entity
-						  href width height
-						  (append captions-plist (list :label label))
-						  nil title desc)))
+	 (equation (org-odt--render-formula entity
+					    href width height
+					    (append captions-plist (list :label label))
+					    nil title desc)))
     (if (not standalone-link-p) equation
       ;; Decorate contents with the paragraph style it needs to be
       ;; enclosed in.  The value of `:p-style' is probed in
@@ -5071,9 +5071,9 @@ used as a communication channel."
 
 ;;;; Targets
 
-(defun org-odt--render-image/formula (cfg-key href widths heights &optional
-					      captions-plist user-frame-params
-					      &rest title-and-desc)
+(defun org-odt--render-image (cfg-key href widths heights &optional
+				      captions-plist user-frame-params
+				      &rest title-and-desc)
   (let* ((caption (plist-get captions-plist :caption))
 	 (short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
@@ -5111,31 +5111,18 @@ used as a communication channel."
 
 	 (inner-frame-cfg-alist
 	  (let ((extra " style:rel-width=\"100%\" style:rel-height=\"scale\""))
-	    `(
-	      ;; Image
-	      ("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
+	    `(("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	      ("CaptionedAs-CharImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
 
 	      ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
 	      ("CaptionedParagraphImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
 
 	      ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
-	      ("CaptionedPageImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
-
-	      ;; Formula
-	      ("As-CharFormula" :style "OrgInlineFormula" :extra nil :anchor "as-char")
-
-	      ("ParagraphFormula" :style "OrgDisplayFormula" :extra nil :anchor "paragraph")
-	      ("CaptionedParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char"))))
+	      ("CaptionedPageImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph"))))
 	 (outer-frame-cfg-alist
-	  '(
-            ;; Image
-            ("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
+	  '(("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	    ("CaptionedParagraphImage" :style "OrgImageCaptionFrame" :extra nil :anchor "paragraph")
-	    ("CaptionedPageImage" :style "OrgPageImageCaptionFrame" :extra nil :anchor "page")
-
-            ;; Formula
-            ("CaptionedParagraphFormula" :style "OrgFormulaCaptionFrame" :extra nil :anchor "as-char")))
+	    ("CaptionedPageImage" :style "OrgPageImageCaptionFrame" :extra nil :anchor "page")))
 	 ;; Retrieve inner and outer frame params, from configuration.
 	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
 	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
@@ -5186,6 +5173,90 @@ used as a communication channel."
 			 short-caption
 			 (apply 'org-odt--wrap-frame href (car widths) (car heights)
 				title-and-desc inner)))))))
+	(apply 'org-odt--wrap-textbox
+	       (cl-case caption-position
+		 (above (concat caption text))
+		 (t (concat text caption)))
+	       (or (cdr widths) (car widths))
+	       (or (cdr heights) (car heights))
+	       outer))))))
+
+(defun org-odt--render-formula (cfg-key href widths heights &optional
+					captions-plist user-frame-params
+					&rest title-and-desc)
+  (let* ((caption (plist-get captions-plist :caption))
+	 (short-caption (plist-get captions-plist :short-caption))
+	 (caption-position (plist-get captions-plist :caption-position))
+	 (label (plist-get captions-plist :label))
+
+	 ;; Each element of this alist is of the form (CFG-HANDLE
+	 ;; INNER-FRAME-PARAMS OUTER-FRAME-PARAMS).
+
+	 ;; CFG-HANDLE is the key to the alist.
+
+	 ;; INNER-FRAME-PARAMS and OUTER-FRAME-PARAMS specify the
+	 ;; frame params for INNER-FRAME and OUTER-FRAME
+	 ;; respectively.  See below.
+
+	 ;; Configurations that are meant to be applied to
+	 ;; non-captioned image/formula specifies no
+	 ;; OUTER-FRAME-PARAMS.
+
+	 ;; TERMINOLOGY
+	 ;; ===========
+	 ;; INNER-FRAME :: Frame that directly surrounds an
+	 ;;                image/formula.
+
+	 ;; OUTER-FRAME :: Frame that encloses the INNER-FRAME.  This
+	 ;;                frame also contains the caption, if any.
+
+	 ;; FRAME-PARAMS :: List of the form (FRAME-STYLE-NAME
+	 ;;                 FRAME-ATTRIBUTES FRAME-ANCHOR).  Note
+	 ;;                 that these are the last three arguments
+	 ;;                 to `org-odt--frame'.
+
+	 ;; Note that an un-captioned image/formula requires just an
+	 ;; INNER-FRAME, while a captioned image/formula requires
+	 ;; both an INNER and an OUTER-FRAME.
+
+	 (inner-frame-cfg-alist
+	  `(("As-CharFormula" :style "OrgInlineFormula" :extra nil :anchor "as-char")
+	    ("ParagraphFormula" :style "OrgDisplayFormula" :extra nil :anchor "paragraph")
+	    ("CaptionedParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char")))
+	 (outer-frame-cfg-alist
+	  '(("CaptionedParagraphFormula" :style "OrgFormulaCaptionFrame" :extra nil :anchor "as-char")))
+	 ;; Retrieve inner and outer frame params, from configuration.
+	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
+	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
+	 ;; User-specified frame params (from #+ATTR_ODT spec)
+	 (inner-user (plist-get user-frame-params :inner-frame))
+	 (outer-user (plist-get user-frame-params :outer-frame)))
+    (cond
+     ;; Case 1: Image/Formula has no caption.
+     ;;         There is only one frame, one that surrounds the image
+     ;;         or formula.
+     ((and (null caption) (null label))
+      ;; Merge user frame params with that from configuration.
+      (setq inner (org-combine-plists inner inner-user))
+      (apply 'org-odt--wrap-frame href (car widths) (car heights)
+	     title-and-desc inner))
+     ;; Case 2: Image/Formula is captioned or labeled.
+     ;;         There are two frames: The inner one surrounds the
+     ;;         image or formula.  The outer one contains the
+     ;;         caption/sequence number.
+     (t
+      ;; Merge user frame params with outer frame params.
+      (setq outer (org-combine-plists outer outer-user))
+      ;; Short caption, if specified, goes as part of inner frame.
+      (setq inner (let ((frame-params (copy-sequence inner)))
+		    (when (or (cdr widths) (cdr heights))
+		      (plist-put frame-params :extra nil))
+		    frame-params))
+      (setq inner (org-combine-plists inner inner-user))
+      (let* ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			   (plist-get captions-plist :p-style)
+			   (apply 'org-odt--wrap-frame href (car widths) (car heights)
+				  title-and-desc inner))))
 	(apply 'org-odt--wrap-textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
