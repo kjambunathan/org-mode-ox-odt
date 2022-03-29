@@ -958,8 +958,11 @@
   <style:style style:name="OrgSubListing" style:family="paragraph" style:parent-style-name="Listing"/>
   <style:style style:name="OrgSubTable" style:family="paragraph" style:parent-style-name="Table"/>
 
-  <style:style style:name="OrgFigureBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
-  <style:style style:name="OrgSubFigureBody" style:family="paragraph" style:parent-style-name="OrgFigureBody"/>
+  <style:style style:name="OrgFigureBody" style:family="paragraph" style:parent-style-name="Text_20_body">
+   <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
+  </style:style>
+
+  <style:style style:name="OrgSubFigureBody" style:family="paragraph" style:parent-style-name="Text_20_body"/>
 
   <style:style style:name="OrgFormulaBody" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties>
@@ -976,9 +979,9 @@
   </style:style>
 
   <style:style style:name="OrgTextBoxFrame" style:family="graphic" style:parent-style-name="Frame">
-   <style:graphic-properties style:vertical-pos="top" style:vertical-rel="paragraph-content" style:horizontal-pos="center" style:horizontal-rel="paragraph-content"/>
+   <style:graphic-properties text:anchor-type="char" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph-content" style:wrap="none" draw:wrap-influence-on-position="once-concurrent"/>
   </style:style>
-
+                              
   <draw:marker draw:name="Arrowheads_20_2" draw:display-name="Arrowheads 2" svg:viewBox="0 0 20 20" svg:d="M0 20l10-20 10 20z"/>
 
   <style:style style:name="OrgToCharImage" style:family="graphic" style:parent-style-name="Graphics">

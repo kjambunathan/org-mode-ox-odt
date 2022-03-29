@@ -2335,7 +2335,7 @@ LANGUAGE keyword."
 	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
 	   (if height (format " svg:height=\"%0.2fcm\"" height) "")
 	   extra
-	   (format " text:anchor-type=\"%s\"" (or anchor "paragraph")))))
+	   (format " text:anchor-type=\"%s\"" (or anchor "char")))))
     (format
      "\n<draw:frame draw:style-name=\"%s\"%s>\n%s\n</draw:frame>"
      style frame-attrs
@@ -5957,6 +5957,54 @@ contextual information."
 
 ;;;; Special Block
 
+(defun org-odt--compose-image-and-text-into-a-draw:frame (file-path text special-block info)
+  (pcase-let* ((`(,path ,widths ,heights)
+		(org-odt--do-image-size file-path special-block info))
+	       (width (org-odt--read-attribute special-block :width))
+	       (height (org-odt--read-attribute special-block :height))
+	       (style (or (org-odt--read-attribute special-block :style)
+			  "OrgTextBoxFrame"))
+	       (extra (org-odt--read-attribute special-block :extra))
+	       (anchor (org-odt--read-attribute special-block :anchor)))
+    (when path
+      ;; A textbox can specify a fill image using the `:image'
+      ;; attribute.
+
+      ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
+      ;; #+begin_textbox
+      ;;     Org Mode Unicorn
+      ;; #+end_textbox
+
+      ;; You can use the above construct if you want the text within
+      ;; the textbox to sit on top of the image. In a sense, this is
+      ;; an alternative way to get a "captioned" figure.  Note that
+      ;; unlike the standard captioned figure, the figure created
+      ;; with this constrcut doesn't get enumerated or enter the
+      ;; table of figures.
+      (let* ((internal-path (org-odt--copy-image-file
+			     info path (format "Images/%04d.%s"
+					       (org-odt--count-object info :images)
+					       (file-name-extension path))))
+	     (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path))))
+	     (parent-style style))
+	(setq width (car widths)
+	      height (car heights)
+	      style (format "Org%s" (org-odt--name-object info 'graphic)))
+	(plist-put info :odt-extra-styles
+		   (concat (plist-get info :odt-extra-styles)
+			   (format
+			    "
+<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
+			    draw-name
+			    internal-path)))
+	(plist-put info :odt-automatic-styles
+		   (concat (plist-get info :odt-automatic-styles)
+			   (format org-odt-graphic-style-format
+				   style
+				   parent-style
+				   draw-name)))))
+    (org-odt--textbox text width height style extra anchor)))
+
 (defun org-odt-special-block (special-block contents info)
   "Transcode a SPECIAL-BLOCK element from Org to ODT.
 CONTENTS holds the contents of the block.  INFO is a plist
@@ -6058,12 +6106,12 @@ holding contextual information."
 			       (org-odt--graphic-style :style style :image draw-name :height height :width width))))))
 	(org-odt-paragraph special-block
 			   (org-odt--draw:custom-shape :text (or contents "")
-			    :width width :height height :style style
-			    ;; :extra extra
-                            :anchor-type anchor
-			    :id (org-element-property :name special-block)
-			    :other-id (org-odt--read-attribute special-block :other-id)
-			    :shape (or (org-odt--read-attribute special-block :shape) "rectangle"))
+						       :width width :height height :style style
+						       ;; :extra extra
+						       :anchor-type anchor
+						       :id (org-element-property :name special-block)
+						       :other-id (org-odt--read-attribute special-block :other-id)
+						       :shape (or (org-odt--read-attribute special-block :shape) "rectangle"))
 			   info)))
      ;; Annotation.
      ((string= type "annotation")
@@ -6115,55 +6163,26 @@ holding contextual information."
       ;; #+PAGEBREAK:
       ;;
       ;; Trailing text.
-      (pcase-let* ((`(,path ,widths ,heights)
-		    (org-odt--do-image-size
-		     (org-odt--read-attribute special-block :image) special-block info))
-		   (width (org-odt--read-attribute special-block :width))
-		   (height (org-odt--read-attribute special-block :height))
-		   (style (or (org-odt--read-attribute special-block :style)
-			      "OrgTextBoxFrame"))
-		   (extra (org-odt--read-attribute special-block :extra))
-		   (anchor (org-odt--read-attribute special-block :anchor)))
-	(when path
-	  ;; A textbox can specify a fill image using the `:image'
-	  ;; attribute.
+      ;;
+      (let* ((file-path (org-odt--read-attribute special-block :image)))
 
-	  ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
-	  ;; #+begin_textbox
-	  ;;     Org Mode Unicorn
-	  ;; #+end_textbox
+	;; A textbox can specify a fill image using the `:image'
+	;; attribute.
 
-	  ;; You can use the above construct if you want the text within
-	  ;; the textbox to sit on top of the image. In a sense, this is
-	  ;; an alternative way to get a "captioned" figure.  Note that
-	  ;; unlike the standard captioned figure, the figure created
-	  ;; with this constrcut doesn't get enumerated or enter the
-	  ;; table of figures.
-	  (let* ((internal-path (org-odt--copy-image-file
-				 info path (format "Images/%04d.%s"
-						   (org-odt--count-object info :images)
-						   (file-name-extension path))))
-		 (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path))))
-		 (parent-style style))
-	    (setq width (car widths)
-		  height (car heights)
-		  style (format "Org%s" (org-odt--name-object info 'graphic)))
-	    (plist-put info :odt-extra-styles
-		       (concat (plist-get info :odt-extra-styles)
-			       (format
-				"
-<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
-				draw-name
-				internal-path)))
-	    (plist-put info :odt-automatic-styles
-		       (concat (plist-get info :odt-automatic-styles)
-			       (format org-odt-graphic-style-format
-				       style
-				       parent-style
-				       draw-name)))))
+	;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
+	;; #+begin_textbox
+	;;     Org Mode Unicorn
+	;; #+end_textbox
+
+	;; You can use the above construct if you want the text within
+	;; the textbox to sit on top of the image. In a sense, this is
+	;; an alternative way to get a "captioned" figure.  Note that
+	;; unlike the standard captioned figure, the figure created
+	;; with this constrcut doesn't get enumerated or enter the
+	;; table of figures.
 	(org-odt-paragraph special-block
-			   (org-odt--textbox contents width height
-					     style extra anchor)
+			   (org-odt--compose-image-and-text-into-a-draw:frame
+			    file-path contents special-block info)
 			   info)))
      (t contents))))
 
