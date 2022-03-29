@@ -4953,7 +4953,7 @@ used as a communication channel."
 	     )))
 	 (widths (car size)) (heights (cdr size))
 	 (standalone-link-p (org-odt--standalone-link-p element info))
-	 (embed-as (if standalone-link-p "paragraph" "as-char"))
+	 (embed-as (if standalone-link-p "to-char" "as-char"))
 	 (captions-plist (org-odt-format-label element info 'definition))
 	 (caption (plist-get captions-plist :caption))
 	 (entity (concat (and caption "Captioned") embed-as "Image"))
