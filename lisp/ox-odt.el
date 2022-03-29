@@ -5957,15 +5957,15 @@ contextual information."
 
 ;;;; Special Block
 
-(defun org-odt--compose-image-and-text-into-a-draw:frame (file-path text special-block info)
+(defun org-odt--compose-image-and-text-into-a-draw:frame (file-path text attr-from info)
   (pcase-let* ((`(,path ,widths ,heights)
-		(org-odt--do-image-size file-path special-block info))
-	       (width (org-odt--read-attribute special-block :width))
-	       (height (org-odt--read-attribute special-block :height))
-	       (style (or (org-odt--read-attribute special-block :style)
+		(org-odt--do-image-size file-path attr-from info))
+	       (width (org-odt--read-attribute attr-from :width))
+	       (height (org-odt--read-attribute attr-from :height))
+	       (style (or (org-odt--read-attribute attr-from :style)
 			  "OrgTextBoxFrame"))
-	       (extra (org-odt--read-attribute special-block :extra))
-	       (anchor (org-odt--read-attribute special-block :anchor)))
+	       (extra (org-odt--read-attribute attr-from :extra))
+	       (anchor (org-odt--read-attribute attr-from :anchor)))
     (when path
       ;; A textbox can specify a fill image using the `:image'
       ;; attribute.
@@ -6004,6 +6004,50 @@ contextual information."
 				   parent-style
 				   draw-name)))))
     (org-odt--textbox text width height style extra anchor)))
+
+(defun org-odt--compose-image-and-text-into-a-draw:custom-shape (file-path text attr-from info)
+  (pcase-let* ((`(,path ,widths ,heights)
+		(org-odt--do-image-size file-path attr-from info))
+	       (style (format "Org%s" (org-odt--name-object info 'graphic)))
+	       ;; (extra (org-odt--read-attribute attr-from :extra))
+	       (anchor (or (org-odt--read-attribute attr-from :anchor) "as-char"))
+	       (width nil)
+	       (height nil))
+    (cond
+     ((not path)
+      (setq width (org-odt--read-attribute attr-from :width))
+      (setq height (org-odt--read-attribute attr-from :height))
+      (plist-put info :odt-automatic-styles
+		 (concat (plist-get info :odt-automatic-styles)
+			 (org-odt--graphic-style :style style
+						 :height height
+						 :width width))))
+     (path
+      (setq width (car widths)
+	    height (car heights))
+      (let* ((internal-path (org-odt--copy-image-file info
+						      path
+						      (format "Images/%04d.%s"
+							      (org-odt--count-object info :images)
+							      (file-name-extension path))))
+	     (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path)))))
+	(plist-put info :odt-extra-styles
+		   (concat (plist-get info :odt-extra-styles)
+			   (format
+			    "
+<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
+			    draw-name
+			    internal-path)))
+	(plist-put info :odt-automatic-styles
+		   (concat (plist-get info :odt-automatic-styles)
+			   (org-odt--graphic-style :style style :image draw-name :height height :width width))))))
+    (org-odt--draw:custom-shape :text (or text "")
+				:width width :height height :style style
+				;; :extra extra
+				:anchor-type anchor
+				:id (org-element-property :name attr-from)
+				:other-id (org-odt--read-attribute attr-from :other-id)
+				:shape (or (org-odt--read-attribute attr-from :shape) "rectangle"))))
 
 (defun org-odt-special-block (special-block contents info)
   "Transcode a SPECIAL-BLOCK element from Org to ODT.
@@ -6053,65 +6097,11 @@ holding contextual information."
       ;; WARNING: `customshape' blocks are EXPERIMENTAL and pre-ALPHA
       ;; quality.  Don't use it in production.  See
       ;; `org-odt--draw:custom-shape' for sample usage and other details.
-      (pcase-let* ((`(,path ,widths ,heights)
-		    (org-odt--do-image-size
-		     (org-odt--read-attribute special-block :image) special-block info))
-		   (style (format "Org%s" (org-odt--name-object info 'graphic)))
-		   ;; (extra (org-odt--read-attribute special-block :extra))
-		   (anchor (or (org-odt--read-attribute special-block :anchor) "as-char"))
-		   (width nil)
-		   (height nil))
-	(cond
-	 ((not path)
-	  (setq width (org-odt--read-attribute special-block :width))
-	  (setq height (org-odt--read-attribute special-block :height))
-	  (plist-put info :odt-automatic-styles
-		     (concat (plist-get info :odt-automatic-styles)
-			     (org-odt--graphic-style :style style
-						     :height height
-						     :width width))))
-	 (path
-	  ;; A textbox can specify a fill image using the `:image'
-	  ;; attribute.
 
-	  ;; #+ATTR_ODT: :image "images/org-mode-unicorn.png"
-	  ;; #+begin_textbox
-	  ;;     Org Mode Unicorn
-	  ;; #+end_textbox
-
-	  ;; You can use the above construct if you want the text within
-	  ;; the textbox to sit on top of the image. In a sense, this is
-	  ;; an alternative way to get a "captioned" figure.  Note that
-	  ;; unlike the standard captioned figure, the figure created
-	  ;; with this constrcut doesn't get enumerated or enter the
-	  ;; table of figures.
-
-	  (setq width (car widths)
-		height (car heights))
-	  (let* ((internal-path (org-odt--copy-image-file info
-							  path
-							  (format "Images/%04d.%s"
-								  (org-odt--count-object info :images)
-								  (file-name-extension path))))
-		 (draw-name (format "image-%s" (file-name-sans-extension (file-name-nondirectory internal-path)))))
-	    (plist-put info :odt-extra-styles
-		       (concat (plist-get info :odt-extra-styles)
-			       (format
-				"
-<draw:fill-image draw:name=\"%s\" xlink:actuate=\"onLoad\" xlink:href=\"%s\" xlink:show=\"embed\" xlink:type=\"simple\" />"
-				draw-name
-				internal-path)))
-	    (plist-put info :odt-automatic-styles
-		       (concat (plist-get info :odt-automatic-styles)
-			       (org-odt--graphic-style :style style :image draw-name :height height :width width))))))
+      (let* ((file-path (org-odt--read-attribute special-block :image)))
 	(org-odt-paragraph special-block
-			   (org-odt--draw:custom-shape :text (or contents "")
-						       :width width :height height :style style
-						       ;; :extra extra
-						       :anchor-type anchor
-						       :id (org-element-property :name special-block)
-						       :other-id (org-odt--read-attribute special-block :other-id)
-						       :shape (or (org-odt--read-attribute special-block :shape) "rectangle"))
+			   (org-odt--compose-image-and-text-into-a-draw:custom-shape
+			    file-path contents special-block info)
 			   info)))
      ;; Annotation.
      ((string= type "annotation")
