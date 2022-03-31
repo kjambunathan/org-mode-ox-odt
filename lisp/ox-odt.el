@@ -4860,7 +4860,7 @@ SHORT-CAPTION are strings."
 	  (setq width (* scale width) height (* scale height)))))
     (cons width height)))
 
-(defun org-odt--do-image-size (path element info)
+(defun org-odt--do-image-size (path attributes info)
   (setq path
 	(let* ((expanded-path (when path
 				(cond
@@ -4870,9 +4870,9 @@ SHORT-CAPTION are strings."
 							    (plist-get info :input-file))))))))
 	  (when (and expanded-path (file-readable-p expanded-path)) expanded-path)))
   (when path
-    (let* ((width (org-odt--read-attribute element :width))
-	   (height (org-odt--read-attribute element :height))
-	   (scale (org-odt--read-attribute element :scale))
+    (let* ((width (plist-get attributes :width))
+	   (height (plist-get attributes :height))
+	   (scale (plist-get attributes :scale))
 	   ;; Handle `:width', `:height' and `:scale' properties.
 	   (size
 	    (let ((--user-dim
@@ -4914,7 +4914,7 @@ used as a communication channel."
 	       ;; Extract attributes from #+ATTR_ODT line.
 	       ;; Handle `:width', `:height' and `:scale' properties.
 	       (`(,file-path ,widths ,heights)
-		(org-odt--do-image-size src attr-from info))
+		(org-odt--do-image-size src (org-odt--read-attribute attr-from) info))
 	       (href (format
 		      "\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
 		      (org-odt--copy-image-file info
@@ -5936,15 +5936,15 @@ contextual information."
 
 ;;;; Special Block
 
-(defun org-odt--compose-image-and-text-into-a-draw:frame (file-path text attr-from info)
+(defun org-odt--compose-image-and-text-into-a-draw:frame (file-path text attributes info)
   (pcase-let* ((`(,path ,widths ,heights)
-		(org-odt--do-image-size file-path attr-from info))
-	       (width (org-odt--read-attribute attr-from :width))
-	       (height (org-odt--read-attribute attr-from :height))
-	       (style (or (org-odt--read-attribute attr-from :style)
+		(org-odt--do-image-size file-path attributes info))
+	       (width (plist-get attributes :width))
+	       (height (plist-get attributes :height))
+	       (style (or (plist-get attributes :style)
 			  "OrgTextBoxFrame"))
-	       (extra (org-odt--read-attribute attr-from :extra))
-	       (anchor (org-odt--read-attribute attr-from :anchor)))
+	       (extra (plist-get attributes :extra))
+	       (anchor (plist-get attributes :anchor)))
     (when path
       ;; A textbox can specify a fill image using the `:image'
       ;; attribute.
@@ -5984,18 +5984,18 @@ contextual information."
 				   draw-name)))))
     (org-odt--textbox text width height style extra anchor)))
 
-(defun org-odt--compose-image-and-text-into-a-draw:custom-shape (file-path text attr-from info)
+(defun org-odt--compose-image-and-text-into-a-draw:custom-shape (file-path text attributes info)
   (pcase-let* ((`(,path ,widths ,heights)
-		(org-odt--do-image-size file-path attr-from info))
+		(org-odt--do-image-size file-path attributes info))
 	       (style (format "Org%s" (org-odt--name-object info 'graphic)))
-	       ;; (extra (org-odt--read-attribute attr-from :extra))
-	       (anchor (or (org-odt--read-attribute attr-from :anchor) "as-char"))
+	       ;; (extra (plist-get attributes :extra))
+	       (anchor (or (plist-get attributes :anchor) "as-char"))
 	       (width nil)
 	       (height nil))
     (cond
      ((not path)
-      (setq width (org-odt--read-attribute attr-from :width))
-      (setq height (org-odt--read-attribute attr-from :height))
+      (setq width (plist-get attributes :width))
+      (setq height (plist-get attributes :height))
       (plist-put info :odt-automatic-styles
 		 (concat (plist-get info :odt-automatic-styles)
 			 (org-odt--graphic-style :style style
@@ -6024,9 +6024,9 @@ contextual information."
 				:width width :height height :style style
 				;; :extra extra
 				:anchor-type anchor
-				:id (org-element-property :name attr-from)
-				:other-id (org-odt--read-attribute attr-from :other-id)
-				:shape (or (org-odt--read-attribute attr-from :shape) "rectangle"))))
+				:id (plist-get attributes :name)
+				:other-id (plist-get attributes :other-id)
+				:shape (or (plist-get attributes :shape) "rectangle"))))
 
 (defun org-odt-special-block (special-block contents info)
   "Transcode a SPECIAL-BLOCK element from Org to ODT.
@@ -6080,7 +6080,11 @@ holding contextual information."
       (let* ((file-path (org-odt--read-attribute special-block :image)))
 	(org-odt-paragraph special-block
 			   (org-odt--compose-image-and-text-into-a-draw:custom-shape
-			    file-path contents special-block info)
+			    file-path contents
+			    (org-combine-plists ; FIXME
+			     (org-odt--read-attribute special-block)
+			     (list :name (org-element-property :name special-block)))
+			    info)
 			   info)))
      ;; Annotation.
      ((string= type "annotation")
@@ -6151,7 +6155,7 @@ holding contextual information."
 	;; table of figures.
 	(org-odt-paragraph special-block
 			   (org-odt--compose-image-and-text-into-a-draw:frame
-			    file-path contents special-block info)
+			    file-path contents (org-odt--read-attribute special-block) info)
 			   info)))
      (t contents))))
 
