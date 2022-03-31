@@ -4901,74 +4901,53 @@ SHORT-CAPTION are strings."
 LINK is the link pointing to the inline image.  INFO is a plist
 used as a communication channel."
   (cl-assert (eq (org-element-type element) 'link))
-  (let* ((src (let* ((type (org-element-property :type element))
-		     (raw-path (org-element-property :path element)))
-		(cond ((member type '("http" "https"))
-		       (concat type ":" raw-path))
-		      ((file-name-absolute-p raw-path)
-		       (expand-file-name raw-path))
-		      (t raw-path))))
-	 (src-expanded (if (file-name-absolute-p src) src
-			 (expand-file-name src (file-name-directory
-						(plist-get info :input-file)))))
-	 (href (format
-		"\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
-		(org-odt--copy-image-file info
-					  src-expanded
-					  (format "Images/%04d.%s"
-						  (org-odt--count-object info :images)
-						  (file-name-extension src-expanded)))))
-	 ;; Extract attributes from #+ATTR_ODT line.
-	 (attr-from (cl-case (org-element-type element)
-		      (link (org-export-get-parent-element element))
-		      (t element)))
-	 ;; Gather `:inner-frame' and `outer-frame' attributes.
-	 ;; A frame attribute is a plist with three keys `:style',
-	 ;; `:extra' and `:anchor'.
-	 (user-frame-params
-	  (cl-loop for which-frame in (list :inner-frame :outer-frame)
-		   append (list which-frame
-				(let ((value (org-odt--read-attribute attr-from which-frame)))
-				  (cl-loop for (a b . rest) on value by #'cddr
-					   append (list (intern (format ":%s" a)) b))))))
-	 ;; Handle `:width', `:height' and `:scale' properties.
-	 (size
-	  (let ((--user-dim
-		 (lambda (x)
-		   (pcase x
-		     ((and (or (pred null) (pred numberp)) x1)
-		      (cons x1 nil))
-		     (`(,(and (or (pred null) (pred numberp)) x1) . ,(and (or (pred null) (pred numberp)) x2))
-		      (cons x1 x2))
-		     (`(,(and (or (pred null) (pred numberp)) x1) ,(and (or (pred null) (pred numberp)) x2))
-		      (cons x1 x2))
-		     (_ (cons nil nil))))))
-	    (org-odt--image-size
-	     src-expanded info
-	     (funcall --user-dim (org-odt--read-attribute attr-from :width))
-	     (funcall --user-dim (org-odt--read-attribute attr-from :height))
-	     (org-odt--read-attribute attr-from :scale)
-	     nil			; embed-as
-	     "paragraph"		; FIXME
-	     )))
-	 (widths (car size)) (heights (cdr size))
-	 (standalone-link-p (org-odt--standalone-link-p element info))
-	 (embed-as (if standalone-link-p "to-char" "as-char"))
-	 (captions-plist (org-odt-format-label element info 'definition))
-	 (caption (plist-get captions-plist :caption))
-	 (entity (concat (and caption "Captioned") embed-as "Image"))
-	 ;; Check if this link was created by LaTeX-to-PNG converter.
-	 (replaces (org-element-property
-		    :replaces (if (not standalone-link-p) element
-				(org-export-get-parent-element element))))
-	 ;; If yes, note down the type of the element - LaTeX Fragment
-	 ;; or LaTeX environment.  It will go in to frame title.
-	 (title (and replaces (capitalize
-			       (symbol-name (org-element-type replaces)))))
-	 ;; If yes, note down its contents.  It will go in to frame
-	 ;; description.  This quite useful for debugging.
-	 (desc (and replaces (org-element-property :value replaces)))
-	 (app (or (plist-get info :odt-app) "lo")))
+  (pcase-let* ((src (let* ((type (org-element-property :type element))
+			   (raw-path (org-element-property :path element)))
+		      (cond ((member type '("http" "https"))
+			     (concat type ":" raw-path))
+			    ((file-name-absolute-p raw-path)
+			     (expand-file-name raw-path))
+			    (t raw-path))))
+	       (attr-from (cl-case (org-element-type element)
+			    (link (org-export-get-parent-element element))
+			    (t element)))
+	       ;; Extract attributes from #+ATTR_ODT line.
+	       ;; Handle `:width', `:height' and `:scale' properties.
+	       (`(,file-path ,widths ,heights)
+		(org-odt--do-image-size src attr-from info))
+	       (href (format
+		      "\n<draw:image xlink:href=\"%s\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>"
+		      (org-odt--copy-image-file info
+						file-path
+						(format "Images/%04d.%s"
+							(org-odt--count-object info :images)
+							(file-name-extension file-path)))))
+	       ;; Gather `:inner-frame' and `outer-frame' attributes.
+	       ;; A frame attribute is a plist with three keys `:style',
+	       ;; `:extra' and `:anchor'.
+	       (user-frame-params
+		(cl-loop for which-frame in (list :inner-frame :outer-frame)
+			 append (list which-frame
+				      (let ((value (org-odt--read-attribute attr-from which-frame)))
+					(cl-loop for (a b . rest) on value by #'cddr
+						 append (list (intern (format ":%s" a)) b))))))
+	       (standalone-link-p (org-odt--standalone-link-p element info))
+	       (embed-as (if standalone-link-p "to-char" "as-char"))
+	       (captions-plist (org-odt-format-label element info 'definition))
+	       (caption (plist-get captions-plist :caption))
+	       (entity (concat (and caption "Captioned") embed-as "Image"))
+	       ;; Check if this link was created by LaTeX-to-PNG converter.
+	       (replaces (org-element-property
+			  :replaces (if (not standalone-link-p) element
+				      (org-export-get-parent-element element))))
+	       ;; If yes, note down the type of the element - LaTeX Fragment
+	       ;; or LaTeX environment.  It will go in to frame title.
+	       (title (and replaces (capitalize
+				     (symbol-name (org-element-type replaces)))))
+	       ;; If yes, note down its contents.  It will go in to frame
+	       ;; description.  This quite useful for debugging.
+	       (desc (and replaces (org-element-property :value replaces)))
+	       (app (or (plist-get info :odt-app) "lo")))
     (let ((contents (org-odt--render-image app entity href widths heights
 					   captions-plist user-frame-params title desc)))
       (if standalone-link-p
