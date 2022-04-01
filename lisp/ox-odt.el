@@ -2314,8 +2314,8 @@ LANGUAGE keyword."
 				 ;; LANGUAGE, but with underscore instead of underscore.
 				 (replace-regexp-in-string "_" "-" lang t t)
 				 ;; LANGUAGE, but with just the LANG-CODE.
-                                 (car (split-string lang "[_-]+")))
-	       :test #'string=)
+				 (car (split-string lang "[_-]+")))
+				:test #'string=)
 	      with try-encodings = (list encoding :default)
 	      for encoding in try-encodings
 	      do (cl-loop for lang in try-langs
@@ -2328,8 +2328,9 @@ LANGUAGE keyword."
 
 ;;;; Frame
 
-(defun org-odt--frame (text width height style &optional extra
-			    anchor &rest title-and-desc)
+(cl-defun org-odt--frame (text &key width height
+				 style extra anchor
+				 title desc)
   (let* ((frame-attrs
 	  (concat
 	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
@@ -2340,20 +2341,12 @@ LANGUAGE keyword."
      "\n<draw:frame draw:style-name=\"%s\"%s>\n%s\n</draw:frame>"
      style frame-attrs
      (concat text
-	     (let ((title (car title-and-desc))
-		   (desc (cadr title-and-desc)))
-	       (concat (when title
-			 (format "<svg:title>%s</svg:title>"
-				 (org-odt--encode-plain-text title t)))
-		       (when desc
-			 (format "<svg:desc>%s</svg:desc>"
-				 (org-odt--encode-plain-text desc t)))))))))
-
-(cl-defun org-odt--wrap-frame (text width height title-and-desc
-			       &key style extra anchor)
-  (apply 'org-odt--frame text width height style extra
-	 anchor title-and-desc))
-
+	     (concat (when title
+		       (format "<svg:title>%s</svg:title>"
+			       (org-odt--encode-plain-text title t)))
+		     (when desc
+		       (format "<svg:desc>%s</svg:desc>"
+			       (org-odt--encode-plain-text desc t))))))))
 
 ;;;; Library wrappers :: Arc Mode
 
@@ -4922,33 +4915,41 @@ used as a communication channel."
 							(org-odt--count-object info :images)
 							(file-name-extension file-path)))))
 	       ;; Gather `:inner-frame' and `outer-frame' attributes.
-	       ;; A frame attribute is a plist with three keys `:style',
-	       ;; `:extra' and `:anchor'.
-	       (user-frame-params
-		(cl-loop for which-frame in (list :inner-frame :outer-frame)
-			 append (list which-frame
-				      (let ((value (org-odt--read-attribute attr-from which-frame)))
-					(cl-loop for (a b . rest) on value by #'cddr
-						 append (list (intern (format ":%s" a)) b))))))
+	       ;; A frame attribute is a plist with three keys
+	       ;; `:style',`:extra' and `:anchor'.
+	       (inner-frame-params
+		(let ((value (org-odt--read-attribute attr-from :inner-frame)))
+		  (cl-loop for (a b . rest) on value by #'cddr
+			   append (list (intern (format ":%s" a)) b))))
+	       (outer-frame-params
+		(let ((value (org-odt--read-attribute attr-from :outer-frame)))
+		  (cl-loop for (a b . rest) on value by #'cddr
+			   append (list (intern (format ":%s" a)) b))))
 	       (standalone-link-p (org-odt--standalone-link-p element info))
 	       (embed-as (if standalone-link-p "to-char" "as-char"))
 	       (captions-plist (org-odt-format-label element info 'definition))
 	       (caption (plist-get captions-plist :caption))
 	       (entity (concat (and caption "Captioned") embed-as "Image"))
 	       ;; Check if this link was created by LaTeX-to-PNG converter.
-	       (replaces (org-element-property
-			  :replaces (if (not standalone-link-p) element
-				      (org-export-get-parent-element element))))
-	       ;; If yes, note down the type of the element - LaTeX Fragment
-	       ;; or LaTeX environment.  It will go in to frame title.
-	       (title (and replaces (capitalize
-				     (symbol-name (org-element-type replaces)))))
-	       ;; If yes, note down its contents.  It will go in to frame
-	       ;; description.  This quite useful for debugging.
-	       (desc (and replaces (org-element-property :value replaces)))
+	       (title-and-desc
+		(let* ((replaces (org-element-property
+				  :replaces (if (not standalone-link-p) element
+					      (org-export-get-parent-element element)))))
+		  (when replaces
+		    (list
+		     ;; If yes, note down the type of the element - LaTeX Fragment
+		     ;; or LaTeX environment.  It will go in to frame title.
+		     :title (capitalize (symbol-name (org-element-type replaces)))
+		     ;; If yes, note down its contents.  It will go in to frame
+		     ;; description.  This quite useful for debugging.
+		     :desc (org-element-property :value replaces)))))
+
 	       (app (or (plist-get info :odt-app) "lo")))
-    (let ((contents (org-odt--render-image app entity href widths heights
-					   captions-plist user-frame-params title desc)))
+    (let ((contents (org-odt--render-image app entity
+					   href widths heights
+					   captions-plist
+					   (append inner-frame-params title-and-desc)
+					   outer-frame-params)))
       (if standalone-link-p
 	  ;; Decorate contents with the paragraph style it needs to be
 	  ;; enclosed in.  The value of `:p-style' is probed in
@@ -4996,24 +4997,31 @@ used as a communication channel."
 	   (when enumerable-link-p "Captioned")
 	   (if standalone-link-p "Paragraph" "As-Char")
 	   "Formula"))
-	 ;; Check if this link was created by LaTeX-to-MathML
-	 ;; converter.
-	 (replaces (org-element-property
-		    :replaces (if (not standalone-link-p) element
-				(org-export-get-parent-element element))))
-	 ;; If yes, note down the type of the element - LaTeX Fragment
-	 ;; or LaTeX environment.  It will go in to frame title.
-	 (title (and replaces (capitalize
-			       (symbol-name (org-element-type replaces)))))
-	 ;; If yes, note down its contents.  It will go in to frame
-	 ;; description.  This quite useful for debugging.
-	 (desc (and replaces (org-element-property :value replaces)))
-	 (width nil) (height nil)
+	 (title-and-desc
+	  ;; Check if this link was created by LaTeX-to-MathML
+	  ;; converter.
+	  (let ((replaces (org-element-property
+			   :replaces (if (not standalone-link-p) element
+				       (org-export-get-parent-element element)))))
+
+	    (when replaces
+	      (list
+	       ;; If yes, note down the type of the element - LaTeX Fragment
+	       ;; or LaTeX environment.  It will go in to frame title.
+	       :title (capitalize (symbol-name (org-element-type replaces)))
+	       ;; If yes, note down its contents.  It will go in to frame
+	       ;; description.  This quite useful for debugging.
+	       :desc (org-element-property :value replaces)))))
 	 (app (or (plist-get info :odt-app) "lo"))
-	 (equation (org-odt--render-formula app entity
-					    href width height
-					    (append captions-plist (list :label label))
-					    nil title desc)))
+	 (equation (org-odt--render-formula
+		    app entity href
+		    (let ((widths nil)) widths)
+		    (let ((heights nil)) heights)
+		    (append captions-plist (list :label label))
+		    (let ((inner-frame-params nil))
+		      (append inner-frame-params title-and-desc))
+		    (let ((outer-frame-params nil))
+		      outer-frame-params))))
     (if (not standalone-link-p) equation
       ;; Decorate contents with the paragraph style it needs to be
       ;; enclosed in.  The value of `:p-style' is probed in
@@ -5054,9 +5062,11 @@ used as a communication channel."
 
 ;;;; Targets
 
-(defun org-odt--render-image (app cfg-key href widths heights &optional
-				  captions-plist user-frame-params
-				  &rest title-and-desc)
+(defun org-odt--render-image (app cfg-key href
+				  widths heights
+				  captions-plist
+				  inner-frame-params
+				  outer-frame-params)
   (let* ((libreofficep (pcase app
 			 ("lo" t)
 			 (_ nil)))
@@ -5087,8 +5097,8 @@ used as a communication channel."
 	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
 	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
-	 (inner-user (plist-get user-frame-params :inner-frame))
-	 (outer-user (plist-get user-frame-params :outer-frame)))
+	 (inner-user inner-frame-params)
+	 (outer-user outer-frame-params))
     (cond
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
@@ -5096,8 +5106,9 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--wrap-frame href (car widths) (car heights)
-	     title-and-desc inner))
+      (apply 'org-odt--frame href
+	     :width (car widths) :height (car heights)
+	     inner))
      ;; Case 2: Image/Formula is captioned or labeled.
      ;;         There are two frames: The inner one surrounds the
      ;;         image or formula.  The outer one contains the
@@ -5112,8 +5123,9 @@ used as a communication channel."
 		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (concat
-		    (apply 'org-odt--wrap-frame href (car widths) (car heights)
-			   title-and-desc inner)
+		    (apply 'org-odt--frame href
+			   :width (car widths) :height (car heights)
+			   inner)
 		    (plist-get captions-plist :caption-text))))
 	(cond
 	 (libreofficep (apply 'org-odt--textbox
@@ -5127,9 +5139,10 @@ used as a communication channel."
 			      outer))
 	 (t text)))))))
 
-(defun org-odt--render-formula (_app cfg-key href widths heights &optional
-				     captions-plist user-frame-params
-				     &rest title-and-desc)
+(defun org-odt--render-formula (_app cfg-key
+				     href widths heights
+				     captions-plist
+				     inner-frame-params outer-frame-params)
   (let* ((caption (plist-get captions-plist :caption))
 	 (_short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
@@ -5144,8 +5157,8 @@ used as a communication channel."
 	 (inner (cdr (assoc-string cfg-key inner-frame-cfg-alist t)))
 	 (outer (cdr (assoc-string cfg-key outer-frame-cfg-alist t)))
 	 ;; User-specified frame params (from #+ATTR_ODT spec)
-	 (inner-user (plist-get user-frame-params :inner-frame))
-	 (outer-user (plist-get user-frame-params :outer-frame)))
+	 (inner-user inner-frame-params)
+	 (outer-user outer-frame-params))
     (cond
      ;; Case 1: Image/Formula has no caption.
      ;;         There is only one frame, one that surrounds the image
@@ -5153,8 +5166,9 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--wrap-frame href (car widths) (car heights)
-	     title-and-desc inner))
+      (apply 'org-odt--frame href
+	     :width (car widths) :height (car heights)
+	     inner))
      ;; Case 2: Image/Formula is captioned or labeled.
      ;;         There are two frames: The inner one surrounds the
      ;;         image or formula.  The outer one contains the
@@ -5170,8 +5184,9 @@ used as a communication channel."
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (plist-get captions-plist :p-style)
-			   (apply 'org-odt--wrap-frame href (car widths) (car heights)
-				  title-and-desc inner))))
+			   (apply 'org-odt--frame href
+				  :width (car widths) :height (car heights)
+				  inner))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
