@@ -2434,18 +2434,16 @@ LANGUAGE keyword."
 
 ;;;; Textbox
 
-(defun org-odt--textbox (text width height style &optional
-			      extra anchor)
+(cl-defun org-odt--textbox (text &key width height
+                                 style extra anchor)
   (org-odt--frame
    (format "\n<draw:text-box %s>%s\n</draw:text-box>"
 	   (concat (format " fo:min-height=\"%0.2fcm\"" (or height 0.2))
 		   (and (not width)
 			(format " fo:min-width=\"%0.2fcm\"" (or width 0.2))))
 	   text)
-   width nil style extra anchor))
-
-(cl-defun org-odt--wrap-textbox (text width height &key style extra anchor)
-  (org-odt--textbox text width height style extra anchor))
+   :width width :height nil
+   :style style :extra extra :anchor anchor))
 
 ;;;; Customshape
 
@@ -4319,7 +4317,8 @@ holding contextual information."
 		    (org-odt-format-headline-default-function
 		     todo todo-type  priority name tags))
 	    contents)
-	   nil nil "OrgInlineTaskFrame" " style:rel-width=\"100%\"")))
+	   :width nil :height nil
+           :style "OrgInlineTaskFrame" :extra " style:rel-width=\"100%\"" :anchor nil)))
 
 ;;;; Italic
 
@@ -5117,14 +5116,14 @@ used as a communication channel."
 			   title-and-desc inner)
 		    (plist-get captions-plist :caption-text))))
 	(cond
-	 (libreofficep (apply 'org-odt--wrap-textbox
+	 (libreofficep (apply 'org-odt--textbox
 			      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 				      (concat
 				       (when (plist-get captions-plist :subentityp) "Sub")
 				       (plist-get captions-plist :caption-style))
 				      text)
-			      (or (cdr widths) (car widths))
-			      (or (cdr heights) (car heights))
+			      :width (or (cdr widths) (car widths))
+			      :height (or (cdr heights) (car heights))
 			      outer))
 	 (t text)))))))
 
@@ -5173,12 +5172,12 @@ used as a communication channel."
 			   (plist-get captions-plist :p-style)
 			   (apply 'org-odt--wrap-frame href (car widths) (car heights)
 				  title-and-desc inner))))
-	(apply 'org-odt--wrap-textbox
+	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
 		 (t (concat text caption)))
-	       (or (cdr widths) (car widths))
-	       (or (cdr heights) (car heights))
+	       :width (or (cdr widths) (car widths))
+	       :height (or (cdr heights) (car heights))
 	       outer))))))
 
 (defun org-odt--enumerable-p (element _info)
@@ -5982,7 +5981,8 @@ contextual information."
 				   style
 				   parent-style
 				   draw-name)))))
-    (org-odt--textbox text width height style extra anchor)))
+    (org-odt--textbox text :width width :height height
+                      :style style :extra extra :anchor anchor)))
 
 (defun org-odt--compose-image-and-text-into-a-draw:custom-shape (file-path text attributes info)
   (pcase-let* ((`(,path ,widths ,heights)
@@ -6316,7 +6316,7 @@ contextual information."
 		   ;; Yes.  Enclose it in a Text Box.
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   "Text_20_body"
-			   (org-odt--textbox --src-block nil nil nil))))))
+			   (apply 'org-odt--textbox --src-block nil))))))
     (cl-case caption-position
       (above (concat caption text))
       (t (concat text caption)))))
