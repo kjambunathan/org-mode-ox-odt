@@ -3385,6 +3385,12 @@ holding export options."
       ;; target file.  Extra images, if any, comes from the user's
       ;; file system.
       ("xml"
+       ;; User-provided styles-file could be read only, but we want the
+       ;; copy of this file in zip dir to be writable.  So, first create
+       ;; an "empty" styles file in the zip dir and then overwrite it
+       ;; with the user-provided styles file.
+       (with-temp-buffer
+         (write-region nil nil (concat (plist-get info :odt-zip-dir) "styles.xml")))
        (copy-file styles-file (concat (plist-get info :odt-zip-dir) "styles.xml") t)
        ;; Some styles.xml elements (like
        ;; "<draw:fill-image>...</draw:fill-image>") may reference images.
