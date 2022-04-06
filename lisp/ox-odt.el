@@ -2331,22 +2331,22 @@ LANGUAGE keyword."
 (cl-defun org-odt--draw:frame (text &key width height
 				      style extra anchor
 				      title desc)
-  (let* ((frame-attrs
-	  (concat
-	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
-	   (if height (format " svg:height=\"%0.2fcm\"" height) "")
-	   extra
-	   (format " text:anchor-type=\"%s\"" (or anchor "char")))))
-    (format
-     "\n<draw:frame draw:style-name=\"%s\"%s>\n%s\n</draw:frame>"
-     style frame-attrs
-     (concat text
-	     (concat (when title
-		       (format "<svg:title>%s</svg:title>"
-			       (org-odt--encode-plain-text title t)))
-		     (when desc
-		       (format "<svg:desc>%s</svg:desc>"
-			       (org-odt--encode-plain-text desc t))))))))
+  (format
+   "\n<draw:frame %s>\n%s\n</draw:frame>"
+   (mapconcat #'identity
+	      (list extra
+		    (when style (format "draw:style-name=\"%s\"" style))
+		    (when width (format "svg:width=\"%0.2fcm\"" width))
+		    (when height (format "svg:height=\"%0.2fcm\"" height))
+		    (format "text:anchor-type=\"%s\"" (or anchor "char")))
+	      " ")
+   (concat text
+	   (when title
+	     (format "<svg:title>%s</svg:title>"
+		     (org-odt--encode-plain-text title t)))
+	   (when desc
+	     (format "<svg:desc>%s</svg:desc>"
+		     (org-odt--encode-plain-text desc t))))))
 
 ;;;; Library wrappers :: Arc Mode
 
