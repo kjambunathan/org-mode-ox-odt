@@ -2328,9 +2328,9 @@ LANGUAGE keyword."
 
 ;;;; Frame
 
-(cl-defun org-odt--frame (text &key width height
-				 style extra anchor
-				 title desc)
+(cl-defun org-odt--draw:frame (text &key width height
+				      style extra anchor
+				      title desc)
   (let* ((frame-attrs
 	  (concat
 	   (if width (format " svg:width=\"%0.2fcm\"" width) "")
@@ -2428,8 +2428,8 @@ LANGUAGE keyword."
 ;;;; Textbox
 
 (cl-defun org-odt--textbox (text &key width height
-                                 style extra anchor)
-  (org-odt--frame
+				   style extra anchor)
+  (org-odt--draw:frame
    (format "\n<draw:text-box %s>%s\n</draw:text-box>"
 	   (concat (format " fo:min-height=\"%0.2fcm\"" (or height 0.2))
 		   (and (not width)
@@ -5112,7 +5112,7 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--frame href
+      (apply 'org-odt--draw:frame href
 	     :width (car widths) :height (car heights)
 	     inner))
      ;; Case 2: Image/Formula is captioned or labeled.
@@ -5129,7 +5129,7 @@ used as a communication channel."
 		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (concat
-		    (apply 'org-odt--frame href
+		    (apply 'org-odt--draw:frame href
 			   :width (car widths) :height (car heights)
 			   inner)
 		    (plist-get captions-plist :caption-text))))
@@ -5172,7 +5172,7 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--frame href
+      (apply 'org-odt--draw:frame href
 	     :width (car widths) :height (car heights)
 	     inner))
      ;; Case 2: Image/Formula is captioned or labeled.
@@ -5190,7 +5190,7 @@ used as a communication channel."
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (plist-get captions-plist :p-style)
-			   (apply 'org-odt--frame href
+			   (apply 'org-odt--draw:frame href
 				  :width (car widths) :height (car heights)
 				  inner))))
 	(apply 'org-odt--textbox
