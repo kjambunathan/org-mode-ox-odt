@@ -2427,14 +2427,19 @@ LANGUAGE keyword."
 
 ;;;; Textbox
 
+(cl-defun org-odt--draw:textbox (text &key min-width min-height)
+  (format "\n<draw:text-box %s>%s\n</draw:text-box>"
+	  (mapconcat #'identity
+		     (list (format "fo:min-height=\"%0.2fcm\"" (or min-height 0.2))
+			   (unless min-width
+			     (format "fo:min-width=\"%0.2fcm\"" (or min-width 0.2))))
+		     " ")
+	  text))
+
 (cl-defun org-odt--textbox (text &key width height
 				   style extra anchor)
   (org-odt--draw:frame
-   (format "\n<draw:text-box %s>%s\n</draw:text-box>"
-	   (concat (format " fo:min-height=\"%0.2fcm\"" (or height 0.2))
-		   (and (not width)
-			(format " fo:min-width=\"%0.2fcm\"" (or width 0.2))))
-	   text)
+   (org-odt--draw:textbox text :min-width width :min-height height)
    :width width :height nil
    :style style :extra extra :anchor anchor))
 
