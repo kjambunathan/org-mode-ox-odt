@@ -5042,8 +5042,6 @@ used as a communication channel."
 	 (app (or (plist-get info :odt-app) "lo"))
 	 (equation (org-odt--render-formula
 		    app entity href
-		    (let ((widths nil)) widths)
-		    (let ((heights nil)) heights)
 		    (append captions-plist (list :label label))
 		    (let ((inner-frame-params nil))
 		      (append inner-frame-params title-and-desc))
@@ -5154,7 +5152,7 @@ used as a communication channel."
 	 (t text)))))))
 
 (defun org-odt--render-formula (_app cfg-key
-				     href widths heights
+				     href
 				     captions-plist
 				     inner-frame-params outer-frame-params)
   (let* ((caption (plist-get captions-plist :caption))
@@ -5180,9 +5178,7 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--draw:frame href
-	     :width (car widths) :height (car heights)
-	     inner))
+      (apply 'org-odt--draw:frame href inner))
      ;; Case 2: Image/Formula is captioned or labeled.
      ;;         There are two frames: The inner one surrounds the
      ;;         image or formula.  The outer one contains the
@@ -5190,23 +5186,14 @@ used as a communication channel."
      (t
       ;; Merge user frame params with outer frame params.
       (setq outer (org-combine-plists outer outer-user))
-      ;; Short caption, if specified, goes as part of inner frame.
-      (setq inner (let ((frame-params (copy-sequence inner)))
-		    (when (or (cdr widths) (cdr heights))
-		      (plist-put frame-params :extra nil))
-		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (plist-get captions-plist :p-style)
-			   (apply 'org-odt--draw:frame href
-				  :width (car widths) :height (car heights)
-				  inner))))
+			   (apply 'org-odt--draw:frame href inner))))
 	(apply 'org-odt--textbox
 	       (cl-case caption-position
 		 (above (concat caption text))
 		 (t (concat text caption)))
-	       :width (or (cdr widths) (car widths))
-	       :height (or (cdr heights) (car heights))
 	       outer))))))
 
 (defun org-odt--enumerable-p (element _info)
