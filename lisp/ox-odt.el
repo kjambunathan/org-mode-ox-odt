@@ -2329,6 +2329,7 @@ LANGUAGE keyword."
 ;;;; Frame
 
 (cl-defun org-odt--draw:frame (text &key width height
+				      rel-width rel-height
 				      style extra anchor
 				      title desc)
   (format
@@ -2338,6 +2339,8 @@ LANGUAGE keyword."
 		    (when style (format "draw:style-name=\"%s\"" style))
 		    (when width (format "svg:width=\"%0.2fcm\"" width))
 		    (when height (format "svg:height=\"%0.2fcm\"" height))
+		    (when rel-width (format "style:rel-width=\"%f%%\"" rel-width))
+		    (when rel-height "style:rel-height=\"scale\"")
 		    (format "text:anchor-type=\"%s\"" (or anchor "char")))
 	      " ")
    (concat text
@@ -2436,11 +2439,11 @@ LANGUAGE keyword."
 		     " ")
 	  text))
 
-(cl-defun org-odt--textbox (text &key width height
+(cl-defun org-odt--textbox (text &key width height rel-width
 				   style extra anchor)
   (org-odt--draw:frame
    (org-odt--draw:textbox text :min-width width :min-height height)
-   :width width :height nil
+   :width width :height nil :rel-width rel-width
    :style style :extra extra :anchor anchor))
 
 ;;;; Customshape
@@ -4308,7 +4311,7 @@ holding contextual information."
 	     todo todo-type priority name tags contents)))
 
 (defun org-odt-format-inlinetask-default-function
-    (todo todo-type  priority name tags contents)
+    (todo todo-type priority name tags contents)
   "Transcode an INLINETASK element from Org to ODT.
 CONTENTS holds the contents of the block.  INFO is a plist
 holding contextual information."
@@ -4319,10 +4322,11 @@ holding contextual information."
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgInlineTaskHeading"
 		    (org-odt-format-headline-default-function
-		     todo todo-type  priority name tags))
+		     todo todo-type priority name tags))
 	    contents)
 	   :width nil :height nil
-           :style "OrgInlineTaskFrame" :extra " style:rel-width=\"100%\"" :anchor nil)))
+	   :style "OrgInlineTaskFrame" :extra nil :anchor nil
+	   :rel-width 100)))
 
 ;;;; Italic
 
@@ -4940,6 +4944,7 @@ used as a communication channel."
 	       (embed-as (if standalone-link-p "to-char" "as-char"))
 	       (captions-plist (org-odt-format-label element info 'definition))
 	       (caption (plist-get captions-plist :caption))
+	       (label (plist-get captions-plist :label))
 	       (entity (concat (and caption "Captioned") embed-as "Image"))
 	       ;; Check if this link was created by LaTeX-to-PNG converter.
 	       (title-and-desc
@@ -4954,13 +4959,24 @@ used as a communication channel."
 		     ;; If yes, note down its contents.  It will go in to frame
 		     ;; description.  This quite useful for debugging.
 		     :desc (org-element-property :value replaces)))))
-
-	       (app (or (plist-get info :odt-app) "lo")))
+	       (app (or (plist-get info :odt-app) "lo"))
+	       (libreofficep (pcase app ("lo" t) (_ nil)))
+	       (inner-frame-size
+		(let ((rel-size (when (and (or caption label)
+					   (null (cdr widths))
+					   (null (cdr heights))
+					   libreofficep)
+				  (list :rel-width 100 :rel-height 'scale))))
+		  (nconc (list :width (car widths) :height (car heights))
+			 rel-size)))
+	       (outer-frame-size (list :width (or (cdr widths) (car widths))
+				       :height (or (cdr heights) (car heights)))))
     (let ((contents (org-odt--render-image app entity
-					   href widths heights
+					   href
 					   captions-plist
-					   (append inner-frame-params title-and-desc)
-					   outer-frame-params)))
+					   (nconc inner-frame-params title-and-desc
+						  inner-frame-size)
+					   (nconc outer-frame-params outer-frame-size))))
       (if standalone-link-p
 	  ;; Decorate contents with the paragraph style it needs to be
 	  ;; enclosed in.  The value of `:p-style' is probed in
@@ -5074,7 +5090,6 @@ used as a communication channel."
 ;;;; Targets
 
 (defun org-odt--render-image (app cfg-key href
-				  widths heights
 				  captions-plist
 				  inner-frame-params
 				  outer-frame-params)
@@ -5086,19 +5101,17 @@ used as a communication channel."
 	 (caption-position (plist-get captions-plist :caption-position))
 	 (label (plist-get captions-plist :label))
 	 (inner-frame-cfg-alist
-	  (let ((extra (when libreofficep
-			 " style:rel-width=\"100%\" style:rel-height=\"scale\"")))
-	    `(("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
-	      ("CaptionedAs-CharImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
-	      ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
-	      ("CaptionedParagraphImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph")
-	      ("To-CharImage" :style "OrgToCharImage" :extra nil :anchor "char")
-	      ("CaptionedTo-CharImage" :style ,(cl-case caption-position
-						 (above "OrgToCharImageCaptionAbove")
-						 (below "OrgToCharImage"))
-	       :extra ,extra :anchor "char")
-	      ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
-	      ("CaptionedPageImage" :style "OrgDisplayImage" :extra ,extra :anchor "paragraph"))))
+	  `(("As-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
+	    ("CaptionedAs-CharImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
+	    ("ParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
+	    ("CaptionedParagraphImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")
+	    ("To-CharImage" :style "OrgToCharImage" :extra nil :anchor "char")
+	    ("CaptionedTo-CharImage" :style ,(cl-case caption-position
+					       (above "OrgToCharImageCaptionAbove")
+					       (below "OrgToCharImage"))
+	     :extra nil :anchor "char")
+	    ("PageImage" :style "OrgPageImage" :extra nil :anchor "page")
+	    ("CaptionedPageImage" :style "OrgDisplayImage" :extra nil :anchor "paragraph")))
 	 (outer-frame-cfg-alist
 	  '(("CaptionedAs-CharImage" :style "OrgInlineImage" :extra nil :anchor "as-char")
 	    ("CaptionedParagraphImage" :style "OrgImageCaptionFrame" :extra nil :anchor "paragraph")
@@ -5117,9 +5130,7 @@ used as a communication channel."
      ((and (null caption) (null label))
       ;; Merge user frame params with that from configuration.
       (setq inner (org-combine-plists inner inner-user))
-      (apply 'org-odt--draw:frame href
-	     :width (car widths) :height (car heights)
-	     inner))
+      (apply 'org-odt--draw:frame href inner))
      ;; Case 2: Image/Formula is captioned or labeled.
      ;;         There are two frames: The inner one surrounds the
      ;;         image or formula.  The outer one contains the
@@ -5128,15 +5139,9 @@ used as a communication channel."
       ;; Merge user frame params with outer frame params.
       (setq outer (org-combine-plists outer outer-user))
       ;; Short caption, if specified, goes as part of inner frame.
-      (setq inner (let ((frame-params (copy-sequence inner)))
-		    (when (or (cdr widths) (cdr heights))
-		      (plist-put frame-params :extra nil))
-		    frame-params))
       (setq inner (org-combine-plists inner inner-user))
       (let* ((text (concat
-		    (apply 'org-odt--draw:frame href
-			   :width (car widths) :height (car heights)
-			   inner)
+		    (apply 'org-odt--draw:frame href inner)
 		    (plist-get captions-plist :caption-text))))
 	(cond
 	 (libreofficep (apply 'org-odt--textbox
@@ -5145,8 +5150,6 @@ used as a communication channel."
 				       (when (plist-get captions-plist :subentityp) "Sub")
 				       (plist-get captions-plist :caption-style))
 				      text)
-			      :width (or (cdr widths) (car widths))
-			      :height (or (cdr heights) (car heights))
 			      outer))
 	 (t text)))))))
 
