@@ -2188,8 +2188,9 @@ available:
     (insert xml)
     (libxml-parse-xml-region (point-min) (point-max))))
 
-(defun org-odt--lisp-to-xml (element &optional depth)
-  (let* ((print-attributes
+(defun org-odt--lisp-to-xml (element &optional depth prettify)
+  (let* ((newline (if prettify "\n" ""))
+	 (print-attributes
 	  (lambda (attributes)
 	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
 					   (format "%s=\"%s\"" attribute value))
@@ -2202,26 +2203,29 @@ available:
       (let* ((name (car element))
 	     (attributes (cadr element))
 	     (contents (cddr element)))
-	(let ((prefix (make-string depth ? )))
+	(let ((prefix (if prettify (make-string depth ? ) "")))
 	  (cond
 	   ((null contents)
-	    (format "\n%s<%s %s/>"
+	    (format "%s%s<%s %s/>"
+		    newline
 		    prefix name (funcall print-attributes attributes)))
 	   (t
-	    (format "\n%s<%s %s>%s\n%s</%s>"
+	    (format "%s%s<%s %s>%s%s%s</%s>"
+		    newline
 		    prefix
 		    name
 		    (funcall print-attributes attributes)
 		    (if (stringp contents) contents
 		      ;; (print-element contents (1+ depth))
-		      (org-odt--lisp-to-xml contents (1+ depth)))
+		      (org-odt--lisp-to-xml contents (1+ depth) prettify))
+		    newline
 		    prefix
 		    name))))))
      (t
       (mapconcat #'identity
 		 (cl-loop for el in element collect
 			  ;; (print-element el (1+ depth))
-			  (org-odt--lisp-to-xml el (1+ depth)))
+			  (org-odt--lisp-to-xml el (1+ depth) prettify))
 		 "")))))
 
 
