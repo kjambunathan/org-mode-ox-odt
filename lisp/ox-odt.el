@@ -5030,7 +5030,6 @@ used as a communication channel."
 	  (let ((replaces (org-element-property
 			   :replaces (if (not standalone-link-p) element
 				       (org-export-get-parent-element element)))))
-
 	    (when replaces
 	      (list
 	       ;; If yes, note down the type of the element - LaTeX Fragment
@@ -5048,16 +5047,26 @@ used as a communication channel."
 		    (let ((outer-frame-params nil))
 		      outer-frame-params))))
     (if (not standalone-link-p) equation
-      ;; Decorate contents with the paragraph style it needs to be
-      ;; enclosed in.  The value of `:p-style' is probed in
-      ;; `org-odt-paragraph'.
-      (propertize
-       (concat "<text:tab/>" equation "<text:tab/>" label)
-       :p-style
-       (concat "Org"
-	       (if (org-odt--get-captioned-parent element info)
-		   "Sub" "")
-	       "FormulaBody")))))
+      (org-odt--lisp-to-xml
+       `(table:table
+	 ((table:style-name . "OrgEquationTable"))
+	 (table:table-column
+	  ((table:style-name . "OrgEquationTableColumn1")))
+	 (table:table-column
+	  ((table:style-name . "OrgEquationTableColumn2")))
+	 (table:table-rows nil
+			   (table:table-row
+			    ((table:style-name . "OrgTableRow"))
+			    (table:table-cell
+			     ((table:style-name . "OrgTableCellMiddle"))
+			     (text:p
+			      ((text:style-name . "OrgTableContentsCenter"))
+			      ,equation))
+			    (table:table-cell
+			     ((table:style-name . "OrgTableCellMiddle"))
+			     (text:p
+			      ((text:style-name . "OrgTableContentsLeft"))
+			      ,(if (org-string-nw-p label) label ""))))))))))
 
 (defun org-odt--copy-formula-file (info src-file target-dir)
   "Returns the internal name of the file"
@@ -5151,18 +5160,19 @@ used as a communication channel."
 			      outer))
 	 (t text)))))))
 
-(defun org-odt--render-formula (_app cfg-key
-				     href
-				     captions-plist
-				     inner-frame-params outer-frame-params)
-  (let* ((caption (plist-get captions-plist :caption))
+(defun org-odt--render-formula (app cfg-key
+				    href
+				    captions-plist
+				    inner-frame-params outer-frame-params)
+  (let* ((libreofficep (pcase app ("lo" t) (_ nil)))
+	 (caption (plist-get captions-plist :caption))
 	 (_short-caption (plist-get captions-plist :short-caption))
 	 (caption-position (plist-get captions-plist :caption-position))
 	 (label (plist-get captions-plist :label))
 	 (inner-frame-cfg-alist
 	  `(("As-CharFormula" :style "OrgInlineFormula" :extra nil :anchor "as-char")
-	    ("ParagraphFormula" :style "OrgDisplayFormula" :extra nil :anchor "paragraph")
-	    ("CaptionedParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char")))
+	    ("ParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char")
+            ("CaptionedParagraphFormula" :style "OrgCaptionedFormula" :extra nil :anchor "as-char")))
 	 (outer-frame-cfg-alist
 	  '(("CaptionedParagraphFormula" :style "OrgFormulaCaptionFrame" :extra nil :anchor "as-char")))
 	 ;; Retrieve inner and outer frame params, from configuration.
@@ -5187,14 +5197,27 @@ used as a communication channel."
       ;; Merge user frame params with outer frame params.
       (setq outer (org-combine-plists outer outer-user))
       (setq inner (org-combine-plists inner inner-user))
-      (let* ((text (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			   (plist-get captions-plist :p-style)
-			   (apply 'org-odt--draw:frame href inner))))
-	(apply 'org-odt--textbox
-	       (cl-case caption-position
-		 (above (concat caption text))
-		 (t (concat text caption)))
-	       outer))))))
+      (let* ((text
+	      (let* ((caption-text (plist-get captions-plist :caption-text))
+		     (formula (apply 'org-odt--draw:frame href inner))
+		     (separator (when (org-string-nw-p caption-text)
+				  "<text:line-break/>")))
+		(mapconcat #'identity
+			   (cl-case caption-position
+			     (above
+			      (list caption-text separator formula))
+			     (below
+			      (list formula separator caption-text)))
+			   ""))))
+	(cond
+	 (libreofficep (apply 'org-odt--textbox
+			      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+				      (concat
+				       (when (plist-get captions-plist :subentityp) "Sub")
+				       (plist-get captions-plist :caption-style))
+				      text)
+			      outer))
+	 (t text)))))))
 
 (defun org-odt--enumerable-p (element _info)
   ;; Element should have a caption or label.
@@ -5785,8 +5808,14 @@ the plist used as a communication channel."
       (when (and (eq (org-element-type parent) 'item)
 		 (eq paragraph (car (org-element-contents parent))))
 	(setq contents (concat (org-odt--checkbox parent) contents)))
-
       (cond
+       ((org-odt--standalone-link-p
+	 paragraph info nil
+	 ;; Link should point to a MathML or ODF file.
+	 (lambda (l)
+	   (cl-assert (eq (org-element-type l) 'link))
+	   (org-export-inline-image-p l (plist-get info :odt-inline-formula-rules))))
+	contents)
        ;; Is this paragraph part of a paragraph block?
        ((and (eq (org-element-type parent) 'special-block)
 	     (string= "paragraph" (downcase (org-element-property :type parent))))
