@@ -1,6 +1,6 @@
 ;;; org-capture.el --- Fast note taking in Org       -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2022 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -1453,7 +1453,8 @@ Of course, if exact position has been required, just put it there."
       (org-with-point-at pos
 	(when org-capture-bookmark
 	  (let ((bookmark (plist-get org-bookmark-names-plist :last-capture)))
-	    (when bookmark (with-demoted-errors (bookmark-set bookmark)))))
+	    (when bookmark (with-demoted-errors "Bookmark set error: %S"
+	                     (bookmark-set bookmark)))))
 	(move-marker org-capture-last-stored-marker (point))))))
 
 (defun org-capture-narrow (beg end)

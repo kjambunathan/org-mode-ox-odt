@@ -1,6 +1,6 @@
 ;;; org-list.el --- Plain lists for Org              -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;;	   Bastien Guerry <bzg@gnu.org>
@@ -1442,7 +1442,7 @@ This function returns, destructively, the new list structure."
 		      (save-excursion
 			(goto-char (org-list-get-last-item item struct prevs))
 			(point-at-eol)))
-		     ((string-match-p "\\`[0-9]+\\'" dest)
+		     ((and (stringp dest) (string-match-p "\\`[0-9]+\\'" dest))
 		      (let* ((all (org-list-get-all-items item struct prevs))
 			     (len (length all))
 			     (index (mod (string-to-number dest) len)))

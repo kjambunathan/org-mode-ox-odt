@@ -1,6 +1,6 @@
 ;;; org-compat.el --- Compatibility Code for Older Emacsen -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -70,6 +70,35 @@
 (defvar org-table-dataline-regexp)
 (defvar org-table-tab-recognizes-table.el)
 (defvar org-table1-hline-regexp)
+
+
+;;; Emacs < 29 compatibility
+
+(defvar org-file-has-changed-p--hash-table (make-hash-table :test #'equal)
+  "Internal variable used by `org-file-has-changed-p'.")
+
+(if (fboundp 'file-has-changed-p)
+    (defalias 'org-file-has-changed-p #'file-has-changed-p)
+  (defun org-file-has-changed-p (file &optional tag)
+    "Return non-nil if FILE has changed.
+The size and modification time of FILE are compared to the size
+and modification time of the same FILE during a previous
+invocation of `org-file-has-changed-p'.  Thus, the first invocation
+of `org-file-has-changed-p' always returns non-nil when FILE exists.
+The optional argument TAG, which must be a symbol, can be used to
+limit the comparison to invocations with identical tags; it can be
+the symbol of the calling function, for example."
+    (let* ((file (directory-file-name (expand-file-name file)))
+           (remote-file-name-inhibit-cache t)
+           (fileattr (file-attributes file 'integer))
+	   (attr (and fileattr
+                      (cons (file-attribute-size fileattr)
+		            (file-attribute-modification-time fileattr))))
+	   (sym (concat (symbol-name tag) "@" file))
+	   (cachedattr (gethash sym org-file-has-changed-p--hash-table)))
+      (when (not (equal attr cachedattr))
+        (puthash sym attr org-file-has-changed-p--hash-table)))))
+
 
 
 ;;; Emacs < 28.1 compatibility
@@ -1049,9 +1078,9 @@ ELEMENT is the element at point."
     (cl-case (org-element-type object)
       ;; Prevent checks in links due to keybinding conflict with
       ;; Flyspell.
-      ((code entity export-snippet inline-babel-call
-	     inline-src-block line-break latex-fragment link macro
-	     statistics-cookie target timestamp verbatim)
+      ((citation citation-reference code entity export-snippet inline-babel-call
+	         inline-src-block line-break latex-fragment link macro
+	         statistics-cookie target timestamp verbatim)
        nil)
       (footnote-reference
        ;; Only in inline footnotes, within the definition.

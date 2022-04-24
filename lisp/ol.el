@@ -1,6 +1,6 @@
 ;;; ol.el --- Org links library                      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2018-2022 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -183,7 +183,7 @@ link.
 (defcustom org-link-descriptive t
   "Non-nil means Org displays descriptive links.
 
-E.g. [[https://orgmode.org][Org website]] is be displayed as
+E.g. [[https://orgmode.org][Org website]] is displayed as
 \"Org Website\", hiding the link itself and just displaying its
 description.  When set to nil, Org displays the full links
 literally.

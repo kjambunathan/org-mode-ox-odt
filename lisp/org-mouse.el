@@ -1,6 +1,6 @@
 ;;; org-mouse.el --- Better mouse support for Org -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2006-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
 ;; Author: Piotr Zielinski <piotr dot zielinski at gmail dot com>
 ;; Maintainer: Carsten Dominik <carsten.dominik@gmail.com>
@@ -295,7 +295,7 @@ nor a function, elements of KEYWORDS are used directly."
 	      ((functionp itemformat) (funcall itemformat keyword))
 	      ((stringp itemformat) (format itemformat keyword))
 	      (t keyword))
-	     (list 'funcall function keyword)
+	     `(funcall #',function ,keyword)
 	     :style (cond
 		     ((null selected) t)
 		     ((functionp selected) 'toggle)

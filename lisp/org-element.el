@@ -1,6 +1,6 @@
 ;;; org-element.el --- Parser for Org Syntax         -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -396,31 +396,25 @@ still has an entry since one of its properties (`:title') does.")
   "Alist between element types and locations of secondary values.")
 
 (defconst org-element--pair-round-table
-  (let ((table (make-syntax-table)))
+  (let ((table (make-char-table 'syntax-table '(2))))
     (modify-syntax-entry ?\( "()" table)
     (modify-syntax-entry ?\) ")(" table)
-    (dolist (char '(?\{ ?\} ?\[ ?\] ?\< ?\>) table)
-      (modify-syntax-entry char " " table)))
-  "Table used internally to pair only round brackets.
-Other brackets are treated as spaces.")
+    table)
+  "Table used internally to pair only round brackets.")
 
 (defconst org-element--pair-square-table
-  (let ((table (make-syntax-table)))
+  (let ((table (make-char-table 'syntax-table '(2))))
     (modify-syntax-entry ?\[ "(]" table)
     (modify-syntax-entry ?\] ")[" table)
-    (dolist (char '(?\{ ?\} ?\( ?\) ?\< ?\>) table)
-      (modify-syntax-entry char " " table)))
-  "Table used internally to pair only square brackets.
-Other brackets are treated as spaces.")
+    table)
+  "Table used internally to pair only square brackets.")
 
 (defconst org-element--pair-curly-table
-  (let ((table (make-syntax-table)))
+  (let ((table (make-char-table 'syntax-table '(2))))
     (modify-syntax-entry ?\{ "(}" table)
     (modify-syntax-entry ?\} "){" table)
-    (dolist (char '(?\[ ?\] ?\( ?\) ?\< ?\>) table)
-      (modify-syntax-entry char " " table)))
-  "Table used internally to pair only curly brackets.
-Other brackets are treated as spaces.")
+    table)
+  "Table used internally to pair only curly brackets.")
 
 (defun org-element--parse-paired-brackets (char)
   "Parse paired brackets at point.

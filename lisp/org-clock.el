@@ -1,6 +1,6 @@
 ;;; org-clock.el --- The time clocking code for Org mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -1747,7 +1747,7 @@ Optional argument N tells to change by that many units."
   (org-clock-timestamps-change 'up n))
 
 (defun org-clock-timestamps-down (&optional n)
-  "Increase CLOCK timestamps at cursor.
+  "Decrease CLOCK timestamps at cursor.
 Optional argument N tells to change by that many units."
   (interactive "P")
   (org-clock-timestamps-change 'down n))
@@ -2506,7 +2506,7 @@ the currently selected interval size."
       (when step
 	;; Write many tables, in steps
 	(unless (or block (and ts te))
-	  (user-error "Clocktable `:step' can only be used with `:block' or `:tstart, :end'"))
+	  (user-error "Clocktable `:step' can only be used with `:block' or `:tstart', `:tend'"))
 	(org-clocktable-steps params)
 	(throw 'exit nil))
 

@@ -1,6 +1,6 @@
 ;;; org-lint.el --- Linting for Org documents        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -784,8 +784,12 @@ Use \"export %s\" instead"
     reports))
 
 (defun org-lint-undefined-footnote-reference (ast)
-  (let ((definitions (org-element-map ast 'footnote-definition
-		       (lambda (f) (org-element-property :label f)))))
+  (let ((definitions
+          (org-element-map ast '(footnote-definition footnote-reference)
+	    (lambda (f)
+              (and (or (eq 'footnote-definition (org-element-type f))
+                       (eq 'inline (org-element-property :type f)))
+                   (org-element-property :label f))))))
     (org-element-map ast 'footnote-reference
       (lambda (f)
 	(let ((label (org-element-property :label f)))

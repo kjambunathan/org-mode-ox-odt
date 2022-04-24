@@ -1,6 +1,6 @@
 ;;; ob-tangle.el --- Extract Source Code From Org Files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Keywords: literate programming, reproducible research
@@ -43,7 +43,7 @@
 (declare-function org-in-commented-heading-p "org" (&optional no-inheritance))
 (declare-function org-in-archived-heading-p "org" (&optional no-inheritance))
 (declare-function outline-previous-heading "outline" ())
-(defvar org-id-link-to-org-use-id nil) ; Dynamically scoped
+(defvar org-id-link-to-org-use-id) ; Dynamically scoped
 
 (defcustom org-babel-tangle-lang-exts
   '(("emacs-lisp" . "el")

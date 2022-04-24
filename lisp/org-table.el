@@ -1,6 +1,6 @@
 ;;; org-table.el --- The Table Editor for Org        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -462,14 +462,14 @@ This may be useful when columns have been shrunk."
     (when pos (goto-char pos))
     (goto-char (line-beginning-position))
     (let ((end (line-end-position)) str)
-      (backward-char)
+      (goto-char (1- pos))
       (while (progn (forward-char 1) (< (point) end))
 	(let ((ov (car (overlays-at (point)))))
 	  (if (not ov)
 	      (push (char-to-string (char-after)) str)
 	    (push (overlay-get ov 'display) str)
 	    (goto-char (1- (overlay-end ov))))))
-      (format "%s" (mapconcat #'identity (reverse str) "")))))
+      (format "|%s" (mapconcat #'identity (reverse str) "")))))
 
 (defvar-local org-table-header-overlay nil)
 (defun org-table-header-set-header ()

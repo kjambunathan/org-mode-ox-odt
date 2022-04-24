@@ -1,7 +1,7 @@
 ;;; org.el --- Outline-based notes management and organizer -*- lexical-binding: t; -*-
 
 ;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Maintainer: Bastien Guerry <bzg@gnu.org>
@@ -9,7 +9,7 @@
 ;; Homepage: https://orgmode.org
 ;; Package-Requires: ((emacs "25.1"))
 
-;; Version: 9.5.2
+;; Version: 9.5.3
 
 ;; This file is part of GNU Emacs.
 ;;
@@ -199,6 +199,7 @@ Stars are put in group 1 and the trimmed body in group 2.")
 (declare-function org-update-radio-target-regexp "ol" ())
 
 (defvar org-element-paragraph-separate)
+(defvar org-element--timestamp-regexp)
 (defvar org-indent-indentation-per-level)
 (defvar org-radio-target-regexp)
 (defvar org-target-link-regexp)
@@ -15011,16 +15012,24 @@ value is equivalent to `inactive'.
 When at a timestamp, return the position of the point as a symbol
 among `bracket', `after', `year', `month', `hour', `minute',
 `day' or a number of character from the last know part of the
-time stamp.
+time stamp.  If diary sexp timestamps, any point inside the timestamp
+is considered `day' (i.e. only `bracket', `day', and `after' return
+values are possible).
 
 When matching, the match groups are the following:
-  group 1: year
-  group 2: month
-  group 3: day number
-  group 4: day name
+  group 1: year, if any
+  group 2: month, if any
+  group 3: day number, if any
+  group 4: day name, if any
   group 5: hours, if any
   group 6: minutes, if any"
-  (let* ((regexp (if extended org-ts-regexp3 org-ts-regexp2))
+  (let* ((regexp
+          (if extended
+              (if (eq extended 'agenda)
+                  (rx (or (regexp org-ts-regexp3)
+                          (regexp org-element--timestamp-regexp)))
+		org-ts-regexp3)
+            org-ts-regexp2))
 	 (pos (point))
 	 (match?
 	  (let ((boundaries (org-in-regexp regexp)))
@@ -15051,7 +15060,8 @@ When matching, the match groups are the following:
      ((org-pos-in-match-range pos 8)      'minute)
      ((or (org-pos-in-match-range pos 4)
 	  (org-pos-in-match-range pos 5)) 'day)
-     ((and (> pos (or (match-end 8) (match-end 5)))
+     ((and (or (match-end 8) (match-end 5))
+           (> pos (or (match-end 8) (match-end 5)))
 	   (< pos (match-end 0)))
       (- pos (or (match-end 8) (match-end 5))))
      (t                                   'day))))
@@ -17522,11 +17532,11 @@ this numeric value."
   (interactive "r")
   (let ((result ""))
     (while (/= beg end)
-      (when (get-char-property beg 'invisible)
-	(setq beg (next-single-char-property-change beg 'invisible nil end)))
-      (let ((next (next-single-char-property-change beg 'invisible nil end)))
-	(setq result (concat result (buffer-substring beg next)))
-	(setq beg next)))
+      (if (invisible-p beg)
+          (setq beg (next-single-char-property-change beg 'invisible nil end))
+        (let ((next (next-single-char-property-change beg 'invisible nil end)))
+          (setq result (concat result (buffer-substring beg next)))
+          (setq beg next))))
     (setq deactivate-mark t)
     (kill-new result)
     (message "Visible strings have been copied to the kill ring.")))
@@ -18731,17 +18741,19 @@ With prefix arg UNCOMPILED, load the uncompiled versions."
   "Is S an ID created by UUIDGEN?"
   (string-match "\\`[0-9a-f]\\{8\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{12\\}\\'" (downcase s)))
 
-(defun org-in-src-block-p (&optional inside)
+(defun org-in-src-block-p (&optional inside element)
   "Whether point is in a code source block.
 When INSIDE is non-nil, don't consider we are within a source
-block when point is at #+BEGIN_SRC or #+END_SRC."
-  (let ((case-fold-search t))
-    (or (and (eq (get-char-property (point) 'src-block) t))
-	(and (not inside)
-	     (save-match-data
-	       (save-excursion
-		 (beginning-of-line)
-		 (looking-at ".*#\\+\\(begin\\|end\\)_src")))))))
+block when point is at #+BEGIN_SRC or #+END_SRC.
+When ELEMENT is provided, it is considered to be element at point."
+  (save-match-data (setq element (or element (org-element-at-point))))
+  (when (eq 'src-block (org-element-type element))
+    (or (not inside)
+        (not (or (= (line-beginning-position)
+                  (org-element-property :post-affiliated element))
+               (= (1+ (line-end-position))
+                  (- (org-element-property :end element)
+                     (org-element-property :post-blank element))))))))
 
 (defun org-context ()
   "Return a list of contexts of the current cursor position.
