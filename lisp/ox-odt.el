@@ -8169,24 +8169,24 @@ format, `org-odt-preferred-output-format' or XML format."
     (if (not (file-writable-p outfile)) (error "Output file not writable")
       (let ((ext-plist (org-combine-plists `(:output-file ,outfile) ext-plist)))
 	(if async
-            (org-export-async-start
+	    (org-export-async-start
 		`(lambda (outfile)
 		   (org-export-add-to-stack (expand-file-name outfile) ',backend))
-	      `(let ((output
-		      (org-export-as
-		       ',backend ,subtreep ,visible-only ,body-only
-		       ',ext-plist)))
-		 (if (not body-only)
+	      `(let* ((output
+		       (org-export-as
+			',backend ,subtreep ,visible-only ,body-only
+			',ext-plist)))
+		 (if (not ,body-only)
 		     output
 		   (with-temp-buffer
 		     (insert output)
 		     (let ((coding-system-for-write 'utf-8))
-		       (write-region nil nil outfile)))
+		       (write-region nil nil ,outfile)))
 		   (when (and (org-export--copy-to-kill-ring-p) (org-string-nw-p output))
 		     (org-kill-new output))
-		   outfile)
+		   ,outfile)
 		 ,outfile))
-          (let ((output (org-export-as
+	  (let ((output (org-export-as
 			 backend subtreep visible-only body-only ext-plist)))
 	    (if (not body-only)
 		output
@@ -8941,6 +8941,55 @@ See `org-odt-prettify-xml-buffer' for more information."
 					     "#+odt_automatic_styles: ")))
 	(goto-char (point-at-eol))
 	(insert "\n")))))
+
+;;; Publishing
+
+(defun org-odt-publish-to-odt (plist filename pub-dir)
+  "Publish an org file to ODT.
+
+FILENAME is the filename of the Org file to be published.  PLIST
+is the property list for the given project.  PUB-DIR is the
+publishing directory.
+
+Return output file name.
+
+This function can be used as `:publishing-function' in
+`org-publish-project-alist'.
+
+For example, here is a simple publishing project named
+\"org-odt\" that publishes a set of Org files in \"~/org\"
+directory as `ODT' and `DOCX' files to \"~/public_odt\"
+directory.
+
+    (setq org-publish-project-alist
+          '((\"org-odt\"
+             :base-directory \"~/org/\"
+             :publishing-function org-odt-publish-to-odt
+             :publishing-directory \"~/public_odt\"
+             :section-numbers nil
+             :with-toc nil
+             :odt-app \"docx\"
+             :odt-preferred-output-format \"docx\")))
+
+Note the use of ODT-specific options `:odt-app' and
+`:odt-preferred-output-format', in the above configuration.
+
+For a list of ODT-specific options you can evaluate the following
+form
+
+    (org-export-backend-options (org-export-get-backend 'odt))
+."
+  (cl-letf (((symbol-function 'org-export-to-file)
+	     (lambda
+	       (_backend file &optional async subtreep visible-only body-only ext-plist
+			 _post-process)
+	       (if (not (file-writable-p file))
+		   (error "Output file not writable")
+		 (let ((ext-plist (org-combine-plists `(:output-file ,file) ext-plist))
+		       auto-mode-alist)
+		   (org-odt-export-to-odt async subtreep visible-only
+                                          (and nil body-only) ext-plist))))))
+    (org-publish-org-to 'odt filename ".odt" plist pub-dir)))
 
 ;;; Library Initializations
 
