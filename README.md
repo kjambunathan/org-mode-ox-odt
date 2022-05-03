@@ -28,6 +28,43 @@ If you are an existing user of OpenDocument exporter, start with [What is New (O
 
 If you want a /near complete/, but a /crude/ list of features start with [List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode](https://github.com/kjambunathan/org-mode-ox-odt/blob/master/notes/SNIPPETS.org).
 
+## Ensure that you are using the enhanced `ox-odt` and not the `ox-odt` that comes with upstream `emacs` or `org-mode`
+
+1. Visit an `org` file: `C-x C-f somefie.org`
+2. Export it to `odt`: `C-c C-e o o`
+3. Switch to  `*Messages*` buffer: `C-x b *Messages*`
+4. Inspect the path of `styles` file, and ensure that it points to path that corresponds to the enhanced `ox-odt` exporter
+
+ODT Zip Dir is /tmp/odt-fLRSbZ/
+Formatting LaTeX using mathml
+Embedding /home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/publish/org-mode-unicorn.png as Images/0001.png...
+ox-odt: Content template file is /home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/etc/styles/OrgOdtContentTemplate.xml
+Wrote /tmp/odt-fLRSbZ/content.xml
+ox-odt: Styles file is /home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/etc/styles/OrgOdtStyles.xml
+Wrote /tmp/odt-fLRSbZ/styles.xml [2 times]
+Wrote /tmp/odt-fLRSbZ/meta.xml
+Wrote /tmp/odt-fLRSbZ/mimetype
+Wrote /tmp/odt-fLRSbZ/META-INF/manifest.xml
+Create OpenDocument file ‘3jacmbl0nfj0.odt’...
+Using schema ~/.emacs.d/elpa/ox-odt-9.5.3.437/etc/schema/od-schema.rnc
+Running zip -mX0 3jacmbl0nfj0.odt mimetype
+Running zip -rmTq 3jacmbl0nfj0.odt .
+Created /home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/publish/3jacmbl0nfj0.odt
+
+## What to do if the `ox-odt` from previous step does not come from the enhanced `ox-odt`
+
+Add the following to the very end of your init file, and restart `emacs`.
+
+```elisp
+(progn
+  (require 'package)
+  (setq load-path
+	(cons
+	 (package-desc-dir (package--get-activatable-pkg 'ox-odt))
+	 load-path))
+  (load-library "ox-odt"))
+```
+
 ## Blog-style artciles
 
 If you want a blog-style, informal introduction to some of the features of this exporter, you may want to look at the following articles:
