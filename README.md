@@ -78,7 +78,7 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
       (load-library "ox-odt"))
     ```
 2. Re-start Emacs
-3. [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`].
+3. [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
 
 ## User Manual
 
