@@ -61,16 +61,15 @@ If you want a /near complete/, but a /crude/ list of features start with [List o
 
 1. Add the following to the very end of your init file
 
-```elisp
-(progn
-  (require 'package)
-  (setq load-path
-	(cons
-	 (package-desc-dir (package--get-activatable-pkg 'ox-odt))
-	 load-path))
-  (load-library "ox-odt"))
-```
-
+    ```elisp
+    (progn
+      (require 'package)
+      (setq load-path
+	    (cons
+	     (package-desc-dir (package--get-activatable-pkg 'ox-odt))
+	     load-path))
+      (load-library "ox-odt"))
+    ```
 2. Re-start Emacs
 3. Ensure that you are using the enhanced `ox-odt`.
 
