@@ -37,19 +37,33 @@ If you want a /near complete/, but a /crude/ list of features start with [List o
    Here is a sample run on my setup.
 
 > ODT Zip Dir is /tmp/odt-fLRSbZ/
+
 > Formatting LaTeX using mathml
+
 > Embedding /home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/publish/org-mode-unicorn.png as Images/0001.png...
+
 > **ox-odt: Content template file is /home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/etc/styles/OrgOdtContentTemplate.xml**
+
 > Wrote /tmp/odt-fLRSbZ/content.xml
+
 > **ox-odt: Styles file is /home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/etc/styles/OrgOdtStyles.xml**
+
 > Wrote /tmp/odt-fLRSbZ/styles.xml [2 times]
+
 > Wrote /tmp/odt-fLRSbZ/meta.xml
+
 > Wrote /tmp/odt-fLRSbZ/mimetype
+
 > Wrote /tmp/odt-fLRSbZ/META-INF/manifest.xml
+
 > Create OpenDocument file ‘3jacmbl0nfj0.odt’...
+
 > Using schema ~/.emacs.d/elpa/ox-odt-9.5.3.437/etc/schema/od-schema.rnc
+
 > Running zip -mX0 3jacmbl0nfj0.odt mimetype
+
 > Running zip -rmTq 3jacmbl0nfj0.odt .
+
 > Created /home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/publish/3jacmbl0nfj0.odt
 
    The path of the `styles` file suggests that `ox-odt` is coming from `/home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/` which is exactly what you want.
