@@ -20,7 +20,7 @@ Add `https://kjambunathan.github.io/elpa/` to `package-archives`.  Once that is 
 ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporter for Org Mode
 ```
 
-### Ensure that you are using the enhanced `ox-odt` and not the `ox-odt` that comes with upstream `emacs` or `org-mode`
+### Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`
 
 1. Visit an `org` file: `C-x C-f somefie.org`
 2. Export it to `odt`: `C-c C-e o o`
@@ -49,7 +49,7 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
 
    The path of the `styles` files suggests that `ox-odt` is coming from `/home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.437/` which is exactly what you want.
 
-### What to do if the `ox-odt` from previous step is not the enhanced `ox-odt`
+### What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`
 
 1. Add the following to the very end of your init file
 
@@ -64,8 +64,6 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
     ```
 2. Re-start Emacs
 3. Ensure that you are using the enhanced `ox-odt`.
-
-
 
 ## User Manual
 
