@@ -1,3 +1,18 @@
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [The Authoritative fork of Org mode's ODT exporter](#the-authoritative-fork-of-org-modes-odt-exporter)
+    - [Installation](#installation)
+        - [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
+        - [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
+    - [User Manual](#user-manual)
+    - [Blog-style artciles](#blog-style-artciles)
+    - [Getting Help](#getting-help)
+    - [FAQs](#faqs)
+
+<!-- markdown-toc end -->
+
+
 # The Authoritative fork of Org mode's ODT exporter
 
 This is *a fork* of Org's ODT backend and adds many useful improvements to that backend.  This fork is *authoritative* because it is maintained by the *original* author of that backend.
