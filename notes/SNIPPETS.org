@@ -63,7 +63,7 @@ listed here.
 - [[#org-odt-experimental-features-add-new-feature-short-caption-as-label--short-captions-are-_ignored_-by-default][(org-odt-experimental-features): Add new feature `short-caption-as-label'.  Short captions are _ignored_ by default.]]
 - [[#now-size-table-columns-using-widths-attribute][Now size table columns using `:widths' attribute]]
 - [[#support-pagebreak-beforeafter-a-table][Support pagebreak before/after a table]]
-- [[#org-odt-experimental-features-new][(org-odt-experimental-features): New]]
+- [[#org-odt-experimental-features-language-use-language-keyword-to-pick-the-locale-on-odt-side][~org-odt-experimental-features~ (language): Use `LANGUAGE` keyword to pick the /locale/ on ODT-side]]
 - [[#honour-language-keyword][Honour LANGUAGE keyword]]
 - [[#support-for-spanned-row-and-columns-in-org-tables][Support for spanned row and columns in Org tables]]
 - [[#typeset-checkboxes-with-non-ascii--unicode-characters][Typeset checkboxes with non-ascii / unicode characters]]
@@ -1294,7 +1294,7 @@ Fixes [[https://github.com/kjambunathan/org-mode-ox-odt/issues/106][issue#106]].
         Rest of text with no more tables
         #+end_example
 
-* (org-odt-experimental-features): New
+* ~org-odt-experimental-features~ (language): Use `LANGUAGE` keyword to pick the /locale/ on ODT-side
 
 [[https://github.com/kjambunathan/org-mode-ox-odt/commit/98cbe76521c66d3bfb6eadacd5626bbeb3cf3951][commit 98cbe76521c66d3bfb6eadacd5626bbeb3cf3951]]
 
