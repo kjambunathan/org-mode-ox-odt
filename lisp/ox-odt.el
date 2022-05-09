@@ -93,7 +93,8 @@
     ;; (citation . org-odt-citation)
     )
   :filters-alist '((:filter-parse-tree
-		    . (org-odt--translate-latex-fragments
+		    . (org-odt--translate-clickable-images
+                       org-odt--translate-latex-fragments
 		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables
 		       org-odt--transclude-sole-footnote-references-in-a-table)))
@@ -7352,6 +7353,47 @@ contextual information."
 
 
 ;;; Filters
+
+;;;; Clickable images
+
+(defun org-odt--translate-clickable-images (data _backend info)
+  ;; Clickable images are links whose description is an inline image.
+  ;; For example,
+  ;;
+  ;; [[https://orgmode.org][file:./org-mode-unicorn.png]]
+  ;;
+  ;; The Org parser does not recognize links within link description
+  ;; and any link within link description appears as textual content.
+  ;; This function peeks inside textual link description for inline
+  ;; images, and converts those in to equivalent parse tree.
+  (org-element-map data 'link
+    (lambda (l)
+      (let* ((link-desc
+	      (org-element-interpret-data (org-element-contents l)))
+	     (inner-link
+	      (with-temp-buffer
+		;; Grok link description
+		(save-excursion
+		  (insert link-desc))
+		(pop-to-buffer (current-buffer))
+		(let* ((link? (org-element-link-parser)))
+		  (when (and
+			 ;; Is it is a link?
+			 link?
+			 ;; Is there anything else riding behind it?
+			 (= (org-element-property :end link?) (point-max)))
+		    ;; Is it an inline image?
+		    (org-odt--standalone-link-p
+		     link? info nil
+		     (lambda (l)
+		       (org-export-inline-image-p
+			l (plist-get info :odt-inline-image-rules))))
+		    link?)))))
+	(when inner-link
+	  ;; Replace textual contents with it's parsed equivalent.
+	  (org-element-set-contents l inner-link))))
+    info nil nil t)
+  data)
 
 ;;;; LaTeX fragments
 
