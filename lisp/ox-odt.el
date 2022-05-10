@@ -6355,22 +6355,114 @@ and prefix with \"OrgSrc\".  For example,
 (defun org-odt-src-block (src-block _contents info)
   "Transcode a SRC-BLOCK element from Org to ODT.
 CONTENTS holds the contents of the item.  INFO is a plist holding
-contextual information."
-  (let* ((_lang (org-element-property :language src-block))
-	 (captions-plist (org-odt-format-label src-block info 'definition))
-	 (caption (plist-get captions-plist :caption))
-	 (caption-position (plist-get captions-plist :caption-position))
-	 (text (let ((--src-block (org-odt-format-code src-block info)))
-		 ;; Is `:textbox' property non-nil?
-		 (if (not (org-odt--read-attribute src-block :textbox)) --src-block
-		   ;; Yes.  Enclose it in a Text Box.
-		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			   "Text_20_body"
-			   (apply 'org-odt--textbox --src-block nil))))))
-    (cl-case caption-position
-      (above (concat caption text))
-      (t (concat text caption)))))
+contextual information.
 
+The following `nxml-mode' src blocks are treated specially.
+
+    #+ATTR_ODT: :target \"extra_styles\"
+    #+begin_src nxml
+      ...
+    #+end_src
+
+    #+ATTR_ODT: :target \"extra_automatic_styles\"
+    #+begin_src nxml
+      ...
+    #+end_src
+
+    #+ATTR_ODT: :target \"master_styles\"
+    #+begin_src nxml
+      ...
+    #+end_src
+
+    #+ATTR_ODT: :target \"automatic_styles\"
+    #+begin_src nxml
+      ...
+    #+end_src
+
+The content of these blocks are assumed to specify user-specified
+styles.  You can use these `nxml-mode' blocks as convenient
+alternative to specifying user styles using the following style
+keywords
+
+       - #+odt_extra_styles:
+       - #+odt_extra_automatic_styles:
+       - #+odt_master_styles:
+       - #+odt_automatic_styles:
+
+Use of `nxml-mode' blocks for specifying custom styles has many
+advantages compared to specifying styles using inbuffer keywords.
+They XML styles are syntx highlighted, easy to comprehend and
+edit.  More importantly you can exploit full set of babel
+features to build source blocks brick-by-brick.  For example, the
+Org snippet below uses noweb expansion to modify the default page
+header
+
+    #+NAME: header
+    #+begin_src nxml :exports none
+    <text:p text:style-name=\"OrgCenter\">
+      <text:a xlink:href=\"https://orgmode.org\"
+              xlink:type=\"simple\">Emacs Orgmode</text:a>
+    </text:p>
+    #+end_src
+
+    #+ATTR_ODT: :target \"master_styles\"
+    #+begin_src nxml  :noweb yes
+    <style:master-page style:name=\"Standard\"
+                       style:page-layout-name=\"Mpm1\">
+      <style:header>
+        <<header>>
+      </style:header>
+      <style:footer>
+        <text:p text:style-name=\"MP1\">
+          <text:page-number text:select-page=\"current\"></text:page-number>
+        </text:p>
+      </style:footer>
+    </style:master-page>
+    #+end_src
+
+    First page.
+
+    #+ATTR_ODT: :page-break t
+    Second page.
+
+    #+ATTR_ODT: :page-break t
+    Third page.
+
+.          
+"
+  (let* ((lang (org-element-property :language src-block))
+	 (style-key
+	  (when (string= (downcase lang) "nxml")
+	    (let ((style-spec-p
+		   (car (member
+			 (org-odt--read-attribute src-block :target)
+			 '("extra_styles"
+			   "extra_automatic_styles"
+			   "master_styles"
+			   "automatic_styles")))))
+	      (when style-spec-p
+		(intern (format ":odt-%s" (replace-regexp-in-string "_" "-" style-spec-p t t))))))))
+    (cond
+     (style-key
+      (plist-put info style-key
+		 (concat (plist-get info style-key)
+			 (org-element-property :value src-block)))
+      "")
+     (t
+      (let* ((_lang (org-element-property :language src-block))
+	     (captions-plist (org-odt-format-label src-block info 'definition))
+	     (caption (plist-get captions-plist :caption))
+	     (caption-position (plist-get captions-plist :caption-position))
+	     (text (let ((--src-block (org-odt-format-code src-block info)))
+		     ;; Is `:textbox' property non-nil?
+		     (if (not (org-odt--read-attribute src-block :textbox)) --src-block
+		       ;; Yes.  Enclose it in a Text Box.
+		       (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			       "Text_20_body"
+			       (apply 'org-odt--textbox --src-block nil))))))
+	(cl-case caption-position
+	  (above (concat caption text))
+	  (t (concat text caption))))))))
 
 ;;;; Statistics Cookie
 
@@ -8909,7 +9001,7 @@ This function is used for prettifying XML files when user option
     (nxml-mode)
     (indent-region (point-min) (point-max))))
 
-(defun org-odt-yank-styles (&optional dont-prompt-for-styles-keyword)
+(defun org-odt-yank-styles (&optional yank-method)
   "Yank `current-kill', (presumably )a ODT (styles) XML, at point.
 
 `current-kill' is assumed to be a XML string, most likely an XML
@@ -8921,28 +9013,60 @@ Use this command to yank XML in to either an `org-mode' buffer or
 non `org-mode' buffer.  In both the cases, the result will be
 prettified with `org-odt-prettify-xml-buffer'.
 
-If you are in a non-`org-mode' file, no further action is taken.
+The behaviour of this command depends on the current mode and the
+value of prefix argument.
 
-However, if you are in an `org-mode' buffer, then you will be
-prompted for picking up one of the following styles-related
-keywords
+  1. In a non-`org-mode' buffer, always insert a prettified version of
+     `current-kill' devoid of any style decorations whatsoever.
 
-    - #+odt_extra_styles: 
-    - #+odt_extra_automatic_styles: 
-    - #+odt_master_styles: 
-    - #+odt_automatic_styles: 
+  2. In a `org-mode' buffer, the behaviour depends on the prefix
+     argument.
 
-The keyword you choose will be prefixed to the yanked XML.
-When in an `org-mode' buffer, if you don't want the yanked XML to
-be prefixed with a styles keyword, possibly because you are
-yanking in to a `nxml-mode' source block like so
+     - no prefix arg :: Insert styles using in buffer keywords.
 
-    #+begin_src nxml
-    ...
-    #+end_src
+       You will be prompted for up one of the following styles-related
+       keywords
 
-invoke this command with a prefix argument
-`dont-prompt-for-styles-keyword'.
+       - #+odt_extra_styles:
+       - #+odt_extra_automatic_styles:
+       - #+odt_master_styles:
+       - #+odt_automatic_styles:
+
+     - single prefix arg :: Insert styles using a `nxml-mode' src-block
+
+       You will be prompted for up one of the following styles-related
+       keywords
+
+       - extra_styles
+       - extra_automatic_styles
+       - master_styles
+       - automatic_styles
+
+       Depending on your input, an `nxml-mode' like the one below will
+       be inserted
+
+           #+ATTR_ODT: :target \"extra_styles\"
+           #+begin_src nxml
+             ...
+           #+end_src
+
+           #+ATTR_ODT: :target \"extra_automatic_styles\"
+           #+begin_src nxml
+             ...
+           #+end_src
+
+           #+ATTR_ODT: :target \"master_styles\"
+           #+begin_src nxml
+             ...
+           #+end_src
+
+           #+ATTR_ODT: :target \"automatic_styles\"
+           #+begin_src nxml
+             ...
+           #+end_src
+
+     - double prefix arg :: Insert prettified style without any style
+       decorations.
 
 Note that LibreOffice can be configured to emit pretty-print
 XML (i.e., with indentation and line breaks) by doing the
@@ -8950,7 +9074,6 @@ following
 
     On the `Tools' - `Options' - `Load/Save' - General tab page
     you can clear the check box Size optimization for ODF format.
-
 
 or
     Under `Tools' – `Options' – `LibreOffice' – `Advanced' –
@@ -8961,28 +9084,97 @@ or
 This command further prettifies the LibreOffice-prettified XML.
 See `org-odt-prettify-xml-buffer' for more information."
   (interactive "P")
-  (let* ((text (current-kill 0))
-	 (start (point)))
-    (save-excursion
-      (insert
-       (with-temp-buffer
-	 (insert text)
-	 (org-odt-prettify-xml-buffer)
-	 (buffer-substring-no-properties (point-min) (point-max))))
-      (when (and (derived-mode-p 'org-mode)
-		 (null dont-prompt-for-styles-keyword))
-	(kill-region
-	 (save-excursion (skip-chars-backward "\n")
-			 (point))
-	 (point))
-	(string-rectangle start (point-at-bol)
-			  (completing-read "Prefix: "
-					   '("#+odt_extra_styles: "
-					     "#+odt_extra_automatic_styles: "
-					     "#+odt_master_styles: "
-					     "#+odt_automatic_styles: ")))
-	(goto-char (point-at-eol))
-	(insert "\n")))))
+  (let* ((yank-method-1
+	  (cond
+	   ;; In a non `org-mode' buffer, ignore the prefix argument
+	   ;; and insert style the prettified string devoid of any
+	   ;; style decorations.
+	   ((not (derived-mode-p 'org-mode)) 'simple)
+	   ((called-interactively-p 'any)
+	    (assoc-default yank-method
+			   '(
+			     ;; Without a prefix argument, insert
+			     ;; style using keywords
+			     (nil . use-keywords)
+			     ;; With a single prefix argument, insert
+			     ;; style using an `nxml-mode' src block
+			     ((4) . use-nxml-src-block)
+			     ;; With a double prefix argument, insert
+			     ;; the prettifed string devoid of any
+			     ;; style decorations.
+			     ((16) . simple))))
+	   (t (user-error "This function is for interactive use only"))))
+	 (text (or (and kill-ring (current-kill 0)) ""))
+	 (start (point))
+	 (prettified-text
+	  ;; Prettify XML
+	  (with-temp-buffer
+	    (insert text)
+	    (org-odt-prettify-xml-buffer)
+	    (buffer-substring-no-properties (point-min) (point-max))))
+	 (prettified-and-pruned-text
+	  (with-temp-buffer
+	    (save-excursion
+	      ;; Insert pretty XML
+	      (insert prettified-text))
+	    ;; Prune leading newlines
+	    (goto-char (point-min))
+	    (kill-region (point-min)
+			 (progn (skip-chars-forward "\n")
+				(point)))
+	    ;; Prune trailing newlines
+	    (goto-char (point-max))
+	    (kill-region
+	     (progn (skip-chars-backward "\n")
+		    (point))
+	     (point-max))
+	    (buffer-substring-no-properties (point-min) (point-max)))))
+    (cl-case yank-method-1
+      (simple
+       (save-excursion (insert prettified-text)))
+      ;; Case 2: `use-keywords'
+      ;; Insert styles one of the chosen keywords
+      ;;
+      ;;     #+odt_extra_styles: ....
+      ;;     #+odt_extra_automatic_styles: ...
+      ;;     #+odt_master_styles: ....
+      ;;     #+odt_automatic_styles: ...
+      (use-keywords
+       ;; Ensure that point is at beginning of line
+       (unless (point-at-bol)
+	 (user-error "Cannot insert here"))
+       (save-excursion
+	 (insert prettified-text)
+	 (kill-region
+	  (save-excursion (skip-chars-backward "\n")
+			  (point))
+	  (point))
+	 (string-rectangle start (point-at-bol)
+			   (completing-read "Prefix: "
+					    '("#+odt_extra_styles: "
+					      "#+odt_extra_automatic_styles: "
+					      "#+odt_master_styles: "
+					      "#+odt_automatic_styles: ")))
+	 (goto-char (point-at-eol))
+	 (insert "\n")))
+      (use-nxml-src-block
+       ;; Ensure that point is at beginning of line
+       (unless (point-at-bol)
+	 (user-error "Cannot insert here"))
+       (let ((p nil))
+	 (save-excursion
+	   (insert "#+begin_src nxml\n")
+	   (setq p (point-marker))
+	   (insert prettified-and-pruned-text)
+	   (insert "\n#+end_src\n\n"))
+	 (insert (format "\n#+ATTR_ODT: :target \"%s\"\n"
+			 (completing-read "Target: "
+					  '("extra_styles"
+					    "extra_automatic_styles"
+					    "master_styles"
+					    "automatic_styles"))))
+	 (goto-char p)))
+      (t (user-error "This shouldn't happen")))))
 
 ;;; Publishing
 
