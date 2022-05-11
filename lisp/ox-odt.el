@@ -3216,6 +3216,7 @@ holding export options."
       ;;   1. styles specified with "#+ODT_AUTOMATIC_STYLES: ..."
       ;;   2. paragraph styles that request pagebreaks
       ;;   3. table styles that specify `:rel-width'
+      (insert "\n<!-- BEGIN: OFFICE:AUTOMATIC-STYLES -->\n")
       (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
 
       ;; - Dump automatic styles for paragraphs within a table.  See
@@ -3249,12 +3250,14 @@ holding export options."
 					    "OrgDate1")
 		(org-odt--build-date-styles (cdr custom-time-fmts)
 					    "OrgDate2")))
+      (insert "\n<!-- END: OFFICE:AUTOMATIC-STYLES -->\n")
       ;; Update display level.
       ;; - Remove existing sequence decls.  Also position the cursor.
       (goto-char (point-min))
       (when (re-search-forward "<text:sequence-decls" nil t)
 	(delete-region (match-beginning 0)
 		       (re-search-forward "</text:sequence-decls>" nil nil)))
+      (insert "\n<!-- BEGIN: TEXT:SEQUENCE-DECLS -->\n")
       ;; Update sequence decls according to user preference.
       (insert
        (format
@@ -3265,12 +3268,14 @@ holding export options."
 			     (string-to-number (plist-get info :odt-display-outline-level))
 			   0)
 			 (plist-get category-props :variable)))))
+      (insert "\n<!-- END: TEXT:SEQUENCE-DECLS -->\n")      
       ;; Position the cursor to document body.
       (goto-char (point-min))
       (re-search-forward "</office:text>" nil nil)
       (goto-char (match-beginning 0))
 
       ;; Preamble - Title, Author, Date etc.
+      (insert "\n<!-- BEGIN: OFFICE:TEXT/METADATA -->\n")
       (insert
        (let* ((author (when (plist-get info :with-author)
 			(let ((data (plist-get info :author)))
@@ -3330,6 +3335,7 @@ holding export options."
 	  (when (org-string-nw-p date)
 	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		    "OrgDocInfo" date)))))
+      (insert "\n<!-- END: OFFICE:TEXT/METADATA -->\n")      
       ;; Table of Contents
       (let* ((with-toc (plist-get info :with-toc))
 	     (depth (and with-toc (if (wholenump with-toc)
@@ -3337,7 +3343,10 @@ holding export options."
 				    (plist-get info :headline-levels)))))
 	(when depth (insert (or (org-odt-toc depth info) ""))))
       ;; Contents.
-      (insert "\n<!-- begin -->\n" contents "\n<!-- end -->\n")
+      (insert "\n<!-- BEGIN: OFFICE:TEXT/CONTENTS -->\n")
+      (insert contents)
+      (insert "\n<!-- END: OFFICE:TEXT/CONTENTS -->\n")
+      
       ;; Prettify buffer contents, if needed.
       (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Cleanup, when export is body-only.
@@ -8485,7 +8494,7 @@ is non-nil."
       (lambda ()
 	(nxml-mode)
 	(goto-char (point-min))
-	(when (re-search-forward "<!-- begin -->" nil t)
+	(when (re-search-forward "<!-- BEGIN: OFFICE:TEXT/CONTENTS -->" nil t)
 	  (goto-char (match-beginning 0)))))))
 
 ;;;###autoload
@@ -8522,6 +8531,97 @@ non-nil."
   (let ((backend 'odt))
     (org-odt-export-as-odt-backend backend async subtreep
 				   visible-only body-only ext-plist)))
+
+;;;###autoload
+(defun org-odt-export-string-as-odt-string
+    (string &optional _backend _body-only ext-plist)
+  "Transcode STRING into BACKEND code.
+
+BACKEND and BODY-ONLY are ignored.
+
+Optional argument EXT-PLIST, when provided, is a property list
+with external parameters overriding Org default settings, but
+still inferior to file-local settings.
+
+In addition to the standard export options, this function
+recognizes a `:pick' property in EXT-PLIST.  Its value is a
+symbol and can be one of the following: `contents' or
+`automatic-styles'.  If `:pick' is unspecified, or is not one of
+the allowed values, it is forcibly set to `contents'.
+
+Return the picked portion as a string.
+
+Note that the signature of this function matches with
+`org-export-string-as'.
+
+Here is a simple snippet that demonstrates the use of this
+function to create page headers:
+
+    #+TITLE: Generate Page Header using `org-odt-export-string-as-odt-string' and Org Babel
+
+    #+name: headertext
+    #+begin_src org :exports none
+    ,#+begin_center
+    # Since the content is routed through ~shell~, the line breaks are
+    # double-escaped.
+    [[https://Orgmode.org][/Emacs Orgmode/]]\\\\\\\\
+    ,#+end_center
+    #+end_src
+
+    #+name: tostring-headertext
+    #+begin_src sh :noweb yes :exports none :results verbatim
+    cat <<EOF
+    <<headertext>>
+    EOF
+    #+end_src
+
+    #+name: tonxml-tostring-headertext
+    #+begin_src emacs-lisp :exports none :var string=tostring-headertext
+    (org-odt-export-string-as-odt-string string)
+    #+end_src
+
+    #+attr_odt: :target \"master_styles\"
+    #+begin_src nxml  :noweb yes
+    <style:master-page style:name=\"Standard\"
+                       style:page-layout-name=\"Mpm1\">
+      <style:header>
+        <<tonxml-tostring-headertext()>>
+      </style:header>
+      <style:footer>
+        <text:p text:style-name=\"MP1\">
+          <text:page-number text:select-page=\"current\"></text:page-number>
+        </text:p>
+      </style:footer>
+    </style:master-page>
+    #+end_src
+
+    First page.
+
+    #+attr_odt: :page-break t
+    Second page."
+  (with-temp-buffer
+    (insert string)
+    (let ((org-inhibit-startup t)) (org-mode))
+    (let ((backend 'odt)
+	  (subtreep nil)
+	  (visible-only nil)
+	  (body-only t))
+      (let ((output (org-export-as backend subtreep visible-only body-only
+				   ext-plist)))
+	(with-temp-buffer
+	  (insert output)
+	  (goto-char (point-min))
+	  (let* ((what (or (alist-get (plist-get ext-plist :pick)
+				      '((contents . "OFFICE:TEXT/CONTENTS")
+					(automatic-styles . "OFFICE:AUTOMATIC-STYLES"))
+				      "OFFICE:TEXT/CONTENTS")))
+		 (beg (when (re-search-forward (format "<!-- %s: %s -->\n*" "BEGIN" what) nil t)
+			(match-end 0)))
+		 (end (when (re-search-forward (format "\n*<!-- %s: %s -->" "END" what) nil t)
+			(match-beginning 0))))
+	    (unless (and beg end)
+	      (error "`org-odt-export-string-as-odt-string': This shouldn't happen"))
+	    (buffer-substring-no-properties beg end)))))))
 
 
 ;;;; Validate OpenDocument a file
