@@ -38,6 +38,57 @@
 (require 'ox-ascii)
 (require 'org-compat)
 
+;;; Useful Functions
+
+;;;; XML to Lisp & vice versa
+
+(defun org-odt--xml-to-lisp (&optional xml)
+  (setq xml (or xml (buffer-substring-no-properties (region-beginning) (region-end))))
+  (with-temp-buffer
+    (insert xml)
+    (libxml-parse-xml-region (point-min) (point-max))))
+
+(defun org-odt--lisp-to-xml (element &optional depth prettify)
+  (let* ((newline (if prettify "\n" ""))
+	 (print-attributes
+	  (lambda (attributes)
+	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
+					   (format "%s=\"%s\"" attribute value))
+		       " "))))
+    (setq depth (or depth 0))
+    (cond
+     ((stringp element)
+      element)
+     ((symbolp (car element))
+      (let* ((name (car element))
+	     (attributes (cadr element))
+	     (contents (cddr element)))
+	(let ((prefix (if prettify (make-string depth ? ) "")))
+	  (cond
+	   ((null contents)
+	    (format "%s%s<%s %s/>"
+		    newline
+		    prefix name (funcall print-attributes attributes)))
+	   (t
+	    (format "%s%s<%s %s>%s%s%s</%s>"
+		    newline
+		    prefix
+		    name
+		    (funcall print-attributes attributes)
+		    (if (stringp contents) contents
+		      ;; (print-element contents (1+ depth))
+		      (org-odt--lisp-to-xml contents (1+ depth) prettify))
+		    newline
+		    prefix
+		    name))))))
+     (t
+      (mapconcat #'identity
+		 (cl-loop for el in element collect
+			  ;; (print-element el (1+ depth))
+			  (org-odt--lisp-to-xml el (1+ depth) prettify))
+		 "")))))
+
+
 ;;; Define Back-End
 
 (org-export-define-backend 'odt
@@ -2180,55 +2231,6 @@ available:
 
 
 ;;; Internal functions
-
-;;;; XML to Lisp & vice versa
-
-(defun org-odt--xml-to-lisp (&optional xml)
-  (setq xml (or xml (buffer-substring-no-properties (region-beginning) (region-end))))
-  (with-temp-buffer
-    (insert xml)
-    (libxml-parse-xml-region (point-min) (point-max))))
-
-(defun org-odt--lisp-to-xml (element &optional depth prettify)
-  (let* ((newline (if prettify "\n" ""))
-	 (print-attributes
-	  (lambda (attributes)
-	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
-					   (format "%s=\"%s\"" attribute value))
-		       " "))))
-    (setq depth (or depth 0))
-    (cond
-     ((stringp element)
-      element)
-     ((symbolp (car element))
-      (let* ((name (car element))
-	     (attributes (cadr element))
-	     (contents (cddr element)))
-	(let ((prefix (if prettify (make-string depth ? ) "")))
-	  (cond
-	   ((null contents)
-	    (format "%s%s<%s %s/>"
-		    newline
-		    prefix name (funcall print-attributes attributes)))
-	   (t
-	    (format "%s%s<%s %s>%s%s%s</%s>"
-		    newline
-		    prefix
-		    name
-		    (funcall print-attributes attributes)
-		    (if (stringp contents) contents
-		      ;; (print-element contents (1+ depth))
-		      (org-odt--lisp-to-xml contents (1+ depth) prettify))
-		    newline
-		    prefix
-		    name))))))
-     (t
-      (mapconcat #'identity
-		 (cl-loop for el in element collect
-			  ;; (print-element el (1+ depth))
-			  (org-odt--lisp-to-xml el (1+ depth) prettify))
-		 "")))))
-
 
 ;;;; Date
 
