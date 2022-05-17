@@ -1911,8 +1911,111 @@ Choose one of HTML or LaTeX style."
 
 ;;;; Macros
 
-(defcustom org-odt-global-macros
+(defconst org-odt--native-fields
   '(
+    ;; Document Title
+    ("ODTTitle" text:title nil)
+    ;; Chapter Name, Number etc
+    ("ODTChapter" text:chapter
+     ((text:display . "name")
+      (text:outline-level . "1")))
+    ("ODTChapterNumber" text:chapter
+     ((text:display . "number")
+      (text:outline-level . "1")))
+    ("ODTChapterNumberAndName" text:chapter
+     ((text:display . "number-and-name")
+      (text:outline-level . "1")))
+    ("ODTChapterPlainNumber" text:chapter
+     ((text:display . "plain-number")
+      (text:outline-level . "1")))
+    ;; Page Number
+    ("ODTPageNumber" text:page-number
+     ((text:select-page . "current"))
+     "1")
+    ("ODTPageNumberLowerAlpha" text:page-number
+     ((style:num-format . "a")
+      (text:select-page . "current"))
+     "a")
+    ("ODTPageNumberUpperAlpha" text:page-number
+     ((style:num-format . "A")
+      (text:select-page . "current"))
+     "A")
+    ("ODTPageNumber-1" text:page-number
+     ((style:num-format . "1")
+      (text:select-page . "current"))
+     "1")
+    ("ODTPageNumberLowerRoman" text:page-number
+     ((style:num-format . "i")
+      (text:select-page . "current"))
+     "i")
+    ("ODTPageNumberUpperRoman" text:page-number
+     ((style:num-format . "I")
+      (text:select-page . "current"))
+     "I")
+    ;; Whitespaces
+    ("ODTSpace" text:s
+     ((text:c . "1")))
+    ("ODTTab" text:tab nil)
+    ("ODTLineBreak" text:line-break nil)
+    ;; Document Meta - File name, Path etc
+    ("ODTFileName" text:file-name
+     ((text:display . "name-and-extension"))
+     "nativefields.odt")
+    ("ODTFileNameAndExtension" text:file-name
+     ((text:display . "name-and-extension"))
+     "nativefields.odt")
+    ("ODTFileNameSansExtension" text:file-name
+     ((text:display . "name"))
+     "nativefields")
+    ("ODTFileNamePath" text:file-name
+     ((text:display . "path"))
+     "/home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/")
+    ("ODTFileNameFull" text:file-name
+     ((text:display . "full"))
+     "/home/kjambunathan/src/org-mode-ox-odt/testing/examples/odt/nativefields.odt")
+    ;; Document Statistics - Character, Word, Paragraph and Page counts
+    ("ODTCharacterCount" text:character-count nil "422")
+    ("ODTWordCount" text:word-count
+     ((style:num-format . "1"))
+     "51")
+    ("ODTParagraphCount" text:paragraph-count nil "38")
+    ("ODTPageCount" text:page-count nil "2")
+    ;; Object Counts - Image, Table and Object counts
+    ("ODTImageCount" text:image-count
+     ((style:num-format . "1"))
+     "0")
+    ("ODTObjectCount" text:object-count
+     ((style:num-format . "1")))
+    ("ODTTableCount" text:table-count nil "0")
+    ;; Date and/or Time
+    ("ODTDate" text:time
+     ((style:data-style-name . "OrgDate1")
+      (text:time-value . "2022-05-16T09:50:12.615588982")
+      (text:fixed . "false"))
+     "09:50:12")
+    ("ODTDateAndTime" text:time
+     ((style:data-style-name . "OrgDate2")
+      (text:time-value . "2022-05-16T09:50:36.528331437")
+      (text:fixed . "false"))
+     "09:50:36 AM"))
+  "Definition of OpenDocument fields.
+
+This is an alist of elements (FIELD-NAME . FIELD-DEFINITION).
+
+FIELDNAME is available as an Org macro.  For example, you can
+insert document title as a field anywhere in the exported file
+with the following construct
+
+    {{{ODTTitle}}}
+
+FIELD-DEFINITION is lispified version created by passing the XML
+definition through `org-odt--xml-to-lisp'
+
+The FIELD-NAME is converted in an Org macro of same name as part
+of `org-odt-global-macros'.")
+
+(defcustom org-odt-global-macros
+  `(
     ("keyword-to-documentproperty" .
      "(eval (if (org-export-derived-backend-p
 		org-export-current-backend 'odt)
@@ -1920,7 +2023,10 @@ Choose one of HTML or LaTeX style."
 		       (org-odt--use-custom-field
 			$1 (org-macro--find-keyword-value $1)))
 	     (org-macro--find-keyword-value $1)))")
-    )
+    ,@(mapcar (lambda (e)
+		(pcase-let ((`(,name . ,value) e))
+		  (cons name (format "@@odt:%s@@" (org-odt--lisp-to-xml value)))))
+	      org-odt--native-fields))
   "Alist of ODT specific macro names and expansion templates.
 
 This variable defines macro expansion templates installed by the
@@ -1950,6 +2056,61 @@ Currently, following macros are defined:
 	#+MACRO: DocTitle {{{keyword-to-documentproperty(DOC-TITLE)}}}
 
 	The name of the document is {{{DocTitle}}}.
+
+- Various OpenDocument-specific fields as given below :: Usage
+
+  You can generate a TAB character with
+
+        {{{ODTTab}}}
+
+  You can generate a page number like `1 of 3' with
+
+        {{{ODTPageNumber}}} of {{{ODTPageCount}}}
+
+  These FIELD-NAME macros are useful for auto-inserting
+  document-specific metadata in the Page Header and Footer of the
+  exported file.  You can use {{{ODTTab}}} to position the fields
+  either to the left, center or right of the header/footer area.
+
+        |--------------------------+-------------------------------------------------------|
+        | FIELD NAME / MACRO NAME  | PURPOSE                                               |
+        | =======================  | =======                                               |
+        |--------------------------+-------------------------------------------------------|
+        | ODTTitle                 | Document Title                                        |
+        |--------------------------+-------------------------------------------------------|
+        | ODTChapter               | Chapter Name and/or Number                            |
+        | ODTChapterNumber         |                                                       |
+        | ODTChapterNumberAndName  |                                                       |
+        | ODTChapterPlainNumber    |                                                       |
+        |--------------------------+-------------------------------------------------------|
+        | ODTPageNumber            | PageNumber (in Arabic, Alphabetic, and Roman formats) |
+        | ODTPageNumberLowerAlpha  |                                                       |
+        | ODTPageNumberUpperAlpha  |                                                       |
+        | ODTPageNumber-1          |                                                       |
+        | ODTPageNumberLowerRoman  |                                                       |
+        | ODTPageNumberUpperRoman  |                                                       |
+        |--------------------------+-------------------------------------------------------|
+        | ODTSpace                 | Space                                                 |
+        | ODTTab                   | Tab                                                   |
+        | ODTLineBreak             | Line Break                                            |
+        |--------------------------+-------------------------------------------------------|
+        | ODTFileName              | FileName (with/without Directory and Extension)       |
+        | ODTFileNameAndExtension  |                                                       |
+        | ODTFileNameSansExtension |                                                       |
+        | ODTFileNamePath          |                                                       |
+        | ODTFileNameFull          |                                                       |
+        |--------------------------+-------------------------------------------------------|
+        | ODTCharacterCount        | Document Statistics like Word Count etc               |
+        | ODTWordCount             |                                                       |
+        | ODTParagraphCount        |                                                       |
+        | ODTPageCount             |                                                       |
+        | ODTImageCount            |                                                       |
+        | ODTObjectCount           |                                                       |
+        | ODTTableCount            |                                                       |
+        |--------------------------+-------------------------------------------------------|
+        | ODTDate                  | Date                                                  |
+        | ODTDateAndTime           | Date and Time                                         |
+        |--------------------------+-------------------------------------------------------|
 
 Associations follow the pattern
 
@@ -3247,7 +3408,7 @@ holding export options."
 							       (center . "center"))))))))))
 
       ;; - Dump date-styles.
-      (when (plist-get info :odt-use-date-fields)
+      (when (or t (plist-get info :odt-use-date-fields))
 	(insert (org-odt--build-date-styles (car custom-time-fmts)
 					    "OrgDate1")
 		(org-odt--build-date-styles (cdr custom-time-fmts)
