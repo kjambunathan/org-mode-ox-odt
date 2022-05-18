@@ -1057,6 +1057,16 @@
    <style:header-style/>
    <style:footer-style/>
   </style:page-layout>
+  <!-- Landscape: Page layout -->
+  <style:page-layout style:name="Mpm7" style:page-usage="mirrored">
+   <style:page-layout-properties fo:page-width="29.7cm"  fo:page-height="21.001cm" style:num-format="1" style:print-orientation="landscape" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
+    <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+   </style:page-layout-properties>
+   <style:header-style/>
+   <style:footer-style>
+    <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
+   </style:footer-style>
+  </style:page-layout>  
  </office:automatic-styles>
  <office:master-styles>
   <style:master-page style:name="Standard" style:page-layout-name="Mpm1">
@@ -1064,6 +1074,11 @@
     <text:p text:style-name="MP1"><text:page-number text:select-page="current"></text:page-number></text:p>
    </style:footer>
   </style:master-page>
+  <style:master-page style:name="Landscape" style:page-layout-name="Mpm7">
+   <style:footer>
+    <text:p text:style-name="MP1"><text:page-number text:select-page="current"></text:page-number></text:p>
+   </style:footer>
+  </style:master-page>  
   <style:master-page style:name="OrgTitlePage" style:page-layout-name="Mpm2" style:next-style-name="OrgFrontMatterPage"/>
   <style:master-page style:name="OrgFrontMatterPage" style:page-layout-name="Mpm3">
    <style:footer>
