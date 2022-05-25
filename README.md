@@ -193,6 +193,6 @@ If you would like to customize the look of a document produced by this exporter,
 
 `LibreOffice` comes with good set of [User Guides](https://documentation.libreoffice.org/en/english-documentation/).  If you find that these guides are too detailed for your  immediate needs, you may want to start with one of these:
 
-1. [Students' Guide to OpenOffice Writer](https://wiki.documentfoundation.org/images/0/01/Ooo_for_students.pdf)
+1. [Students' Guide to OpenOffice Writer](https://web.archive.org/web/20220121040747/https://wiki.documentfoundation.org/images/0/01/Ooo_for_students.pdf) 
 2. [Writing a Thesis in OpenOffice.org](https://web.archive.org/web/20220525051011/http://www.openoffice.org/documentation/HOW_TO/word_processing/How_to_Write_a_Thesis_in_OOo.pdf)
 3. [Self-Publishing using LibreOffice Writer 6: How to use free software to write, design, and create ebooks and PDFs for print-on-demand books](https://web.archive.org/web/20220525050638/https://www.taming-libreoffice.com/wp-content/uploads/2019/10/SelfPublishWithLibreOffice6.pdf).  For more recent versions, see [Taming LibreOffice Resources for intermediate & advanced users](https://taming-libreoffice.com/my-books/).
