@@ -132,19 +132,31 @@ Assuming that you have checked out the source under `~/src/` directory, add the 
 
 #### If you have lost all hope of using this exporter ...
 
-1. Add the following at ***THE VERY BOTTOM*** of your `user-init-file`
+1. Identify the most recent version of `ox-odt` from the [`org-mode-ox-odt` ELPA]( https://github.com/kjambunathan/kjambunathan.github.io/tree/master/elpa).  At the time of writing this note, it is
+
+```
+ox-odt-9.5.3.456.tar
+```
+
+2. Download and `untar` it
+
+``` shell
+~$ cd ~/Downloads/
+~/Downloads$ wget https://raw.githubusercontent.com/kjambunathan/kjambunathan.github.io/master/elpa/ox-odt-9.5.3.456.tar
+~/Downloads$ tar xvf ox-odt-9.5.3.456.tar 
+```
+3. Add the following at ***THE VERY BOTTOM*** of your `user-init-file`
 
 ``` elisp
 (progn
   (setq load-path
 	(cons
 	 ;; Replace this path with where `ox-odt.el' can be found
-	 "/home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.456/"
+	 "~/Downloads/ox-odt-9.5.3.456/"
 	 load-path))
   (load-library "ox-odt"))
 ```
-
-2. Restart Emacs
+4. Restart Emacs
 
 ## User Manual
 
