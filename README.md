@@ -132,17 +132,15 @@ Assuming that you have checked out the source under `~/src/` directory, add the 
 
 #### If you have lost all hope of using this exporter ...
 
-1. Identify the most recent version of `ox-odt` from the [`org-mode-ox-odt` ELPA]( https://github.com/kjambunathan/kjambunathan.github.io/tree/master/elpa).  At the time of writing this note, it is
+1. Identify the most recent version of `ox-odt` from the [`org-mode-ox-odt` ELPA]( https://github.com/kjambunathan/kjambunathan.github.io/tree/master/elpa).  At the time of writing this note, it is `ox-odt-9.5.3.456.tar`.
 
-```
-ox-odt-9.5.3.456.tar
-```
-
-2. Download and `untar` it
+2. Download `ox-odt-9.5.3.456.tar` and `untar` it
 
 ``` shell
 ~$ cd ~/Downloads/
+
 ~/Downloads$ wget https://raw.githubusercontent.com/kjambunathan/kjambunathan.github.io/master/elpa/ox-odt-9.5.3.456.tar
+
 ~/Downloads$ tar xvf ox-odt-9.5.3.456.tar 
 ```
 3. Add the following at ***THE VERY BOTTOM*** of your `user-init-file`
