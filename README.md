@@ -3,15 +3,15 @@
 
 - [The Authoritative fork of Org mode's ODT exporter](#the-authoritative-fork-of-org-modes-odt-exporter)
     - [Installation](#installation)
-	- [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
-	- [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
-	    - [If you use Emacs' `package.el` ...](#if-you-use-emacs-packageel-)
-	    - [If you use `straight.el` ...](#if-you-use-straightel-)
-	    - [If you use Doom Emacs' `straight.el` ...](#if-you-use-doom-emacs-straightel-)
-	    - [If you use a `git` checkout of this repo ...](#if-you-use-a-git-checkout-of-this-repo-)
-	- [If you have lost all hope of using this exporter ...](#if-you-have-lost-all-hope-of-using-this-exporter-)
+        - [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
+        - [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
+            - [If you use Emacs' `package.el` ...](#if-you-use-emacs-packageel-)
+            - [If you use `straight.el` ...](#if-you-use-straightel-)
+            - [If you use Doom Emacs' `straight.el` ...](#if-you-use-doom-emacs-straightel-)
+            - [If you use a `git` checkout of this repo ...](#if-you-use-a-git-checkout-of-this-repo-)
+            - [If you have lost all hope of using this exporter ...](#if-you-have-lost-all-hope-of-using-this-exporter-)
     - [User Manual](#user-manual)
-    - [Blog-style artciles](#blog-style-artciles)
+    - [Blog-style articles](#blog-style-articles)
     - [Getting Help](#getting-help)
     - [FAQs](#faqs)
 - [Miscellaneous](#miscellaneous)
@@ -130,7 +130,7 @@ Assuming that you have checked out the source under `~/src/` directory, add the 
 (load-library "ox-odt")
 ```
 
-### If you have lost all hope of using this exporter ...
+#### If you have lost all hope of using this exporter ...
 
 1. Add the following at ***THE VERY BOTTOM*** of your `user-init-file`
 
