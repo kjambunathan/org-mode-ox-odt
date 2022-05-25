@@ -3,11 +3,13 @@
 
 - [The Authoritative fork of Org mode's ODT exporter](#the-authoritative-fork-of-org-modes-odt-exporter)
     - [Installation](#installation)
-        - [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
-        - [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
-            - [If you use Emacs' `package.el` ...](#if-you-use-emacs-packageel-)
-            - [If you use `straight.el` ...](#if-you-use-straightel-)
-            - [If you use a `git` checkout of this repo ...](#if-you-use-a-git-checkout-of-this-repo-)
+	- [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
+	- [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
+	    - [If you use Emacs' `package.el` ...](#if-you-use-emacs-packageel-)
+	    - [If you use `straight.el` ...](#if-you-use-straightel-)
+	    - [If you use Doom Emacs' `straight.el` ...](#if-you-use-doom-emacs-straightel-)
+	    - [If you use a `git` checkout of this repo ...](#if-you-use-a-git-checkout-of-this-repo-)
+	- [If you have lost all hope of using this exporter ...](#if-you-have-lost-all-hope-of-using-this-exporter-)
     - [User Manual](#user-manual)
     - [Blog-style artciles](#blog-style-artciles)
     - [Getting Help](#getting-help)
@@ -88,6 +90,19 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
 
 #### If you use `straight.el` ...
 
+``` elisp
+(use-package ox-odt
+  :straight (org-mode-ox-odt
+	     :host github
+	     :repo "kjambunathan/org-mode-ox-odt"
+	     :files ("lisp/ox-odt.el"
+		     "etc"
+		     "docs"
+		     "contrib/odt/LibreOffice")))
+```
+
+#### If you use Doom Emacs' `straight.el` ...
+
 1. Add the snippet you see below to `~/.doom.d/packages.el`,
 
 ``` elisp
@@ -106,17 +121,6 @@ ox-odt             9.2.1.205     available  ox-odt     OpenDocument Text Exporte
 
 Doom-emacs uses straight.el, so it may be like this in the straight.el way.
 
-``` elisp
-(use-package ox-odt
-  :straight (org-mode-ox-odt
-	     :host github
-	     :repo "kjambunathan/org-mode-ox-odt"
-	     :files ("lisp/ox-odt.el"
-		     "etc"
-		     "docs"
-		     "contrib/odt/LibreOffice")))
-```
-
 #### If you use a `git` checkout of this repo ...
 
 Assuming that you have checked out the source under `~/src/` directory, add the following at ***THE VERY BOTTOM*** of your `user-init-file`
@@ -125,6 +129,22 @@ Assuming that you have checked out the source under `~/src/` directory, add the 
 (setq load-path (cons "~/src/org-mode-ox-odt/lisp/" load-path))
 (load-library "ox-odt")
 ```
+
+### If you have lost all hope of using this exporter ...
+
+1. Add the following at ***THE VERY BOTTOM*** of your `user-init-file`
+
+``` elisp
+(progn
+  (setq load-path
+	(cons
+	 ;; Replace this path with where `ox-odt.el' can be found
+	 "/home/kjambunathan/.emacs.d/elpa/ox-odt-9.5.3.456/"
+	 load-path))
+  (load-library "ox-odt"))
+```
+
+2. Restart Emacs
 
 ## User Manual
 
@@ -171,8 +191,8 @@ If you want a blog-style, informal introduction to some of the features of this 
 
 If you would like to customize the look of a document produced by this exporter, a good familiarity with `LibreOffice`—this means  working with `styles`—is a must.
 
-`LibreOffice` comes with good set of [User Guides][https://documentation.libreoffice.org/en/english-documentation/].  If you find that these guides are too detailed for your  immediate needs, you may want to start with one of these:
+`LibreOffice` comes with good set of [User Guides](https://documentation.libreoffice.org/en/english-documentation/).  If you find that these guides are too detailed for your  immediate needs, you may want to start with one of these:
 
 1. [Students' Guide to OpenOffice Writer](https://wiki.documentfoundation.org/images/0/01/Ooo_for_students.pdf)
-2. [Writing a Thesis in OpenOffice.org](http://www.openoffice.org/documentation/HOW_TO/word_processing/How_to_Write_a_Thesis_in_OOo.pdf)
-3. [Self-Publishing using LibreOffice Writer 6: How to use free software to write, design, and create ebooks and PDFs for print-on-demand books](https://taming-libreoffice.com/?smd_process_download=1&download_id=321).  This file is distributed from [Taming LibreOffice Resources for intermediate & advanced users](https://taming-libreoffice.com/my-books/)
+2. [Writing a Thesis in OpenOffice.org](https://web.archive.org/web/20220525051011/http://www.openoffice.org/documentation/HOW_TO/word_processing/How_to_Write_a_Thesis_in_OOo.pdf)
+3. [Self-Publishing using LibreOffice Writer 6: How to use free software to write, design, and create ebooks and PDFs for print-on-demand books](https://web.archive.org/web/20220525050638/https://www.taming-libreoffice.com/wp-content/uploads/2019/10/SelfPublishWithLibreOffice6.pdf).  For more recent versions, see [Taming LibreOffice Resources for intermediate & advanced users](https://taming-libreoffice.com/my-books/).
