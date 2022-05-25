@@ -154,7 +154,7 @@ If you are an existing user of OpenDocument exporter, start with [What is New (O
 
 If you want a /near complete/, but a /crude/ list of features start with [List of features that are exclusive to The Enhanced OpenDocument Exporter for Org mode](https://github.com/kjambunathan/org-mode-ox-odt/blob/master/notes/SNIPPETS.org).
 
-## Blog-style artciles
+## Blog-style articles
 
 If you want a blog-style, informal introduction to some of the features of this exporter, you may want to look at the following articles:
 
