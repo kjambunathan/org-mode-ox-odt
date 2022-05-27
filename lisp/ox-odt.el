@@ -207,6 +207,7 @@
     (:odt-format-inlinetask-function nil nil org-odt-format-inlinetask-function)
     (:odt-inline-formula-rules nil nil org-odt-inline-formula-rules)
     (:odt-inline-image-rules nil nil org-odt-inline-image-rules)
+    (:odt-link-org-files-as-odt nil nil org-odt-link-org-files-as-odt)
     (:odt-pixels-per-inch nil nil org-odt-pixels-per-inch)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
@@ -1893,6 +1894,11 @@ implementation details."
 	      '(:TABLE: :FIGURE: :MATH-FORMULA: :DVIPNG-IMAGE: :LISTING:))))
   :group 'org-export-odt
   :version "24.4")
+
+(defcustom org-odt-link-org-files-as-odt t
+  "When Non-nil, treat a \"file.org\" link as if it is a \"file.odt\" link."
+  :group 'org-export-odt
+  :type 'boolean)
 
 ;;;; Lists
 
@@ -5655,7 +5661,23 @@ Return nil, otherwise."
 DESC is the description part of the link, or the empty string.
 INFO is a plist holding contextual information.  See
 `org-export-data'."
-  (let* ((type (org-element-property :type link))
+  (let* ((file.org->file.odt?
+	  (lambda (raw-path info)
+	    (let ((raw-path (cond
+			     ;; If file path is absolute, prepend it with protocol
+			     ;; component - "file://".
+			     ((file-name-absolute-p raw-path)
+			      (org-export-file-uri raw-path))
+			     ;; Otherwise, use the relative path, but prepend it with "../".
+			     (t (concat "../" (file-relative-name raw-path))))))
+	      ;; Treat links to `file.org' as links to `file.odt', if
+	      ;; needed.  See `org-odt-link-org-files-as-odt'.
+	      (cond
+	       ((and (plist-get info :odt-link-org-files-as-odt)
+		     (string= ".org" (downcase (file-name-extension raw-path "."))))
+		(concat (file-name-sans-extension raw-path) ".odt"))
+	       (t raw-path)))))
+	 (type (org-element-property :type link))
 	 (raw-path (org-element-property :path link))
 	 ;; Ensure DESC really exists, or set it to nil.
 	 (desc (and (not (string= desc "")) desc))
@@ -5666,13 +5688,7 @@ INFO is a plist holding contextual information.  See
 	   ((member type '("http" "https" "ftp" "mailto"))
 	    (xml-escape-string (url-encode-url (org-link-unescape (concat type ":" raw-path)))))
 	   ((string= type "file")
-	    (cond
-	     ;; If file path is absolute, prepend it with protocol
-	     ;; component - "file://".
-	     ((file-name-absolute-p raw-path)
-	      (org-export-file-uri raw-path))
-	     ;; Otherwise, use the relative path, but prepend it with "../".
-	     (t (concat "../" (file-relative-name raw-path) ))))
+	    (file.org->file.odt? raw-path info))
 	   (t raw-path))))
     (cond
      ;; Link type is handled by a special function.
@@ -5713,6 +5729,12 @@ INFO is a plist holding contextual information.  See
 			     (org-export-resolve-fuzzy-link link info)
 			   (org-export-resolve-id-link link info))))
 	(cl-case (org-element-type destination)
+	  ;; Case 0: ID link points to an external file.
+	  (plain-text
+	   (format "<text:a xlink:type=\"simple\" xlink:href=\"%s#%s\">%s</text:a>"
+		   (funcall file.org->file.odt? destination info)
+		   (concat "ID-" path)
+		   (or desc (org-odt--encode-plain-text destination))))
 	  ;; Case 1: Fuzzy link points nowhere.
 	  ('nil
 	   (user-error
