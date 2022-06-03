@@ -5688,7 +5688,7 @@ INFO is a plist holding contextual information.  See
 	   ((member type '("http" "https" "ftp" "mailto"))
 	    (xml-escape-string (url-encode-url (org-link-unescape (concat type ":" raw-path)))))
 	   ((string= type "file")
-	    (file.org->file.odt? raw-path info))
+	    (funcall file.org->file.odt? raw-path info))
 	   (t raw-path))))
     (cond
      ;; Link type is handled by a special function.
