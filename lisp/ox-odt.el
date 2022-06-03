@@ -211,6 +211,7 @@
     (:odt-pixels-per-inch nil nil org-odt-pixels-per-inch)
     (:odt-table-styles nil nil org-odt-table-styles)
     (:odt-use-date-fields nil nil org-odt-use-date-fields)
+    (:odt-indices nil nil org-odt-indices)
     ;; Variables that are used per-session of export.
     ;; Running counters for various objects.  Use this to generate
     ;; automatic names and style-names for those objects.
@@ -4577,6 +4578,249 @@ contextual information."
 
 ;;;; Keyword
 
+(defcustom org-odt-indices
+  '((:keyword "INDEX"
+	      :comment "Default index"
+	      :alias "ii" :separator "," :alphap nil :index-name "")
+    (:keyword "AINDEX"
+	      :comment "Alphabetcal index"
+	      :alias "ai" :separator "," :alphap t :index-name "Alphabetical")
+    (:keyword "UINDEX"
+	      :comment "User-Defined index"
+	      :alias "ui" :separator "," :alphap nil :index-name "User-Defined")
+    (:keyword "CINDEX"
+	      :comment "Concept index, for general concepts"
+	      :alias "cp" :separator nil :alphap t :index-name "Concept")
+    (:keyword "FINDEX"
+	      :comment "Function index, for function and function-like names (such as entry points of libraries)"
+	      :alias "fn" :separator nil :alphap nil :index-name "Function")
+    (:keyword "KINDEX"
+	      :comment "Keystroke index, for keyboard commands"
+	      :alias "ky" :separator nil :alphap nil :index-name "Key")
+    (:keyword "PINDEX"
+	      :comment "Program index, for names of programs"
+	      :alias "pg" :separator nil :alphap nil :index-name "Program")
+    (:keyword "TINDEX"
+	      :comment "Data type index, for type names (such as structures defined in header files)"
+	      :alias "tp" :separator nil :alphap nil :index-name "Data Type")
+    (:keyword "VINDEX"
+	      :comment "Variable index, for variable names (such as library global variables)"
+	      :alias "vr" :separator nil :alphap nil :index-name "Variable"))
+  "ODT Indices."
+  :group 'org-export-odt
+  :type '(repeat (list :tag ""
+		       ;; Keyword
+		       (const :format "" :keyword)
+		       (string :tag "Name" :format "%v")
+		       ;; Comment
+		       (const :format "" :comment)
+		       (string :tag "Comment" :format "%v")
+		       ;; Alias
+		       (const :format "" :alias)
+		       (string :tag "PRINT_INDEX name")
+		       ;; Separator
+		       (const :format "" :separator)
+		       (choice :tag "Separator"
+			       (const :tag "None" nil)
+			       (string :tag "Comma" ",")
+			       (string :tag "Other"))
+		       ;; Is Alphabetical
+		       (const :format "" :alphap)
+		       (choice :tag "Is Alphabetical?"
+			       (const :tag "No" nil)
+			       (const :tag "Yes" t))
+		       ;; ODT Index Name
+		       (const :format "" :index-name)
+		       (string :tag "Index Name used in ODT XML"))))
+
+(defun org-odt--index-keyword->plist (index-keyword info)
+  (cl-loop for entry in (plist-get info :odt-indices)
+	   when (string= index-keyword (plist-get entry :keyword))
+	   return entry))
+
+(defun org-odt--index-name->plist (index-name info)
+  (cl-loop for entry in (plist-get info :odt-indices)
+	   when (string= index-name (plist-get entry :index-name))
+	   return entry))
+
+(defun org-odt--index-alias->plist (alias info)
+  (cl-loop for entry in (plist-get info :odt-indices)
+	   when (string= alias (plist-get entry :alias))
+	   return entry))
+
+(defun org-odt--pop-index-entries (info)
+  (let ((indices (plist-get info :index-entries)))
+    (prog1 (or indices "")
+      (plist-put info :index-entries nil))))
+
+(defun org-odt--push-index-entries (index-entry info)
+  (plist-put info :index-entries
+	     (concat (or (plist-get info :index-entries) "")
+		     index-entry)))
+
+(cl-defun org-odt--format-index-entry (info index-plist &key alttext bodytext mainp)
+  (cl-assert index-plist)
+  (cl-assert (null bodytext))
+  (cl-assert (org-string-nw-p alttext))
+  (let* ((index-name (org-odt--encode-plain-text (plist-get index-plist :index-name)))
+	 (index-entries
+	  (let* ((separator (plist-get index-plist :separator))
+		 (entries (when (org-string-nw-p separator)
+			    (split-string alttext separator t "[ \t]"))))
+	    (mapcar #'org-odt--encode-plain-text entries)))
+	 (index-len (length index-entries))
+	 (max-indices 3)
+	 (key3 (or (nth 0 index-entries)
+		   (org-odt--encode-plain-text alttext)))
+	 (key1 (nth 1 index-entries))
+	 (key2 (nth 2 index-entries)))
+    (when (> index-len max-indices)
+      (user-error "Number of Index entries (%s) exceeds the maximum supported (%s)"
+		  index-len max-indices))
+    (cond
+      ;; Alphabetical Index
+      ((plist-get index-plist :alphap)
+       (let* ((extra (mapconcat #'identity
+				(list
+				 (when key1
+				   (format "text:key1=\"%s\"" key1))
+				 (when key2
+				   (format "text:key2=\"%s\"" key2))
+				 (format "text:main-entry=\"%s\"" (if mainp "true" "false"))
+				 (when key3
+				   (format "text:string-value=\"%s\"" key3)))
+				" ")))
+	 (cond
+	   (alttext
+	    (format "<text:alphabetical-index-mark %s/>" extra))
+	   (t
+	    (let* ((id (org-odt--name-object info 'index-mark)))
+	      (concat
+	       (format "<text:alphabetical-index-mark-start text:id=\"%s\" %s/>" id extra)
+	       bodytext
+	       (format "<text:alphabetical-index-mark-end text:id=\"%s\"/>" id)))))))
+      ;; User-Defined Index
+      (t
+       (cond
+	 (index-entries
+	  (mapconcat #'identity
+		     (cl-loop for outline-level from 1 to index-len
+			   for i in (assoc-default index-len
+						   '((1 . (1))
+						     (2 . (2 1))
+						     (3 . (2 3 1))))
+			   for index-entry = (nth (1- i) index-entries)
+			   collect (format "<text:user-index-mark text:string-value=\"%s\" text:index-name=\"%s\" text:outline-level=\"%d\"/>"
+					   index-entry index-name outline-level))
+		     ""))
+	 (t
+	  (format "<text:user-index-mark text:string-value=\"%s\" text:index-name=\"%s\" text:outline-level=\"1\"/>"
+		  key3 index-name)))))))
+
+(defun org-odt--format-index-entries (element info)
+  (mapconcat #'identity
+	     (cl-loop for aline in (org-element-property :attr_odt element)
+		      for plist = (ignore-errors (when aline (read (format "(%s)" aline))))
+		      for alttext = (plist-get plist :index-entry)
+		      for index-name = (or (plist-get plist :index-name)
+					   (plist-get (car (plist-get info :odt-indices)) :index-name))
+		      for index-plist = (org-odt--index-name->plist index-name info)
+		      when alttext
+		      collect (org-odt--format-index-entry info index-plist
+							   :alttext alttext
+							   :mainp (plist-get plist :mainp)))
+	     ""))
+
+(defun org-odt--format-alphabetical-index (_index-name _info)
+  (org-odt--lisp-to-xml
+   `(text:alphabetical-index
+     ((text:style-name . "Sect1")
+      (text:protected . "false")
+      (text:name . "Alphabetical Index1"))
+     (text:alphabetical-index-source
+      ((text:main-entry-style-name . "Main_20_index_20_entry")
+       (text:sort-algorithm . "alphanumeric")
+       (fo:language . "en")
+       (fo:country . "IN"))
+      (text:index-title-template
+       ((text:style-name . "Index_20_Heading"))
+       "Alphabetical Index")
+      (text:alphabetical-index-entry-template
+       ((text:outline-level . "separator")
+	(text:style-name . "Index_20_Separator"))
+       (text:index-entry-text nil))
+      ,@(cl-loop for level from 1 to 3 collect
+		 (org-odt--lisp-to-xml
+		  `(text:alphabetical-index-entry-template
+		    ((text:outline-level . ,(format "%d" level))
+		     (text:style-name . ,(format "Index_20_%d" level)))
+		    (text:index-entry-text nil)
+		    (text:index-entry-tab-stop
+		     ((style:type . "right")
+		      (style:leader-char . ".")))
+		    (text:index-entry-page-number nil)))))
+     (text:index-body nil
+		      (text:index-title
+		       ((text:style-name . "Sect1")
+			(text:name . "Alphabetical Index1_Head"))
+		       (text:p
+			((text:style-name . "Index_20_Heading"))
+			"Alphabetical Index"))))))
+
+(defun org-odt--format-user-defined-index (index-name info)
+  (let* ((_style "OrgIndexSection")
+	 (object-name (org-odt--name-object info 'index))
+	 (index-name (if (org-string-nw-p index-name)
+			 (org-trim index-name)
+		       "User-Defined"))
+	 (index-title (format "%s Index" index-name)))
+    (org-odt--lisp-to-xml
+     `(text:user-index
+       ((text:style-name . "Sect1")
+	(text:protected . "false")
+	(text:name . ,object-name))
+       (text:user-index-source
+	((text:use-index-marks . "true")
+	 (text:index-name . ;; "User-Defined"
+			  ,index-name))
+	(text:index-title-template
+	 ((text:style-name . "User_20_Index_20_Heading"))
+	 ;; "User-Defined Index"
+	 ,index-title)
+	,@(cl-loop for level from 1 to 10 collect
+		   (org-odt--lisp-to-xml
+		    `(text:user-index-entry-template
+		      ((text:outline-level . ,(format "%d" level))
+		       (text:style-name . ,(format "User_20_Index_20_%d" level)))
+		      ,@(cl-loop with indent = 0.5
+				 for i from 1 to (1- level)
+				 collect `(text:index-entry-tab-stop
+					   ((style:type . "left")
+					    (style:position . ,(format "%scm" (* i indent)))
+					    (style:leader-char . " "))))
+		      (text:index-entry-text nil)
+		      (text:index-entry-tab-stop
+		       ((style:type . "right")
+			(style:leader-char . ".")))
+		      (text:index-entry-link-start
+		       ((text:style-name . "Index_20_Link")))
+		      (text:index-entry-page-number nil)
+		      (text:index-entry-link-end nil)))))
+       (text:index-body nil
+			(text:index-title
+			 ((text:style-name . "Sect1")
+			  (text:name . "User-Defined3_Head"))
+			 (text:p
+			  ((text:style-name . "User_20_Index_20_Heading"))
+			  ,index-title)))))))
+
+(defun org-odt--format-index (index-plist info)
+  (let* ((index-name (plist-get index-plist :index-name)))
+    (cond
+     ((plist-get index-plist :alphap)
+      (org-odt--format-alphabetical-index index-name info))
+     (t (org-odt--format-user-defined-index index-name info)))))
+
 (defun org-odt-keyword (keyword _contents info)
   "Transcode a KEYWORD element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
@@ -4591,9 +4835,6 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 				       (org-odt--define-custom-field key value)))
       nil)
      ((string= key "ODT") value)
-     ((string= key "INDEX")
-      ;; FIXME
-      (ignore))
      ((string= key "TOC")
       (let* ((value (downcase value))
 	     (entity-name (when (string-match (rx-to-string
@@ -4611,13 +4852,31 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 			    ((wholenump with-toc) with-toc)
 			    (t (plist-get info :headline-levels))))))
 	     (when (wholenump depth)
-               (org-odt-toc depth info (and localp keyword)))))
+	       (org-odt-toc depth info (and localp keyword)))))
 	  (_
 	   (org-odt-toc/category :category entity-name
 				 :localp localp
 				 :index-title (org-odt--translate
 					       (org-trim (format "List of %s" (capitalize entity-name)))
 					       :utf-8 info))))))
+     ;; Indices
+     (;; (member key '("CINDEX" "FINDEX" "KINDEX" "PINDEX" "TINDEX" "VINDEX"))
+      (org-odt--index-keyword->plist key info)
+      (let* ((index-plist (org-odt--index-keyword->plist key info)))
+	(unless index-plist
+	  (user-error "Index keyword %S not defined" key))
+	(org-odt--push-index-entries
+	 (org-odt--format-index-entry info index-plist :alttext value)
+	 info))
+      (ignore))
+     ;; Print Index
+     ((string= key "PRINT_INDEX")
+      (let* ((index-plist (org-odt--index-alias->plist value info)))
+	(unless index-plist
+	  (user-error "Unknown keyword %S in PRINT_INDEX" value))
+	(when index-plist
+	  (org-odt--format-index index-plist info))))
+     ;; Ad-hoc Page break
      ((string= key "PAGEBREAK")
 
       ;; Pagebreaks created this way are a mere expedience.  These
@@ -6026,7 +6285,8 @@ the plist used as a communication channel."
 			    ;; Case 2: Element doesn't specify a style of
 			    ;; it's own.  Use the parent style.
 			    style))
-		     finally return style)))
+		     finally return style))
+	   (index-entries (or (org-odt--format-index-entries paragraph info) "")))
       ;; If this paragraph is a leading paragraph in an item and the
       ;; item has a checkbox, splice the checkbox and paragraph contents
       ;; together.
@@ -6051,7 +6311,7 @@ the plist used as a communication channel."
        (t
 	(format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 		(org-odt--get-derived-paragraph-style paragraph info style)
-		contents))))))
+		(concat index-entries contents)))))))
 
 
 ;;;; Plain List
@@ -6120,7 +6380,8 @@ contextual information."
       (setq output (replace-regexp-in-string
 		    "\\(\\\\\\\\\\)?[ \t]*\n" "<text:line-break/>" output t)))
     ;; Return value.
-    output))
+    (concat (org-odt--pop-index-entries info)
+	    output)))
 
 
 ;;;; Planning
@@ -6188,11 +6449,17 @@ holding contextual information."
 	    (t "OrgSection"))
 	  contents))
 
-(defun org-odt-section (_section contents _info) ; FIXME
+(defun org-odt-section (section contents info)
   "Transcode a SECTION element from Org to ODT.
 CONTENTS holds the contents of the section.  INFO is a plist
 holding contextual information."
-  contents)
+  (let* ((parent-headline (org-export-get-parent-headline section))
+	 (index-plist (let ((index-alias (org-export-get-node-property :INDEX parent-headline t)))
+			(org-odt--index-alias->plist index-alias info))))
+    (concat contents
+	    (or (when index-plist
+		  (org-odt--format-index index-plist info))
+		""))))
 
 ;;;; Radio Target
 
