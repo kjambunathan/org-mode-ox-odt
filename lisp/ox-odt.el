@@ -6839,7 +6839,7 @@ modifications to account for nested tables."
 				 (plist-get (org-odt--table-col-cookies
 					     (org-export-get-parent-table table-cell) info)
 					    :valigns)))
-	 (table-cell-borders (org-export-table-cell-borders table-cell info))
+	 (table-cell-borders (org-odt--table-cell-get-cell-border table-cell info))
 	 (style-spec (org-odt-table-style-spec table-cell info))
 	 (template-name (if style-spec (nth 1 style-spec) "Org")))
     ;; LibreOffice - particularly the Writer - honors neither table
@@ -7073,6 +7073,19 @@ styles will be defined *automatically* for you."
 					:haligns))))
 		    ""))))))
 
+
+(defun org-odt--table-read-cell-span-attribute (table)
+  (unless (org-odt--read-attribute table :suppress-spans)
+    (mapconcat #'identity
+	       (org-odt--read-attribute table :span 'collect)
+	       " ")))
+
+(defun org-odt--table-read-cell-border-attribute  (table)
+  (when (org-odt--read-attribute table :suppress-spans)
+    (mapconcat #'identity
+	       (org-odt--read-attribute table :span 'collect)
+	       " ")))
+
 (defun org-odt--table-get-cell-spans (table info)
   "Non-nil when TABLE has spanned row or columns.
 INFO is a plist used as a communication channel.
@@ -7122,9 +7135,7 @@ column spans
 	 (cached (gethash table cache 'no-cache)))
     (if (not (eq cached 'no-cache)) cached
       (puthash table
-	       (let* ((span (mapconcat #'identity
-				       (org-odt--read-attribute table :span 'collect)
-				       " ")))
+	       (let* ((span (org-odt--table-read-cell-span-attribute table)))
 		 (cl-loop for spec in (when span (split-string span " "))
 			  when (string-match "@\\([[:digit:]]+\\)\\$\\([[:digit:]]+\\){\\([[:digit:]]+\\):\\([[:digit:]]+\\)}" spec)
 			  append
@@ -7145,6 +7156,150 @@ column spans
 	 (cell-spans (org-odt--table-get-cell-spans table info)))
     (cdr (assoc (cons (1+ (car address)) (1+ (cdr address)))
 		cell-spans))))
+
+(defun org-odt--table-get-cell-borders (table info)
+  "Non-nil when TABLE has custom cell borders.
+INFO is a plist used as a communication channel.
+
+A TABLE has custom cell borders when it has a `:span' attribute,
+together with a non-nil `:suppress-spans' attribute.
+
+You can attach a `:span' attribute to a table as follows:
+
+    #+ATTR_ODT: :span \"@R1C1{ROWSPAN1:COLSPAN1} @R2C2{ROWSPAN2:COLSPAN2} ...\"
+    | Some | table |
+    | ...  | ...   |
+    |      |       |
+
+For example, an `org' table like the one below
+
+    #+ATTR_ODT: :suppress-spans t
+    #+ATTR_ODT: :span \"@1$1{3:1} @1$2{1:8}\"
+    #+ATTR_ODT: :span \"@2$2{1:2} @2$4{1:2} @2$6{1:2} @2$8{1:2}\"
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    | Region | Sales |     |     |     |     |     |     |     |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    |        | Q1    |     |  Q2 |     |  Q3 |     |  Q4 |     |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    |        | foo   | bar | foo | bar | foo | bar | foo | bar |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+    | North  | 350   |  46 | 253 |  34 | 234 |  42 | 382 |  68 |
+    | South  | 462   |  84 | 511 |  78 | 435 |  45 | 534 |  89 |
+    |--------+-------+-----+-----+-----+-----+-----+-----+-----|
+
+is equivalent to the following `table.el'-table in a visual
+sense.  The resemblance is visual only, and not geometric because
+it doesn't generate spanned cells.  
+
+    +---------+-------------------------------------------------+
+    |Region   | Sales                                           |
+    |         +-------------+-----------+-----------+-----------+
+    |         | Q1          | Q2        | Q3        | Q4        |
+    |         +-------+-----+-----+-----+-----+-----+-----+-----+
+    |         | foo   | bar | foo | bar | foo | bar | foo | bar |
+    +---------+-------+-----+-----+-----+-----+-----+-----+-----+
+    | North   | 350   | 46  | 253 | 34  | 234 | 42  | 382 | 68  |
+    +---------+-------+-----+-----+-----+-----+-----+-----+-----+
+    | South   | 462   | 84  | 511 | 78  | 435 | 45  | 534 | 89  |
+    +---------+-------+-----+-----+-----+-----+-----+-----+-----+
+
+The example `org' and `table.el' tables above, use empty cells to
+illustrate the grid structure.
+
+In order to study the effect of `:suppress-spans t' attribute,
+fill the empty cells of the example `org' table above, and export
+with and without `:suppress-spans' attribute.  Examine the cell
+boundaries of resulting table in `LibreOffice'.
+
+        *Aside*: You can examine the table cell
+        boundaries--irrespective of their borders--in either of
+        the following ways
+
+            - In `LibreOffice', `Menu bar -> View -> Table Boundaries'
+
+            - Attach `#+ATTR_ODT: :style \"GriddedTable\"' to an `org' table.
+
+You will notice that
+
+    - when spans are supressed, the `org' text in all the cells carry over
+      to ODT output.  The ODT table will have Row x Column number of cells.
+      
+    - when spans are allowed, the `org' text in spanned cells, (save for the
+      pivot cell @R$C) are stripped from the ODT output.  In this case, the
+      ODT table will have less than Row x Column number of cells.
+
+In other words,
+
+    - Suppress spans when you want to control the grid structure of the
+      table.
+      
+    - Allow spans when you want the text in the pivot cell @R$C to flow over
+      seamlessly to the neighbouring cells and occupy the whole of ROWSPAN x
+      COLSPAN number of neighbouring cells. 
+
+Here is another real-world example where `:suppress-spans t'
+could be helpful.
+
+    #+ATTR_ODT: :rel-width 50
+    #+ATTR_ODT: :col-cookies \"| c | c | c |\"
+    #+ATTR_ODT: :suppress-spans t
+    #+ATTR_ODT: :span \"@2$1{2:1} @2$2{2:1} @2$3{4:1}\"
+    #+ATTR_ODT: :span \"@4$1{2:1} @4$2{2:1}\"
+    | $p$ | $q$ | $p \rightarrow q$ |
+    |-----+-----+-------------------|
+    |   0 |   0 |                 1 |
+    |   0 |   1 |                 1 |
+    |-----+-----+-------------------|
+    |   1 |   0 |                 0 |
+    |   1 |   1 |                 1 |
+    |-----+-----+-------------------|
+
+For more information, on generating with spanned cells see
+`org-odt--table-get-cell-spans'."
+  (let* ((cache (or (plist-get info :table-cell-borders-cache)
+		    (let ((table (make-hash-table :test #'eq)))
+		      (plist-put info :table-cell-borders-cache table)
+		      table)))
+	 (cached (gethash table cache 'no-cache)))
+    (if (not (eq cached 'no-cache)) cached
+      (puthash table
+	       (let* ((span (org-odt--table-read-cell-border-attribute table)))
+		 (cl-loop for spec in (when span (split-string span " "))
+			  when (string-match "@\\([[:digit:]]+\\)\\$\\([[:digit:]]+\\){\\([[:digit:]]+\\):\\([[:digit:]]+\\)}" spec)
+			  append
+			  (pcase-let ((`(,pivot-r ,pivot-c ,rowspan ,colspan)
+				       (mapcar (lambda (i)
+						 (string-to-number (match-string i spec)))
+					       (number-sequence 1 4))))
+			    (cl-loop with first-r = pivot-r
+				     with last-r = (1- (+ pivot-r rowspan))
+				     with first-c = pivot-c
+				     with last-c = (1- (+ pivot-c colspan))
+				     for r in (number-sequence first-r last-r) append
+				     (cl-loop for c in (number-sequence first-c last-c)
+					      collect (cons (cons r c)
+							    (list
+							     (when (= r first-r)
+							       'above)
+							     (when (= r last-r)
+							       'below)
+							     (when (= c first-c)
+							       'left)
+							     (when (= c last-c)
+							       'right))))))))
+	       cache))))
+
+(defun org-odt--table-cell-get-cell-border (table-cell info)
+  (let* ((table (org-export-get-parent-table table-cell))
+	 (address (org-odt-table-cell-address table-cell info))
+	 (cell-borders (org-odt--table-get-cell-borders table info)))
+    (cond
+     ((org-odt--table-read-cell-border-attribute table)
+      (or (assoc-default (cons (1+ (car address)) (1+ (cdr address)))
+			 cell-borders)
+	  '(left right above below)))
+     (t
+      (org-export-table-cell-borders table-cell info)))))
 
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
