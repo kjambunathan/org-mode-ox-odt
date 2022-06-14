@@ -169,7 +169,7 @@
     (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
     (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
-    (:odt-extra-styles "ODT_EXTRA_STYLES" nil nil newline)
+    (:odt-extra-styles "ODT_EXTRA_STYLES" nil org-odt-extra-styles newline)
     (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil nil newline)
     (:odt-master-styles "ODT_MASTER_STYLES" nil nil newline)
     ;; Keywords that affect content.xml
@@ -977,6 +977,26 @@ a per-file basis.  For example,
 	  (cons :tag "Members"
 		(file :tag "	Member" "styles.xml")
 		(repeat (file :tag "Member"))))))
+
+(defcustom org-odt-extra-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODT_EXTRA_STYLES: ...
+
+       and
+
+    #+ATTR_ODT: :target \"extra_styles\"
+    #+begin_src nxml
+    ...
+    #+end_src
+."
+  :group 'org-export-odt
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
 
 (defcustom org-odt-display-outline-level 2
   "Outline levels considered for enumerating captioned entities."
