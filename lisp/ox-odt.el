@@ -356,13 +356,19 @@ standard Emacs.")
 "
   "Template for auto-generated graphic styles.")
 
-(defvar org-odt-src-block-paragraph-format
-  "<style:style style:name=\"OrgSrcBlock\" style:family=\"paragraph\" style:parent-style-name=\"Preformatted_20_Text\">
-   <style:paragraph-properties fo:background-color=\"%s\" fo:padding=\"0.049cm\" fo:border=\"0.51pt solid #000000\" style:shadow=\"none\">
-    <style:background-image/>
-   </style:paragraph-properties>
-   <style:text-properties fo:color=\"%s\"/>
-  </style:style>"
+(defvar org-odt-src-block-style-format
+  (org-odt--lisp-to-xml
+   `(style:style
+     ((style:name . "OrgSrcBlock")
+      (style:family . "paragraph")
+      (style:parent-style-name . "Preformatted_20_Text"))
+     (style:paragraph-properties
+      ((fo:background-color . "%s")
+       (fo:padding . "0.049cm")
+       (fo:border . "0.51pt solid #000000")
+       (style:shadow . "none"))
+      (style:background-image nil))
+     "\n   %s\n  "))
   "Custom paragraph style for colorized source and example blocks.
 This style is much the same as that of \"OrgFixedWidthBlock\"
 except that the foreground and background colors are set
@@ -6426,6 +6432,82 @@ holding contextual information."
 
 ;;;; Src Block
 
+(with-no-warnings
+  (with-eval-after-load 'hfy-cmap
+    (advice-add 'hfy-fallback-color-values :override
+		(defun org-odt--hfy-fallback-color-values (color-string)
+		  "Workaround a bug in `hfy-fallback-color-values'."
+		  ;;Make the color association case-insensitive.
+		  (cdr (assoc-string color-string
+				     (or hfy-rgb-txt-color-map
+					 hfy-fallback-color-map)
+				     t))))))
+
+(defvar org-odt-handled-face-attributes
+  '(:background                         ;; :box :extend
+    :family :foreground                 ;; :foundry
+    :height                             ;; :inherit :inverse-video
+    :overline :slant                    ;; :stipple
+    :strike-through :underline :weight  ;; :width
+    ))
+
+(defun org-odt--face-attributes (face &rest props)
+  (cl-loop for prop in (or
+			;; When props is non-nil, return values of only
+			;; specified face attributes.
+			props
+			;; When props is nil, return values of all face
+			;; attributes.
+			(sort (mapcar #'car face-attribute-name-alist)
+			      (lambda (s1 s2)
+				(string< (symbol-name s1) (symbol-name s2)))))
+	   collect (cons prop (face-attribute face prop nil t))))
+
+(defun org-odt--face->style:text-properties (face &rest props)
+  (cl-loop with attributes = (apply #'org-odt--face-attributes face
+				    (or props org-odt-handled-face-attributes))
+	   ;; See `hfy-face-to-style-i'
+	   with handlers = '(
+			     (:background fo:background-color hfy-bgcol)
+			     (:family fo:font-family hfy-family)
+			     (:foreground fo:color hfy-color)
+			     (:height fo:font-size hfy-size)
+			     (:inherit nil (lambda (val)
+					     (when val
+					       `((style:parent-style-name
+						  . ,(concat "OrgSrc"
+							     (mapconcat
+							      'capitalize (split-string
+									   (hfy-face-or-def-to-name val) "-")
+							      "")))))))
+			     (:overline nil (lambda (_val)
+					      '((style:text-overline-style . "solid")
+						(style:text-overline-width . "auto")
+						(style:text-overline-color . "font-color"))))
+			     (:slant fo:font-style hfy-slant)
+			     (:strike-through nil (lambda (_val)
+						    `((style:text-line-through-style . "solid")
+						      (style:text-line-through-type . "single"))))
+			     (:underline nil (lambda (_val)
+					       '((style:text-underline-style . "solid")
+						 (style:text-underline-width . "auto")
+						 (style:text-underline-color . "font-color"))))
+			     (:weight fo:font-weight hfy-weight)
+			     (:invisible nil (lambda (_val)
+					       `((text:display . "none")))))
+	   for (prop . val) in attributes
+	   for (odt-attribute fn) = (assoc-default prop handlers)
+	   for value = (unless (eq val 'unspecified)
+			 (when (and val (functionp fn))
+			   (cond
+			    ((null odt-attribute)
+			     (funcall fn val))
+			    (t (let ((v (funcall fn val)))
+				 (when (cdar v)
+				   (list (cons odt-attribute (cdar v)))))))))
+	   when value
+	   append value))
+
 (defun org-odt-hfy-face-to-css (fn)
   "Create custom style for face FN.
 When FN is the default face, use its foreground and background
@@ -6439,23 +6521,32 @@ operations on the face name in that order - de-dash, CamelCase
 and prefix with \"OrgSrc\".  For example,
 `font-lock-function-name-face' is associated with
 \"OrgSrcFontLockFunctionNameFace\"."
-  (let* ((css-list (hfy-face-to-style fn))
-	 (style-name (concat "OrgSrc"
-                             (mapconcat
-                              'capitalize (split-string
-                                           (hfy-face-or-def-to-name fn) "-")
-                              "")))
-	 (color-val (cdr (assoc "color" css-list)))
-	 (background-color-val (cdr (assoc "background" css-list))))
+  (let* ((style-name (concat "OrgSrc"
+			     (mapconcat
+			      'capitalize (split-string
+					   (hfy-face-or-def-to-name fn) "-")
+			      "")))
+	 ;; (css-list (hfy-face-to-style fn))
+	 ;; (color-val (cdr (assoc "color" _css-list)))
+	 ;; (background-color-val (cdr (assoc "background" _css-list)))
+	 )
     (cons style-name
 	  (when org-odt-create-custom-styles-for-srcblocks
-	    (if (eq fn 'default)
-		(format org-odt-src-block-paragraph-format background-color-val color-val)
-	      (format
-	       "
-<style:style style:name=\"%s\" style:family=\"text\">
-  <style:text-properties fo:background-color=\"%s\" fo:color=\"%s\" />
- </style:style>" style-name background-color-val color-val))))))
+	    (cond
+	     ((eq fn 'default)
+	      (format org-odt-src-block-style-format
+		      (cdar (org-odt--face->style:text-properties 'default :background))
+		      (org-odt--lisp-to-xml
+		       `(style:text-properties
+			 ,(org-odt--face->style:text-properties 'default :foreground)))))
+	     (t
+	      (org-odt--lisp-to-xml
+	       `(style:style
+		 ((style:name . ,style-name)
+		  (style:family . "text")
+		  ,@(org-odt--face->style:text-properties fn :inherit))
+		 (style:text-properties
+		  ,(org-odt--face->style:text-properties fn))))))))))
 
 (defun org-odt-htmlfontify-string (line)
   (let* ((hfy-html-quote-regex "\\([<\"&> 	]\\)")
