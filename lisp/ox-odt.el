@@ -1104,9 +1104,9 @@ I. Reload
   1. Configure `xdg-open' as the system-dependent command for opening
      files
 
-	 (setcdr (assq 'system org-file-apps-gnu) \"xdg-open %s\")
+	 (setcdr (assq \\='system org-file-apps-gnu) \"xdg-open %s\")
 
-	 (advice-add 'org-open-file :around
+	 (advice-add \\='org-open-file :around
 		     (lambda (orig-fun &rest args)
 		       ;; Work around a weird problem with xdg-open.
 		       (let ((process-connection-type nil))
@@ -9656,7 +9656,7 @@ directory as `ODT' and `DOCX' files to \"~/public_odt\"
 directory.
 
     (setq org-publish-project-alist
-          '((\"org-odt\"
+          \\='((\"org-odt\"
              :base-directory \"~/org/\"
              :publishing-function org-odt-publish-to-odt
              :publishing-directory \"~/public_odt\"
@@ -9671,7 +9671,7 @@ Note the use of ODT-specific options `:odt-app' and
 For a list of ODT-specific options you can evaluate the following
 form
 
-    (org-export-backend-options (org-export-get-backend 'odt))
+    (org-export-backend-options (org-export-get-backend \\='odt))
 ."
   (cl-letf (((symbol-function 'org-export-to-file)
 	     (lambda
