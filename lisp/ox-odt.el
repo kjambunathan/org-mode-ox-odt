@@ -7927,7 +7927,6 @@ contextual information."
 		;; Grok link description
 		(save-excursion
 		  (insert link-desc))
-		(pop-to-buffer (current-buffer))
 		(let* ((link? (org-element-link-parser)))
 		  (when (and
 			 ;; Is it is a link?
