@@ -28,6 +28,7 @@
 
 (require 'dash)
 (require 'rx)
+(require 'ox)
 
 (defun org-ods-table-cell-element-to-lisp (table-cell)
   (substring-no-properties
@@ -673,42 +674,51 @@
 ;;;###autoload
 (defun org-ods-convert (&optional org-table out-file out-fmt open)
   (interactive
-   (let* ((el (org-ods-table-at-point 'data))
-	  (s (org-ods-table-at-point 'string))
-	  ;; (lisp-table (progn
-	  ;;       	(unless (org-at-table-p)
-	  ;;       	  (user-error "No table at point"))
-	  ;;       	(org-odt-table-at-point 'lisp)))
-	  (default-output-file-name (file-relative-name (file-name-sans-extension (buffer-file-name))))
-	  (in-fmt "csv")
-	  (out-fmt-choices (org-odt-reachable-formats in-fmt))
-	  (out-fmt
-	   (or (and out-fmt-choices
-		    (funcall (if (featurep 'ido) 'ido-completing-read 'completing-read)
-			     "Output format: "
-			     out-fmt-choices nil nil nil))
-	       (error
-		"No known converter or no known output formats for %s files"
-		in-fmt)))
-	  (out-file (read-file-name "File to output: "
-				    nil ; dir
-				    nil ; default-file-name
-				    nil ; mustmatch
-				    (format "%s:%s.%s"
-					    default-output-file-name
-					    (or (org-element-property :name el)
-						(org-export-data-with-backend
-						 (org-export-get-caption el) 'plain-text nil))
-					    out-fmt) ; initial
-				    ;; (lambda (output-file-name)
-				    ;;   (when (file-exists-p output-file-name)
-				    ;;     (yes-or-no-p (format "Overwrite %s?" output-file-name))))
-				    )))
+   (when-let*
+       ((el (let ((el (org-ods-table-at-point 'data)))
+	      (unless el (user-error "No table at point"))
+              el))
+	(s (org-ods-table-at-point 'string))
+	;; (lisp-table (progn
+	;;       	(unless (org-at-table-p)
+	;;       	  (user-error "No table at point"))
+	;;       	(org-odt-table-at-point 'lisp)))
+	(default-output-file-name (file-relative-name (file-name-sans-extension (buffer-file-name))))
+	(in-fmt "csv")
+	(out-fmt-choices (org-odt-reachable-formats in-fmt))
+	(out-fmt
+	 (or (and out-fmt-choices
+		  (funcall (if (featurep 'ido) 'ido-completing-read 'completing-read)
+			   "Output format: "
+			   out-fmt-choices nil nil nil))
+	     (error
+	      "No known converter or no known output formats for %s files"
+	      in-fmt)))
+	(out-file (read-file-name "File to output: "
+				  nil	; dir
+				  nil	; default-file-name
+				  nil	; mustmatch
+				  (concat default-output-file-name
+					  (let* ((uniquifier (or (org-element-property :name el)
+								 (org-export-data-with-backend
+								  (org-export-get-caption el) 'plain-text nil))))
+					    (message "uniquifier: %S" uniquifier)
+					    (when (org-string-nw-p uniquifier)
+					      (concat "#" uniquifier)))
+					  "." out-fmt) ; initial
+				  ;; (lambda (output-file-name)
+				  ;;   (when (file-exists-p output-file-name)
+				  ;;     (yes-or-no-p (format "Overwrite %s?" output-file-name))))
+				  )))
      (list s out-file out-fmt current-prefix-arg)))
-  (let* ((tmp-in-csv-file (make-temp-file "org-ods-" nil ".csv" (orgtbl-to-csv
-								 (org-ods-table-as org-table 'lisp)
-								 nil)))
-	 (tmp-out-ods-file (org-odt-do-convert tmp-in-csv-file out-fmt (not 'open))))
+  (when-let*
+      ((org-table org-table)
+       (tmp-in-csv-file (make-temp-file "org-ods-" nil ".csv" (orgtbl-to-csv
+							       (org-ods-table-as org-table 'lisp)
+							       nil)))
+       (tmp-out-ods-file (cond
+			  ((string= out-fmt "csv") tmp-in-csv-file)
+			  (t (org-odt-do-convert tmp-in-csv-file out-fmt (not 'open))))))
     (when tmp-out-ods-file
       (message "Exported to %s" tmp-out-ods-file)
       (message "Copying %s to %s" tmp-out-ods-file out-file)
@@ -721,7 +731,7 @@
   (interactive (list (org-ods-table-at-point 'full-data)))
   (unless full-table-data
     (user-error "Not at a Table"))
-  (pcase-let ((`(,table-element ,preamble ,postamble) full-table-data))
+  (pcase-let ((`(,table-element ,preamble ,_postamble) full-table-data))
     (goto-char (org-element-property :end table-element))
     (save-excursion
       (insert (concat
