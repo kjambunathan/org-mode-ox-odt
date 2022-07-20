@@ -450,10 +450,10 @@
 (defun org-ods-insert-ods-formula (table)
   ;; Modifies table by side-effects
   (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms table))
-	   do (message "\n\n%S" (plist-get tblfm :fm))
+	   ;; do (message "\n\n%S" (plist-get tblfm :fm))
 	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula table tblfm))
 	   do (cl-loop for (cell-address formula) in (cdr final)
-		       do (message "cell-address: %S" cell-address)
+		       ;; do (message "cell-address: %S" cell-address)
 		       for table-cell = (car (rassoc cell-address (org-ods-table-cell-cell-address-alist table)))
 		       do (setcar (last table-cell) formula))))
 
@@ -702,7 +702,6 @@
 					  (let* ((uniquifier (or (org-element-property :name el)
 								 (org-export-data-with-backend
 								  (org-export-get-caption el) 'plain-text nil))))
-					    (message "uniquifier: %S" uniquifier)
 					    (when (org-string-nw-p uniquifier)
 					      (concat "#" uniquifier)))
 					  "." out-fmt) ; initial
