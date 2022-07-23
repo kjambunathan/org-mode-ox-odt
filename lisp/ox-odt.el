@@ -1221,9 +1221,11 @@ interpreted as below:
 
 (defcustom org-odt-convert-processes
   '(("LibreOffice"
-     "soffice --headless --convert-to %f%x --outdir %d %i")
+     "%l soffice --headless --convert-to %f%x --outdir %d %i")
     ("unoconv"
-     "unoconv -f %f -o %d %i"))
+     "%l unoconv -f %f -o %d %i")
+    ("Gnumeric"
+     "%l ssconvert %i %o"))
   "Specify a list of document converters and their usage.
 The converters in this list are offered as choices while
 customizing `org-odt-convert-process'.
@@ -9412,26 +9414,37 @@ function to create page headers:
 	 (extra-options (or (nth 2 (cdr how)) ""))
 	 (out-dir (file-name-directory in-file))
 	 (cmd (format-spec convert-process
-			   `((?i . ,(shell-quote-argument in-file))
+			   `(;; When a process is executed with
+                             ;; `shell-command', and within
+                             ;; `with-environment-variables' does it
+                             ;; inherit the locale specific environment
+                             ;; variables from the new environement?  A
+                             ;; little experimentation suggests that the
+                             ;; answer is "Yes". If that that case, this
+                             ;; setting is merely gives a visual
+                             ;; assurance to the user about what is
+                             ;; happening.  If "No", it really does the
+                             ;; needed work.  In either case, having it
+                             ;; is what the user wants.
+                             (?l . ,(format "LANG=%s" (getenv "LANG")))
+                             (?i . ,(shell-quote-argument in-file))
 			     (?I . ,(browse-url-file-url in-file))
 			     (?f . ,out-fmt)
 			     (?o . ,out-file)
 			     (?O . ,(browse-url-file-url out-file))
-			     (?d . , (shell-quote-argument out-dir))
+			     (?d . ,(shell-quote-argument out-dir))
 			     (?D . ,(browse-url-file-url out-dir))
 			     (?x . ,extra-options)))))
     (when (file-exists-p out-file)
       (delete-file out-file))
-
     (message "Executing %s" cmd)
     (let ((cmd-output (shell-command-to-string cmd)))
       (message "%s" cmd-output))
-
     (cond
      ((file-exists-p out-file)
       (message "Exported to %s" out-file)
       (when open
-	(message "Opening %s..."  out-file)
+	(message "Opening %s..." out-file)
 	(org-open-file out-file 'system))
       out-file)
      (t

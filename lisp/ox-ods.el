@@ -56,6 +56,8 @@
   (org-ods-table-row-elements-to-lisp
    (org-element-contents table)))
 
+(defvar org-ods-cell-mapper)
+
 (defun org-ods-lisp-table-to-org-table (lisp-table)
   (with-temp-buffer
     (org-mode)
@@ -67,9 +69,15 @@
 		 (if (null row) "|-"
 		   (apply #'concat
 			  (cl-loop for cell in row collect
-				   (format "| %s" (org-trim
-						   (replace-regexp-in-string
-						    "[\r\n]+" " " (substring-no-properties cell) t t)))))))
+				   (format "| %s"
+					   (let ((cell-contents (org-trim
+								 (replace-regexp-in-string
+								  "[\r\n]+" " " (substring-no-properties cell) t t))))
+					     (cond
+					      ((and (boundp 'org-ods-cell-mapper)
+						    (functionp org-ods-cell-mapper))
+					       (funcall org-ods-cell-mapper cell-contents))
+					      (t cell-contents))))))))
 	"\n")))
     ;; (inspect)
     (org-table-align)
@@ -81,8 +89,9 @@
    (org-ods-table-element-to-lisp-table table)))
 
 (defun org-ods-table-row-elements-print (table-rows)
-  (org-ods-lisp-table-to-org-table
-   (org-ods-table-row-elements-to-lisp table-rows)))
+  (if (null table-rows) ""
+    (org-ods-lisp-table-to-org-table
+     (org-ods-table-row-elements-to-lisp table-rows))))
 
 ;; (org-ods-table-element-print t1)
 
@@ -96,6 +105,33 @@
 (defun org-ods-get-table-rules (table)
   (->> (org-element-contents table)
        (-split-when #'org-ods-table-row-is-rule-p)))
+
+(defun org-ods-split-into-rowgroups (table)
+  ;; Not yet
+  (let* ((hrule '())
+	 (nonhrule '())
+	 (result '()))
+    (dolist (table-row (org-element-contents table) result)
+      (cond
+       ((org-ods-table-row-is-rule-p table-row)
+	(when (or hrule nonhrule)
+	  (push (cons hrule (reverse nonhrule)) result))
+	(setq hrule table-row)
+	(setq nonhrule nil))
+       (t (push table-row nonhrule))))
+    (when (or hrule nonhrule)
+      (push (cons hrule (reverse nonhrule)) result))
+    (reverse result)))
+
+(defun org-ods-locate-rowgroup (table table-row)
+  ;; Not yet
+  (let ((rowgroups (org-ods-split-into-rowgroups table)))
+    (cl-loop for (rowgroup . rest) on rowgroups by #'cdr
+	     for nonhrules = (cdr rowgroup)
+	     while (not (memq table-row nonhrules))
+	     collecting rowgroup into before
+	     finally (return (list rowgroup (reverse before)
+				   rest)))))
 
 ;;; Special Rows
 
@@ -126,7 +162,7 @@
 (defun org-ods-table-row-is-data-row-p (table-row &optional hrule-is-data-p)
   (when (and (not (org-export-table-row-is-special-p table-row nil))
 	     (or hrule-is-data-p
-                 (not (eq (org-element-property :type table-row) 'rule))))
+		 (not (eq (org-element-property :type table-row) 'rule))))
     table-row))
 
 (defun org-ods-get-previous-data-row (table-row)
@@ -356,11 +392,14 @@
 (defun org-ods-substitute-vars-in-expression (fullvar-table expression)
   (cl-loop for (name . value) in fullvar-table
 	   with exp = expression
-	   do (setq exp (replace-regexp-in-string name value exp t t))
+	   do (setq exp (replace-regexp-in-string (rx-to-string name) value exp t t))
 	   finally return exp))
 
 (defvar org-ods-calc-f->ods-f-alist
-  '(("vsum" . "SUM")))
+  '(("$#" . "COLUMN()")
+    ("@#" . "ROW()")
+    ("vmean" . "AVG")
+    ("vsum" . "SUM")))
 
 (defun org-ods-tokenize-tblfms (tblfms)
   (cl-loop with n = 0
@@ -437,13 +476,13 @@
 						 (org-ods-apply-field-spec-to-cell-address
 						  cell-address (org-ods-derelativize-field table second 'secondp))))))))
 		(format "=%s" (org-ods-substitute-vars-in-expression (append org-ods-calc-f->ods-f-alist
-                                                                             terms)
-                                                                     (plist-get tblfm :rhs2)))
-                ;; (format "%s=%s" (org-ods-encode-cell-address (pcase-let ((`(,r . ,c) cell-address))
+									     terms)
+								     (plist-get tblfm :rhs2)))
+		;; (format "%s=%s" (org-ods-encode-cell-address (pcase-let ((`(,r . ,c) cell-address))
 		;; 					       (cons r (+ c
 		;; 							  (if has-special-column-p -1 0)))))
 		;; 	(org-ods-substitute-vars-in-expression terms (plist-get tblfm :rhs2)))
-                )))))
+		)))))
 
 
 
@@ -462,7 +501,7 @@
   ;; (org-ods-prune-table t)
   (org-ods-lisp-table-to-org-table
    (org-ods-table-row-elements-to-lisp (org-ods-prune-table table 'prune-special-column-p
-                                                            'hrule-is-data-p))))
+							    'hrule-is-data-p))))
 
 
 
@@ -671,13 +710,25 @@
 ;; =SUM($A4:$B4)
 ;; "=IF(F4>$K$27,(F4-$K$27)*$AE$3)+MIN($K$27,F4)*$G$3+MIN($K$27,G4)*$H$3+IF(H4>$K$27,(H4-$K$27)*$AE$3)+MIN($K$27,H4)*$I$3+I4*$J$3"
 
+(defmacro org-ods--with-environment (env &rest body)
+  (declare (indent 1))
+  `(let ((env (progn ,env)))
+     (cond
+      (env
+       (let* ((process-environment (copy-sequence process-environment)))
+	 (dolist (elem env)
+	   (when elem
+	     (setenv (car elem) (cadr elem))))
+	 ,@body))
+      (t ,@body))))
+
 ;;;###autoload
-(defun org-ods-convert (&optional org-table out-file out-fmt open)
+(defun org-ods-convert (&optional org-table out-file out-fmt open env)
   (interactive
    (when-let*
        ((el (let ((el (org-ods-table-at-point 'data)))
 	      (unless el (user-error "No table at point"))
-              el))
+	      el))
 	(s (org-ods-table-at-point 'string))
 	;; (lisp-table (progn
 	;;       	(unless (org-at-table-p)
@@ -709,7 +760,8 @@
 				  ;;   (when (file-exists-p output-file-name)
 				  ;;     (yes-or-no-p (format "Overwrite %s?" output-file-name))))
 				  )))
-     (list s out-file out-fmt current-prefix-arg)))
+     (list s out-file out-fmt current-prefix-arg
+	   (ignore-errors (car (alist-get 'TABLE_CONVERTER_ENV (org-export--list-bound-variables)))))))
   (when-let*
       ((org-table org-table)
        (tmp-in-csv-file (make-temp-file "org-ods-" nil ".csv" (orgtbl-to-csv
@@ -717,7 +769,9 @@
 							       nil)))
        (tmp-out-ods-file (cond
 			  ((string= out-fmt "csv") tmp-in-csv-file)
-			  (t (org-odt-do-convert tmp-in-csv-file out-fmt (not 'open))))))
+			  (t
+			   (org-ods--with-environment env
+			     (org-odt-do-convert tmp-in-csv-file out-fmt (not 'open)))))))
     (when tmp-out-ods-file
       (message "Exported to %s" tmp-out-ods-file)
       (message "Copying %s to %s" tmp-out-ods-file out-file)
@@ -726,20 +780,39 @@
       (message "Opening %s..." out-file)
       (org-open-file out-file 'system))))
 
+(defvar org-ods-cell-mapper
+  (defun org-ods-replace-org-ts-with-locale-ts-in-string (string)
+    (message "LANGUAGE is %S" current-locale-environment)
+    (with-locale-environment (getenv "LANG")
+      (message "LANGUAGE is %S" current-locale-environment)
+      (org-quote-csv-field
+       (replace-regexp-in-string
+	org-ts-regexp-both
+	(lambda (time-string)
+	  (format-time-string
+	   (let ((hours? (string-match-p "[0-9]+:[0-9]+" time-string)))
+	     (funcall (if hours? #'cdr #'car) '("%x" . "%X")))
+	   (apply #'encode-time (save-match-data (org-parse-time-string time-string)))))
+	string)))))
+
+;;;###autoload
 (defun org-ods-translate (&optional full-table-data)
   (interactive (list (org-ods-table-at-point 'full-data)))
   (unless full-table-data
     (user-error "Not at a Table"))
-  (pcase-let ((`(,table-element ,preamble ,_postamble) full-table-data))
-    (goto-char (org-element-property :end table-element))
-    (save-excursion
-      (insert (concat
-               "\n\n"
-               preamble
-	       (org-ods-table->ods-table table-element)
-	       ;; postamble
-	       "\n\n")))
-    (re-search-forward org-table-any-line-regexp)))
+  (let* ((converter-env (car (alist-get 'TABLE_CONVERTER_ENV (org-export--list-bound-variables)))))
+    (message "CONVERTER_ENV: %S" converter-env)
+    (org-ods--with-environment converter-env
+      (pcase-let ((`(,table-element ,preamble ,_postamble) full-table-data))
+	(goto-char (org-element-property :end table-element))
+	(save-excursion
+	  (insert (concat
+		   "\n\n"
+		   preamble
+		   (org-ods-table->ods-table table-element)
+		   ;; postamble
+		   "\n\n")))
+	(re-search-forward org-table-any-line-regexp)))))
 
 ;;; Unit Testing
 
@@ -834,29 +907,48 @@
 ;; | $ | max=50  |        |        |        |       |      | 6 |
 ;; |---+---------+--------+--------+--------+-------+------+---|
 
-(defvar org-ods--test-t1/vars
-  (list
-   :named-columns (org-ods-get-named-columns org-ods--test-t1)
-   :named-fields (org-ods-get-named-fields org-ods--test-t1)
-   :named-values (org-ods-get-named-values org-ods--test-t1)
-   :colvar-table (mapcar (lambda (pair)
-			   (pcase-let ((`(,cname . ,c) pair))
-			     (cons (format "$%s" cname)
-				   (format "$%s" c))))
-			 (org-ods-get-named-columns org-ods--test-t1))
-   :fieldvar-table (mapcar (lambda (pair)
-			     (pcase-let ((`(,name . ,cell-address) pair))
-			       (cons (format "$%s" name)
-				     (org-ods-cell-address->text org-ods--test-t1 cell-address))))
-			   (org-ods-get-named-fields org-ods--test-t1))
-   :var-table (mapcar (lambda (pair)
-			(pcase-let ((`(,name . ,value) pair))
-			  (cons (format "$%s" name)
-				value)))
-		      (org-ods-get-named-values org-ods--test-t1))
-   :fullvar-table (org-ods-get-fullvar-table org-ods--test-t1)
-   :tblfms (org-ods-tokenize-tblfms
-	    (org-ods-table->tblfms
-	     org-ods--test-t1))))
+(defvar org-ods--test-t5
+  (s->table "
+| S.No | Arithemetic Progression |
+|------+-------------------------|
+|    1 |                       8 |
+|    2 |                      11 |
+|    3 |                      14 |
+|    4 |                      17 |
+#+TBLFM: $1=@#-1::$2=3*$1+5
+"))
+
+(defvar org-ods--test-t6
+  (s->table "
+|   1 |   2 |   3 |    4 |    5 |    6 |
+| 3.5 | 6.5 | 9.5 | 12.5 | 15.5 | 18.5 |
+#+TBLFM: @1=$#::@2=3*@1+0.5
+"))
+
+(defvar org-ods--test-table/vars
+  (let ((table org-ods--test-t5))
+    (list
+     :named-columns (org-ods-get-named-columns table)
+     :named-fields (org-ods-get-named-fields table)
+     :named-values (org-ods-get-named-values table)
+     :colvar-table (mapcar (lambda (pair)
+			     (pcase-let ((`(,cname . ,c) pair))
+			       (cons (format "$%s" cname)
+				     (format "$%s" c))))
+			   (org-ods-get-named-columns table))
+     :fieldvar-table (mapcar (lambda (pair)
+			       (pcase-let ((`(,name . ,cell-address) pair))
+				 (cons (format "$%s" name)
+				       (org-ods-cell-address->text table cell-address))))
+			     (org-ods-get-named-fields table))
+     :var-table (mapcar (lambda (pair)
+			  (pcase-let ((`(,name . ,value) pair))
+			    (cons (format "$%s" name)
+				  value)))
+			(org-ods-get-named-values table))
+     :fullvar-table (org-ods-get-fullvar-table table)
+     :tblfms (org-ods-tokenize-tblfms
+	      (org-ods-table->tblfms
+	       table)))))
 
 (provide 'ox-ods)
