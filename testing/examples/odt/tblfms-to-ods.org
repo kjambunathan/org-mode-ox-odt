@@ -1,3 +1,6 @@
+#+NAME: generic
+| 2022-07-21 |       27181.1 |
+
 #+NAME: table1
 #+CAPTION: Table 1
 | Student  | Mark1 | Mark2 | Mark3 | Result | Result-simple | ResultSkaled |
@@ -45,6 +48,19 @@
 |---+---------+--------+--------+--------+-------+------|
 #+TBLFM: $6=vsum($P1..$P3)::$7=10*$Tot/$max;%.1f
 
+#+NAME: rownos
+| Col.No | Arithemetic Progression |
+|--------+-------------------------|
+|      1 |                       8 |
+|      2 |                      11 |
+|      3 |                      14 |
+|      4 |                      17 |
+#+TBLFM: $1=@#-1::$2=3*$1+5
+
+#+NAME: colnos
+|   1 |   2 |   3 |    4 |    5 |    6 |
+| 3.5 | 6.5 | 9.5 | 12.5 | 15.5 | 18.5 |
+#+TBLFM: @1=$#::@2=3*@1+0.5
 
 # #+NAME: table5
 # #+CAPTON: Table 5
@@ -63,3 +79,5 @@
 # | $ | max=50  |        |        |        |       |      |
 # |---+---------+--------+--------+--------+-------+------|
 # #+TBLFM: $6=vsum($P1..$P3)::$7=10*$Tot/$max;%.1f::$at=vmean(@-II..@-I);%.1f
+
+# #+BIND: TABLE_CONVERTER_ENV (("LANG" "de_DE.UTF-8"))
