@@ -30,10 +30,10 @@
 (require 'rx)
 (require 'ox)
 
-(defvar ox-ods-debug nil)
+(defvar org-ods-debug nil)
 
-(defun ox-ods-message (&rest args)
-  (when ox-ods-debug
+(defun org-ods-message (&rest args)
+  (when org-ods-debug
     (apply 'message args)))
 
 (defun org-ods-table-cell-element-to-lisp (table-cell)
@@ -396,6 +396,9 @@
 			      :rhs1 (org-ods-substitute-vars-in-expression fullvar-table rhs)))))))
 
 (defun org-ods-substitute-vars-in-expression (fullvar-table expression)
+  (org-ods-message "%S" (list 'org-ods-substitute-vars-in-expression
+			      :fullvar-table fullvar-table
+			      :expression expression))
   (cl-loop for (name . value) in fullvar-table
 	   with exp = expression
 	   do (setq exp (replace-regexp-in-string (rx-to-string name) value exp t t))
@@ -456,6 +459,9 @@
   (cdar (last (org-ods-table-cell-cell-address-alist table))))
 
 (defun org-tblfm->cell-and-ods-formula (table tblfm)
+  (org-ods-message "%S" (list 'org-tblfm->cell-and-ods-formula
+			      :table table
+			      :tblfm tblfm))
   (let* ((has-special-column-p (org-export-table-has-special-column-p table))
 	 (cell-addresses-to (org-ods-table-dimensions table))
 	 (lhs-parsed (plist-get tblfm :lhs-parsed))
@@ -464,7 +470,8 @@
 			       (org-ods-get-first-formula-row-num table)
 			       (if has-special-column-p 2 1)))
 	 (lhs-cell-addresses (org-ods-get-cell-addresess-matching-field
-			      cell-addresses-from cell-addresses-to lhs-parsed)))
+			      cell-addresses-from cell-addresses-to
+			      (org-ods-derelativize-field table lhs-parsed))))
     (cl-loop for cell-address in lhs-cell-addresses collect
 	     (list
 	      ;; cell-address
@@ -495,12 +502,18 @@
 (defun org-ods-insert-ods-formula (table)
   ;; Modifies table by side-effects
   (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms table))
-	   ;; do (message "\n\n%S" (plist-get tblfm :fm))
 	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula table tblfm))
+	   do (org-ods-message "%S" (list 'org-ods-insert-ods-formula
+					  :final final))
 	   do (cl-loop for (cell-address formula) in (cdr final)
-		       ;; do (message "cell-address: %S" cell-address)
+		       do (org-ods-message "%S" (list 'org-ods-insert-ods-formula
+						      :cell-address cell-address
+						      :formula formula))
 		       for table-cell = (car (rassoc cell-address (org-ods-table-cell-cell-address-alist table)))
-		       do (setcar (last table-cell) formula))))
+		       do (unless table-cell
+			    (error (concat (format "Table cell at address %S is empty." cell-address)
+					   "Create that row / column by re-executing the TBLFM")))
+		       (setcdr (cdr table-cell) (list formula)))))
 
 (defun org-ods-table->ods-table (table)
   (org-ods-insert-ods-formula table)
@@ -658,6 +671,12 @@
 	 ('() c))))))
 
 (defun org-ods-get-cell-addresess-matching-field (address-min address-max field)
+  (org-ods-message "%S" (list 'org-ods-get-cell-addresess-matching-field
+			      :address-min address-min
+			      :address-max address-max
+			      :field field))
+  (unless field
+    (error "This shouldn't happen? field: %S" field))
   (when field
     (pcase-let ((`(,rmin . ,cmin) address-min)
 		(`(,rmax . ,cmax) address-max))
@@ -666,13 +685,13 @@
 			   (number-sequence rmin rmax))
 			  ((and (pred numberp) n)
 			   (list n))
-			  (_ (error "FIXME?")))
+			  (_ (error "FIXME :row-num")))
 	       append (cl-loop for c in (pcase (plist-get field :col-num)
 					  ('()
 					   (number-sequence cmin cmax))
 					  ((and (pred numberp) n)
 					   (list n))
-					  (_ (error "FIXME?")))
+					  (_ (error "FIXME :col-num")))
 			       collect (cons r c))))))
 
 
