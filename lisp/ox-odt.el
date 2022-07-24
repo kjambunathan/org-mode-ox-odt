@@ -7167,6 +7167,8 @@ modifications to account for nested tables."
     (cons (1- (nth r rowgroupns))
 	  (1- (nth c colgroupns)))))
 
+(defvar org-odt-table-cell-variant-calculator 'usecolrowgroupsp)
+
 (defun org-odt--table-cell-get-cell-variant (table-cell info &optional usecolrowgroupsp)
   (let* ((table (org-export-get-parent-table table-cell))
 	 (table-cell-address (cond
@@ -7248,7 +7250,9 @@ modifications to account for nested tables."
     (concat
      template-name
      "Table"
-     (org-odt--table-cell-get-cell-variant table-cell info 'usecolrowgroupsp)
+     (org-odt--table-cell-get-cell-variant table-cell info
+                                           ;; 'usecolrowgroupsp
+                                           org-odt-table-cell-variant-calculator)
      "Cell"
      (when table-cell-valign (capitalize (format "%s" table-cell-valign)))
      (when (memq 'border (assoc-default template-name org-odt-table-template-props))
@@ -7424,7 +7428,9 @@ styles will be defined *automatically* for you."
     ;; - HALIGN			⇒ ["Left" "Center" "Right"]
     (concat
      p-style
-     (org-odt--table-cell-get-cell-variant table-cell info 'usecolrowgroupsp)
+     (org-odt--table-cell-get-cell-variant table-cell info
+                                           ;; 'usecolrowgroupsp
+                                           org-odt-table-cell-variant-calculator)
      "Contents"
      (capitalize
       (format "%s" (or
