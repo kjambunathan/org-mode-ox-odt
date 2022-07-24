@@ -30,6 +30,12 @@
 (require 'rx)
 (require 'ox)
 
+(defvar ox-ods-debug nil)
+
+(defun ox-ods-message (&rest args)
+  (when ox-ods-debug
+    (apply 'message args)))
+
 (defun org-ods-table-cell-element-to-lisp (table-cell)
   (substring-no-properties
    (org-element-interpret-data
@@ -653,8 +659,8 @@
 
 (defun org-ods-get-cell-addresess-matching-field (address-min address-max field)
   (when field
-    (pcase-let ((`(,rmin ,cmin) address-min)
-		(`(,rmax ,cmax) address-max))
+    (pcase-let ((`(,rmin . ,cmin) address-min)
+		(`(,rmax . ,cmax) address-max))
       (cl-loop for r in (pcase (plist-get field :row-num)
 			  ('()
 			   (number-sequence rmin rmax))

@@ -1,6 +1,8 @@
+
 #+NAME: generic
 | 2022-07-21 |       27181.1 |
 
+
 #+NAME: table1
 #+CAPTION: Table 1
 | Student  | Mark1 | Mark2 | Mark3 | Result | Result-simple | ResultSkaled |
@@ -9,6 +11,7 @@
 | Student2 |     4 |     2 |     1 |      7 |             7 |          700 |
 #+TBLFM: $5=vsum($2..$4)::$6=$2+$3+$4::$7=vsum($2..$4)*100
 
+
 #+NAME: table2
 #+CAPTION: Table 2
 | Account      |     |
@@ -19,6 +22,7 @@
 | All accounts | 500 |
 #+TBLFM: @4$2=vsum(@I..@II)
 
+
 #+NAME: table3
 #+CAPTION: Table 3
 | First |   |     |
@@ -30,6 +34,7 @@
 |   100 | 1 | 101 |
 #+TBLFM: $3=vsum($1..$2);f-2::@2$3=vsum(@2$1..@2$2)
 
+
 #+NAME: table4
 #+CAPTION: Table 4
 |---+---------+--------+--------+--------+-------+------|
@@ -48,6 +53,7 @@
 |---+---------+--------+--------+--------+-------+------|
 #+TBLFM: $6=vsum($P1..$P3)::$7=10*$Tot/$max;%.1f
 
+
 #+NAME: rownos
 | Col.No | Arithemetic Progression |
 |--------+-------------------------|
@@ -57,12 +63,28 @@
 |      4 |                      17 |
 #+TBLFM: $1=@#-1::$2=3*$1+5
 
+
 #+NAME: colnos
 |   1 |   2 |   3 |    4 |    5 |    6 |
 | 3.5 | 6.5 | 9.5 | 12.5 | 15.5 | 18.5 |
 #+TBLFM: @1=$#::@2=3*@1+0.5
 
-# #+NAME: table5
+
+#+NAME: revenue
+#+CAPTION: Quarterly Revenue
+#+ATTR_ODT: :style "Academic"
+|       | Jan | Feb | Mar | Sum |
+|-------+-----+-----+-----+-----|
+| North | 5.1 | 1.7 | 5.6 |     |
+| South | 7.6 | 3.7 | 0.4 |     |
+| East  | 9.5 | 0.4 | 9.6 |     |
+| West  | 4.8 | 5.7 | 5.9 |     |
+|-------+-----+-----+-----+-----|
+| Sum   |     |     |     |     |
+#+TBLFM: $5=vsum($2..$4)::@6$2..@6$4=vsum(@I..@II)::@>$>=vsum(@I..@II)
+
+# 
+#+NAME: table5
 # #+CAPTON: Table 5
 # |---+---------+--------+--------+--------+-------+------|
 # |   | Student | Prob 1 | Prob 2 | Prob 3 | Total | Note |
@@ -81,3 +103,7 @@
 # #+TBLFM: $6=vsum($P1..$P3)::$7=10*$Tot/$max;%.1f::$at=vmean(@-II..@-I);%.1f
 
 # #+BIND: TABLE_CONVERTER_ENV (("LANG" "de_DE.UTF-8"))
+
+# Local Variables:
+# ox-ods-debug: t
+# End:
