@@ -26,7 +26,6 @@
 
 ;;; Code:
 
-(require 'dash)
 (require 'rx)
 (require 'ox)
 
@@ -108,10 +107,6 @@
 (defun org-ods-table-row-is-rule-p (table-row)
   (eq (org-element-property :type table-row) 'rule))
 
-(defun org-ods-get-table-rules (table)
-  (->> (org-element-contents table)
-       (-split-when #'org-ods-table-row-is-rule-p)))
-
 (defun org-ods-split-into-rowgroups (table)
   ;; Not yet
   (let* ((hrule '())
@@ -189,40 +184,80 @@
        table-row))
    (org-export-get-next-element table-row nil t)))
 
-(defun org-ods-get-table-data-rows (table &optional hrule-is-data-p)
+(defun org-ods-get-table-data-rows-special (table hrule-is-data-p)
   (org-element-map table 'table-row
     (lambda (table-row)
       (when (org-ods-table-row-is-data-row-p table-row hrule-is-data-p)
 	table-row))))
 
+(defun org-ods-get-table-data-rows (table)
+  (org-element-map table 'table-row
+    (lambda (table-row)
+      (when (org-ods-table-row-is-data-row-p table-row)
+	table-row))))
+
 ;;; Prune Table
 
-(defun org-ods-prune-table (table &optional prune-special-column-p hrule-is-data-p)
-  (let* ((data-rows (org-ods-get-table-data-rows table hrule-is-data-p))
+(defun org-ods-prune-table-special (table prune-special-column-p hrule-is-data-p)
+  (let* ((data-rows (org-ods-get-table-data-rows-special table hrule-is-data-p))
 	 (has-special-column-p (org-export-table-has-special-column-p table))
 	 (f (if (and prune-special-column-p has-special-column-p) #'cdr #'identity)))
     (cl-loop for data-row in data-rows
 	     collect (funcall f (org-element-contents data-row)))))
 
-(defun org-ods-get-first-formula-row-num (table)
-  (let* ((first-formula-row (cl-some #'org-ods-table-row-is-data-row-p
-				     (nth 1 (org-ods-get-table-rules table))))
-	 (data-rows (org-ods-get-table-data-rows table)))
-    ;; first-formula-row
-    (length (memq first-formula-row (reverse data-rows)))))
+(defun org-ods-prune-table (table)
+  (let* ((data-rows (org-ods-get-table-data-rows table)))
+    (cl-loop for data-row in data-rows
+	     collect (org-element-contents data-row))))
 
-(defun org-ods-rowgroup->rownum-alist (table)
-  (cl-loop with data-rows = (org-ods-get-table-data-rows table)
-	   with rowgroups = (org-ods-get-table-rules table)
-	   with data-rowgroups = (cdr rowgroups)
-	   for rowgroup in data-rowgroups
-	   counting rowgroup into rowgroup-number
-	   collect (cons rowgroup-number
-			 (let* ((first-formula-row
-				 (cl-loop for table-row in rowgroup
-					  when (org-ods-table-row-is-data-row-p table-row)
-					  return table-row)))
-			   (length (memq first-formula-row (reverse data-rows)))))))
+(defun org-ods-table->table-info (table)
+  ;; Not yet
+  (cl-loop with predicate = #'org-ods-table-row-is-data-row-p
+	   ;; with rowgroup-number = -1
+	   ;; Skip past the initial hrules, and position the cursor on
+	   ;; first non-hrule row.
+	   ;; with table-rows = (cl-loop for table-rows on (org-element-contents table)
+	   ;;      		      for table-row = (car table-rows)
+	   ;;      		      until (not (org-ods-table-row-is-rule-p table-row))
+	   ;;      		      finally return table-rows)
+           with table-rows = (org-element-contents table)
+	   for table-row in table-rows
+	   ;; A hrule starts a new rowgroup
+	   if (org-ods-table-row-is-rule-p table-row)
+               collecting (setq rowgroup (list table-row)) into rowgroups
+               and counting rowgroup into rowgroup-number
+               and collecting (cons rowgroup-number rowgroup) into rgn->rg
+	   else
+	   ;; A datarow gets in to the current rowgroup
+               when (funcall predicate table-row)
+                   when (not rowgroup)		; A data row always go in to a
+                                                ; rowgroup; create one if
+                                                ; there is not already one
+                       collecting (setq rowgroup (list nil)) into rowgroups
+                       and collecting (cons rowgroup-number rowgroup) into rgn->rg
+                   end
+                   and counting table-row into rn
+                   and when (null (cdr rowgroup))
+                   	collecting (cons rowgroup-number rn) into rgn->rn
+                   end
+                   and collecting table-row into rowgroup
+                   and collecting table-row into data-rows
+                   and appending (cl-loop with data-row = table-row 
+                                          for data-cell in (org-element-contents data-row)
+			                  counting data-cell into cn
+			                  collect (cons (cons rn cn) data-cell))
+                   into cell-address->table-cell
+               end        
+           end
+	   finally return (list
+			   :data-rows data-rows
+			   :rowgroups rowgroups
+			   :data-rowgroups (mapcar #'cdr rowgroups)
+                           :rgn->rn rgn->rn
+			   :rgn->rg rgn->rg
+                           :cell-address->table-cell cell-address->table-cell
+                           :dimensions (caar (last cell-address->table-cell))
+			   :table table)))
 
 ;;; Cell Address
 
@@ -283,9 +318,9 @@
       (org-ods-encode-cell-address first))
      (t (error "FIXME")))))
 
-(defun org-ods-cell-address->text (table cell-address)
+(defun org-ods-cell-address->text (tinfo cell-address)
   (org-ods-table-cell-element-to-lisp
-   (car (rassoc cell-address (org-ods-table-cell-cell-address-alist table)))))
+   (assoc-default cell-address (plist-get tinfo :cell-address->table-cell))))
 
 ;; Named Columns, Fields, and Parameters
 
@@ -358,32 +393,34 @@
 			   collect (cons (org-trim (match-string 1 cell))
 					 (org-trim (match-string 2 cell))))))
 
-(defun org-ods-get-fullvar-table (table)
-  (append
-   ;; :colvar-table
-   (mapcar (lambda (pair)
-	     (pcase-let ((`(,cname . ,c) pair))
-	       (cons (format "$%s" cname)
-		     (format "$%s" c))))
-	   (org-ods-get-named-columns table))
-   ;; :fieldvar-table
-   (mapcar (lambda (pair)
-	     (pcase-let ((`(,name . ,cell-address) pair))
-	       (cons (format "$%s" name)
-		     (org-ods-cell-address->text table cell-address))))
-	   (org-ods-get-named-fields table))
-   ;; :var-table
-   (mapcar (lambda (pair)
-	     (pcase-let ((`(,name . ,value) pair))
-	       (cons (format "$%s" name)
-		     value)))
-	   (org-ods-get-named-values table))))
+(defun org-ods-get-fullvar-table (tinfo)
+  (let ((table (plist-get tinfo :table)))
+    (append
+     ;; :colvar-table
+     (mapcar (lambda (pair)
+	       (pcase-let ((`(,cname . ,c) pair))
+	         (cons (format "$%s" cname)
+		       (format "$%s" c))))
+	     (org-ods-get-named-columns table))
+     ;; :fieldvar-table
+     (mapcar (lambda (pair)
+	       (pcase-let ((`(,name . ,cell-address) pair))
+	         (cons (format "$%s" name)
+		       (org-ods-cell-address->text tinfo cell-address))))
+	     (org-ods-get-named-fields table))
+     ;; :var-table
+     (mapcar (lambda (pair)
+	       (pcase-let ((`(,name . ,value) pair))
+	         (cons (format "$%s" name)
+		       value)))
+	     (org-ods-get-named-values table)))))
 
 ;; TBLFM
 
-(defun org-ods-table->tblfms (table)
-  (let* ((tblfmlines (org-element-property :tblfm table))
-	 (fullvar-table (org-ods-get-fullvar-table table)))
+(defun org-ods-table->tblfms (tinfo)
+  (let* ((table (plist-get tinfo :table))
+	 (tblfmlines (org-element-property :tblfm table))
+	 (fullvar-table (org-ods-get-fullvar-table tinfo)))
     (cl-loop for tblfmline in tblfmlines append
 	     (cl-loop for fm in (split-string tblfmline "::" t " +") collect
 		      (pcase-let* ((`(,lhs ,rhs-and-env) (split-string fm "=" t " +"))
@@ -396,7 +433,7 @@
 			      :rhs1 (org-ods-substitute-vars-in-expression fullvar-table rhs)))))))
 
 (defun org-ods-substitute-vars-in-expression (fullvar-table expression)
-  (org-ods-message "%S" (list 'org-ods-substitute-vars-in-expression
+  (org-ods-message "\n%S" (list 'org-ods-substitute-vars-in-expression
 			      :fullvar-table fullvar-table
 			      :expression expression))
   (cl-loop for (name . value) in fullvar-table
@@ -458,21 +495,25 @@
 (defun org-ods-table-dimensions (table)
   (cdar (last (org-ods-table-cell-cell-address-alist table))))
 
-(defun org-tblfm->cell-and-ods-formula (table tblfm)
-  (org-ods-message "%S" (list 'org-tblfm->cell-and-ods-formula
-			      :table table
+(defun org-tblfm->cell-and-ods-formula (tinfo tblfm)
+  (org-ods-message "\n%S" (list 'org-tblfm->cell-and-ods-formula
+			      :table (plist-get tinfo :table)
 			      :tblfm tblfm))
-  (let* ((has-special-column-p (org-export-table-has-special-column-p table))
-	 (cell-addresses-to (org-ods-table-dimensions table))
+  (let* ((table (plist-get tinfo :table))
+         (has-special-column-p (org-export-table-has-special-column-p table))
+	 (cell-addresses-to (plist-get tinfo :dimensions))
 	 (lhs-parsed (plist-get tblfm :lhs-parsed))
 	 (rhs-terms-parsed (plist-get tblfm :rhs-terms-parsed))
 	 (cell-addresses-from (cons
-			       (org-ods-get-first-formula-row-num table)
+			       (assoc-default 1 (plist-get tinfo :rgn->rn))
 			       (if has-special-column-p 2 1)))
 	 (lhs-cell-addresses (org-ods-get-cell-addresess-matching-field
 			      cell-addresses-from cell-addresses-to
-			      (org-ods-derelativize-field table lhs-parsed))))
-    (cl-loop for cell-address in lhs-cell-addresses collect
+			      (org-ods-derelativize-field tinfo lhs-parsed))))
+    
+    (cl-loop do (org-ods-message "\n%S" (list 'org-tblfm->cell-and-ods-formula
+			                    :lhs-cell-addresses lhs-cell-addresses))
+             for cell-address in lhs-cell-addresses collect
 	     (list
 	      ;; cell-address
 	      cell-address
@@ -485,9 +526,9 @@
 				    (cons ODSn
 					  (org-ods-encode-cell-range
 					   (cons (org-ods-apply-field-spec-to-cell-address
-						  cell-address (org-ods-derelativize-field table first))
+						  cell-address (org-ods-derelativize-field tinfo first))
 						 (org-ods-apply-field-spec-to-cell-address
-						  cell-address (org-ods-derelativize-field table second 'secondp))))))))
+						  cell-address (org-ods-derelativize-field tinfo second 'secondp))))))))
 		(format "=%s" (org-ods-substitute-vars-in-expression (append org-ods-calc-f->ods-f-alist
 									     terms)
 								     (plist-get tblfm :rhs2)))
@@ -499,28 +540,30 @@
 
 
 
-(defun org-ods-insert-ods-formula (table)
+(defun org-ods-insert-ods-formula (tinfo)
   ;; Modifies table by side-effects
-  (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms table))
-	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula table tblfm))
-	   do (org-ods-message "%S" (list 'org-ods-insert-ods-formula
+  (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms tinfo))
+	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula tinfo tblfm))
+	   do (org-ods-message "\n%S" (list 'org-ods-insert-ods-formula
 					  :final final))
 	   do (cl-loop for (cell-address formula) in (cdr final)
-		       do (org-ods-message "%S" (list 'org-ods-insert-ods-formula
+		       do (org-ods-message "\n%S" (list 'org-ods-insert-ods-formula
 						      :cell-address cell-address
 						      :formula formula))
-		       for table-cell = (car (rassoc cell-address (org-ods-table-cell-cell-address-alist table)))
+		       for table-cell = (assoc-default cell-address (plist-get tinfo :cell-address->table-cell))
 		       do (unless table-cell
 			    (error (concat (format "Table cell at address %S is empty." cell-address)
 					   "Create that row / column by re-executing the TBLFM")))
 		       (setcdr (cdr table-cell) (list formula)))))
 
 (defun org-ods-table->ods-table (table)
-  (org-ods-insert-ods-formula table)
+  (let ((tinfo (org-ods-table->table-info table)))
+    (org-ods-message "\n%S" (list :tinfo tinfo))
+    (org-ods-insert-ods-formula tinfo))
   ;; (org-ods-prune-table t)
   (org-ods-lisp-table-to-org-table
-   (org-ods-table-row-elements-to-lisp (org-ods-prune-table table 'prune-special-column-p
-							    'hrule-is-data-p))))
+   (org-ods-table-row-elements-to-lisp (org-ods-prune-table-special table 'prune-special-column-p
+								    'hrule-is-data-p))))
 
 
 
@@ -617,10 +660,10 @@
 
 ;; (mapcar #'org-ods-parse-field-range org-ods--test-refs)
 
-(defun org-ods-derelativize-field (table field &optional secondp)
+(defun org-ods-derelativize-field (tinfo field &optional secondp)
   ;; Modifies field by side-effect.  Also returns it.
   (pcase-let ((`(,rmin . ,cmin) '(1 . 1))
-	      (`(,rmax . ,cmax) (org-ods-table-dimensions table)))
+	      (`(,rmax . ,cmax) (plist-get tinfo :dimensions)))
     (cons
      ;; Row part
      (pcase (plist-get field :row-num)
@@ -635,7 +678,7 @@
 	  (plist-put field :row-offset nil)
 	  (plist-put field :row-num (- base-r offset))))
        (`(hline ,n)
-	(let ((base-r (let ((r (assoc-default n (org-ods-rowgroup->rownum-alist table))))
+	(let ((base-r (let ((r (assoc-default n (plist-get tinfo :rgn->rn))))
 			(if secondp (1- r) r)))
 	      (offset (or (plist-get field :row-offset) 0)))
 	  (plist-put field :row-offset nil)
@@ -671,7 +714,7 @@
 	 ('() c))))))
 
 (defun org-ods-get-cell-addresess-matching-field (address-min address-max field)
-  (org-ods-message "%S" (list 'org-ods-get-cell-addresess-matching-field
+  (org-ods-message "\n%S" (list 'org-ods-get-cell-addresess-matching-field
 			      :address-min address-min
 			      :address-max address-max
 			      :field field))
@@ -951,7 +994,8 @@
 "))
 
 (defvar org-ods--test-table/vars
-  (let ((table org-ods--test-t5))
+  (let* ((table org-ods--test-t5)
+	 (tinfo (org-ods-table->table-info table)))
     (list
      :named-columns (org-ods-get-named-columns table)
      :named-fields (org-ods-get-named-fields table)
@@ -964,16 +1008,56 @@
      :fieldvar-table (mapcar (lambda (pair)
 			       (pcase-let ((`(,name . ,cell-address) pair))
 				 (cons (format "$%s" name)
-				       (org-ods-cell-address->text table cell-address))))
+				       (org-ods-cell-address->text tinfo cell-address))))
 			     (org-ods-get-named-fields table))
      :var-table (mapcar (lambda (pair)
 			  (pcase-let ((`(,name . ,value) pair))
 			    (cons (format "$%s" name)
 				  value)))
 			(org-ods-get-named-values table))
-     :fullvar-table (org-ods-get-fullvar-table table)
+     :fullvar-table (org-ods-get-fullvar-table tinfo)
      :tblfms (org-ods-tokenize-tblfms
 	      (org-ods-table->tblfms
-	       table)))))
+	       tinfo)))))
+
+;;; Dynamic Block
+
+(defun org-ods-collect-tables ()
+  (org-with-wide-buffer
+   (let* ((data (org-element-parse-buffer))
+	  (tables (org-element-map data 'table
+		    (lambda (table)
+		      (when-let ((label (org-element-property :name table)))
+			(cons label table)))))
+	  (p (point)))
+     (sort tables
+	   (lambda (a b)
+	     (< (min (abs (- p (org-element-property :begin (cdr a))))
+		     (abs (- p (org-element-property :end (cdr a)))))
+		(min (abs (- p (org-element-property :begin (cdr b))))
+		     (abs (- p (org-element-property :end (cdr b)))))))))))
+
+;;;###autoload
+(defun org-ods-insert-dblock ()
+  "Create a dynamic block for capturing the ODS view of a table."
+  (interactive)
+  (let ((label (completing-read
+	     "Enter Table's NAME: "
+	     (mapcar #'car (org-ods-collect-tables)) nil t)))
+    (org-create-dblock
+     (list :name "ods-table" :label label)))
+  (org-update-dblock))
+
+(org-dynamic-block-define "ods-table" #'org-ods-insert-dblock)
+
+;;;###autoload
+(defun org-dblock-write:ods-table (args)
+  (apply #'org-ods-do-write-ods-table args))
+
+(cl-defun org-ods-do-write-ods-table (&key label &allow-other-keys)
+  "Fetch table named LABEL, and run `org-ods-translate' on it."
+  (if-let* ((table (assoc-default label (org-ods-collect-tables))))
+      (insert (org-ods-table->ods-table table))
+    (user-error "No Table with NAME `%s'" (or label ""))))
 
 (provide 'ox-ods)
