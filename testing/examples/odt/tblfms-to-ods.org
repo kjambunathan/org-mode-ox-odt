@@ -147,14 +147,14 @@
 #+TBLFM: @6$2..@6$4=vsum(@I..@II)
 
 #+BEGIN: ods-table :label "lhsranges"
-|       |         Jan | Feb | Mar |
-|-------+-------------+-----+-----|
-| North |         5.1 | 1.7 | 5.6 |
-| South |         7.6 | 3.7 | 0.4 |
-| East  |         9.5 | 0.4 | 9.6 |
-| West  |         4.8 | 5.7 | 5.9 |
-|-------+-------------+-----+-----|
-| Sum   | =SUM(B2:B5) |     |     |
+|       |         Jan |         Feb |         Mar |
+|-------+-------------+-------------+-------------|
+| North |         5.1 |         1.7 |         5.6 |
+| South |         7.6 |         3.7 |         0.4 |
+| East  |         9.5 |         0.4 |         9.6 |
+| West  |         4.8 |         5.7 |         5.9 |
+|-------+-------------+-------------+-------------|
+| Sum   | =SUM(B2:B5) | =SUM(C2:C5) | =SUM(D2:D5) |
 
 #+END:
 
@@ -173,14 +173,14 @@
 #+TBLFM: $5=vsum($2..$4)::@6$2..@6$4=vsum(@I..@II)::@>$>=vsum(@I..@II)
 
 #+BEGIN: ods-table :label "revenue"
-|       |         Jan | Feb | Mar | Sum         |
-|-------+-------------+-----+-----+-------------|
-| North |         5.1 | 1.7 | 5.6 | =SUM(B2:D2) |
-| South |         7.6 | 3.7 | 0.4 | =SUM(B3:D3) |
-| East  |         9.5 | 0.4 | 9.6 | =SUM(B4:D4) |
-| West  |         4.8 | 5.7 | 5.9 | =SUM(B5:D5) |
-|-------+-------------+-----+-----+-------------|
-| Sum   | =SUM(B2:B5) |     |     | =SUM(E2:E5) |
+|       |         Jan |         Feb |         Mar | Sum         |
+|-------+-------------+-------------+-------------+-------------|
+| North |         5.1 |         1.7 |         5.6 | =SUM(B2:D2) |
+| South |         7.6 |         3.7 |         0.4 | =SUM(B3:D3) |
+| East  |         9.5 |         0.4 |         9.6 | =SUM(B4:D4) |
+| West  |         4.8 |         5.7 |         5.9 | =SUM(B5:D5) |
+|-------+-------------+-------------+-------------+-------------|
+| Sum   | =SUM(B2:B5) | =SUM(C2:C5) | =SUM(D2:D5) | =SUM(E2:E5) |
 
 #+END:
 
@@ -195,11 +195,11 @@
 #+TBLFM: @3$2..@3$4=vsum(@I..@II)
 
 #+BEGIN: ods-table :label "hline1"
-|----------+-------------+-----+-----|
-| Account1 |         100 | 200 | 500 |
-| Account1 |         300 | 400 | 600 |
-|----------+-------------+-----+-----|
-| Sum      | =SUM(B1:B2) |     |     |
+|----------+-------------+-------------+-------------|
+| Account1 |         100 |         200 |         500 |
+| Account1 |         300 |         400 |         600 |
+|----------+-------------+-------------+-------------|
+| Sum      | =SUM(B1:B2) | =SUM(C1:C2) | =SUM(D1:D2) |
 
 #+END:
 
@@ -213,10 +213,10 @@
 #+TBLFM: @3$2..@3$5=vsum(@1..@2)
 
 #+BEGIN: ods-table :label "hline2"
-| Account1 |         100 | 200 | 500 |
-| Account1 |         300 | 400 | 600 |
-|----------+-------------+-----+-----|
-| Sum      | =SUM(B1:B2) |     |     |
+| Account1 |         100 |         200 |         500 |
+| Account1 |         300 |         400 |         600 |
+|----------+-------------+-------------+-------------|
+| Sum      | =SUM(B1:B2) | =SUM(C1:C2) | =SUM(D1:D2) |
 
 #+END:
 
@@ -229,8 +229,10 @@
 |     2 |    10 |   |
 #+TBLFM: $3=vsum($1..$2);f2::@1$3=ResFinal
 
+# TODO: ResFinal has to appear on the header column
+
 #+BEGIN: ods-table :label "string-in-header-row"
-| Mark1 | Mark2 | =ResFinal   |
+| Mark1 | Mark2 |             |
 |-------+-------+-------------|
 |    13 |     7 | =SUM(A2:B2) |
 |     2 |    10 | =SUM(A3:B3) |
@@ -261,6 +263,7 @@
 # Local Variables:
 # ox-ods-debug: nil
 # eval: (hi-lock-mode 1)
+# eval: (highlight-lines-matching-regexp (rx (and "TODO")) 'hi-salmon))
 # eval: (highlight-lines-matching-regexp (rx (and "#+NAME:")) 'hi-yellow))
 # eval: (highlight-lines-matching-regexp (rx (and "#+BEGIN: ods-table")) 'highlight))
 # End:

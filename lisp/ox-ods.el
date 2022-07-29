@@ -488,32 +488,30 @@
 			 (list :rhs2
 			       (buffer-substring-no-properties (point-min) (point-max))
 			       :terms terms
-			       :lhs-parsed (org-ods-parse-field (plist-get tblfm :lhs))
+			       :lhs-parsed (org-ods-parse-field-range (plist-get tblfm :lhs))
 			       :rhs-terms-parsed (cl-loop for (name . field-range) in terms
 							  collect (cons name (org-ods-parse-field-range field-range))))))))))
 
 (defun org-ods-table-dimensions (table)
   (cdar (last (org-ods-table-cell-cell-address-alist table))))
 
+(defun org-ods->derelativize-field-range (tinfo field-range)
+  (pcase-let ((`(,first . ,second) field-range))
+    (cons (org-ods-derelativize-field tinfo first)
+	  (org-ods-derelativize-field tinfo second 'secondp))))
+
 (defun org-tblfm->cell-and-ods-formula (tinfo tblfm)
   (org-ods-message "\n%S" (list 'org-tblfm->cell-and-ods-formula
-			      :table (plist-get tinfo :table)
-			      :tblfm tblfm))
-  (let* ((table (plist-get tinfo :table))
-         (has-special-column-p (org-export-table-has-special-column-p table))
-	 (cell-addresses-to (plist-get tinfo :dimensions))
-	 (lhs-parsed (plist-get tblfm :lhs-parsed))
+				  :table (plist-get tinfo :table)
+				  :tblfm tblfm))
+  (let* ((lhs-parsed (plist-get tblfm :lhs-parsed))
 	 (rhs-terms-parsed (plist-get tblfm :rhs-terms-parsed))
-	 (cell-addresses-from (cons
-			       (assoc-default 1 (plist-get tinfo :rgn->rn))
-			       (if has-special-column-p 2 1)))
-	 (lhs-cell-addresses (org-ods-get-cell-addresess-matching-field
-			      cell-addresses-from cell-addresses-to
-			      (org-ods-derelativize-field tinfo lhs-parsed))))
-    
+	 (lhs-cell-addresses
+	  (org-ods-table-field-range->formula-cell-addresses
+	   tinfo (org-ods->derelativize-field-range tinfo lhs-parsed))))
     (cl-loop do (org-ods-message "\n%S" (list 'org-tblfm->cell-and-ods-formula
-			                    :lhs-cell-addresses lhs-cell-addresses))
-             for cell-address in lhs-cell-addresses collect
+					      :lhs-cell-addresses lhs-cell-addresses))
+	     for cell-address in lhs-cell-addresses collect
 	     (list
 	      ;; cell-address
 	      cell-address
@@ -545,11 +543,11 @@
   (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms tinfo))
 	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula tinfo tblfm))
 	   do (org-ods-message "\n%S" (list 'org-ods-insert-ods-formula
-					  :final final))
+					      :final final))
 	   do (cl-loop for (cell-address formula) in (cdr final)
-		       do (org-ods-message "\n%S" (list 'org-ods-insert-ods-formula
-						      :cell-address cell-address
-						      :formula formula))
+		       do (org-ods-message "\n%S" (list 'org-ods-insert-ods-formula
+							  :cell-address cell-address
+							  :formula formula))
 		       for table-cell = (assoc-default cell-address (plist-get tinfo :cell-address->table-cell))
 		       do (unless table-cell
 			    (error (concat (format "Table cell at address %S is empty." cell-address)
@@ -736,6 +734,125 @@
 					   (list n))
 					  (_ (error "FIXME :col-num")))
 			       collect (cons r c))))))
+
+(defun org-ods-get-cell-addresses-in-rectangle (rect)
+  (org-ods-message "\n%S" (list 'org-ods-get-cell-addresses-in-rectangle :rect rect))
+  (pcase-let* ((`((,x1 . ,y1) . (,x2 . ,y2)) rect))
+    (cl-loop for r in (number-sequence x1 x2)
+	     append (cl-loop for c in (number-sequence y1 y2)
+			     collect (cons r c)))))
+
+(defun org-ods-tinfo->rectangle (tinfo)
+  (pcase-let* ((`(,rmin . ,cmin) '(1 . 1))
+	       (`(,rmax . ,cmax) (plist-get tinfo :dimensions)))
+    (cons (cons rmin cmin) (cons rmax cmax))))
+
+(defun org-ods-tinfo->formula-rectangle (tinfo)
+  (pcase-let* ((table (plist-get tinfo :table))
+	       (has-special-column-p (org-export-table-has-special-column-p table))
+	       (`(,rmin . ,cmin) (cons
+				  (or (assoc-default 1 (plist-get tinfo :rgn->rn))
+				      (assoc-default 0 (plist-get tinfo :rgn->rn)))
+				  (if has-special-column-p 2 1)))
+	       (`(,rmax . ,cmax) (plist-get tinfo :dimensions)))
+    (cons (cons rmin cmin) (cons rmax cmax))))
+
+(defun org-ods-get-common-rectangle (rect1 rect2)
+  (org-ods-message "\n%S" (list 'org-ods-get-common-rectangle
+				  :rect1 rect1
+				  :rect2 rect2))
+  (pcase-let* ((`((,r1x1 . ,r1y1) . (,r1x2 . ,r1y2)) rect1)
+	       (`((,r2x1 . ,r2y1) . (,r2x2 . ,r2y2)) rect2)
+	       (r3x1 (max r1x1 r2x1))
+	       (r3x2 (min r1x2 r2x2))
+	       (r3y1 (max r1y1 r2y1))
+	       (r3y2 (min r1y2 r2y2))
+	       (rect3 (cons (cons r3x1 r3y1)
+			    (cons r3x2 r3y2))))
+    (org-ods-message "\n%S" (list 'org-ods-get-common-rectangle
+				  :rect3 rect3))
+    rect3))
+
+(defun org-ods-do-table-solitary-field->rectangle (formula-rect field)
+  (org-ods-message "\n%S" (list 'org-ods-do-table-solitary-field->rectangle
+				  :formula-rect formula-rect
+				  :field field))
+  (pcase-let* ((`((,rmin . ,cmin) . (,rmax . ,cmax)) formula-rect)
+	       (cell-address (cons (plist-get field :row-num)
+				   (plist-get field :col-num)))
+	       (field-rect
+		(pcase cell-address
+		  (
+		   ;; Both r and c are specified
+		   `(,(and (pred numberp) r) . ,(and (pred numberp) c))
+		   (cons (cons r c) (cons r c)))
+		  ;; Only r is specified; c is wildcard.
+		  (`(,(and (pred numberp) r) . nil)
+		   (cons (cons r cmin) (cons r cmax)))
+		  ;; Only c is specified; r is wildcard.
+		  (`(nil . ,(and (pred numberp) c))
+		   (cons (cons rmin c) (cons rmax c)))
+		  ;; Both r and c are wildcards
+		  (_
+		   (error "org-ods-do-table-solitary-field->rectangle. This shouldn't happen")))))
+    (org-ods-get-common-rectangle formula-rect field-rect)))
+
+(defun org-ods-do-table-field-range->rectangle (formula-rect field &optional secondp)
+  (org-ods-message "\n%S" (list 'org-ods-do-table-field-range->rectangle
+				  :formula-rect formula-rect
+				  :field field
+				  :secondp secondp))
+  (pcase-let* ((`((,rmin . ,cmin) . (,rmax . ,cmax)) formula-rect)
+	       (cell-address (cons (plist-get field :row-num)
+				   (plist-get field :col-num)))
+	       (field-rect
+		(cond
+		 ((null secondp)
+		  (pcase cell-address
+		    (
+		     ;; Both r and c are specified
+		     `(,(and (pred numberp) r) . ,(and (pred numberp) c))
+		     (cons (cons r c) (cons rmax cmax)))
+		    ;; Only r is specified; c is wildcard.
+		    (`(,(and (pred numberp) r) . nil)
+		     (cons (cons r cmin) (cons rmax cmax)))
+		    ;; Only c is specified; r is wildcard.
+		    (`(nil . ,(and (pred numberp) c))
+		     (cons (cons rmin c) (cons rmax cmax)))
+		    ;; Both r and c are wildcards
+		    (_
+		     (error "org-ods-table-field->rectangle: This shouldn't happen"))))
+		 (secondp
+		  (pcase cell-address
+		    (
+		     ;; Both r and c are specified
+		     `(,(and (pred numberp) r) . ,(and (pred numberp) c))
+		     (cons (cons rmin cmin) (cons r c)))
+		    ;; Only r is specified; c is wildcard.
+		    (`(,(and (pred numberp) r) . nil)
+		     (cons (cons rmin cmin) (cons r cmax)))
+		    ;; Only c is specified; r is wildcard.
+		    (`(nil . ,(and (pred numberp) c))
+		     (cons (cons rmin cmin) (cons rmax c)))
+		    ;; Both r and c are wildcards
+		    (_
+		     (error "org-ods-table-field->rectangle: This shouldn't happen")))))))
+    (org-ods-get-common-rectangle formula-rect field-rect)))
+
+(defun org-ods-table-field-range->formula-cell-addresses (tinfo field-range)
+  (pcase-let* ((formula-rect (org-ods-tinfo->formula-rectangle tinfo))
+	       (_dummy (org-ods-message "\n%S" (list 'org-ods-table-field-range->formula-cell-addresses
+						       :formula-rect formula-rect
+						       :field-range field-range)))
+	       (`(,field-from . ,field-to) field-range)
+	       (field-rect
+		(cond
+		 (field-to
+		  (let* ((rect-from (org-ods-do-table-field-range->rectangle formula-rect field-from))
+			 (rect-to (org-ods-do-table-field-range->rectangle formula-rect field-to 'second)))
+		    (org-ods-get-common-rectangle rect-from rect-to)))
+		 (t (org-ods-do-table-solitary-field->rectangle formula-rect field-from)))))
+    (org-ods-get-cell-addresses-in-rectangle field-rect)))
 
 
 
