@@ -6,6 +6,15 @@
 | 2022-07-21 | 27181.1 |
 
 #+END:
+
+
+#+NAME: generic1
+| <2022-08-01 Mon> | 27181.1 |
+
+#+BEGIN: ods-table :label "generic1"
+| 01/08/22 | 27181.1 |
+
+#+END:
 
 #+NAME: table1
 #+CAPTION: Table 1

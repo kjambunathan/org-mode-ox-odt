@@ -27,7 +27,7 @@
 ;;; Code:
 
 (require 'rx)
-(require 'ox)
+(require 'ox-odt)
 
 (defvar org-ods-debug nil)
 
@@ -349,7 +349,13 @@
     (format "%s%s%s%s"
 	    "" (org-ods-encode-digit c) "" r)))
 
+(defvar org-ods-encode-cell-range-function
+  'org-ods-encode-cell-range-for-text)
+
 (defun org-ods-encode-cell-range (range adjust)
+  (funcall org-ods-encode-cell-range-function range adjust))
+
+(defun org-ods-encode-cell-range-for-text (range adjust)
   (pcase-let* ((`(,first . ,second) range))
     (cond
      (second
@@ -358,6 +364,18 @@
 	      (org-ods-encode-cell-address second adjust)))
      ((null second)
       (org-ods-encode-cell-address first adjust))
+     (t (error "FIXME")))))
+
+(defun org-ods-encode-cell-range-for-ods (range adjust)
+  (pcase-let* ((`(,first . ,second) range))
+    (cond
+     (second
+      (format "[.%s:.%s]"
+	      (org-ods-encode-cell-address first adjust)
+	      (org-ods-encode-cell-address second adjust)))
+     ((null second)
+      (format "[.%s]"
+	      (org-ods-encode-cell-address first adjust)))
      (t (error "FIXME")))))
 
 ;; Named Columns, Fields, and Parameters
@@ -595,6 +613,7 @@
 		       do (unless table-cell
 			    (error (concat (format "Table cell at address %S is empty." cell-address)
 					   "Create that row / column by re-executing the TBLFM")))
+		       (plist-put (cadr table-cell) :ods-formula formula)
 		       (setcdr (cdr table-cell) (list formula)))))
 
 (defun org-ods-table->ods-table (table)
@@ -1108,5 +1127,219 @@
   (if-let* ((table (assoc-default label (org-ods-collect-tables))))
       (insert (org-ods-table->ods-table table))
     (user-error "No Table with NAME `%s'" (or label ""))))
+
+;;; ODS Export backend
+
+;;;; User Configuration Options
+
+(defgroup org-export-ods nil
+  "Options for exporting Org mode files to ODT."
+  :tag "Org Export to ODS"
+  :group 'org-export)
+
+(defcustom org-ods-content-template-file nil
+  "Template file for \"content.xml\".
+The exporter embeds the exported content just before
+\"</office:text>\" element.
+
+If unspecified, the file named \"OrgOdtContentTemplate.xml\"
+under `org-odt-styles-dir' is used."
+  :type '(choice (const nil)
+		 (file))
+  :group 'org-export-ods)
+
+(defcustom org-ods-styles-file nil
+  "Default styles file for use with ODT export.
+
+Valid values are one of:
+1. nil
+2. path to a styles.xml file
+3. path to a *.odt or a *.ott file
+4. list of the form (ODT-OR-OTT-FILE (FILE-MEMBER-1 FILE-MEMBER-2
+...))
+
+In case of option 1, an in-built styles.xml is used. See
+`org-odt-styles-dir' for more information.
+
+In case of option 3, the specified file is unzipped and the
+styles.xml embedded therein is used.
+
+In case of option 4, the specified ODT-OR-OTT-FILE is unzipped
+and FILE-MEMBER-1, FILE-MEMBER-2 etc are copied in to the
+generated odt file.  Use relative path for specifying the
+FILE-MEMBERS.  styles.xml must be specified as one of the
+FILE-MEMBERS.
+
+Use options 1, 2 or 3 only if styles.xml alone suffices for
+achieving the desired formatting.  Use option 4, if the styles.xml
+references additional files like header and footer images for
+achieving the desired formatting.
+
+Use \"#+ODT_STYLES_FILE: ...\" directive to set this variable on
+a per-file basis.  For example,
+
+#+ODT_STYLES_FILE: \"/path/to/styles.xml\" or
+#+ODT_STYLES_FILE: (\"/path/to/file.ott\" (\"styles.xml\" \"image/hdr.png\"))."
+  :group 'org-export-ods
+  :type
+  '(choice
+    (const :tag "Factory settings" nil)
+    (file :must-match t :tag "styles.xml")
+    (file :must-match t :tag "ODT or OTT file")
+    (list :tag "ODT or OTT file + Members"
+	  (file :must-match t :tag "ODF Text or Text Template file")
+	  (cons :tag "Members"
+		(file :tag "	Member" "styles.xml")
+		(repeat (file :tag "Member"))))))
+
+(defcustom org-ods-preferred-output-format nil
+  "Automatically post-process to this format after exporting to \"ods\".
+
+Command `org-ods-export-to-ods' exports first to \"ods\" format
+and then uses `org-ods-convert-process' to convert the
+resulting document to this format.  During customization of this
+variable, the list of valid values are populated based on
+`org-odt-convert-capabilities'.
+
+You can set this option on per-file basis using file local
+values.  See Info node `(emacs) File Variables'."
+  :group 'org-export-odt
+  :version "24.1"
+  :type '(choice :convert-widget
+		 (lambda (w)
+		   (apply 'widget-convert (widget-type w)
+			  (eval (car (widget-get w :args)))))
+		 `((const :tag "None" nil)
+		   ,@(mapcar (lambda (c)
+			       `(const :tag ,c ,c))
+			     (org-odt-reachable-formats "odt")))))
+;;;###autoload
+(put 'org-ods-preferred-output-format 'safe-local-variable 'stringp)
+
+;;;; Filters
+
+(defun org-ods--translate-tblfms-to-ods-formulae (data _backend info)
+  (org-element-map data 'table
+    (lambda (table)
+      (plist-put (cadr table) :name nil)
+      (plist-put (cadr table) :caption nil)
+      (when-let* ((debug-buf (get-buffer "*Org Ods Debug*")))
+	(with-current-buffer debug-buf
+	  (erase-buffer)))
+      (let* ((tinfo (org-ods-table->table-info table))
+	     (replacement-values (org-ods-special-cell-address/org->value tinfo)))
+	(org-ods-message (list 'org-ods-table->ods-table
+			       :tinfo tinfo))
+	(org-ods-insert-ods-formula tinfo)
+	(org-ods-clear-special-rows tinfo)
+	(cl-loop for (cell-address/org . value) in replacement-values
+		 do (org-ods-cell-address/org->value tinfo cell-address/org value))
+	(org-ods-remove-special-column tinfo))
+      (org-ods-lisp-table-to-org-table (org-ods-table-element-to-lisp-table table)))
+    info nil nil t)
+  (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae :data data))
+  data)
+
+;;;; Transcoder
+
+(defvar org-ods-data-types
+  '(formula date float))
+
+(defun org-ods-table-cell (table-cell contents _info)
+  (org-ods-message (list 'org-ods-table-cell
+			 :ods-formula (org-element-property :ods-formula table-cell)
+			 :el-contents (org-element-contents table-cell)
+			 :el-properties (cadr table-cell)))
+  (let* ((el-contents (org-element-contents table-cell))
+	 (content (car el-contents))
+	 (rest (cdr el-contents)))
+    (when (and (null rest) content)
+      (cond
+       ;; Formula
+       ((stringp (org-element-property :ods-formula table-cell))
+	(list :data-type 'formula
+	      :attributes
+	      (format "office:value=\"0\" office:value-type=\"float\" table:formula=\"of:%s\""
+		      (org-element-property :ods-formula table-cell))
+	      :contents
+	      ""))
+       ;; Timestamp
+       ((and (consp content)
+	     (eq (org-element-type content) 'timestamp))
+	(list :data-type 'date
+	      :attributes
+	      (format "office:date-value=\"%s\" office:value-type=\"date\""
+		      (org-odt--format-timestamp content nil 'iso-date))
+	      :contents
+	      ""))
+       ;; Float
+       ((stringp content)
+	(let ((n (read content)))
+	  (when (numberp n)
+	    (list :data-type 'float
+		  :attributes
+		  (format "office:value=\"%s\" office:value-type=\"float\""
+			  contents)
+		  :contents
+		  ""))))))))
+
+;;;; ODS Command
+
+(declare-function
+ org-odt-export-to-odt-backend "ox-odt"
+ (backend &optional async subtreep visible-only body-only ext-plist))
+
+;;;###autoload
+(defun org-ods-export-to-ods
+    (&optional async _subtreep _visible-only _body-only ext-plist)
+  "Export table at point to a a OpenDocument Spreadsheet file.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+All other arguments--SUBTREEP, VISIBLE-ONLY and BODY-ONLY
+arguments--are ignored.
+
+The function returns a file name in any one of the BACKEND
+format, `org-ods-preferred-output-format'."
+  (interactive)
+  (pcase-let* ((`(,table-element ,_preamble ,_postamble) (org-ods-table-at-point 'full-data)))
+    (org-with-wide-buffer
+     (narrow-to-region (org-element-property :begin table-element)
+		       (org-element-property :end table-element))
+     (let* ((backend 'ods)
+	    (visible-only 'visible-only)
+	    (body-only (not 'body-only))
+	    (subtreep (not 'subtreep))
+	    (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
+	    (org-ods-cell-mapper nil))
+       (org-odt-export-to-odt-backend backend async subtreep
+				      visible-only body-only ext-plist)))))
+
+;;;; Define Back-End
+
+(org-export-define-derived-backend 'ods 'odt
+  :menu-entry
+  '(?o "Export to ODT"
+       ((?s "As ODS file" org-ods-export-to-ods)
+	(?S "As ODS file and open"
+	    (lambda (a s v b)
+	      (if a (org-ods-export-to-ods t s v b)
+		(org-open-file (org-ods-export-to-ods a s v b) 'system))))
+	;; (?x "As XML buffer" org-odt-export-as-odt)
+	))
+  :options-alist
+  '(
+    (:ods-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
+    (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil nil newline)
+    (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file))
+  :translate-alist '()
+  :filters-alist '((:filter-parse-tree
+		    . (org-ods--translate-tblfms-to-ods-formulae))))
 
 (provide 'ox-ods)

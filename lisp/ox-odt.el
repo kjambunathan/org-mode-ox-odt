@@ -7719,6 +7719,8 @@ For more information, on generating with spanned cells see
      (t
       (org-export-table-cell-borders table-cell info)))))
 
+(declare-function org-ods-table-cell "ox-ods" (table-cell contents info))
+
 (defun org-odt-table-cell (table-cell contents info)
   "Transcode a TABLE-CELL element from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
@@ -7742,7 +7744,10 @@ channel."
 			(unless (= 1 colspan)
 			  (format " table:number-columns-spanned=\"%d\""
 				  colspan)))))
-		   "")))
+		   ""))
+	      (ods-plist (when (eq org-export-current-backend 'ods)
+			   (let ((f 'org-ods-table-cell))
+			     (funcall f table-cell contents info)))))
 	 (cond
 	  (table-cell-contents-is-an-element-p
 	   (format "\n<table:table-cell table:style-name=\"%s\" %s>\n%s\n</table:table-cell>"
@@ -7751,11 +7756,19 @@ channel."
 		   contents))
 	  (t
 	   (format "\n<table:table-cell table:style-name=\"%s\" %s>\n%s\n</table:table-cell>"
-		   style-name
-		   attributes
+		   (concat style-name
+			   ;; In case of ODS backend, suffix data type to style name.
+			   (or (when-let* ((data-type (plist-get ods-plist :data-type)))
+				 (capitalize (format "%s" data-type)))
+			       ""))
+		   (concat attributes
+			   ;; In case of ODS backend, add data type attributes.
+			   (or (plist-get ods-plist :attributes) ""))
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (org-odt--table-cell-get-paragraph-style table-cell info)
-			   contents)))))
+			   ;; In case of ODS backend, use the contents provided by it.
+			   (or (plist-get ods-plist :contents)
+			       contents))))))
        "\n")))))
 
 (defun org-odt--table-type (element info)
@@ -9777,7 +9790,6 @@ specifically to help with subsequent tweaks."
 ;;;; Insert prettifed XML
 
 (defun org-odt-prettify-xml-buffer (&optional arg)
-  (interactive "P")
   "Run HTML Tidy (i.e., `tidy' on debian) on current buffer.
 
 Specfically, it does the following:
@@ -9795,6 +9807,7 @@ output.  With prefix ARG, run only HTML Tidy, and skip
 
 This function is used for prettifying XML files when user option
 `org-odt-prettify-xml' is non-nil."
+  (interactive "P")
   (when (and (called-interactively-p 'any) arg)
     (setq arg t))
   (unless (consp arg)
