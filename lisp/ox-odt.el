@@ -7697,25 +7697,33 @@ channel."
      ((eq cell-span 'covered) "\n<table:covered-table-cell/>")
      (t
       (concat
-       (format "\n<table:table-cell%s>\n%s\n</table:table-cell>"
-	       (concat
-		(format " table:style-name=\"%s\""
-			(org-odt--table-cell-get-cell-style table-cell info))
-		(when (consp cell-span)
-		  (pcase-let ((`(,rowspan . ,colspan) cell-span))
-		    (concat
-		     (unless (= 1 rowspan)
-		       (format " table:number-rows-spanned=\"%d\""
-			       rowspan))
-		     (unless (= 1 colspan)
-		       (format " table:number-columns-spanned=\"%d\""
-			       colspan))))))
-	       (let ((table-cell-contents (org-element-contents table-cell)))
-		 (if (eq (org-element-class (car table-cell-contents)) 'element)
-		     contents
+       (let* ((table-cell-contents (org-element-contents table-cell))
+	      (table-cell-contents-is-an-element-p (eq (org-element-class (car table-cell-contents)) 'element))
+	      (style-name (org-odt--table-cell-get-cell-style table-cell info))
+	      (attributes
+	       (or (when (consp cell-span)
+		     (pcase-let ((`(,rowspan . ,colspan) cell-span))
+		       (concat
+			(unless (= 1 rowspan)
+			  (format " table:number-rows-spanned=\"%d\""
+				  rowspan))
+			(unless (= 1 colspan)
+			  (format " table:number-columns-spanned=\"%d\""
+				  colspan)))))
+		   "")))
+	 (cond
+	  (table-cell-contents-is-an-element-p
+	   (format "\n<table:table-cell table:style-name=\"%s\" %s>\n%s\n</table:table-cell>"
+		   style-name
+		   attributes
+		   contents))
+	  (t
+	   (format "\n<table:table-cell table:style-name=\"%s\" %s>\n%s\n</table:table-cell>"
+		   style-name
+		   attributes
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
 			   (org-odt--table-cell-get-paragraph-style table-cell info)
-			   contents))))
+			   contents)))))
        "\n")))))
 
 (defun org-odt--table-type (element info)
