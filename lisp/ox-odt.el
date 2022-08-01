@@ -3221,20 +3221,31 @@ significance.  All other values are ignored."
     (with-temp-buffer
       (insert (format "\n\n<!-- BEGIN: table-cell styles %s -->\n\n" base-style-name))
       (cl-loop for (valign-suffix . valign-properties) in valigns do
-	       (cl-loop for (border-suffix . border-properties) in borders do
-			(insert
+	       (cl-loop for (border-suffix . border-properties) in borders 
+                        for style-name = (concat base-style-name valign-suffix border-suffix) do
+                        (insert
 			 (format
 			  "
     <style:style style:name=\"%s\" style:family=\"table-cell\">
       <style:table-cell-properties %s/>
     </style:style>"
-			  (concat base-style-name valign-suffix border-suffix)
+			  style-name
 			  (mapconcat #'identity
 				     (list
 				      base-table-cell-properties
 				      border-properties
 				      valign-properties)
-				     " ")))))
+				     " ")))
+                        (cl-loop with data-types = '(date)
+                                 for data-type in data-types
+                                 for data-type-as-string = (capitalize (symbol-name data-type)) do
+                                 (insert
+                                  (org-odt--lisp-to-xml
+                                   `(style:style
+                                     ((style:name . ,(format "%s%s" style-name  data-type-as-string))
+                                      (style:parent-style-name . ,style-name)
+                                      (style:family . "table-cell")
+                                      (style:data-style-name . ,(format "%s%s%s" "Org" data-type-as-string "Style")))))))))
       (insert (format "\n\n<!-- END: table-cell styles %s -->\n\n" base-style-name))
       (buffer-string))))
 
