@@ -3438,7 +3438,8 @@ holding export options."
 			(org-element-map (plist-get info :parse-tree) 'table
 			  (lambda (table)
 			    (org-odt--read-attribute table :p-style))
-			  info) :test 'string=)))
+			  info)
+                        :test 'string=)))
 	(cl-loop for p-style in p-styles do
 		 (when p-style
 		   (cl-loop for cell-type in '("Heading" "Contents") do
@@ -3464,98 +3465,102 @@ holding export options."
 		(org-odt--build-date-styles (cdr custom-time-fmts)
 					    "OrgDate2")))
       (insert "\n<!-- END: OFFICE:AUTOMATIC-STYLES -->\n")
+
       ;; Update display level.
       ;; - Remove existing sequence decls.  Also position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "<text:sequence-decls" nil t)
-	(delete-region (match-beginning 0)
-		       (re-search-forward "</text:sequence-decls>" nil nil)))
-      (insert "\n<!-- BEGIN: TEXT:SEQUENCE-DECLS -->\n")
-      ;; Update sequence decls according to user preference.
-      (insert
-       (format
-	"\n<text:sequence-decls>%s\n</text:sequence-decls>"
-	(cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings concat
-		 (format "\n<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-			 (if (plist-get category-props :use-outline-levelp)
-			     (string-to-number (plist-get info :odt-display-outline-level))
-			   0)
-			 (plist-get category-props :variable)))))
-      (insert "\n<!-- END: TEXT:SEQUENCE-DECLS -->\n")      
+      (unless (eq org-export-current-backend 'ods)
+        (goto-char (point-min))
+        (when (re-search-forward "<text:sequence-decls" nil t)
+	  (delete-region (match-beginning 0)
+		         (re-search-forward "</text:sequence-decls>" nil nil)))
+        (insert "\n<!-- BEGIN: TEXT:SEQUENCE-DECLS -->\n")
+        ;; Update sequence decls according to user preference.
+        (insert
+         (format
+	  "\n<text:sequence-decls>%s\n</text:sequence-decls>"
+	  (cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings concat
+		   (format "\n<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
+			   (if (plist-get category-props :use-outline-levelp)
+			       (string-to-number (plist-get info :odt-display-outline-level))
+			     0)
+			   (plist-get category-props :variable)))))
+        (insert "\n<!-- END: TEXT:SEQUENCE-DECLS -->\n"))
+      
       ;; Position the cursor to document body.
       (goto-char (point-min))
       (let ((end-tag (cdr (org-odt-get-backend-property org-export-current-backend :content-tags))))
         (re-search-forward end-tag nil nil))
       (goto-char (match-beginning 0))
 
-      ;; Preamble - Title, Author, Date etc.
-      (insert "\n<!-- BEGIN: OFFICE:TEXT/METADATA -->\n")
-      (insert
-       (let* ((author (when (plist-get info :with-author)
-			(let ((data (plist-get info :author)))
-			  (org-odt--encode-plain-text
-			   (org-element-interpret-data data)))))
-	      (_creator (when (plist-get info :with-creator)
-			  (let ((data (plist-get info :creator)))
+      (unless (eq org-export-current-backend 'ods)
+        ;; Preamble - Title, Author, Date etc.
+        (insert "\n<!-- BEGIN: OFFICE:TEXT/METADATA -->\n")
+        (insert
+         (let* ((author (when (plist-get info :with-author)
+			  (let ((data (plist-get info :author)))
 			    (org-odt--encode-plain-text
 			     (org-element-interpret-data data)))))
-	      (_description (let ((data (plist-get info :description)))
+	        (_creator (when (plist-get info :with-creator)
+			    (let ((data (plist-get info :creator)))
 			      (org-odt--encode-plain-text
-			       (org-element-interpret-data data))))
-	      (email (when (plist-get info :with-email)
-		       (plist-get info :email)))
-	      (date (when (plist-get info :with-date)
-		      (let ((date (plist-get info :date)))
-			(when date
-			  (let ((timestamp
-				 (unless (cdr date)
-				   (when (eq (org-element-type (car date)) 'timestamp)
-				     (car date)))))
-			    (or (when (and (plist-get info :odt-use-date-fields)
-					   timestamp)
-				  (org-odt--format-timestamp timestamp)))
-			    (org-export-data (plist-get info :date) info))))))
-	      (_keywords (let ((data (plist-get info :keywords)))
+			       (org-element-interpret-data data)))))
+	        (_description (let ((data (plist-get info :description)))
+			        (org-odt--encode-plain-text
+			         (org-element-interpret-data data))))
+	        (email (when (plist-get info :with-email)
+		         (plist-get info :email)))
+	        (date (when (plist-get info :with-date)
+		        (let ((date (plist-get info :date)))
+			  (when date
+			    (let ((timestamp
+				   (unless (cdr date)
+				     (when (eq (org-element-type (car date)) 'timestamp)
+				       (car date)))))
+			      (or (when (and (plist-get info :odt-use-date-fields)
+					     timestamp)
+				    (org-odt--format-timestamp timestamp)))
+			      (org-export-data (plist-get info :date) info))))))
+	        (_keywords (let ((data (plist-get info :keywords)))
+			     (org-odt--encode-plain-text
+			      (org-element-interpret-data data))))
+	        (subtitle (let ((data (plist-get info :subtitle)))
+			    (org-odt--encode-plain-text
+			     (org-element-interpret-data data))))
+	        (title (when (plist-get info :with-title)
+		         (let ((data (plist-get info :title)))
 			   (org-odt--encode-plain-text
-			    (org-element-interpret-data data))))
-	      (subtitle (let ((data (plist-get info :subtitle)))
-			  (org-odt--encode-plain-text
-			   (org-element-interpret-data data))))
-	      (title (when (plist-get info :with-title)
-		       (let ((data (plist-get info :title)))
-			 (org-odt--encode-plain-text
-			  (org-element-interpret-data data))))))
-	 (concat
-	  ;; Title.
-	  (when (org-string-nw-p title)
-	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		    "OrgTitle" (format "\n<text:title>%s</text:title>" title)))
-	  ;; Subtitle.
-	  (when (org-string-nw-p subtitle)
-	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		    "OrgSubtitle"
-		    (format "<text:user-defined text:name=\"Subtitle\">%s</text:user-defined>"
-			    subtitle)))
-	  ;; Author and E-mail.
-	  (when (org-string-nw-p author)
-	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		    "OrgDocInfo"
-		    (let ((author (format "<text:initial-creator>%s</text:initial-creator>" author)))
-		      (or (when email
-			    (format "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
-				    email author))
-			  author))))
-	  ;; Date
-	  (when (org-string-nw-p date)
-	    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-		    "OrgDocInfo" date)))))
-      (insert "\n<!-- END: OFFICE:TEXT/METADATA -->\n")      
-      ;; Table of Contents
-      (let* ((with-toc (plist-get info :with-toc))
-	     (depth (and with-toc (if (wholenump with-toc)
-				      with-toc
-				    (plist-get info :headline-levels)))))
-	(when depth (insert (or (org-odt-toc depth info) ""))))
+			    (org-element-interpret-data data))))))
+	   (concat
+	    ;; Title.
+	    (when (org-string-nw-p title)
+	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		      "OrgTitle" (format "\n<text:title>%s</text:title>" title)))
+	    ;; Subtitle.
+	    (when (org-string-nw-p subtitle)
+	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		      "OrgSubtitle"
+		      (format "<text:user-defined text:name=\"Subtitle\">%s</text:user-defined>"
+			      subtitle)))
+	    ;; Author and E-mail.
+	    (when (org-string-nw-p author)
+	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		      "OrgDocInfo"
+		      (let ((author (format "<text:initial-creator>%s</text:initial-creator>" author)))
+		        (or (when email
+			      (format "<text:a xlink:type=\"simple\" xlink:href=\"%s\">%s</text:a>"
+				      email author))
+			    author))))
+	    ;; Date
+	    (when (org-string-nw-p date)
+	      (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+		      "OrgDocInfo" date)))))
+        (insert "\n<!-- END: OFFICE:TEXT/METADATA -->\n")      
+        ;; Table of Contents
+        (let* ((with-toc (plist-get info :with-toc))
+	       (depth (and with-toc (if (wholenump with-toc)
+				        with-toc
+				      (plist-get info :headline-levels)))))
+	  (when depth (insert (or (org-odt-toc depth info) "")))))
       ;; Contents.
       (insert "\n<!-- BEGIN: OFFICE:TEXT/CONTENTS -->\n")
       (insert contents)
