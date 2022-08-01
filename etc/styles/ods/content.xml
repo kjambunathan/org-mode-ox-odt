@@ -21,13 +21,7 @@
  <office:body>
   <office:spreadsheet>
    <table:calculation-settings table:automatic-find-labels="false" table:use-regular-expressions="false" table:use-wildcards="true"/>
-   <table:table table:name="Sheet1" table:style-name="ta1">
-    <table:table-column table:style-name="co1" table:default-cell-style-name="Default"/>
-    <table:table-row table:style-name="ro1">
-     <table:table-cell/>
-    </table:table-row>
-   </table:table>
-   <table:named-expressions/>
+   <!-- <table:named-expressions/> -->
   </office:spreadsheet>
  </office:body>
 </office:document-content>
