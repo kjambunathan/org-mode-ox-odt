@@ -90,12 +90,12 @@
     <text:p><text:sheet-name>???</text:sheet-name></text:p>
    </style:header>
    <style:header-left style:display="false"/>
-   <style:header-first style:display="false"/>
+   <!-- <style:header-first style:display="false"/> -->
    <style:footer>
     <text:p>Page <text:page-number>1</text:page-number></text:p>
    </style:footer>
    <style:footer-left style:display="false"/>
-   <style:footer-first style:display="false"/>
+   <!-- <style:footer-first style:display="false"/> -->
   </style:master-page>
  </office:master-styles>
 </office:document-styles>
