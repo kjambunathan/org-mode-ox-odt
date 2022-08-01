@@ -323,7 +323,7 @@ standard Emacs.")
   "Map a OpenDocument file extension, to it's mimetype and description.")
 
 (defconst org-odt-supported-file-types
-  '("odt" "odf" "odm")
+  '("odt" "odf" "odm" "ods")
   "List of OpenDocument file extensions that this backend can generate.")
 
 (defconst org-odt-page-break-style-format "
@@ -3350,6 +3350,21 @@ See entry titled `keyword-to-documentproperty' in
 	    (org-odt--encode-plain-text name)
 	    (org-odt--encode-plain-text value))))
 
+(defun org-odt-get-backend-property (backend property)
+  (let* ((config (list
+                  ;; ODS backend
+		  (list 'ods
+			:styles-file (expand-file-name "ods/styles.xml" org-odt-styles-dir)
+			:content-template-file (expand-file-name "ods/content.xml" org-odt-styles-dir)
+			:content-tags '("<office:spreadsheet>" . "</office:spreadsheet>"))
+                  ;; ODT and other backends
+		  (list nil
+			:styles-file (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir)
+			:content-template-file (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir)
+			:content-tags '("<office:text>" . "</office:text>")))))
+    (or (plist-get (alist-get backend config) property)
+	(plist-get (alist-get nil config) property))))
+
 
 ;;;; Inner Template
 
@@ -3371,7 +3386,7 @@ holding export options."
 	      (let ((file (plist-get info :odt-content-template-file)))
 		(cond
 		 ((or (not file) (string= file ""))
-		  (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir))
+                  (org-odt-get-backend-property org-export-current-backend :content-template-file))
 		 ((file-name-absolute-p file) file)
 		 (t (expand-file-name
 		     file (file-name-directory (plist-get info :input-file))))))))
@@ -3469,7 +3484,8 @@ holding export options."
       (insert "\n<!-- END: TEXT:SEQUENCE-DECLS -->\n")      
       ;; Position the cursor to document body.
       (goto-char (point-min))
-      (re-search-forward "</office:text>" nil nil)
+      (let ((end-tag (cdr (org-odt-get-backend-property org-export-current-backend :content-tags))))
+        (re-search-forward end-tag nil nil))
       (goto-char (match-beginning 0))
 
       ;; Preamble - Title, Author, Date etc.
@@ -3573,7 +3589,7 @@ holding export options."
 	  (let ((file (plist-get info :odt-styles-file)))
 	    (cond
 	     ((or (not file) (string= file ""))
-	      (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir))
+              (org-odt-get-backend-property org-export-current-backend :styles-file))
 	     ((file-name-absolute-p file) file)
 	     (t (expand-file-name
 		 file (file-name-directory (plist-get info :input-file)))))))
