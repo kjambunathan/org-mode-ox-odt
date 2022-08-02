@@ -1308,16 +1308,22 @@ arguments--are ignored.
 The function returns a file name in any one of the BACKEND
 format, `org-ods-preferred-output-format'."
   (interactive)
-  (pcase-let* ((`(,table-element ,_preamble ,_postamble) (org-ods-table-at-point 'full-data)))
+  (pcase-let* ((`(,table-el ,_preamble ,_postamble) (org-ods-table-at-point 'full-data)))
     (org-with-wide-buffer
-     (narrow-to-region (org-element-property :begin table-element)
-		       (org-element-property :end table-element))
+     (narrow-to-region (org-element-property :begin table-el)
+		       (org-element-property :end table-el))
      (let* ((backend 'ods)
 	    (visible-only 'visible-only)
 	    (body-only (not 'body-only))
 	    (subtreep (not 'subtreep))
 	    (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
-	    (org-ods-cell-mapper nil))
+	    (org-ods-cell-mapper nil)
+            (ext-plist (list :uniquifier
+                             (when-let* ((uniquifier
+                                          (or (org-element-property :name table-el)
+					      (org-export-data-with-backend
+					       (org-export-get-caption table-el) 'plain-text nil))))
+                               (format "#%s" uniquifier)))))
        (org-odt-export-to-odt-backend backend async subtreep
 				      visible-only body-only ext-plist)))))
 
@@ -1335,7 +1341,7 @@ format, `org-ods-preferred-output-format'."
 	))
   :options-alist
   '(
-    (:ods-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
+    (:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
     (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil nil newline)
     (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file))
   :translate-alist '()

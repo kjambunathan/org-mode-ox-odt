@@ -9086,7 +9086,14 @@ file-local settings.
 The function returns a file name in any one of the BACKEND
 format, `org-odt-preferred-output-format' or XML format."
   (let* ((outfile (org-export-output-file-name
-		   (concat "." (if body-only "xml" (symbol-name backend))) subtreep)))
+		   (format "%s.%s"
+                           ;; ODS backend passes in a `:uniquifier' to
+                           ;; differentiate between ODS files created
+                           ;; from different tables in the same `org'
+                           ;; file.
+			   (or (plist-get ext-plist :uniquifier) "")
+			   (if body-only "xml" (symbol-name backend)))
+		   subtreep)))
     (if (not (file-writable-p outfile)) (error "Output file not writable")
       (let ((ext-plist (org-combine-plists `(:output-file ,outfile) ext-plist)))
 	(if async
