@@ -9496,7 +9496,7 @@ function to create page headers:
                              (?i . ,(shell-quote-argument in-file))
 			     (?I . ,(browse-url-file-url in-file))
 			     (?f . ,out-fmt)
-			     (?o . ,out-file)
+			     (?o . ,(shell-quote-argument out-file))
 			     (?O . ,(browse-url-file-url out-file))
 			     (?d . ,(shell-quote-argument out-dir))
 			     (?D . ,(browse-url-file-url out-dir))
