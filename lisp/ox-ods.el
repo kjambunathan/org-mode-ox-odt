@@ -1213,6 +1213,21 @@ values.  See Info node `(emacs) File Variables'."
 		   ,@(mapcar (lambda (c)
 			       `(const :tag ,c ,c))
 			     (org-odt-reachable-formats "odt")))))
+
+(defcustom org-ods-convert-process "LibreOffice"
+  "Use this converter to convert from \"ods\" format to other formats.
+During customization, the list of converter names are populated
+from `org-odt-convert-processes'."
+  :group 'org-export-ods
+  :type '(choice :convert-widget
+		 (lambda (w)
+		   (apply 'widget-convert (widget-type w)
+			  (eval (car (widget-get w :args)))))
+		 `((const :tag "None" nil)
+		   ,@(mapcar (lambda (c)
+			       `(const :tag ,(car c) ,(car c)))
+			     org-odt-convert-processes))))
+
 ;;;###autoload
 (put 'org-ods-preferred-output-format 'safe-local-variable 'stringp)
 
@@ -1318,6 +1333,7 @@ format, `org-ods-preferred-output-format'."
 	    (subtreep (not 'subtreep))
 	    (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
 	    (org-ods-cell-mapper nil)
+            (org-odt-convert-process org-ods-convert-process)
             (ext-plist (list :uniquifier
                              (when-let* ((uniquifier
                                           (or (org-element-property :name table-el)
