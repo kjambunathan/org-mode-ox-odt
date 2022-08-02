@@ -1333,13 +1333,15 @@ format, `org-ods-preferred-output-format'."
 	    (subtreep (not 'subtreep))
 	    (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
 	    (org-ods-cell-mapper nil)
-            (org-odt-convert-process org-ods-convert-process)
-            (ext-plist (list :uniquifier
-                             (when-let* ((uniquifier
-                                          (or (org-element-property :name table-el)
-					      (org-export-data-with-backend
-					       (org-export-get-caption table-el) 'plain-text nil))))
-                               (format "#%s" uniquifier)))))
+	    (org-odt-convert-process org-ods-convert-process)
+	    (ext-plist (org-combine-plists
+			(list :uniquifier
+			      (when-let* ((uniquifier
+					   (or (org-element-property :name table-el)
+					       (org-export-data-with-backend
+						(org-export-get-caption table-el) 'plain-text nil))))
+				(format "#%s" uniquifier)))
+			ext-plist)))
        (org-odt-export-to-odt-backend backend async subtreep
 				      visible-only body-only ext-plist)))))
 
