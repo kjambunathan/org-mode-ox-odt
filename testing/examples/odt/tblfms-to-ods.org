@@ -1,4 +1,23 @@
 
+
+#+begin_src emacs-lisp :exports resutls :results none
+(require 'org-extra-emphasis)
+(custom-set-faces
+ '(org-extra-emphasis-01 ((t (:foreground "red"))))
+ '(org-extra-emphasis-02 ((t (:foreground "green"))))
+ '(org-extra-emphasis-03 ((t (:background "light green"))))
+ '(org-extra-emphasis-04 ((t (:background "DarkGreen")))))
+#+end_src
+
+#+ATTR_ODT: :style "GriddedTable"
+#+ATTR_ODT: :widths "1,2,4"
+#+NAME: text-table
+| *Qui ex culpa veniam, laboris esse magna*     | /Anim consectetur amet, eu minim/            | =Minim do aute laborum qui=                   |
+|-----------------------------------------------+----------------------------------------------+-----------------------------------------------|
+| Minim nostrud anim do                         | Nostrud enim velit laboris elit, aliquip eu  | Tempor do ea labore                           |
+| Occaecat !!labore aliquip nisi!! exercitation | Velit !@laborum aliquip quis!@ ad incididunt | Velit in !%aliquip incididunt!% in adipiscing |
+
+
 #+NAME: generic
 | 2022-07-21 |       27181.1 |
 

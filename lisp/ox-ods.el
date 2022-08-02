@@ -1192,6 +1192,26 @@ a per-file basis.  For example,
 		(file :tag "	Member" "styles.xml")
 		(repeat (file :tag "Member"))))))
 
+(defcustom org-ods-automatic-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODS_AUTOMATIC_STYLES: ...
+
+       and
+
+    #+ATTR_ODT: :target \"extra_styles\"
+    #+begin_src nxml
+    ...
+    #+end_src
+."
+  :group 'org-export-ods
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
+
 (defcustom org-ods-preferred-output-format nil
   "Automatically post-process to this format after exporting to \"ods\".
 
@@ -1203,8 +1223,7 @@ variable, the list of valid values are populated based on
 
 You can set this option on per-file basis using file local
 values.  See Info node `(emacs) File Variables'."
-  :group 'org-export-odt
-  :version "24.1"
+  :group 'org-export-ods
   :type '(choice :convert-widget
 		 (lambda (w)
 		   (apply 'widget-convert (widget-type w)
@@ -1252,7 +1271,9 @@ from `org-odt-convert-processes'."
 	(org-ods-remove-special-column tinfo))
       (org-ods-lisp-table-to-org-table (org-ods-table-element-to-lisp-table table)))
     info nil nil t)
-  (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae :data data))
+  (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
+			 :odt-automatic-styles (plist-get info :odt-automatic-styles)
+			 :data data))
   data)
 
 ;;;; Transcoder
@@ -1358,9 +1379,8 @@ format, `org-ods-preferred-output-format'."
 	;; (?x "As XML buffer" org-odt-export-as-odt)
 	))
   :options-alist
-  '(
-    (:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
-    (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil nil newline)
+  '((:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
+    (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil org-ods-automatic-styles newline)
     (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file))
   :translate-alist '()
   :filters-alist '((:filter-parse-tree
