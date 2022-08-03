@@ -2857,6 +2857,8 @@ LANGUAGE keyword."
 		    `(text:index-source-styles
 		      ((text:outline-level . ,(format "%d" level)))
 		      (text:index-source-style
+		       ((text:style-name . ,(format "Heading_20_%d_unnumbered" depth))))
+                      (text:index-source-style
 		       ((text:style-name . ,(format "Heading_20_%d" depth))))))))
        (text:index-body nil
 			(text:index-title
