@@ -1002,10 +1002,10 @@
 
 </office:styles>
  <office:automatic-styles>
-  <style:style style:name="MP1" style:family="paragraph" style:parent-style-name="Footer">
+  <style:style style:name="OrgFooter" style:family="paragraph" style:parent-style-name="Footer">
    <style:paragraph-properties fo:text-align="center" style:justify-single-word="false"/>
   </style:style>
-  <style:page-layout style:name="Mpm1" style:page-usage="mirrored">
+  <style:page-layout style:name="StandardLayout" style:page-usage="mirrored">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
@@ -1014,14 +1014,23 @@
     <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
    </style:footer-style>
   </style:page-layout>
-  <style:page-layout style:name="Mpm2">
+  <style:page-layout style:name="A4PortraitLayout" style:page-usage="mirrored">
+   <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
+    <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
+   </style:page-layout-properties>
+   <style:header-style/>
+   <style:footer-style>
+    <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
+   </style:footer-style>
+  </style:page-layout>
+  <style:page-layout style:name="OrgTitlePageLayout">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
    <style:header-style/>
    <style:footer-style/>
   </style:page-layout>
-  <style:page-layout style:name="Mpm3" style:page-usage="mirrored">
+  <style:page-layout style:name="OrgFrontMatterPageLayout" style:page-usage="mirrored">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="i" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
@@ -1030,7 +1039,7 @@
     <style:header-footer-properties fo:min-height="0cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm"/>
    </style:footer-style>
   </style:page-layout>
-  <style:page-layout style:name="Mpm4" style:page-usage="right">
+  <style:page-layout style:name="OrgFirstPageLayout" style:page-usage="right">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" fo:background-color="transparent" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:background-image/>
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
@@ -1040,7 +1049,7 @@
     <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
    </style:footer-style>
   </style:page-layout>
-  <style:page-layout style:name="Mpm5" style:page-usage="mirrored">
+  <style:page-layout style:name="OrgPageLayout" style:page-usage="mirrored">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
@@ -1050,7 +1059,7 @@
    </style:footer-style>
   </style:page-layout>
   <!-- Footnotes & Endnotes: Page layouts -->
-  <style:page-layout style:name="Mpm6">
+  <style:page-layout style:name="FootnoteLayout">
    <style:page-layout-properties fo:page-width="21.001cm" fo:page-height="29.7cm" style:num-format="1" style:print-orientation="portrait" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
@@ -1058,7 +1067,7 @@
    <style:footer-style/>
   </style:page-layout>
   <!-- Landscape: Page layout -->
-  <style:page-layout style:name="Mpm7" style:page-usage="mirrored">
+  <style:page-layout style:name="A4LandscapeLayout" style:page-usage="mirrored">
    <style:page-layout-properties fo:page-width="29.7cm"  fo:page-height="21.001cm" style:num-format="1" style:print-orientation="landscape" fo:margin-top="2cm" fo:margin-bottom="2cm" fo:margin-left="2cm" fo:margin-right="2cm" style:writing-mode="lr-tb" style:footnote-max-height="0cm">
     <style:footnote-sep style:width="0.018cm" style:distance-before-sep="0.101cm" style:distance-after-sep="0.101cm" style:line-style="solid" style:adjustment="left" style:rel-width="25%" style:color="#000000"/>
    </style:page-layout-properties>
@@ -1069,34 +1078,39 @@
   </style:page-layout>  
  </office:automatic-styles>
  <office:master-styles>
-  <style:master-page style:name="Standard" style:page-layout-name="Mpm1">
+  <style:master-page style:name="Standard" style:page-layout-name="A4PortraitLayout">
    <style:footer>
-    <text:p text:style-name="MP1"><text:page-number text:select-page="current"></text:page-number></text:p>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"></text:page-number></text:p>
    </style:footer>
   </style:master-page>
-  <style:master-page style:name="Landscape" style:page-layout-name="Mpm7">
+  <style:master-page style:name="Landscape" style:page-layout-name="A4LandscapeLayout">
    <style:footer>
-    <text:p text:style-name="MP1"><text:page-number text:select-page="current"></text:page-number></text:p>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"></text:page-number></text:p>
    </style:footer>
   </style:master-page>  
-  <style:master-page style:name="OrgTitlePage" style:page-layout-name="Mpm2" style:next-style-name="OrgFrontMatterPage"/>
-  <style:master-page style:name="OrgFrontMatterPage" style:page-layout-name="Mpm3">
+  <style:master-page style:name="OrgTitlePage" style:page-layout-name="OrgTitlePageLayout" style:next-style-name="OrgFrontMatterPage"/>
+  <style:master-page style:name="OrgFrontMatterPage" style:page-layout-name="OrgFrontMatterPageLayout">
    <style:footer>
-    <text:p text:style-name="MP1"><text:page-number text:select-page="current"/></text:p>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"/></text:p>
    </style:footer>
   </style:master-page>
-  <style:master-page style:name="OrgFirstPage" style:page-layout-name="Mpm4" style:next-style-name="OrgPage">
+  <style:master-page style:name="OrgFirstPage" style:page-layout-name="OrgFirstPageLayout" style:next-style-name="OrgPage">
    <style:footer>
-    <text:p text:style-name="MP1"><text:page-number text:select-page="current"/></text:p>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"/></text:p>
    </style:footer>
   </style:master-page>
-  <style:master-page style:name="OrgPage" style:page-layout-name="Mpm5">
+  <style:master-page style:name="OrgPage" style:page-layout-name="OrgPageLayout">
    <style:footer>
-    <text:p text:style-name="MP1"><text:page-number text:select-page="current"/></text:p>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"/></text:p>
    </style:footer>
   </style:master-page>
+  <style:master-page style:name="Portrait" style:page-layout-name="A4PortraitLayout">
+   <style:footer>
+    <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"></text:page-number></text:p>
+   </style:footer>
+  </style:master-page>  
   <!-- Endnotes & Footnotes: Page styles -->
-  <style:master-page style:name="Footnote" style:page-layout-name="Mpm6"/>
-  <style:master-page style:name="Endnote" style:page-layout-name="Mpm6"/>
+  <style:master-page style:name="Footnote" style:page-layout-name="FootnoteLayout"/>
+  <style:master-page style:name="Endnote" style:page-layout-name="FootnoteLayout"/>
  </office:master-styles>
 </office:document-styles>
