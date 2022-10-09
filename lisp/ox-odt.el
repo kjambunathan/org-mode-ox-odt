@@ -170,8 +170,8 @@
     (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil org-odt-extra-styles newline)
-    (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil nil newline)
-    (:odt-master-styles "ODT_MASTER_STYLES" nil nil newline)
+    (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil org-odt-extra-automatic-styles newline)
+    (:odt-master-styles "ODT_MASTER_STYLES" nil org-odt-master-styles newline)
     ;; Keywords that affect content.xml
     (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
     (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
@@ -492,6 +492,111 @@ See `org-odt-format-label'.")
 			      ((text:style-name . ,(format "%s_20_Index_20_Heading" style-prefix)))
 			      ,index-title))
 			    ,contents)))))))
+
+(cl-defun org-odt-define-page-layout (style-name &key page-dimensions print-orientation)
+  ;; See `org-odt-master-styles' for how to use this API.
+  (pcase-let*
+      ((print-orientation (or print-orientation 'portrait))
+       (normalize-page-dimensions
+	(lambda (page-dimensions)
+	  (message "test: %S" page-dimensions)
+	  (pcase-let* ((`(,x . ,y) page-dimensions)
+		       (parse
+			(lambda (x)
+			  (cons x
+				(cond
+				 ((and (stringp x)
+				       (string-match (rx (group (one-or-more (or digit ".")))
+							 (group (optional (or "cm" "in"))))
+						     x))
+				  (list (string-to-number (match-string 1 x))
+					(if (string= "" (match-string 2 x)) "cm"
+					  (match-string 2 x))))
+				 ((numberp x)
+				  (list x "cm"))
+				 (t (error "Invalid page dimension `%S'" x))))))
+		       (ordered (sort (list (funcall parse x)
+					    (funcall parse y))
+				      (lambda (x y) (< (nth 1 x) (nth 1 y))))))
+	    (list (format "%0.2f%s"
+			  (nth 1 (nth 0 ordered))
+			  (nth 2 (nth 0 ordered)))
+		  (format "%0.2f%s"
+			  (nth 1 (nth 1 ordered))
+			  (nth 2 (nth 1 ordered)))))))
+       (`(,width ,height)
+	(let* ((dims
+		(cond
+		 ((stringp page-dimensions)
+		  (or (cdr
+		       (assoc-string page-dimensions
+				     '(("a4" . (21.0 . 29.7))
+				       ("letter" . (21.59 . 27.94))
+				       ("a5" . (14.8 . 21.0)))
+				     t))
+		      page-dimensions))
+		 ((consp page-dimensions)
+		  page-dimensions)))
+	       (dims (funcall normalize-page-dimensions dims)))
+	  (pcase print-orientation
+	    (`landscape
+	     (nreverse dims))
+	    (`portrait dims)
+	    (_ (error "Invalid print-orientation `%S'" print-orientation))))))
+    (org-odt--lisp-to-xml
+     `(style:page-layout
+       ((style:name . ,style-name)
+	(style:page-usage . "mirrored"))
+       (style:page-layout-properties
+	((fo:page-width . ,width)
+	 (fo:page-height . ,height)
+	 (style:num-format . "1")
+	 (style:print-orientation . ,(format "%s" print-orientation))
+	 (fo:margin-bottom . "2cm")
+	 (fo:margin-left . "2cm")
+	 (fo:margin-right . "2cm")
+	 (fo:margin-top . "2cm")
+	 (style:writing-mode . "lr-tb")
+	 (style:footnote-max-height . "0cm"))
+	(style:footnote-sep
+	 ((style:width . "0.018cm")
+	  (style:distance-before-sep . "0.101cm")
+	  (style:distance-after-sep . "0.101cm")
+	  (style:line-style . "solid")
+	  (style:adjustment . "left")
+	  (style:rel-width . "25%")
+	  (style:color . "#000000"))))
+       (style:header-style nil)
+       (style:footer-style nil
+			   (style:header-footer-properties
+			    ((fo:min-height . "0.6cm")
+			     (fo:margin-left . "0cm")
+			     (fo:margin-right . "0cm")
+			     (fo:margin-top . "0.499cm")
+			     (style:dynamic-spacing . "false"))))))))
+
+(cl-defun org-odt-define-page-style (page-style &key
+						layout-style
+						footer-template
+						_header-template)
+  ;; See `org-odt-master-styles' for how to use this API.
+  (let* ((page-style (or page-style "Standard"))
+	 (layout-style (or layout-style "A4PortraitLayout")))
+    (org-odt--lisp-to-xml
+     `(style:master-page
+       ((style:name . ,page-style)
+	(style:page-layout-name . ,layout-style))
+       ,@(cond
+	  ((eq footer-template t)
+	   `(style:footer nil
+			  (text:p
+			   ((text:style-name . "OrgFooter"))
+			   (text:page-number
+			    ((text:select-page . "current"))))))
+	  ((consp footer-template)
+	   footer-template)
+	  ((null footer-template)
+	   (ignore)))))))
 
 (defvar hfy-user-sheet-assoc)
 
@@ -1004,6 +1109,129 @@ specified with the following keywords
   '(choice
     (const :tag "None" nil)
     (string :tag "XML string")))
+
+(defcustom org-odt-master-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODT_MASTER_STYLES: ...
+
+       and
+
+    #+ATTR_ODT: :target \"master_styles\"
+    #+begin_src nxml
+    ...
+    #+end_src
+
+The styles defined here are master page styles.  
+
+ODT exporter produces pages in A4 (Portrait) layout.
+
+By customizing this variable `org-odt-master-styles', and
+`org-odt-extra-automatic-styles', you can generate documents with
+custom page layouts.
+
+Use `org-odt-master-styles' to define custom page styles.  Use
+`org-odt-define-page-layout' to define custom page layouts.
+
+Down below you see recipes for producing documents in the US
+Letter (Portrait), A4 (Landscape). Recipe below works by
+re-associating the `Standard' page style, to a layout style
+different from the default `A4PortraitLayout'.
+
+If you would like to produce documents in A4 (Landscape) layout,
+then do this
+
+    (setq org-odt-master-styles
+          (org-odt-define-page-style \"Standard\"
+                                     :layout-style \"A4LandscapeLayout\"
+                                     :footer-template t))
+    (setq org-odt-extra-automatic-styles nil)
+
+If you would like to produce documents in US Letter (Portrait)
+layout, then do this
+
+    (setq org-odt-extra-automatic-styles
+          (org-odt-define-page-layout \"LetterPortraitLayout\"
+                                      :page-dimensions \"letter\"
+                                      :print-orientation \\='portrait))
+
+    (setq org-odt-master-styles
+          (org-odt-define-page-style \"Standard\"
+                                     :layout-style \"LetterPortraitLayout\"
+                                     :footer-template t))
+
+If you would like to produce documents in A5 (Portrait) layout,
+then do this
+
+    (setq org-odt-extra-automatic-styles
+          (org-odt-define-page-layout \"A5PortraitLayout\"
+                                      :page-dimensions \"a5\"))
+
+    (setq org-odt-master-styles
+          (org-odt-define-page-style \"Standard\"
+                                     :layout-style \"A5PortraitLayout\"
+                                     :footer-template t))
+
+If you would like to produce documents in a non-standard 10cm x
+10cm layout, then do this
+
+    (setq org-odt-extra-automatic-styles
+          (org-odt-define-page-layout \"MyCustomSquareLayout\"
+                                      :page-dimensions \\='(10 . 10)))
+
+    (setq org-odt-master-styles
+          (org-odt-define-page-style \"Standard\"
+                                     :layout-style \"MyCustomSquareLayout\"
+                                     :footer-template t))
+
+Note that the `A4LandscapeLayout' is already defined by the
+default `OrgOdtStyles.xml', so there is no need to define the
+page layout.
+
+In the cases of `LetterPortraitLayout', `A5PortraitLayout',
+`MyCustomSquareLayout' layouts above, the corresponding page
+layout styles are _not_ already defined for you.  So, you need to
+install _both_ the page layout, and page styles."
+  :group 'org-export-odt
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
+
+(defcustom org-odt-extra-automatic-styles nil
+    "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODT_EXTRA_AUTOMATIC_STYLES: ...
+
+       and
+
+    #+ATTR_ODT: :target \"extra_automatic_styles\"
+    #+begin_src nxml
+    ...
+    #+end_src
+
+The styles defined here are page layout styles.  
+
+ODT exporter produces pages in A4 (Portrait) layout.
+
+By customizing this variable `org-odt-extra-automatic-styles',
+and `org-odt-master-styles', you can generate documents with
+custom page layouts.
+
+Use `org-odt-master-styles' to define custom page styles.  Use
+`org-odt-define-page-layout' to define custom page layouts.
+
+See `org-odt-master-styles' for recipes on how to produce
+Letter (Portrait), A4 (Landscape), and other page layouts."
+    :group 'org-export-odt
+    :type
+    '(choice
+      (const :tag "None" nil)
+      (string :tag "XML string")))
 
 (defcustom org-odt-display-outline-level 2
   "Outline levels considered for enumerating captioned entities."
@@ -3670,7 +3898,7 @@ holding export options."
 
       ;; Write master styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
-
+      
       ;; Position the cursor.
       ;; (goto-char (point-min))
       ;; (when (re-search-forward "</office:automatic-styles>" nil t)
