@@ -6047,22 +6047,22 @@ INFO is a plist holding contextual information.  See
       (let ((destination (if (string= type "fuzzy")
 			     (org-export-resolve-fuzzy-link link info)
 			   (org-export-resolve-id-link link info))))
-	(cl-case (org-element-type destination)
+	(pcase (org-element-type destination)
 	  ;; Case 0: ID link points to an external file.
-	  (plain-text
+	  (`plain-text
 	   (format "<text:a xlink:type=\"simple\" xlink:href=\"%s#%s\">%s</text:a>"
 		   (funcall file.org->file.odt? destination info)
 		   (concat "ID-" path)
 		   (or desc (org-odt--encode-plain-text destination))))
 	  ;; Case 1: Fuzzy link points nowhere.
-	  ('nil
+	  (`nil
 	   (user-error
 	    "Link \"%s\" at char position %d-%d points nowhere."
 	    (org-element-property :raw-link link)
 	    (org-element-property :begin link)
 	    (org-element-property :end link)))
 	  ;; Case 2: Fuzzy link points to a headline.
-	  (headline
+	  (`headline
 	   ;; If there's a description, create a hyperlink.
 	   ;; Otherwise, try to provide a meaningful description.
 	   (if (not desc) (org-odt-link--infer-description destination info)
@@ -6070,7 +6070,7 @@ INFO is a plist holding contextual information.  See
 	      "<text:a xlink:type=\"simple\" xlink:href=\"#%s\">%s</text:a>"
 	      (org-export-get-reference destination info) desc)))
 	  ;; Case 3: Fuzzy link points to a target.
-	  (target
+	  (`target
 	   ;; If there's a description, create a hyperlink.
 	   ;; Otherwise, try to provide a meaningful description.
 	   (if (not desc) (org-odt-link--infer-description destination info)
@@ -6079,7 +6079,7 @@ INFO is a plist holding contextual information.  See
 		     desc)))
 	  ;; Case 4: Fuzzy link points to some element (e.g., an
 	  ;; inline image, a math formula or a table).
-	  (otherwise
+	  (_
 	   (let ((label-reference
 		  (ignore-errors (org-odt-format-label
 				  destination info 'reference))))
@@ -9619,9 +9619,9 @@ values.  Here are the differences between this function and the
 		(< (point) (org-element-property :end element))
 		(>= (point) (org-element-property :begin element)))
        (goto-char (org-element-property :begin element))
-       (when (re-search-forward ":" (point-at-eol) t)
+       (when (re-search-forward ":" (line-end-position) t)
 	 ;; Wipe-off the current entry.
-	 (delete-region (point) (point-at-eol))
+	 (delete-region (point) (line-end-position))
 	 (insert " ")
 	 ;; Insert the chosen entry.
 	 (let ((input (car (assoc-default
@@ -10037,7 +10037,7 @@ See `org-odt-prettify-xml-buffer' for more information."
       ;;     #+odt_automatic_styles: ...
       (use-keywords
        ;; Ensure that point is at beginning of line
-       (unless (point-at-bol)
+       (unless (bolp)
 	 (user-error "Cannot insert here"))
        (save-excursion
 	 (insert prettified-text)
@@ -10045,17 +10045,17 @@ See `org-odt-prettify-xml-buffer' for more information."
 	  (save-excursion (skip-chars-backward "\n")
 			  (point))
 	  (point))
-	 (string-rectangle start (point-at-bol)
+	 (string-rectangle start (line-beginning-position)
 			   (completing-read "Prefix: "
 					    '("#+odt_extra_styles: "
 					      "#+odt_extra_automatic_styles: "
 					      "#+odt_master_styles: "
 					      "#+odt_automatic_styles: ")))
-	 (goto-char (point-at-eol))
+	 (goto-char (line-end-position))
 	 (insert "\n")))
       (use-nxml-src-block
        ;; Ensure that point is at beginning of line
-       (unless (point-at-bol)
+       (unless (bolp)
 	 (user-error "Cannot insert here"))
        (let ((p nil))
 	 (save-excursion
