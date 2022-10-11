@@ -1,0 +1,15 @@
+<style:style style:name="OrgToCharFormulaCaptionAbove"
+             style:parent-style-name="Formula"
+             style:family="graphic">
+  <style:graphic-properties draw:wrap-influence-on-position="once-concurrent"
+                            fo:margin-bottom="0.199cm"
+                            fo:margin-top="0.199cm"
+                            style:horizontal-pos="from-left"
+                            style:horizontal-rel="paragraph-content"
+                            style:vertical-pos="bottom"
+                            style:vertical-rel="paragraph"
+                            style:wrap="none"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="char" />
+</style:style>

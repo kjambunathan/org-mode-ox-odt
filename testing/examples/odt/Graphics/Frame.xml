@@ -1,0 +1,19 @@
+<style:style style:name="Frame"
+             style:family="graphic">
+  <style:graphic-properties fo:border="0.06pt solid #000000"
+                            fo:margin-bottom="0.201cm"
+                            fo:margin-left="0.201cm"
+                            fo:margin-right="0.201cm"
+                            fo:margin-top="0.201cm"
+                            fo:padding="0.15cm"
+                            style:horizontal-pos="center"
+                            style:horizontal-rel="paragraph-content"
+                            style:number-wrapped-paragraphs="no-limit"
+                            style:vertical-pos="top"
+                            style:vertical-rel="paragraph-content"
+                            style:wrap="parallel"
+                            style:wrap-contour="false"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="paragraph" />
+</style:style>

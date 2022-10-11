@@ -1,0 +1,7 @@
+<style:style style:name="OrgInlineFormula"
+             style:parent-style-name="Formula"
+             style:family="graphic">
+  <style:graphic-properties style:vertical-pos="middle"
+                            style:vertical-rel="text"
+                            svg:y="0cm" />
+</style:style>

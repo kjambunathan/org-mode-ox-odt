@@ -1,0 +1,18 @@
+<style:style style:name="OrgPageImage"
+             style:parent-style-name="Graphics"
+             style:family="graphic">
+  <style:graphic-properties draw:fill="none"
+                            draw:fill-color="#729fcf"
+                            draw:shadow-opacity="100%"
+                            fo:background-color="transparent"
+                            fo:margin-bottom="0.21cm"
+                            fo:margin-top="0.21cm"
+                            style:horizontal-pos="center"
+                            style:horizontal-rel="page"
+                            style:shadow="none"
+                            style:vertical-pos="middle"
+                            style:vertical-rel="page"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="page" />
+</style:style>

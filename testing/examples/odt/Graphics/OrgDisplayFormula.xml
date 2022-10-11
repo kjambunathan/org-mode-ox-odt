@@ -1,0 +1,13 @@
+<style:style style:name="OrgDisplayFormula"
+             style:parent-style-name="Graphics"
+             style:family="graphic">
+  <style:graphic-properties style:horizontal-pos="center"
+                            style:horizontal-rel="paragraph"
+                            style:number-wrapped-paragraphs="1"
+                            style:vertical-pos="top"
+                            style:vertical-rel="paragraph"
+                            style:wrap="run-through"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="paragraph" />
+</style:style>

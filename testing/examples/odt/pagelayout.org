@@ -1,0 +1,165 @@
+#+begin_src emacs-lisp
+
+(style:footer nil
+	      (text:p
+	       ((text:style-name . "MP1"))
+	       (text:page-number
+		((text:select-page . "current"))
+		"0")))
+
+(style:header-style nil
+		    (style:header-footer-properties
+		     ((fo:min-height . "1.0cm")
+		      (fo:margin-left . "0cm")
+		      (fo:margin-right . "0cm")
+		      (fo:margin-bottom . "0.50cm")
+		      (fo:background-color . "transparent")
+		      (style:dynamic-spacing . "false"))))
+#+end_src
+
+
+#+name: A4Landscape
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-master-styles nil)
+(setq org-odt-extra-automatic-styles nil)
+#+end_src
+
+* COMMENT A4 Landscape
+
+#+name: A4Landscape
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-master-styles
+      (org-odt-define-page-style "Standard"
+                                 :layout-style "A4LandscapeLayout"
+                                 :footer-template t))
+(setq org-odt-extra-automatic-styles nil)
+#+end_src
+
+* COMMENT A5 Portrait
+
+#+name: A5Portrait
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-extra-automatic-styles
+      (org-odt-define-page-layout "A5PortraitLayout"
+                                  :page-dimensions "a5"))
+
+(setq org-odt-master-styles
+      (org-odt-define-page-style "Standard"
+                                 :layout-style "A5PortraitLayout"
+                                 :footer-template t))
+#+end_src
+
+* COMMENT Non-standard 10cm x 10cm Layout
+
+#+name: CustomSquareLayout
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-extra-automatic-styles
+      (org-odt-define-page-layout "MyCustomSquareLayout"
+                                  :page-dimensions '(10 . 10)))
+
+(setq org-odt-master-styles
+      (org-odt-define-page-style "Standard"
+                                 :layout-style "MyCustomSquareLayout"
+                                 :footer-template t))
+#+end_src
+
+* COMMENT US Letter Portrait Layout
+
+#+name USLetterPortrait
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-extra-automatic-styles
+      (org-odt-define-page-layout "LetterPortraitLayout"
+                                  :page-dimensions "letter"
+                                  :print-orientation 'portrait))
+
+(setq org-odt-master-styles
+      (org-odt-define-page-style "Standard"
+                                 :layout-style "LetterPortraitLayout"
+                                 :footer-template t))
+#+end_src
+
+* Anim esse incididunt anim et quis pariatur
+
+Aliquip dolor do aute magna culpa nulla sed tempor fugiat.
+
+Velit id duis ea ex nostrud labore eiusmod.  Et voluptate pariatur ut
+aute esse labore proident, eu sed occaecat nostrud.  Non cillum
+incididunt ut est sed nostrud adipiscing culpa duis qui.  Deserunt non
+est lorem veniam, laborum eiusmod occaecat velit est tempor
+reprehenderit nisi aliquip aliquip sint incididunt deserunt cupidatat
+qui.
+
+Anim sint minim enim nulla sunt in ut et pariatur quis culpa velit qui
+quis nisi  duis.  Non lorem  est laborum incididunt  cillum adipiscing
+minim aute consequat.
+
+Culpa nostrud ea ea commodo sunt laboris aliqua pariatur commodo nulla
+reprehenderit enim.   Cillum ea  duis pariatur amet,  occaecat ullamco
+est  veniam,  commodo  nostrud   ipsum.   Proident,  non  exercitation
+consectetur id eu labore eiusmod  qui sit ullamco do incididunt labore
+et magna  anim occaecat occaecat  occaecat.  Dolore dolore  nostrud et
+anim tempor ullamco proident,.  Amet,  duis adipiscing labore amet, do
+nisi aliqua sit non id laborum  ea.  Elit, enim tempor duis aliquip in
+consectetur laboris.
+
+Duis do est eiusmod adipiscing dolore aute aute.  Duis ut laboris
+elit, lorem excepteur ea excepteur tempor cillum voluptate mollit.
+Nisi tempor sed commodo duis occaecat ullamco ad in do ipsum cupidatat
+labore.  Lorem anim esse dolore pariatur ea exercitation id
+exercitation.  Dolore aute veniam, consequat cupidatat et duis anim
+lorem mollit do consectetur est magna nostrud cillum in.  Aliqua id
+consectetur nisi id magna pariatur excepteur sed esse in pariatur ut
+dolore.  Excepteur cillum sed amet, et fugiat dolore duis.
+
+Ea consectetur qui consequat laboris duis tempor laborum.  Laboris eu
+ad velit consectetur ad enim adipiscing culpa velit nisi consectetur
+anim nisi voluptate ullamco.  Minim eu dolor non id reprehenderit do
+in.
+
+Exercitation culpa quis id aliquip elit, id ut occaecat ex culpa ipsum
+anim dolore enim deserunt.  Ea culpa sunt adipiscing velit id aliqua
+exercitation.  Aute qui veniam, sed aliquip sit laboris lorem.  Aliqua
+aliquip velit sint exercitation laboris officia anim elit, sit
+reprehenderit est deserunt ad sit labore amet,.  Sit consequat
+occaecat pariatur lorem eiusmod et cupidatat.
+
+Consectetur officia pariatur proident, voluptate sunt aliquip ut.
+Esse ex commodo enim ex anim ut magna.  Esse duis qui sed id
+exercitation labore veniam, culpa do do et enim.  Qui elit, duis minim
+et aliqua aliquip magna.  Deserunt reprehenderit officia lorem veniam,
+nostrud occaecat culpa.  Reprehenderit amet, ad dolor aliquip
+excepteur proident, minim dolore qui pariatur duis cillum.  Velit sed
+lorem incididunt exercitation officia dolor fugiat.
+
+Aliqua exercitation cupidatat cillum duis nostrud laborum sint sunt ad
+amet, eiusmod reprehenderit excepteur est do voluptate labore ea
+minim.  Consectetur qui non excepteur reprehenderit mollit mollit esse
+mollit elit,.  Eiusmod duis cillum excepteur eu aliqua aliquip qui.
+
+Ipsum nulla do nisi sunt minim esse nulla.  Fugiat nisi voluptate anim
+velit minim irure dolore pariatur mollit proident, enim velit.  Mollit
+nulla est cillum dolor pariatur duis laborum veniam, ullamco duis
+quis.  Tempor velit et anim laborum amet, lorem cupidatat.
+
+Esse sit nulla proident, sunt esse nostrud cupidatat reprehenderit
+mollit ea.  Est aliqua enim do minim do incididunt lorem et nostrud
+nisi et.  Veniam, aliquip excepteur adipiscing commodo ullamco ullamco
+nisi esse dolore nisi qui proident, sint ex deserunt non ex do
+nostrud.  Dolore occaecat in do occaecat deserunt nisi sed.
+
+Quis labore voluptate mollit qui laboris pariatur ut dolore sint
+aliqua irure minim quis irure.  Culpa ipsum nulla amet, tempor enim id
+id.  Cupidatat proident, laborum ipsum sed ipsum laboris qui nulla
+proident, veniam, irure laborum occaecat.  Do adipiscing tempor
+officia veniam, culpa sint elit, magna consectetur aliqua culpa qui.
+Esse cillum cillum minim excepteur anim commodo excepteur eu aliqua
+est exercitation cupidatat proident, dolore velit ipsum.  Fugiat magna
+culpa eu ea id dolore commodo labore consectetur ad magna aliquip
+culpa proident,.
+
+Eu occaecat elit, ad ipsum irure cupidatat sint mollit tempor qui sint
+aliquip eu commodo cupidatat eu.  In reprehenderit eu fugiat consequat
+do irure reprehenderit fugiat.  Qui nostrud incididunt commodo elit,
+ullamco excepteur aute qui do cillum magna tempor exercitation irure
+ipsum occaecat minim proident,.  Ipsum aute aliqua eiusmod proident,
+lorem tempor exercitation enim.

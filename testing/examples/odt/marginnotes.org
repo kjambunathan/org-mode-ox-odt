@@ -1,0 +1,260 @@
+# #+odt_extra_styles: <style:style style:name="Footnote"
+# #+odt_extra_styles:              style:parent-style-name="Text_20_body"
+# #+odt_extra_styles:              style:family="paragraph" />
+
+# #+odt_extra_styles: <style:style style:name="MyFooter"
+# #+odt_extra_styles:              style:parent-style-name="Footer"
+# #+odt_extra_styles:              style:family="paragraph">
+# #+odt_extra_styles:   <style:paragraph-properties fo:text-align="center"
+# #+odt_extra_styles:                               style:justify-single-word="false" />
+# #+odt_extra_styles: </style:style>
+
+#+ATTR_ODT: :target "extra_styles"
+#+begin_src nxml
+<style:style style:name="Footnote"
+             style:parent-style-name="Text_20_body"
+             style:family="paragraph" />
+#+end_src
+
+#+ATTR_ODT: :target "extra_styles"
+#+begin_src nxml
+<style:style style:name="MyFooter"
+             style:parent-style-name="Footer"
+             style:family="paragraph">
+  <style:paragraph-properties fo:text-align="center"
+                              style:justify-single-word="false" />
+</style:style>
+#+end_src
+
+#+begin_src emacs-lisp :exports results :results none
+(setq org-odt-extra-automatic-styles
+      (org-odt-define-page-layout "MarginLayout"
+                                  :page-dimensions "a4"
+				  :margin-left "5.4cm"
+				  :margin-right "5.4cm"))
+
+(setq org-odt-master-styles
+      (org-odt-define-page-style "Standard"
+                                 :layout-style "MarginLayout"))
+(setq org-odt-footer-contents
+      "\n#+ATTR_ODT: :style \"MyFooter\"\n#+begin_center\n{{{ODTPageNumber}}}\n#+end_center\n"
+      )
+
+(setq org-odt-extra-styles
+      (concat org-odt-extra-styles
+	      (org-odt--lisp-to-xml
+	       (org-odt-define-graphics-style
+		:style-properties
+		'(:name "OrgMarginNote"
+			:parent-style-name "Frame"
+			:family "graphic")
+		:graphic-properties
+		'(:shadow-opacity "100%"
+				  :border "none"
+				  :min-height "0.041cm"
+				  :padding "0cm"
+				  :horizontal-pos "from-left"
+				  :horizontal-rel "page-start-margin"
+				  :shadow "none"
+				  :vertical-pos "top"
+				  :vertical-rel "paragraph-content"
+				  :width "3cm"
+				  :x "0cm"
+				  :y "0cm"
+				  :anchor-type "paragraph")))))
+#+end_src
+
+#+begin_src emacs-lisp :exports results :results none
+(cl-defun org-odt--sidenote (text &key width height style
+				  x y extra anchor)
+  (org-odt--textbox text
+		    :width width
+		    :height height
+		    :style style
+		    :extra (mapconcat #'identity
+				      (list extra (when x
+						    (format " svg:x=\"%.2fcm\"" x))
+					    (when y
+					      (format " svg:y=\"%.2fcm\"" y)))
+				      " ")
+		    :anchor anchor))
+
+(defun my-org-odt-footnote-reference (orig-fun &rest args)
+  (pcase-let ((`(,footnote-reference ,_contents ,info) args))
+    (let* ((margin-note-alist
+	    '((margin-note/left/paragraph . (:style "OrgMarginNote"
+						    :width 3
+						    :x 2))
+	      (margin-note/right/paragraph . (:style "OrgMarginNote"
+						     :width 3
+						     :x 15.8))
+	      (margin-note/paragraph . (:style "OrgMarginNote"
+					       :width 3
+					       :x 15.8))
+	      (margin-note/left/character . (:style "OrgMarginNote"
+						    :width 3
+						    :x 2
+						    :anchor "char"))
+	      (margin-note/right/character . (:style "OrgMarginNote"
+						     :width 3
+						     :x 15.8
+						     :anchor "char"))
+	      (margin-note/character . (:style "OrgMarginNote"
+					       :width 3
+					       :x 15.8
+					       :anchor "char"))))
+	   (label (org-element-property :label footnote-reference))
+	   (sidenote-type
+	    (when (stringp label)
+	      (cond
+	       ((string-match-p "^lmnc" label) 'margin-note/left/character)
+	       ((string-match-p "^rmnc" label) 'margin-note/right/character)
+	       ((string-match-p "^mnc" label) 'margin-note/character)
+	       ((string-match-p "^lmn" label) 'margin-note/left/paragraph)
+	       ((string-match-p "^rmn" label) 'margin-note/right/paragraph)
+	       ((string-match-p "^mn" label) 'margin-note/paragraph))))
+	   (def (org-export-get-footnote-definition
+		 footnote-reference info)))
+      (cond
+       (sidenote-type
+	(when (org-export-footnote-first-reference-p footnote-reference info nil t)
+	  (apply #'org-odt--sidenote (cons (org-trim (org-export-data def
+								      info))
+					   (alist-get sidenote-type margin-note-alist)))))
+       (t (apply orig-fun args))))))
+
+(advice-add 'org-odt-footnote-reference :around
+	    #'my-org-odt-footnote-reference)
+#+end_src
+
+#+title: Margin Notes
+
+# #+odt_preferred_output_format: png
+# #+odt_validate: abort
+# #+odt_prettify_xml:
+
+See [[https://bugs.documentfoundation.org/show_bug.cgi?id=44597][lo bug#44597 – FORMATTING: Margin notes (similar to footnotes, but vertically linked to content) should be enabled]]
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce
+tristique luctus nulla vel dictum. Sed consectetur vestibulum elit
+eget placerat. Etiam commodo porttitor diam. Quisque quam turpis,
+tristique nec imperdiet quis, aliquam ut libero. Praesent non ipsum
+quis nisl ullamcorper fermentum. Mauris ultrices elit at sapien
+scelerisque fringilla. In id purus eget lorem tempus pulvinar vitae
+sed leo. Fusce varius est ullamcorper urna vestibulum
+bibendum. Curabitur diam elit, rutrum sit amet auctor non, consequat
+eget tortor. Phasellus sem elit, tempus ultrices auctor ac, pretium ut
+lectus. Nunc tortor metus, tempor in scelerisque quis, vulputate in
+arcu. Etiam rutrum, neque eget hendrerit bibendum, neque metus
+hendrerit leo, sit amet vehicula magna enim a orci. Nulla eget nulla
+ipsum, at faucibus diam. Donec est nibh, auctor vel molestie id,
+viverra eu odio. Sed ac erat sit amet felis mattis tempor.[fn:lmn1][fn:rmn2]
+
+In sit amet orci vel quam tincidunt feugiat. Sed ut nisl quis
+orci feugiat bibendum rutrum sit amet mauris. [fn:rmnc4] Nullam at mi et
+dolor dictum rutrum eu non libero. Ut egestas, ipsum nec vulputate
+laoreet, libero augue porttitor urna, ac porta purus velit id
+neque. Pellentesque habitant morbi tristique senectus et netus et
+malesuada fames ac turpis egestas. Vivamus at risus a magna ornare
+egestas pellentesque et ligula. Vestibulum ante ipsum primis in
+faucibus orci luctus et ultrices posuere cubilia Curae; Fusce nec urna
+id enim tempus molestie sed id velit. Curabitur dictum aliquet
+mi. Donec congue dignissim pharetra. Donec at turpis dolor. Aenean
+ornare suscipit arcu vitae luctus. Nam eget arcu eget nulla tempor
+porta. Integer ac augue orci, ac mollis mi. Integer mauris dui,
+accumsan nec commodo eu, facilisis faucibus dui. Morbi varius placerat
+interdum.[fn:lmn3]
+
+Integer a metus sed tellus fringilla pharetra. Curabitur consequat
+lobortis felis vitae tristique. Duis augue justo, imperdiet vitae
+consectetur sit amet, ultricies vitae orci. Morbi feugiat justo at
+nibh ornare quis tincidunt arcu dictum. Vestibulum ac sem eu nisl
+laoreet ultricies.
+
+[fn:lmn1]
+
+#+ATTR_ODT: :p-style "Text_20_body_20"
+#+begin_marginnote
+Hello, I'm a margin note in the left margin.
+#+end_marginnote
+
+[fn:rmn2]
+
+I'm a right margin note. To insert me, or my friend on the
+left, use Insert→Frame.
+
+[fn:lmn3]
+
+I can be anchored to the paragraph, page, or a character (like in
+LaΤεΧ)
+
+[fn:rmnc4]
+
+This note is anchored to the “N” in “nullam”—just like in LaΤεΧ.
+
+# * COMMENT Styles
+
+# #+odt_extra_automatic_styles: <style:page-layout style:name="MyPage"
+# #+odt_extra_automatic_styles:                    style:page-usage="mirrored">
+# #+odt_extra_automatic_styles:   <style:page-layout-properties fo:margin-bottom="2cm"
+# #+odt_extra_automatic_styles:                           fo:margin-left="5.399cm"
+# #+odt_extra_automatic_styles:                           fo:margin-right="5.399cm"
+# #+odt_extra_automatic_styles:                           fo:margin-top="2cm"
+# #+odt_extra_automatic_styles:                           fo:page-height="29.7cm"
+# #+odt_extra_automatic_styles:                           fo:page-width="21.001cm"
+# #+odt_extra_automatic_styles:                           style:footnote-max-height="0cm"
+# #+odt_extra_automatic_styles:                           style:layout-grid-base-height="0.706cm"
+# #+odt_extra_automatic_styles:                           style:layout-grid-color="#c0c0c0"
+# #+odt_extra_automatic_styles:                           style:layout-grid-display="false"
+# #+odt_extra_automatic_styles:                           style:layout-grid-lines="20"
+# #+odt_extra_automatic_styles:                           style:layout-grid-mode="none"
+# #+odt_extra_automatic_styles:                           style:layout-grid-print="false"
+# #+odt_extra_automatic_styles:                           style:layout-grid-ruby-below="false"
+# #+odt_extra_automatic_styles:                           style:layout-grid-ruby-height="0.353cm"
+# #+odt_extra_automatic_styles:                           style:num-format="1"
+# #+odt_extra_automatic_styles:                           style:print-orientation="portrait"
+# #+odt_extra_automatic_styles:                           style:writing-mode="lr-tb">
+# #+odt_extra_automatic_styles:     <style:footnote-sep style:adjustment="left"
+# #+odt_extra_automatic_styles:                   style:color="#000000"
+# #+odt_extra_automatic_styles:                   style:distance-after-sep="0.101cm"
+# #+odt_extra_automatic_styles:                   style:distance-before-sep="0.101cm"
+# #+odt_extra_automatic_styles:                   style:line-style="solid"
+# #+odt_extra_automatic_styles:                   style:rel-width="25%"
+# #+odt_extra_automatic_styles:                   style:width="0.018cm" />
+# #+odt_extra_automatic_styles:   </style:page-layout-properties>
+# #+odt_extra_automatic_styles:   <style:header-style />
+# #+odt_extra_automatic_styles:   <style:footer-style>
+# #+odt_extra_automatic_styles:     <style:header-footer-properties fo:margin-left="0cm"
+# #+odt_extra_automatic_styles:                                     fo:margin-right="0cm"
+# #+odt_extra_automatic_styles:                                     fo:margin-top="0.499cm"
+# #+odt_extra_automatic_styles:                                     fo:min-height="0.6cm"
+# #+odt_extra_automatic_styles:                                     style:dynamic-spacing="false" />
+# #+odt_extra_automatic_styles:   </style:footer-style>
+# #+odt_extra_automatic_styles: </style:page-layout>
+
+# #+odt_master_styles: <style:master-page style:name="Standard"
+# #+odt_master_styles:                    style:page-layout-name="MyPage">
+# #+odt_master_styles:   <style:footer>
+# #+odt_master_styles:     <text:p text:style-name="MyFooter">
+# #+odt_master_styles:       <text:page-number text:select-page="current">1</text:page-number>
+# #+odt_master_styles:     </text:p>
+# #+odt_master_styles:   </style:footer>
+# #+odt_master_styles: </style:master-page>
+
+# #+odt_extra_styles: <style:style style:name="OrgMarginNote"
+# #+odt_extra_styles:              style:parent-style-name="Frame"
+# #+odt_extra_styles:              style:family="graphic">
+# #+odt_extra_styles:   <style:graphic-properties draw:shadow-opacity="100%"
+# #+odt_extra_styles:                             fo:border="none"
+# #+odt_extra_styles:                             fo:min-height="0.041cm"
+# #+odt_extra_styles:                             fo:padding="0cm"
+# #+odt_extra_styles:                             style:horizontal-pos="from-left"
+# #+odt_extra_styles:                             style:horizontal-rel="page-start-margin"
+# #+odt_extra_styles:                             style:shadow="none"
+# #+odt_extra_styles:                             style:vertical-pos="top"
+# #+odt_extra_styles:                             style:vertical-rel="paragraph-content"
+# #+odt_extra_styles:                             svg:width="3cm"
+# #+odt_extra_styles:                             svg:x="0cm"
+# #+odt_extra_styles:                             svg:y="0cm"
+# #+odt_extra_styles:                             text:anchor-type="paragraph" />
+# #+odt_extra_styles: </style:style>

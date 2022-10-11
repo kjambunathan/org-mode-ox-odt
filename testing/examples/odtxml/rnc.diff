@@ -1,0 +1,71 @@
+--- OpenDocument-v1.2-os-schema-normalized.rnc	2022-11-08 15:04:34.462102794 +0530
++++ my-OpenDocument-v1.2-os-schema.rnc	2022-11-08 17:26:20.723918696 +0530
+@@ -3,11 +3,11 @@
+ # Relax-NG Schema
+ # Source: http://docs.oasis-open.org/office/v1.2/os/
+ # Copyright (c) OASIS Open 2002-2011. All Rights Reserved.
+-#
++
+ # All capitalized terms in the following text have the meanings assigned to them
+ # in the OASIS Intellectual Property Rights Policy (the "OASIS IPR Policy"). The
+ # full Policy may be found at the OASIS website.
+-#
++
+ # This document and translations of it may be copied and furnished to others, and
+ # derivative works that comment on or otherwise explain it or assist in its
+ # implementation may be prepared, copied, published, and distributed, in whole or
+@@ -19,10 +19,10 @@
+ # Technical Committee (in which case the rules applicable to copyrights, as set
+ # forth in the OASIS IPR Policy, must be followed) or as required to translate it
+ # into languages other than English.
+-#
++
+ # The limited permissions granted above are perpetual and will not be revoked by
+ # OASIS or its successors or assigns.
+-#
++
+ # This document and the information contained herein is provided on an "AS IS"
+ # basis and OASIS DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ # LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT
+@@ -503,7 +503,7 @@
+ 
+ cellRangeAddress = xsd:string {pattern = "($?([^\. ']+|'([^']|'')+'))?\.$?[A-Z]+$?[0-9]+(:($?([^\. ']+|'([^']|'')+'))?\.$?[A-Z]+$?[0-9]+)?"} | xsd:string {pattern = "($?([^\. ']+|'([^']|'')+'))?\.$?[0-9]+:($?([^\. ']+|'([^']|'')+'))?\.$?[0-9]+"} | xsd:string {pattern = "($?([^\. ']+|'([^']|'')+'))?\.$?[A-Z]+:($?([^\. ']+|'([^']|'')+'))?\.$?[A-Z]+"}
+ 
+-cellRangeAddressList = xsd:string >> dc:description [ 'Value is a space separated list of "cellRangeAddress" patterns' ]
++cellRangeAddressList = xsd:string 
+ 
+ table-table-source = element table:table-source {table-table-source-attlist, table-linked-source-attlist, empty}
+ 
+@@ -1529,9 +1529,9 @@
+ 
+ script-event-listener-attlist = attribute script:event-name {\string} & attribute script:language {\string} & (attribute script:macro-name {\string} | (attribute xlink:type {"simple"}, attribute xlink:href {anyIRI}, attribute xlink:actuate {"onRequest"}?))
+ 
+-math-math = element math:math {mathMarkup} [ dc:description [ "To avoid inclusion of the complete MathML schema, anything is allowed within a math:math top-level element" ] ]
++math-math = element math:math {mathMarkup} 
+ 
+-mathMarkup = (attribute * {text} | text | element * {mathMarkup})*
++mathMarkup = (attribute *nil | text | element *nil {mathMarkup})* 
+ 
+ text-dde-connection-decl = element text:dde-connection-decl {text-dde-connection-decl-attlist, common-dde-connection-decl-attlist}
+ 
+@@ -2113,7 +2113,7 @@
+ 
+ style-drawing-page-properties-elements = presentation-sound?
+ 
+-\string = xsd:string
++string = xsd:string 
+ 
+ date = xsd:date
+ 
+@@ -2209,8 +2209,8 @@
+ 
+ namespacedToken = xsd:QName {pattern = "[^:]+:[^:]+"}
+ 
+-anyIRI = xsd:anyURI >> dc:description [ "An IRI-reference as defined in [RFC3987]. See ODF 1.2 Part 1 section 18.3." ]
++anyIRI = xsd:anyURI 
+ 
+-anyAttListOrElements = attribute * {text}*, anyElements
++anyAttListOrElements = attribute *nil {text}*, anyElements 
+ 
+-anyElements = element * {mixed {anyAttListOrElements}}*
++anyElements = element *nil {mixed {anyAttListOrElements}}* 

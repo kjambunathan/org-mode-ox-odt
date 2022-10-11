@@ -1,0 +1,17 @@
+<style:style style:name="OrgMarginNote"
+             style:parent-style-name="Frame"
+             style:family="graphic">
+  <style:graphic-properties draw:shadow-opacity="100%"
+                            fo:border="none"
+                            fo:min-height="0.041cm"
+                            fo:padding="0cm"
+                            style:horizontal-pos="from-left"
+                            style:horizontal-rel="page-start-margin"
+                            style:shadow="none"
+                            style:vertical-pos="top"
+                            style:vertical-rel="paragraph-content"
+                            svg:width="3cm"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="paragraph" />
+</style:style>

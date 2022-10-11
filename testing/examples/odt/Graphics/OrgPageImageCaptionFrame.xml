@@ -1,0 +1,23 @@
+<style:style style:name="OrgPageImageCaptionFrame"
+             style:parent-style-name="Frame"
+             style:family="graphic">
+  <style:graphic-properties draw:fill="none"
+                            draw:fill-color="#729fcf"
+                            draw:shadow-opacity="100%"
+                            fo:background-color="transparent"
+                            fo:border="none"
+                            fo:margin-bottom="0.21cm"
+                            fo:margin-left="0cm"
+                            fo:margin-right="0cm"
+                            fo:margin-top="0.21cm"
+                            fo:padding="0cm"
+                            style:horizontal-pos="center"
+                            style:horizontal-rel="page"
+                            style:shadow="none"
+                            style:vertical-pos="middle"
+                            style:vertical-rel="page"
+                            style:wrap="none"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="paragraph" />
+</style:style>

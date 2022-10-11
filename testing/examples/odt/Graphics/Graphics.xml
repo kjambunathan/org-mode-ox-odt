@@ -1,0 +1,12 @@
+<style:style style:name="Graphics"
+             style:family="graphic">
+  <style:graphic-properties style:flow-with-text="true"
+                            style:horizontal-pos="center"
+                            style:horizontal-rel="paragraph"
+                            style:vertical-pos="top"
+                            style:vertical-rel="paragraph"
+                            style:wrap="none"
+                            svg:x="0cm"
+                            svg:y="0cm"
+                            text:anchor-type="paragraph" />
+</style:style>

@@ -493,7 +493,22 @@ See `org-odt-format-label'.")
 			      ,index-title))
 			    ,contents)))))))
 
-(cl-defun org-odt-define-page-layout (style-name &key page-dimensions print-orientation)
+(cl-defun org-odt-define-page-layout (style-name &key page-dimensions
+						 print-orientation
+						 (page-usage "mirrored")
+						 (num-format "1")
+						 (margin-bottom "2cm")
+						 (margin-left "2cm")
+						 (margin-right "2cm")
+						 (margin-top "2cm")
+						 (header-style)
+                                                 (footer-style
+						  '(style:header-footer-properties
+						    ((fo:min-height . "0.6cm")
+						     (fo:margin-left . "0cm")
+						     (fo:margin-right . "0cm")
+						     (fo:margin-top . "0.499cm")
+						     (style:dynamic-spacing . "false")))))
   ;; See `org-odt-master-styles' for how to use this API.
   (pcase-let*
       ((print-orientation (or print-orientation 'portrait))
@@ -546,16 +561,22 @@ See `org-odt-format-label'.")
     (org-odt--lisp-to-xml
      `(style:page-layout
        ((style:name . ,style-name)
-	(style:page-usage . "mirrored"))
+	,@(when page-usage
+            `((style:page-usage . ,page-usage))))
        (style:page-layout-properties
 	((fo:page-width . ,width)
 	 (fo:page-height . ,height)
-	 (style:num-format . "1")
+	 ,@(when num-format
+	     `((style:num-format . ,num-format)))
 	 (style:print-orientation . ,(format "%s" print-orientation))
-	 (fo:margin-bottom . "2cm")
-	 (fo:margin-left . "2cm")
-	 (fo:margin-right . "2cm")
-	 (fo:margin-top . "2cm")
+	 ,@(when margin-bottom
+	     `((fo:margin-bottom . ,margin-bottom)))
+	 ,@(when margin-left
+	     `((fo:margin-left . ,margin-left)))
+	 ,@(when margin-right
+	     `((fo:margin-right . ,margin-right)))
+	 ,@(when margin-top
+	     `((fo:margin-top . ,margin-top)))
 	 (style:writing-mode . "lr-tb")
 	 (style:footnote-max-height . "0cm"))
 	(style:footnote-sep
@@ -566,37 +587,53 @@ See `org-odt-format-label'.")
 	  (style:adjustment . "left")
 	  (style:rel-width . "25%")
 	  (style:color . "#000000"))))
-       (style:header-style nil)
-       (style:footer-style nil
-			   (style:header-footer-properties
-			    ((fo:min-height . "0.6cm")
-			     (fo:margin-left . "0cm")
-			     (fo:margin-right . "0cm")
-			     (fo:margin-top . "0.499cm")
-			     (style:dynamic-spacing . "false"))))))))
+       ,@(when header-style
+	   `((style:header-style nil ,header-style)))
+       ,@(when footer-style
+	   `((style:footer-style nil ,footer-style)))))))
+
+;; `(text:p
+;;   ((text:style-name . "OrgFooter"))
+;;   (text:page-number
+;;    ((text:select-page . "current"))))
 
 (cl-defun org-odt-define-page-style (page-style &key
 						layout-style
-						footer-template
-						_header-template)
+						(header-contents org-odt-header-contents)
+						(footer-contents org-odt-footer-contents))
   ;; See `org-odt-master-styles' for how to use this API.
-  (let* ((page-style (or page-style "Standard"))
+  (let* ((header
+	  (cond
+	   ((stringp header-contents)
+	    (org-odt--xml-to-lisp
+	     (org-odt-export-string-as-odt-string header-contents)))
+	   (t header-contents)))
+         (footer
+	  (cond
+	   ((stringp footer-contents)
+	    (org-odt--xml-to-lisp
+	     (org-odt-export-string-as-odt-string footer-contents)))
+	   (t footer-contents)))
+	 (page-style (or page-style "Standard"))
 	 (layout-style (or layout-style "A4PortraitLayout")))
+
+;; (style:master-page
+;;  ((style:name . "Standard")
+;;   (style:page-layout-name . "A4PortraitLayout"))
+;;  (style:footer nil
+;; 	       (text:p
+;; 		((text:style-name . "OrgFooter"))
+;; 		(text:page-number
+;; 		 ((text:select-page . "current"))))))
+
     (org-odt--lisp-to-xml
      `(style:master-page
        ((style:name . ,page-style)
 	(style:page-layout-name . ,layout-style))
-       ,@(cond
-	  ((eq footer-template t)
-	   `(style:footer nil
-			  (text:p
-			   ((text:style-name . "OrgFooter"))
-			   (text:page-number
-			    ((text:select-page . "current"))))))
-	  ((consp footer-template)
-	   footer-template)
-	  ((null footer-template)
-	   (ignore)))))))
+       ,@(when header
+	    `((style:header nil ,header)))
+	,@(when footer
+	    `((style:footer nil ,footer)))))))
 
 (defvar hfy-user-sheet-assoc)
 
@@ -1232,6 +1269,60 @@ Letter (Portrait), A4 (Landscape), and other page layouts."
     '(choice
       (const :tag "None" nil)
       (string :tag "XML string")))
+
+;; (defcustom org-odt-header-contents nil
+;;   "
+;; ."
+;;   :group 'org-export-odt
+;;   :type
+;;   (let ((contents
+;; 	 "
+;; #+ATTR_ODT: :style \"Footer\"
+;; {{{ODTDate}}}{{{ODTTab}}}{{{ODTPageNumber}}} of {{{ODTPageCount}}}{{{ODTTab}}}{{{ODTChapter}}}
+;; "))
+;;     `(choice
+;;       (const :tag "None" nil)
+;;       (string :tag "Org string" ,contents)
+;;       (sexp :tag "XML (as Lisp)"
+;; 	    ,(org-odt--xml-to-lisp
+;; 	      (org-odt-export-string-as-odt-string contents))))))
+
+(defcustom org-odt-header-contents nil
+  "
+."
+  :group 'org-export-odt
+  :type
+  `(choice
+    (const :tag "None" nil)
+    (string :tag "Org string")
+    (sexp :tag "XML (as Lisp)")))
+
+;; (defcustom org-odt-footer-contents nil
+;;   "
+;; ."
+;;   :group 'org-export-odt
+;;   :type
+;;   (let ((contents
+;; 	 "
+;; #+ATTR_ODT: :style \"Footer\"
+;; {{{ODTDate}}}{{{ODTTab}}}{{{ODTPageNumber}}} of {{{ODTPageCount}}}{{{ODTTab}}}{{{ODTChapter}}}
+;; "))
+;;     `(choice
+;;       (const :tag "None" nil)
+;;       (string :tag "Org string" ,contents)
+;;       (sexp :tag "XML (as Lisp)"
+;; 	    ,(org-odt--xml-to-lisp
+;; 	      (org-odt-export-string-as-odt-string contents))))))
+
+(defcustom org-odt-footer-contents nil
+  "
+."
+  :group 'org-export-odt
+  :type
+  `(choice
+    (const :tag "None" nil)
+    (string :tag "Org string")
+    (sexp :tag "XML (as Lisp)")))
 
 (defcustom org-odt-display-outline-level 2
   "Outline levels considered for enumerating captioned entities."
@@ -2860,6 +2951,126 @@ LANGUAGE keyword."
        xref-format ""))))
 
 ;;;; Textbox
+
+(cl-defun org-odt-build-graphic-properties (&key
+					    ;;  "as-char" "char" "page" "paragraph"
+					    anchor-type
+					    ;;  "center" "from-left" "right"
+					    horizontal-pos
+					    ;;  "page" "paragraph" "paragraph-content"
+					    horizontal-rel
+					    ;;  "bottom" "from-top" "middle" "top"
+					    vertical-pos
+					    ;;  "baseline" "page" "paragraph" "paragraph-content" "text"
+					    vertical-rel
+					    (x "0cm")
+					    (y "0cm")
+					    min-height
+					    rel-width
+					    width
+					    flow-with-text
+					    wrap
+					    wrap-influence-on-position
+					    number-wrapped-paragraphs
+					    wrap-contour
+					    margin-bottom
+					    margin-left
+					    margin-right
+					    margin-top
+                                            (padding  "0cm")
+                                            (border  "none")
+                                            (shadow-opacity  "100%")
+                                            (shadow  "none")
+					    background-color
+					    fill
+					    fill-color
+					    opacity
+					    background-transparency
+					    run-through)
+  `(style:graphic-properties
+    ((
+      (text:anchor-type ,anchor-type)
+      (style:horizontal-pos ,horizontal-pos)
+      (style:horizontal-rel ,horizontal-rel)
+      (style:vertical-pos ,vertical-pos)
+      (style:vertical-rel ,vertical-rel)
+      (svg:x ,x)
+      (svg:y ,y)
+      ;;  "0.499cm" "0cm"
+      ,@(when min-height
+          `((fo:min-height ,min-height)))
+      ;;  "100%"
+      ,@(when rel-width
+          `((style:rel-width ,rel-width)))
+      ;;  "0cm" "2cm"
+      ,@(when width
+          `((svg:width ,width)))
+      ;;  "true"
+      ,@(when flow-with-text
+          `((style:flow-with-text ,flow-with-text)))
+      ;;  "none" "parallel" "run-through"
+      ,@(when wrap
+          `((style:wrap ,wrap)))
+      ;;  "once-concurrent"
+      ,@(when wrap-influence-on-position
+          `((draw:wrap-influence-on-position ,wrap-influence-on-position)))
+      ;;  "1" "no-limit"
+      ,@(when number-wrapped-paragraphs
+          `((style:number-wrapped-paragraphs ,number-wrapped-paragraphs)))
+      ;;  "false"
+      ,@(when wrap-contour
+          `((style:wrap-contour ,wrap-contour)))
+      ,@(when margin-bottom
+          `((fo:margin-bottom ,margin-bottom)))
+      ,@(when margin-left
+          `((fo:margin-left ,margin-left)))
+      ,@(when margin-right
+          `((fo:margin-right ,margin-right)))
+      ,@(when margin-top
+          `((fo:margin-top ,margin-top)))
+      ,@(when padding
+          `((fo:padding ,padding)))
+      ;;  "0.06pt solid #000000" "0.26pt solid #000000" "none"
+      ,@(when border
+          `((fo:border ,border)))
+      ;;  "100%"
+      ,@(when shadow-opacity
+          `((draw:shadow-opacity ,shadow-opacity)))
+      ;;  "none"
+      ,@(when shadow
+          `((style:shadow ,shadow)))
+      ;;  "#ffffcc" "transparent"
+      ,@(when background-color
+          `((fo:background-color ,background-color)))
+      ;;  "none" "solid"
+      ,@(when fill
+          `((draw:fill ,fill)))
+      ;;  "#729fcf" "#ffffcc"
+      ,@(when fill-color
+          `((draw:fill-color ,fill-color)))
+      ;;  "100%"
+      ,@(when opacity
+          `((draw:opacity ,opacity)))
+      ;;  "0%"
+      ,@(when background-transparency
+          `((style:background-transparency ,background-transparency)))
+      ;;  "foreground"
+      ,@(when run-through
+          `((style:run-through ,run-through)))))))
+
+(cl-defun org-odt-build-margin-note (name &key parent-style-name)
+  `(style:style
+    ((style:name . ,name)
+     (style:parent-style-name . ,parent-style-name)
+     (style:family . "graphic"))
+    ,(org-odt-build-graphic-properties
+      :anchor-type "paragraph"
+      :horizontal-pos "from-left"
+      :horizontal-rel "page-start-margin"
+      :vertical-pos "top"
+      :vertical-rel "paragraph-content"
+      :min-height "0.041cm"
+      :width "3cm")))
 
 (cl-defun org-odt--draw:textbox (text &key min-width min-height)
   (format "\n<draw:text-box %s>%s\n</draw:text-box>"
@@ -8398,11 +8609,11 @@ channel."
 	(active
 	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgActiveTimestamp"
-		 (format "&lt;%s&gt;" (org-odt--format-timestamp timestamp))))
+		 (format "%s" (org-odt--format-timestamp timestamp))))
 	(inactive
 	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgInactiveTimestamp"
-		 (format "[%s]" (org-odt--format-timestamp timestamp))))
+		 (format "%s" (org-odt--format-timestamp timestamp))))
 	(active-range
 	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgActiveTimestamp"

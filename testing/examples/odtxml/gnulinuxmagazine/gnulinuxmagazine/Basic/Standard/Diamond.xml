@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Diamond" script:language="StarBasic">REM  *****  BASIC  *****
+REM  **
+REM  ** Macro de Statistiques pour Diamond Editions
+REM  **
+REM  ** Auteur : Tristan Colombo &lt;tristan.colombo@gnulinuxmag.com&gt;
+REM  ** Créé   : le 22 mai 2014
+REM  **
+REM  *******************
+
+Option Explicit
+
+Sub insertFigure()
+  REM *****
+  REM ** Insertion des lignes d&apos;une figure
+  REM *****
+  Dim Document as Object
+  Dim Curseur as Object
+  Dim Texte as Object
+  
+  Document = ThisComponent
+  Texte = Document.Text
+  Curseur = Document.currentController.viewCursor()
+ 
+  Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+  If (Curseur.String = &quot;&quot;) Then
+    Curseur.ParaStyleName = &quot;pragma&quot;
+    Texte.insertString(Curseur, &quot;/// image: nom_article_figure_01.png ///&quot;, false)
+    Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;legende&quot;
+    Texte.insertString(Curseur, &quot;Fig. 1: &quot;, false)
+  End If
+End Sub
+
+
+
+Sub insertEncadre()
+  REM *****
+  REM ** Insertion d&apos;un encadré
+  REM *****
+  Dim Document as Object
+  Dim Curseur as Object
+  Dim Texte as Object
+  
+  Document = ThisComponent
+  Texte = Document.Text
+  Curseur = Document.currentController.viewCursor()
+ 
+  Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+  If (Curseur.String = &quot;&quot;) Then
+    Curseur.ParaStyleName = &quot;pragma&quot;
+    Texte.insertString(Curseur, &quot;/// Début encadré ///&quot;, false)
+    Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;Titre 1&quot;
+    Texte.insertString(Curseur, &quot;Titre&quot;, false)
+    Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;Normal&quot;
+    Texte.insertString(Curseur, &quot;blabla&quot;, false)
+     Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;pragma&quot;
+    Texte.insertString(Curseur, &quot;/// Fin encadré ///&quot;, false)
+  End If
+End Sub
+
+
+
+Sub insertNote()
+  REM *****
+  REM ** Insertion d&apos;une note
+  REM *****
+  Dim Document as Object
+  Dim Curseur as Object
+  Dim Texte as Object
+  
+  Document = ThisComponent
+  Texte = Document.Text
+  Curseur = Document.currentController.viewCursor()
+ 
+  Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+  If (Curseur.String = &quot;&quot;) Then
+    Curseur.ParaStyleName = &quot;pragma&quot;
+    Texte.insertString(Curseur, &quot;/// Début note ///&quot;, false)
+    Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;Normal&quot;
+    Texte.insertString(Curseur, &quot;blabla&quot;, false)
+     Texte.insertControlCharacter(Curseur, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+    Curseur.ParaStyleName = &quot;pragma&quot;
+    Texte.insertString(Curseur, &quot;/// Fin note ///&quot;, false)
+  End If
+End Sub
+
+
+
+Sub AfficheNumeroLigneCode()
+    REM *****
+    REM ** Rajoute un numéro de ligne à un ensemble de lignes sélectionnées
+    REM ** par l&apos;utilisateur
+    REM *****
+	Dim Curseur          As Object
+	Dim TexteSelectionne As String
+	Dim NumeroLigne      As Integer
+	Dim Lignes()         As String
+	Dim Ligne            As String
+	Dim NouvellesLignes  As String
+	
+	&apos; On récupère toutes les lignes sélectionnées
+	Curseur          = ThisComponent.CurrentController.ViewCursor()
+	TexteSelectionne = Curseur.String
+	NumeroLigne      = 1
+	Lignes           = Split(TexteSelectionne, Chr(10))
+	
+	&apos; Ajout des numéros de ligne
+	For Each Ligne in Lignes
+	    If (NouvellesLignes &lt;&gt; &quot;&quot;) Then
+	      NouvellesLignes = NouvellesLignes &amp; Chr(10)
+	    End If
+		NouvellesLignes = NouvellesLignes &amp; Format(NumeroLigne, &quot;00\:&quot;) &amp; Chr(160) &amp; Ligne
+		NumeroLigne = NumeroLigne + 1
+	Next Ligne
+	
+	&apos; Changement de style
+	If (NouvellesLignes &lt;&gt; &quot;&quot;) Then
+		Curseur.ParaStyleName = &quot;code&quot;
+	Else
+		MsgBox(&quot;Vous n&apos;avez pas sélectionné de texte !&quot;, 0 + 16 + 128)
+		Exit Sub
+	End If
+	
+	&apos; Remplacement du texte sélectionné
+	Curseur.String = NouvellesLignes
+	
+	Exit Sub
+
+&apos; Traitement du cas d&apos;erreur où aucun texte n&apos;a été sélectionné
+PasDeSelection:
+	MsgBox(&quot;Erreur !&quot;)
+	Exit Sub
+	
+End Sub
+
+
+
+Sub Stats_DiamondEditions()
+  REM *****
+  REM ** Affichage du nombre de pages
+  REM *****
+  Dim iConfigLPPage         As Integer
+  Dim iConfigGLMFPage       As Integer
+  Dim iConfigMookPage       As Integer
+  Dim iConfigLPMax          As Integer
+  Dim iConfigGLMFMax        As Long
+  Dim iConfigLicenceClassic As Integer
+  Dim iConfigLicenceCommons As Integer
+
+  Dim sMessage              As String
+
+  Dim oTrouveInsecable      As Object
+  Dim oTrouve               As Object
+  Dim oTrouveTout           As Object
+  
+  Dim iNbEspaces            As Long
+  Dim iNbCaracteresTot      As Long
+  Dim iNbCaracteres         As Long
+  
+  Dim iTypeBox              As Integer
+  
+  &apos; Configuration
+  iConfigGLMFPage       = 3500
+  iConfigMookPage       = 3200
+  iConfigLPMax          = 14000
+  iConfigGLMFMax        = 40000
+  
+  iTypeBox              = 70
+  
+  &apos; Recherche des espaces
+  oTrouve = ThisComponent.createSearchDescriptor
+  With oTrouve
+    .SearchString = &quot; &quot;
+    .SearchWords  = false
+  End With
+  
+  &apos; Recherche des espaces insécables
+  oTrouveInsecable = ThisComponent.createSearchDescriptor
+  With oTrouveInsecable
+    .SearchString = Chr(160)
+    .SearchWords  = false
+  End With
+  
+  &apos; Recherche de tous les caractères
+  oTrouveTout = ThisComponent.createSearchDescriptor
+  With oTrouveTout
+    .SearchString            = &quot;.&quot; &apos;&quot;[^ ]&quot;
+    .SearchWords             = false
+    .SearchRegularExpression = true
+  End With
+  
+  iNbEspaces       = ThisComponent.findAll(oTrouve).count + ThisComponent.findAll(oTrouveInsecable).count
+  iNbCaracteresTot = ThisComponent.findAll(oTrouveTout).count
+  iNbCaracteres    = iNbCaracteresTot - iNbEspaces
+
+  sMessage = &quot;Statistiques Diamond Editions&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;GLMF ou LP :&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - Page(s) : &quot; &amp; Format((iNbCaracteresTot / iConfigGLMFPage), &quot;##.##&quot;) &amp; Chr(13) &amp; Chr(13)
+  
+  sMessage = sMessage &amp; &quot;Mook :&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - Page(s) : &quot; &amp; Format((iNbCaracteresTot / iConfigMookPage), &quot;##.##&quot;) &amp; Chr(13) &amp; Chr(13)
+  
+  If iNbCaracteresTot &gt; iConfigLPMax Then
+    sMessage = sMessage &amp; &quot;  - ATTENTION! Dépassement pour LP : &quot; &amp; iNbCaracteresTot - iConfigLPMax &amp; &quot; caractères&quot; &amp; Chr(13)
+    iTypeBox = 17
+  EndIf
+  
+  If iNbCaracteresTot &gt; iConfigGLMFMax Then
+    sMessage = sMessage &amp; &quot;  - ATTENTION! Dépassement pour GLMF : &quot; &amp; iNbCaracteresTot - iConfigGLMFMax &amp; &quot; caractères&quot; &amp; Chr(13)
+    iTypeBox = 17
+  EndIf
+  
+  MsgBox(sMessage, iTypeBox)
+End Sub
+
+
+Sub Aide()  
+  Dim sMessage As String
+  
+  sMessage = &quot;Liste des raccourcis Diamond&quot; &amp; Chr(13) &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;Général&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;----------&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;F5&gt; : Aide&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;F4&gt; : Compteur de pages&quot; &amp; Chr(13) &amp; Chr(13)
+  
+  sMessage = sMessage &amp; &quot;Accélérateurs&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;-----------------&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;F2&gt; : Insertion figure&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;F3&gt; : Insertion encadré&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;F5&gt; : Insertion note&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;Shift&gt; + &lt;c&gt; : Affiche numéros lignes (sélection)&quot; &amp; Chr(13) &amp; Chr(13)
+  
+  sMessage = sMessage &amp; &quot;Styles de Paragraphes&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;--------------------------&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;o&gt; : Normal&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;h&gt; : Console&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;q&gt; : Code&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;j&gt; : Pragma&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;k&gt; : Note&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;1&gt; : Titre 1&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;2&gt; : Titre 2&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;3&gt; : Titre 3&quot; &amp; Chr(13) &amp; Chr(13)
+  
+  sMessage = sMessage &amp; &quot;Styles de Caractères&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;------------------------&quot; &amp; Chr(13) &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;p&gt; : Code_par&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;n&gt; : Code_em&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;l&gt; : Url&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;i&gt; : Italic&quot; &amp; Chr(13)
+  sMessage = sMessage &amp; &quot;  - &lt;Ctrl&gt; + &lt;g&gt; : Gras&quot; &amp; Chr(13)
+  
+  MsgBox(sMessage, 70)
+End Sub
+</script:module>

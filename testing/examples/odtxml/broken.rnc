@@ -1,0 +1,21 @@
+
+
+
+
+mathMarkup =
+    (attribute  *  { text } | text | element  *  {  mathMarkup  })*
+
+
+
+string =
+    xsd:string
+
+
+
+anyAttListOrElements =
+    attribute  *  { text }*, anyElements
+
+
+
+anyElements =
+    element  *  {  mixed { anyAttListOrElements }  }*

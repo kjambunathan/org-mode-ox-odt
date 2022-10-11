@@ -1,0 +1,20 @@
+<style:style style:name="OrgInlineTaskFrame"
+             style:parent-style-name="Frame"
+             style:family="graphic">
+  <style:graphic-properties draw:fill="solid"
+                            draw:fill-color="#ffffcc"
+                            draw:opacity="100%"
+                            draw:shadow-opacity="100%"
+                            fo:background-color="#ffffcc"
+                            fo:border="0.26pt solid #000000"
+                            fo:padding="0.15cm"
+                            style:background-transparency="0%"
+                            style:horizontal-pos="center"
+                            style:horizontal-rel="paragraph-content"
+                            style:shadow="none"
+                            style:vertical-pos="top"
+                            style:vertical-rel="paragraph-content"
+                            style:wrap="none"
+                            svg:x="0cm"
+                            svg:y="0cm" />
+</style:style>
