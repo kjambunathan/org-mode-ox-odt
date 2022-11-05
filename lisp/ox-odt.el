@@ -3925,8 +3925,8 @@ holding export options."
       ;; Update styles.xml with styles that were collected as part of
       ;; `org-odt-hfy-face-to-css' callbacks.
       (goto-char (point-min))
-      (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0))
+      (when (re-search-forward "<office:styles>" nil t)
+	(goto-char (match-end 0))
 	(insert "\n<!-- Org Htmlfontify Styles -->\n"
 		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
 			 concat (format " %s\n" (cddr style)))
