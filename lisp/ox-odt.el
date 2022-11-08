@@ -1498,10 +1498,11 @@ from `org-odt-convert-processes'."
 
 (defcustom org-odt-convert-capabilities
   '(("Text"
-     ("odt" "ott" "doc" "rtf" "docx")
+     ("odt" "ott" "doc" "rtf" "docx" "fodt")
      (("pdf" "pdf") ("odt" "odt") ("rtf" "rtf") ("ott" "ott")
       ("doc" "doc" ":\"MS Word 97\"") ("docx" "docx") ("html" "html")
-      ("txt" "txt" ":\"Text (encoded)\"")))
+      ("txt" "txt" ":\"Text (encoded)\"")
+      ("fodt" "fodt")))
     ("Web"
      ("html")
      (("pdf" "pdf") ("odt" "odt") ("html" "html")))
