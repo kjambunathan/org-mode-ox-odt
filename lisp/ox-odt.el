@@ -10356,6 +10356,13 @@ form
 	 (add-to-list 'auto-mode-alist
 		      (cons (concat  "\\." extn "\\'") 'archive-mode)))
 
+(with-eval-after-load 'dired-aux
+  (cl-loop for (extn . rest) in org-odt-file-extensions-alist do
+           ;; Teach `dired-do-compress' how to uncompress all OpenDocument files.
+	   (add-to-list 'dired-compress-file-suffixes
+			(list (rx-to-string `(and "." ,extn eos)) "" "unzip -o -d %o %i")
+			'append)))
+
 ;;; Org Export Before Processing Hook
 
 ;;;; ODT-specific Global Macros
