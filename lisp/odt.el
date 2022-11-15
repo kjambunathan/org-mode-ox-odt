@@ -1167,3 +1167,298 @@ C-x C-s
 (provide 'odt)
 
 ;; ox-odt-xml.el.el ends here
+
+;;;  
+
+(defun odt-rngdom-new:is-implicitly-parenthesized (dom node)
+  (let* ((parent (dom-parent dom node))
+	 (_contents (dom-children parent)))
+    (or (and (memq (dom-tag parent) '(define start))
+	     (odt-dom-is-sole-child node dom))
+	;; Element has a name attribute, and this
+	;; element fully expands to element's content
+	(and (memq (dom-tag parent) '(element attribute))
+	     (dom-attr parent 'name)
+	     (odt-dom-is-sole-child node dom))
+	;; Element doesn't have a name attribute, and this element
+	;; provides the name
+	(and (memq (dom-tag parent) '(element attribute))
+	     (null (dom-attr parent 'name))
+	     (odt-dom-is-first-child node dom))
+	;; Element doesn't have a name attribute, and this element
+	;; fully expands to the element type
+	(and (memq (dom-tag parent) '(element attribute))
+	     (null (dom-attr parent 'name))
+	     (odt-dom-is-second-child node dom)
+	     (null (odt-dom-following-siblings node dom))))))
+
+(defun odt-rngdom-new:surrounds-element-attribute-or-ref (_dom node)
+  (and (= 1 (length (dom-children node)))
+       (memq (dom-tag (car (dom-children node))) '(ref element attribute data))))
+
+(defun odt-rngdom-new:is-explicitly-parenthesized (_dom _node contents)
+  (and (string-match-p (rx (and bos (zero-or-more (or space "\n")) (or "(" "{")))
+		       contents)
+       (string-match-p (rx (and (or ")" "}") eos))
+		       contents)))
+
+(defun odt-rngdom-new:do-rng->rnc (dom node use-newline)
+  ;; See (find-file (expand-file-name "schema/relaxng.rnc" data-directory))
+  ;; https://relaxng.org/ns/structure/1.0
+  ;; http://relaxng.org/relaxng.rng
+  ;; ../testing/examples/odtxml/relaxng.rng
+  ;; This specification describes a compact, non-XML syntax for [RELAX NG]
+  ;; - (https://www.oasis-open.org/committees/relax-ng/compact-20021121.html#spec)
+  ;; RELAX NG Compact Syntax Tutorial
+  ;; - https://relaxng.org/compact-tutorial.html
+  (let ((newline (if use-newline "\n" " ")))
+    (cond
+     ((stringp node)
+      node)
+     ((eq 'anyName (odt-dom-type node))
+      (format "%s"
+	      " * "
+	      ;; (cl-assert (null (dom-children node))
+	      ;;   	 t
+	      ;;   	 "type: %s" (odt-dom-type node))
+	      ))
+     ((eq 'attribute (odt-dom-type node))
+      (let ((name (dom-attr node 'name)))
+	(cond
+	 (name
+	  (format "attribute %s { %s }"
+		  name
+		  (prog1 (odt-rngdom-new:do-rng->rnc dom (car (dom-children node)) use-newline)
+		    (cl-assert (= 1 (length (dom-children node)))
+			       t
+			       "type: %s" (odt-dom-type node)))))
+	 (t
+	  (format "attribute %s%s"
+		  (odt-rngdom-new:do-rng->rnc dom (car (dom-children node)) use-newline)
+		  (prog1 (format " { %s }"
+				 (cond
+				  ((cadr (dom-children node))
+				   (odt-rngdom-new:do-rng->rnc dom (cadr (dom-children node)) use-newline))
+				  (t "text")))
+		    (cl-assert (or (null (cadr (dom-children node)))
+				   (and (memq (dom-tag (cadr (dom-children node))) '(ref text))
+					(= 2 (length (dom-children node)))))
+			       t
+			       "type: %s" (odt-dom-type node))))))))
+     ((eq 'choice (odt-dom-type node))
+      (format
+       (if (odt-rngdom-new:is-implicitly-parenthesized dom node)
+	   "%s"
+	 "(%s)")
+       (mapconcat (lambda (n)
+		    (odt-rngdom-new:do-rng->rnc dom n use-newline))
+		  (dom-children node)
+		  ;; (format "%s| " )
+		  (format "%s| " newline)
+		  ;; "\n| "
+		  )))
+     ((eq 'comment (odt-dom-type node))
+      (format "%s%s%s%s%s"
+	      newline
+	      newline
+	      (with-temp-buffer
+		(rnc-mode)
+		(insert (odt-rngdom-new:do-rng->rnc dom (dom-children node) use-newline))
+		(comment-region (point-min) (point-max))
+		(buffer-substring-no-properties (point-min) (point-max)))
+	      newline
+	      newline))
+     ((eq 'data (odt-dom-type node))
+      (format "xsd:%s%s"
+	      (dom-attr node 'type)
+	      (or (when (dom-children node)
+		    (format " {%s%s%s}"
+			    newline
+			    (odt-rngdom-new:do-rng->rnc dom (dom-children node) use-newline)
+			    newline))
+		  "")))
+     ((eq 'define (odt-dom-type node))
+      (format "\n\n%s =\n%s"
+	      (dom-attr node 'name)
+	      (mapconcat (lambda (n)
+			   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			 (dom-children node)
+			 (format ",%s" newline))))
+     ((memq (odt-dom-type node) '(description dc:description))
+      "")
+     ((eq 'element (odt-dom-type node))
+      (let ((name (dom-attr node 'name)))
+	(cond
+	 (name
+	  (format "element %s { %s }"
+		  (dom-attr node 'name)
+		  (mapconcat (lambda (n)
+			       (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			     (dom-children node)
+			     (format ",%s " newline))))
+	 (t
+	  (format "element %s%s"
+		  (odt-rngdom-new:do-rng->rnc dom (car (dom-children node)) use-newline)
+		  (format " {%s %s %s}"
+			  newline
+			  (or (when (cdr (dom-children node))
+				(mapconcat (lambda (n)
+					     (odt-rngdom-new:do-rng->rnc dom n use-newline))
+					   (cdr (dom-children node))
+					   (format ",%s" newline)))
+			      "")
+			  newline))))))
+     ((eq 'empty (odt-dom-type node))
+      (format "%s"
+	      (odt-dom-type node)))
+     ((eq 'grammar (odt-dom-type node))
+      (odt-rngdom-new:do-rng->rnc dom (dom-children node) use-newline))
+     ((eq 'group (odt-dom-type node))
+      (format (if (or (odt-rngdom-new:is-implicitly-parenthesized dom node)
+		      (odt-rngdom-new:surrounds-element-attribute-or-ref dom node))
+		  "%s"
+		"(%s)")
+	      (mapconcat (lambda (n)
+			   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			 (dom-children node)
+			 (format ",%s" newline))))
+     ((eq 'interleave (odt-dom-type node))
+      (format (if (odt-rngdom-new:is-implicitly-parenthesized dom node)
+		  "%s"
+		"(%s)")
+	      (mapconcat (lambda (n)
+			   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			 (dom-children node)
+			 (format "%s& " newline))))
+     ((eq 'list (odt-dom-type node))
+      (format "list { %s }"
+	      (mapconcat (lambda (n)
+			   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			 (dom-children node)
+			 (format ",%s" newline))))
+     ((eq 'oneOrMore (odt-dom-type node))
+      (let ((contents (mapconcat (lambda (n)
+				   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+				 (dom-children node)
+				 (format ",%s" newline))))
+	(format (if (and (odt-dom-has-only-one-child-p dom node)
+			 (or (odt-rngdom-new:is-implicitly-parenthesized dom node)
+			     (odt-rngdom-new:surrounds-element-attribute-or-ref dom node)
+			     (odt-rngdom-new:is-explicitly-parenthesized dom node contents)))
+		    (format "%s%s+%s" newline contents newline)
+		  (format "%s(%s%s%s)+%s"
+			  newline newline
+			  contents
+			  newline newline)))))
+     ((eq 'optional (odt-dom-type node))
+      (let ((contents (mapconcat (lambda (n)
+				   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+				 (dom-children node)
+				 (format ",%s" newline))))
+	(format (if (or (odt-rngdom-new:surrounds-element-attribute-or-ref dom node)
+			(odt-rngdom-new:is-explicitly-parenthesized dom node contents))
+		    "%s?"
+		  "(%s)?")
+		contents)))
+     ((eq 'param (odt-dom-type node))
+      (format "%s  %s = \"%s\""
+	      newline
+	      (dom-attr node 'name)
+	      (odt-rngdom-new:do-rng->rnc dom (dom-children node) use-newline)))
+     ((eq 'ref (odt-dom-type node))
+      (let ((name (dom-attr node 'name)))
+	(cond
+	 ((string= "string" name)
+	  "\\string")
+	 (t name))))
+     ((eq 'value (odt-dom-type node))
+      (format "\"%s\""
+	      (prog1 (car (dom-children node))
+		(cl-assert (= 1 (length (dom-children node)))
+			   t
+			   "type: %s" (odt-dom-type node)))))
+     ((eq 'top (odt-dom-type node))
+      (odt-rngdom-new:do-rng->rnc dom (dom-children node) use-newline))
+     ((eq 'zeroOrMore (odt-dom-type node))
+      (let ((contents (mapconcat (lambda (n)
+				   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+				 (dom-children node)
+				 (format ",%s" newline))))
+	(format (if (or (odt-rngdom-new:surrounds-element-attribute-or-ref dom node)
+			(odt-rngdom-new:is-explicitly-parenthesized dom node contents))
+		    "%s*"
+		  "(%s)*")
+		(prog1 contents))))
+     ((eq 'start (odt-dom-type node))
+      (format "\n\n%s =\n%s"
+	      (dom-tag node)
+	      (mapconcat (lambda (n)
+			   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+			 (dom-children node)
+			 (format ",%s" newline))))
+     ((eq 'text (odt-dom-type node))
+      (prog1 (format "%s"
+		     (odt-dom-type node))
+	(cl-assert (null (dom-children node)))))
+     ((eq 'mixed (odt-dom-type node))
+      (format "%s { %s }"
+	      (odt-dom-type node)
+	      (prog1 (odt-rngdom-new:do-rng->rnc dom (car (dom-children node)) use-newline)
+		(cl-assert (= 1 (length (dom-children node)))
+			   t
+			   "type: %s" (odt-dom-type node)))))
+     ((eq 'name (odt-dom-type node))
+      (format "%s"
+	      (prog1 (odt-rngdom-new:do-rng->rnc dom (car (dom-children node)) use-newline)
+		(cl-assert (= 1 (length (dom-children node)))
+			   t
+			   "type: %s" (odt-dom-type node)))))
+     ((odt-dom-type node)
+      (error "You aren't handling %S" (odt-dom-type node)))
+     (t
+      (mapconcat (lambda (n)
+		   (odt-rngdom-new:do-rng->rnc dom n use-newline))
+		 node
+		 "")))))
+
+(defun odt-rngdom-new:rng->rnc (&optional rnc-file-name rng-file-name-or-rng-nodes)
+  (interactive)
+  (let* ((use-newline nil)
+	 (rng-file-name-or-rng-nodes
+	  (or rng-file-name-or-rng-nodes
+	      (expand-file-name "odf1.2/OpenDocument-v1.2-os-schema.rng" org-odt-schema-dir)))
+	 (rng-nodes (when (consp rng-file-name-or-rng-nodes)
+		      rng-file-name-or-rng-nodes))
+	 (rng-file-name
+	  (when (stringp rng-file-name-or-rng-nodes)
+	    rng-file-name-or-rng-nodes))
+	 (rng-nodes (or rng-nodes
+			(list (odt-dom:file-name->dom rng-file-name))))
+	 (rnc-file-dir
+	  (concat (file-name-parent-directory org-odt-lib-dir)
+		  "testing/examples/odtxml/"))
+	 (rnc-file-name (cond
+			 (rnc-file-name
+			  rnc-file-name)
+			 (rng-file-name
+			  (expand-file-name
+			   (format "my-%s.rnc" (file-name-sans-extension (file-name-nondirectory rng-file-name)))
+			   rnc-file-dir))
+			 (t
+			  (expand-file-name
+			   (format "my-%s.rnc" "tmp")
+			   rnc-file-dir)))))
+    (when (file-exists-p rnc-file-name)
+      (delete-file rnc-file-name))
+    (with-current-buffer (find-file-noselect rnc-file-name t)
+      (erase-buffer)
+      (pop-to-buffer (current-buffer))
+      (cl-loop for n1 in rng-nodes
+	       for n = (odt-rngdom:remove-description n1)
+	       do (insert "\n\n" (odt-rngdom-new:do-rng->rnc rng-nodes n use-newline)))
+      (rnc-mode)
+      (indent-region (point-min) (point-max))
+      ;; (my-before-save-hook)
+      ;; (call-interactively 'normalize-buffer)
+      (save-buffer 0)
+      (goto-char (point-min)))))
