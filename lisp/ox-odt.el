@@ -1287,9 +1287,9 @@ Letter (Portrait), A4 (Landscape), and other page layouts."
 ;; 	    ,(org-odt--xml-to-lisp
 ;; 	      (org-odt-export-string-as-odt-string contents))))))
 
-(defcustom org-odt-header-contents nil
-  "
-."
+(defcustom org-odt-header-contents
+  "<text:p text:style-name=\"Header\"><text:tab /><text:title /><text:tab /></text:p>"
+"."
   :group 'org-export-odt
   :type
   `(choice
@@ -1314,9 +1314,9 @@ Letter (Portrait), A4 (Landscape), and other page layouts."
 ;; 	    ,(org-odt--xml-to-lisp
 ;; 	      (org-odt-export-string-as-odt-string contents))))))
 
-(defcustom org-odt-footer-contents nil
-  "
-."
+(defcustom org-odt-footer-contents
+  "<text:p text:style-name=\"Footer\"><text:tab /><text:page-number text:select-page=\"current\">1</text:page-number> of <text:page-count >2</text:page-count><text:tab /></text:p>"
+"."
   :group 'org-export-odt
   :type
   `(choice
@@ -4106,10 +4106,10 @@ holding export options."
       (goto-char (point-min))
       (when (re-search-forward "</office:master-styles>" nil t)
 	(goto-char (match-beginning 0)))
-
+ 
       ;; Write master styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
-      
+
       ;; Position the cursor.
       ;; (goto-char (point-min))
       ;; (when (re-search-forward "</office:automatic-styles>" nil t)
@@ -4140,6 +4140,7 @@ holding export options."
 	(goto-char (match-beginning 0))
 	(insert "\n<!-- Org Htmlfontify Styles -->\n"
 		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
+                         when (cddr style)
 			 concat (format " %s\n" (cddr style)))
 		"\n"))
 
@@ -4291,7 +4292,7 @@ holding export options."
 ;;;; Write meta.xml
 
 (defun org-odt-write-meta-file (_contents _backend info)
-  (let ((author (when (plist-get info :with-author)
+  (let* ((author (when (plist-get info :with-author)
 		  (let ((data (plist-get info :author)))
 		    (org-odt--encode-plain-text
 		     (org-element-interpret-data data)))))
@@ -4312,13 +4313,14 @@ holding export options."
 	(keywords (let ((data (plist-get info :keywords)))
 		    (org-odt--encode-plain-text
 		     (org-element-interpret-data data))))
-	(subtitle (let ((data (plist-get info :subtitle)))
-		    (org-odt--encode-plain-text
-		     (org-element-interpret-data data))))
 	(title (when (plist-get info :with-title)
 		 (let ((data (plist-get info :title)))
 		   (org-odt--encode-plain-text
-		    (org-element-interpret-data data))))))
+		    (org-element-interpret-data data)))))
+	(subtitle (when-let ((title)
+                             (data (plist-get info :subtitle)))
+		    (org-odt--encode-plain-text
+		     (org-element-interpret-data data)))))
     (with-temp-buffer
       (insert
        (concat
@@ -8200,7 +8202,7 @@ channel."
 			   (or (when-let* ((data-type (plist-get ods-plist :data-type)))
 				 (capitalize (format "%s" data-type)))
 			       ""))
-		   (concat attributes
+		   (concat attributes " "
 			   ;; In case of ODS backend, add data type attributes.
 			   (or (plist-get ods-plist :attributes) ""))
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"

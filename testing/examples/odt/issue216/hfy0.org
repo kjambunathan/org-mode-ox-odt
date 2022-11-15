@@ -1,0 +1,153 @@
+#+odt_validate: abort
+# #+odt_preferred_output_format: ott
+
+# This is brown
+
+# #+EXPORT_FILE_NAME: using-adwaita
+# #+ODT_STYLES_FILE: hfy-style-adwaita.odt
+
+# This is blue
+
+# #+EXPORT_FILE_NAME: using-leuven
+# #+ODT_STYLES_FILE: hfy-style-leuven.odt
+
+# This is orange
+
+#+EXPORT_FILE_NAME: using-misterioso
+#+ODT_STYLES_FILE: hfy-style-misterioso.odt
+
+#+begin_src emacs-lisp
+(setq org-odt-create-custom-styles-for-srcblocks t)
+#+end_src
+
+#+RESULTS:
+: t
+
+* COMMENT Misterioso
+
+#+ATTR_ODT: :target "extra_styles"
+#+begin_src nxml
+<!-- Org Htmlfontify Styles -->
+<style:style style:name="OrgSrcFontLockStringFace"
+             style:family="text">
+  <style:text-properties fo:color="#e67128" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentFace"
+             style:family="text">
+  <style:text-properties fo:color="#74af68"
+			 fo:font-style="italic" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentDelimiterFace"
+             style:parent-style-name="OrgSrcFontLockCommentFace"
+             style:family="text">
+  <style:text-properties fo:color="#8d8d84"
+			 fo:font-style="italic"
+			 fo:font-weight="700" />
+</style:style>
+<style:style style:name="OrgSrcBlock"
+             style:parent-style-name="Preformatted_20_Text"
+             style:family="paragraph">
+  <style:paragraph-properties fo:background-color="#2d3743"
+                              fo:border="0.51pt solid #000000"
+                              fo:padding="0.049cm"
+                              style:shadow="none">
+    <style:background-image />
+  </style:paragraph-properties>
+  <style:text-properties fo:color="#e1e1e0" />
+</style:style>
+<style:style style:name="OrgSrcFontLockKeywordFace"
+             style:family="text">
+  <style:text-properties fo:color="#ffad29"
+			 fo:font-weight="700" />
+</style:style>
+#+end_src
+
+* COMMENT Leuven
+
+#+ATTR_ODT: :target "extra_styles"
+#+begin_src nxml
+<style:style style:name="OrgSrcFontLockStringFace"
+             style:family="text">
+  <style:text-properties fo:color="#008000" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentFace"
+             style:family="text">
+  <style:text-properties fo:color="#8d8d84"
+			 fo:font-style="italic" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentDelimiterFace"
+             style:family="text">
+  <style:text-properties fo:color="#8d8d84" />
+</style:style>
+<style:style style:name="OrgSrcBlock"
+             style:parent-style-name="Preformatted_20_Text"
+             style:family="paragraph">
+  <style:paragraph-properties fo:background-color="#ffffff"
+                              fo:border="0.51pt solid #000000"
+                              fo:padding="0.049cm"
+                              style:shadow="none">
+    <style:background-image />
+  </style:paragraph-properties>
+  <style:text-properties fo:color="#333333" />
+</style:style>
+<style:style style:name="OrgSrcFontLockKeywordFace"
+             style:family="text">
+  <style:text-properties fo:color="#0000ff"
+			 fo:font-weight="500" />
+</style:style>
+#+end_src
+
+* Adwaita Theme
+
+#+ATTR_ODT: :target "extra_styles"
+#+begin_src nxml
+<style:style style:name="OrgSrcFontLockStringFace"
+             style:family="text">
+  <style:text-properties fo:color="#4e9a06" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentFace"
+             style:family="text">
+  <style:text-properties fo:color="#204a87" />
+</style:style>
+<style:style style:name="OrgSrcFontLockCommentDelimiterFace"
+             style:parent-style-name="OrgSrcFontLockCommentFace"
+             style:family="text">
+  <style:text-properties fo:color="#204a87" />
+</style:style>
+<style:style style:name="OrgSrcBlock"
+             style:parent-style-name="Preformatted_20_Text"
+             style:family="paragraph">
+  <style:paragraph-properties fo:background-color="#ededed"
+                              fo:border="0.51pt solid #000000"
+                              fo:padding="0.049cm"
+                              style:shadow="none">
+    <style:background-image />
+  </style:paragraph-properties>
+  <style:text-properties fo:color="#2e3436" />
+</style:style>
+<style:style style:name="OrgSrcFontLockKeywordFace"
+             style:family="text">
+  <style:text-properties fo:color="#a52a2a"
+			 fo:font-weight="700" />
+</style:style>
+#+end_src
+
+* Contents
+
+#+CAPTION: Style your tables
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables
+ ;; enable these two if you have installed BasicODConverter and want
+ ;; to export directly to pdf via odt
+ ;; '(org-export-odt-preferred-output-format "pdf") ;;
+ ;; '(org-export-odt-convert-process "BasicODConverter")
+ '(org-export-odt-table-styles
+   (quote (("OrgEquation" "OrgEquation"
+	    ((use-first-column-styles . t) (use-last-column-styles . t)))
+	   ("TableWithHeaderRowAndColumn" "Custom"
+	    ((use-first-row-styles . t) (use-first-column-styles . t)))
+	   ("TableWithFirstRowandLastRow" "Custom"
+	    ((use-first-row-styles . t) (use-last-row-styles . t))))))
+ '(org-latex-to-mathml-convert-command "java -jar %j -unicode -force -df %o %I")
+ '(org-latex-to-mathml-jar-file "~/tmp-odt/mathtoweb.jar"))
+#+END_SRC

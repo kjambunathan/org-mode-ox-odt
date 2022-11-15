@@ -1531,7 +1531,7 @@ script-event-listener-attlist = attribute script:event-name {\string} & attribut
 
 math-math = element math:math {mathMarkup} 
 
-mathMarkup = (attribute *nil | text | element *nil {mathMarkup})* 
+mathMarkup = (attribute * {text} | text | element * {mathMarkup})* 
 
 text-dde-connection-decl = element text:dde-connection-decl {text-dde-connection-decl-attlist, common-dde-connection-decl-attlist} 
 
@@ -2211,6 +2211,6 @@ namespacedToken = xsd:QName {pattern = "[^:]+:[^:]+"}
 
 anyIRI = xsd:anyURI 
 
-anyAttListOrElements = attribute *nil {text}*, anyElements 
+anyAttListOrElements = attribute * {text}*, anyElements 
 
-anyElements = element *nil {mixed {anyAttListOrElements}}* 
+anyElements = element  *  {mixed {anyAttListOrElements}}*
