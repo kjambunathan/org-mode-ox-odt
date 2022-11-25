@@ -31,7 +31,8 @@
 (require 'cl-lib)
 (eval-when-compile
   (require 'rx)
-  (require 'table nil 'noerror))
+  (require 'table nil 'noerror)
+  (require 'dired-aux))
 (require 'format-spec)
 (require 'xml)
 (require 'ox)
