@@ -7990,7 +7990,7 @@ channel."
 			   (or (when-let* ((data-type (plist-get ods-plist :data-type)))
 				 (capitalize (format "%s" data-type)))
 			       ""))
-		   (concat attributes
+		   (concat attributes " "
 			   ;; In case of ODS backend, add data type attributes.
 			   (or (plist-get ods-plist :attributes) ""))
 		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
