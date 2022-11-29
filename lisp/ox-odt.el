@@ -171,6 +171,7 @@
     (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
     (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
     (:odt-extra-styles "ODT_EXTRA_STYLES" nil org-odt-extra-styles newline)
+    (:odt-auto-generated-extra-styles nil nil nil nil)
     (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil org-odt-extra-automatic-styles newline)
     (:odt-master-styles "ODT_MASTER_STYLES" nil org-odt-master-styles newline)
     ;; Keywords that affect content.xml
@@ -3989,6 +3990,32 @@ holding export options."
 	   (org-odt--copy-image-file info full-path target-path))))
       (_ (error "Styles file is invalid: %s" styles-file)))
 
+    ;; Collect auto-generated styles.
+    ;; Auto-generated styles are factory styles that are
+    ;; programmatically generated, and injected in to `OrgOdtStyles.xml'
+    ;; during export.
+    (plist-put info :odt-auto-generated-extra-styles
+               (mapconcat #'identity
+	                  (list
+		           ;; Custom styles for source blocks
+		           ;; These STYLES are used for colorizing of source blocks, and are
+		           ;; collected as part of `org-odt-hfy-face-to-css' callbacks.
+		           (concat "\n<!-- BEGIN: Org Htmlfontify Styles -->\n"
+			           (mapconcat #'identity
+                                              (cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
+				                       when (cddr style)
+				                       collect it)
+                                              "\n")
+			           "\n<!-- END: Org Htmlfontify Styles -->\n")
+		           ;; Write the default LANGUAGE for body text.
+		           (org-odt-adjust-styles-for-locale (plist-get info :language))
+		           ;; Write extra styles.
+		           (mapconcat #'identity
+			              (cl-loop for p-style in '("OrgTable" "CustomTable")
+				               collect (org-odt--table-cell-build-paragraph-styles p-style))
+			              "\n"))
+	                  "\n"))
+
     ;; create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry info "text/xml" "styles.xml")
 
@@ -4025,31 +4052,21 @@ holding export options."
       ;; Write automatic styles.
       (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
 
-      ;; Write custom styles for source blocks
-      ;; Save STYLES used for colorizing of source blocks.
-      ;; Update styles.xml with styles that were collected as part of
-      ;; `org-odt-hfy-face-to-css' callbacks.
+      ;; Position the cursor.
       (goto-char (point-min))
       (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0))
-	(insert "\n<!-- Org Htmlfontify Styles -->\n"
-		(cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
-			 concat (format " %s\n" (cddr style)))
-		"\n"))
+	(goto-char (match-beginning 0)))
+      ;; Write auto-generated extra styles.
+      (insert "\n" (plist-get info :odt-auto-generated-extra-styles) "\n")
 
       ;; Position the cursor.
       (goto-char (point-min))
       (when (re-search-forward "</office:styles>" nil t)
 	(goto-char (match-beginning 0)))
-
-      ;; Write the default LANGUAGE for body text.
-      (insert "\n" (org-odt-adjust-styles-for-locale (plist-get info :language)))
-      
       ;; Write extra styles.
-      (cl-loop for p-style in '("OrgTable" "CustomTable")
-	       do (insert (org-odt--table-cell-build-paragraph-styles p-style)))
       ;;
-      ;; Note: If the user has defined the `Standard' style in ODT_EXTRA_STYLES then that is what is
+      ;; Ensure that the extra styles come after the auto-generated extra styles.
+      ;; This way, if the user has defined the `Standard' style in ODT_EXTRA_STYLES then that is what is
       ;; effective in the final exported document.  What this means is that when the EXPERIMENTAL
       ;; `language' feature is ON, the re-definition of `Standard' via `OrgLocale' inserted by the
       ;; exporter gets overridden.  This behavour is deliberate so that existing org files continue
