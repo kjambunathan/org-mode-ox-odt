@@ -54,6 +54,13 @@
 	    (format "%s%s<%s %s/>"
 		    newline
 		    prefix name (funcall print-attributes attributes)))
+	   ((eq 'comment name)
+	    (format "%s%s<!-- %s -->"
+		    newline
+		    prefix
+		    (if (stringp contents) contents
+		      ;; (print-element contents (1+ depth))
+		      (odt-dom-to-xml-string contents (1+ depth) prettify))))
 	   (t
 	    (format "%s%s<%s %s>%s%s%s</%s>"
 		    newline
