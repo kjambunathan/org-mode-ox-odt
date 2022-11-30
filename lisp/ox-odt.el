@@ -38,56 +38,11 @@
 (require 'ox)
 (require 'ox-ascii)
 (require 'org-compat)
+(require 'odt)
 
-;;; Useful Functions
+;;; Aliases
 
-;;;; XML to Lisp & vice versa
-
-(defun org-odt--xml-to-lisp (&optional xml)
-  (setq xml (or xml (buffer-substring-no-properties (region-beginning) (region-end))))
-  (with-temp-buffer
-    (insert xml)
-    (libxml-parse-xml-region (point-min) (point-max))))
-
-(defun org-odt--lisp-to-xml (element &optional depth prettify)
-  (let* ((newline (if prettify "\n" ""))
-	 (print-attributes
-	  (lambda (attributes)
-	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
-					   (format "%s=\"%s\"" attribute value))
-		       " "))))
-    (setq depth (or depth 0))
-    (cond
-     ((stringp element)
-      element)
-     ((symbolp (car element))
-      (let* ((name (car element))
-	     (attributes (cadr element))
-	     (contents (cddr element)))
-	(let ((prefix (if prettify (make-string depth ? ) "")))
-	  (cond
-	   ((null contents)
-	    (format "%s%s<%s %s/>"
-		    newline
-		    prefix name (funcall print-attributes attributes)))
-	   (t
-	    (format "%s%s<%s %s>%s%s%s</%s>"
-		    newline
-		    prefix
-		    name
-		    (funcall print-attributes attributes)
-		    (if (stringp contents) contents
-		      ;; (print-element contents (1+ depth))
-		      (org-odt--lisp-to-xml contents (1+ depth) prettify))
-		    newline
-		    prefix
-		    name))))))
-     (t
-      (mapconcat #'identity
-		 (cl-loop for el in element collect
-			  ;; (print-element el (1+ depth))
-			  (org-odt--lisp-to-xml el (1+ depth) prettify))
-		 "")))))
+(defalias 'org-odt--lisp-to-xml 'odt-dom-to-xml-string)
 
 
 ;;; Define Back-End
@@ -2275,8 +2230,8 @@ with the following construct
     {{{ODTTitle}}}
 
 FIELD-DEFINITION is lispified version created by passing the XML
-definition through `org-odt--xml-to-lisp'
-
+definition through `odt-xml-string-to-dom'.
+                        
 The FIELD-NAME is converted in an Org macro of same name as part
 of `org-odt-global-macros'.")
 
