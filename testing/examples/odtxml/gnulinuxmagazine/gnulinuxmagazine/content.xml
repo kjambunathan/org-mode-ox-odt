@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<office:document-content xmlns:grddl="http://www.w3.org/2003/g/data-view#" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:css3t="http://www.w3.org/TR/css3-text/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:formx="urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0" xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rpt="http://openoffice.org/2005/report" office:version="1.2">
+ <office:scripts/>
+ <office:font-face-decls>
+  <style:font-face style:name="Arial" svg:font-family="Arial" style:font-adornments="Gras" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Arial Black" svg:font-family="&apos;Arial Black&apos;" style:font-adornments="Gras" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Arial Black1" svg:font-family="&apos;Arial Black&apos;" style:font-adornments="Italique gras" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Arial Narrow" svg:font-family="&apos;Arial Narrow&apos;" style:font-adornments="Italique" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Arial1" svg:font-family="Arial" style:font-adornments="Gras Italique" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Arial2" svg:font-family="Arial" style:font-adornments="Normal" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Bitstream Vera Sans Mono" svg:font-family="&apos;Bitstream Vera Sans Mono&apos;" style:font-adornments="Gras" style:font-family-generic="modern" style:font-pitch="fixed"/>
+  <style:font-face style:name="Courier New" svg:font-family="&apos;Courier New&apos;" style:font-family-generic="modern" style:font-pitch="fixed"/>
+  <style:font-face style:name="Letter Gothic MT" svg:font-family="&apos;Letter Gothic MT&apos;" style:font-adornments="Gras" style:font-family-generic="modern" style:font-pitch="variable"/>
+  <style:font-face style:name="Lucida Sans Unicode" svg:font-family="&apos;Lucida Sans Unicode&apos;" style:font-pitch="variable"/>
+  <style:font-face style:name="MS Mincho" svg:font-family="&apos;MS Mincho&apos;" style:font-pitch="variable"/>
+  <style:font-face style:name="StarSymbol" svg:font-family="StarSymbol"/>
+  <style:font-face style:name="Tahoma" svg:font-family="Tahoma"/>
+  <style:font-face style:name="Tahoma1" svg:font-family="Tahoma" style:font-pitch="variable"/>
+  <style:font-face style:name="Tahoma2" svg:font-family="Tahoma" style:font-adornments="Gras" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Tahoma3" svg:font-family="Tahoma" style:font-adornments="Normal" style:font-family-generic="swiss" style:font-pitch="variable"/>
+  <style:font-face style:name="Times New Roman" svg:font-family="&apos;Times New Roman&apos;" style:font-family-generic="roman" style:font-pitch="variable"/>
+ </office:font-face-decls>
+ <office:automatic-styles>
+  <style:style style:name="Tableau1" style:family="table">
+   <style:table-properties style:width="16.999cm" table:align="margins"/>
+  </style:style>
+  <style:style style:name="Tableau1.A" style:family="table-column">
+   <style:table-column-properties style:column-width="5.666cm" style:rel-column-width="21845*"/>
+  </style:style>
+  <style:style style:name="Tableau1.A1" style:family="table-cell">
+   <style:table-cell-properties fo:padding="0.097cm" fo:border-left="0.05pt solid #000000" fo:border-right="none" fo:border-top="0.05pt solid #000000" fo:border-bottom="0.05pt solid #000000"/>
+  </style:style>
+  <style:style style:name="Tableau1.C1" style:family="table-cell">
+   <style:table-cell-properties fo:padding="0.097cm" fo:border="0.05pt solid #000000"/>
+  </style:style>
+  <style:style style:name="Tableau1.A2" style:family="table-cell">
+   <style:table-cell-properties fo:padding="0.097cm" fo:border-left="0.05pt solid #000000" fo:border-right="none" fo:border-top="none" fo:border-bottom="0.05pt solid #000000"/>
+  </style:style>
+  <style:style style:name="Tableau1.C2" style:family="table-cell">
+   <style:table-cell-properties fo:padding="0.097cm" fo:border-left="0.05pt solid #000000" fo:border-right="0.05pt solid #000000" fo:border-top="none" fo:border-bottom="0.05pt solid #000000"/>
+  </style:style>
+  <style:style style:name="T1" style:family="text">
+   <style:text-properties style:font-name="Arial2" fo:font-size="10pt"/>
+  </style:style>
+ </office:automatic-styles>
+ <office:body>
+  <office:text text:use-soft-page-breaks="true">
+   <office:forms form:automatic-focus="false" form:apply-design-mode="false"/>
+   <text:tracked-changes text:track-changes="false">
+    <text:changed-region xml:id="ct94334450015408" text:id="ct94334450015408">
+     <text:format-change>
+      <office:change-info>
+       <dc:creator>Tristan Colombo</dc:creator>
+       <dc:date>2014-06-04T14:59:00</dc:date>
+      </office:change-info>
+     </text:format-change>
+    </text:changed-region>
+    <text:changed-region xml:id="ct94334445858528" text:id="ct94334445858528">
+     <text:format-change>
+      <office:change-info>
+       <dc:creator>Tristan Colombo</dc:creator>
+       <dc:date>2014-06-04T14:59:00</dc:date>
+      </office:change-info>
+     </text:format-change>
+    </text:changed-region>
+   </text:tracked-changes>
+   <text:sequence-decls>
+    <text:sequence-decl text:display-outline-level="0" text:name="Illustration"/>
+    <text:sequence-decl text:display-outline-level="0" text:name="Table"/>
+    <text:sequence-decl text:display-outline-level="0" text:name="Text"/>
+    <text:sequence-decl text:display-outline-level="0" text:name="Drawing"/>
+    <text:sequence-decl text:display-outline-level="0" text:name="Figure"/>
+   </text:sequence-decls>
+   <text:p text:style-name="Heading">Titre de l&apos;article</text:p>
+   <text:p text:style-name="Signature">Prénom et Nom</text:p>
+   <text:p text:style-name="Signature">[Fonction ou métier et/ou contribution à des projets libres. Exemple lignes suivantes]</text:p>
+   <text:p text:style-name="Signature"/>
+   <text:p text:style-name="Signature">Tristan Colombo</text:p>
+   <text:p text:style-name="Signature">[Rédacteur en chef de GLMF]</text:p>
+   <text:p text:style-name="chapeau">Ceci est le chapeau de l&apos;article. Il s&apos;agit d&apos;une courte introduction au sujet ou à la problématique. Essayez d&apos;être explicite et de donner envie au lecteur de poursuivre la lecture de l&apos;article.</text:p>
+   <text:p text:style-name="pragma">/// Mots-clés ///</text:p>
+   <text:p text:style-name="Normal">Vous devez lister ici 6 mots-clés définissant votre article, du plus important au moins important. Exemple :</text:p>
+   <text:p text:style-name="Normal">Underscore.js, Javascript, Programmation fonctionnelle, Web, Python, Filtre</text:p>
+   <text:p text:style-name="pragma">/// Fin Mots-clés ///</text:p>
+   <text:p text:style-name="Normal"/>
+   <text:p text:style-name="Normal">Indiquez si votre code a été testé sur Debian, Raspberry Pi, etc ou si vous nous avez fourni le code et qu&apos;il est présent sur le Github de GNU Linux Magazine</text:p>
+   <text:p text:style-name="pragma">/// Logo : Debian ///</text:p>
+   <text:p text:style-name="pragma">/// Logo : Raspberry Pi ///</text:p>
+   <text:p text:style-name="pragma">/// Logo : Github ///</text:p>
+   <text:p text:style-name="Normal"/>
+   <text:p text:style-name="Normal">Un article commence <text:span text:style-name="gras">TOUJOURS</text:span> par une introduction qui n&apos;est pas numérotée (regardez dans le magazine, il y a une lettrine sur la première lettre de cette section). L&apos;objectif étant le plus souvent possible (si le thème s&apos;y prête) de partir d&apos;un cas concret puis de détailler sa résolution (le cas concret pouvant être un prétexte à la présentation d&apos;une notion théorique également), présentez l&apos;objectif dans l&apos;introduction.</text:p>
+   <text:p text:style-name="Normal">Pour avoir une évaluation du nombre de pages qu&apos;occupera votre article dans le magazine utilisez la macro <text:span text:style-name="code_5f_par">Stats_DiamondEditions()</text:span> fournie (ajoutez environ 1 page toutes les 4 figures). Attention, il ne s&apos;agit que d&apos;une estimation. La majeure partie des articles font entre 6 et 10 pages mais il n&apos;y a pas vraiment de limite basse ou haute (bien sûr il sera difficile de publier un article d&apos;un quart de page ou de 50 pages... ;-)).</text:p>
+   <text:p text:style-name="Normal">Pour les termes techniques, très spécifiques au domaine (n&apos;oubliez pas que les devs lisent des articles sysadmin et réciproquement), je vous recommande l&apos;utilisation d&apos;encadrés contenant la définition ou le rappel technique.</text:p>
+   <text:p text:style-name="Heading_20_1">1 Titre de niveau 1</text:p>
+   <text:p text:style-name="Normal">Paragraphe en style « Normal » (et non « Standard » ou « Corps de texte »). </text:p>
+   <text:p text:style-name="code"># Ceci est du code</text:p>
+   <text:p text:style-name="code"># Une entrée typique de menu.lst</text:p>
+   <text:p text:style-name="code"># Le style employé est « code »</text:p>
+   <text:p text:style-name="code">title= DEBIAN GNU/Linux 2.6.24 (hdc3 - ext3)</text:p>
+   <text:p text:style-name="code">kernel= (hd1,2)/boot/vmlinuz-2.6.24-1-686 root=/dev/hdc3 vga=extended</text:p>
+   <text:p text:style-name="code">initusrd (hd1,2)/boot/initrd.img-2.6.24-1-686</text:p>
+   <text:p text:style-name="Normal">Paragraphe en « Normal ». On fait ici mention d&apos;un élément de la configuration : l&apos;étiquette <text:span text:style-name="code_5f_par">title</text:span> (style de caractère « code_par » pour du code dans du texte) permet d&apos;ajouter un titre dans les menus de GRUB. La commande <text:span text:style-name="code_5f_par">grub-install</text:span> permet l&apos;installation du <text:span text:style-name="italic">bootloader</text:span> (Attention ! Cet italique est généré par le style de caractère « italic » et non par l&apos;icône italique de LibreOffice, idem pour le gras). Nous pouvons spécifier le mode graphique à utiliser avec l&apos;option <text:span text:style-name="code_5f_par">vga </text:span>:</text:p>
+   <text:p text:style-name="code">01: # Une entrée typique de menu.lst</text:p>
+   <text:p text:style-name="code">02: title= DEBIAN GNU/Linux 2.6.24 (hdc3 - ext3)</text:p>
+   <text:p text:style-name="code">03: kernel= (hd1,2)/boot/vmlinuz-2.6.24-1-686 root=/dev/hdc3 <text:span text:style-name="code_5f_em">vga=extended</text:span></text:p>
+   <text:p text:style-name="code">04: initrd (hd1,2)/boot/initrd.img-2.6.24-1-686</text:p>
+   <text:p text:style-name="Normal">Si vous souhaitez faire référence à des lignes de code pour les expliquer, vous pouvez les numéroter comme dans le code ci-dessus. Essayez de commenter votre code et vos commandes shell de manière à ne pas avoir d&apos;immenses blocs de code ou de sorties shell qui rendent l&apos;article illisible. </text:p>
+   <text:p text:style-name="pragma"><text:soft-page-break/>/// Début note PAO ///</text:p>
+   <text:p text:style-name="pragma">Le texte ici est destiné à indiquer des informations supplémentaires à la rédaction. Il n&apos;apparaîtra pas dans l&apos;article final.</text:p>
+   <text:p text:style-name="pragma">/// Fin note PAO ///</text:p>
+   <text:p text:style-name="Normal">Pour une note apparaissant dans l&apos;article final il faut seulement supprimer le terme PAO :</text:p>
+   <text:p text:style-name="pragma">/// Début note ///</text:p>
+   <text:p text:style-name="Normal">Le texte présent ici, rédigé en style « Normal », apparaîtra dans l&apos;article final dans une boîte spéciale « note ».</text:p>
+   <text:p text:style-name="pragma">/// Fin note ///</text:p>
+   <text:p text:style-name="Normal">Les indications en style « pragma », comme ci-dessus, doivent toujours être encadrées de 3 slashs /// <text:span text:style-name="T1">…</text:span> ///.</text:p>
+   <text:p text:style-name="Normal">Si vous souhaitez une note ayant pour titre : Avertissement ou Attention (avec la petite icône associée), il faut utiliser :</text:p>
+   <text:p text:style-name="pragma">/// Début note : Attention ///</text:p>
+   <text:p text:style-name="Normal">Le texte présent ici, rédigé en style « Normal », apparaîtra dans l&apos;article final dans une boîte spéciale « Attention ».</text:p>
+   <text:p text:style-name="pragma">/// Fin note ///</text:p>
+   <text:p text:style-name="pragma">/// Début note : Avertissement ///</text:p>
+   <text:p text:style-name="Normal">Le texte présent ici, rédigé en style « Normal », apparaîtra dans l&apos;article final dans une boîte spéciale « Avertissement ».</text:p>
+   <text:p text:style-name="pragma">/// Fin note ///</text:p>
+   <text:p text:style-name="Normal">Les sessions de commandes interactives sont à utiliser avec le style de paragraphe « console ». On peut également mettre en évidence certaines parties, grâce au style de caractère « code_em » : </text:p>
+   <text:p text:style-name="console">$ cat dma</text:p>
+   <text:p text:style-name="console">2: floppy</text:p>
+   <text:p text:style-name="console">3: <text:span text:style-name="code_5f_em">parport0</text:span> # mise en évidence avec <text:span text:style-name="code_5f_em">code_em</text:span></text:p>
+   <text:p text:style-name="console">4: cascade</text:p>
+   <text:p text:style-name="Normal">Le prompt en utilisateur standard est <text:span text:style-name="code_5f_par">$</text:span> et en root il s&apos;agit de <text:span text:style-name="code_5f_par">#</text:span>.</text:p>
+   <text:p text:style-name="pragma">/// Début encadré ///</text:p>
+   <text:h text:style-name="Heading_20_1" text:outline-level="1">Titre encadré</text:h>
+   <text:p text:style-name="Normal">Vous pouvez créer des encadrés de quelques lignes pour expliquer, définir des éléments de manière un peu plus pointue et/ou pour les mettre en exergue.</text:p>
+   <text:p text:style-name="pragma">/// Fin encadré ///</text:p>
+   <text:p text:style-name="Normal">Plus d&apos;informations sur GRUB sur le site officiel : <text:span text:style-name="url">http://www.gnu.org/software/grub/ </text:span>(notez l&apos;utilisation du style de caractère « url » et la désactivation de l&apos;hyperlien).</text:p>
+   <text:p text:style-name="Normal">Vous pouvez également insérer des listes à puces ou numérotées dans votre article, comme ceci :</text:p>
+   <text:p text:style-name="Normal">- item 1 ;</text:p>
+   <text:p text:style-name="Normal">- item 2 ;</text:p>
+   <text:p text:style-name="Normal">- item 3 ;</text:p>
+   <text:p text:style-name="Normal">- etc.</text:p>
+   <text:p text:style-name="Normal">Notez que nous n&apos;utilisons pas les puces/numérotations automatiques de LibreOffice ici !!</text:p>
+   <text:p text:style-name="Normal">De même, les tableaux doivent être présentés le plus simplement possible, le contenu doit être en style « Normal », par exemple :</text:p>
+   <table:table table:name="Tableau1" table:style-name="Tableau1">
+    <table:table-column table:style-name="Tableau1.A" table:number-columns-repeated="3"/>
+    <table:table-row table:style-name="TableLine94334445864912">
+     <table:table-cell table:style-name="Tableau1.A1" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Tableau1.A1" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Tableau1.C1" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+    </table:table-row>
+    <table:table-row table:style-name="TableLine94334450120736">
+     <table:table-cell table:style-name="Tableau1.A2" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Tableau1.A2" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Tableau1.C2" office:value-type="string">
+      <text:p text:style-name="Normal">blabla</text:p>
+     </table:table-cell>
+    </table:table-row>
+   </table:table>
+   <text:p text:style-name="Normal">Les références, à mettre en style « gras », doivent être intégrées dans le discours du texte et leur étiquette sera un nombre (attention à bien respecter un ordre croissant 1, 2, 3, etc.). Exemple : Comme on peut le voir sur le site de Linux Magazine <text:span text:style-name="gras">[1]</text:span> et dans l&apos;article de T. Colombo <text:span text:style-name="gras">[2]</text:span>, blablablabla blablabla. C&apos;est seulement <text:soft-page-break/>lorsqu&apos;une citation apparaît dans le texte quelle peut être développée dans la section « Références » en fin d&apos;article. Dans cette section il faudra donner des références bibliographiques ou des urls mais il faudra indiquer aussi à quoi elles correspondent (voir le format à respecter en fin d&apos;article dans la section « Références »). </text:p>
+   <text:p text:style-name="Normal">N&apos;intégrez pas vos images dans le fichier LibreOffice, mais faites-en mention avec le style « pragma ». Les fichiers images seront placés dans le même répertoire que l&apos;article et leur nom sera composé à partir du nom de l&apos;article et de leur position dans celui-ci. Il devra en outre toujours être précédé d&apos;un underscore. Vous devez également toujours faire référence à une figure dans le texte : comme on peut le voir en figure 1, ... ou encore (voir figure 1)).</text:p>
+   <text:p text:style-name="pragma">/// Image : nom_article_figure_01.png ///</text:p>
+   <text:p text:style-name="legende">Fig. 1 : Exemple d&apos;écran de démarrage GRUB. Une légende peut être une simple phrase ou même la mention du numéro de figure. Cependant, pour certains articles, il peut s&apos;agir de plusieurs paragraphes, d&apos;où la nécessité d&apos;utiliser le style « pragma ». Le style utilisé pour une légende.... est « legende ».</text:p>
+   <text:p text:style-name="Normal">Lorsqu&apos;on décrit une interface graphique ou texte (pas les lignes de commandes, les interfaces en mode texte comme Midnight Commander par exemple), il est possible de faire référence aux menus et options avec le style de caractères « menu ». Exemple : Cochez l&apos;option <text:span text:style-name="menu">Auto-connexion</text:span> dans la fenêtre des options qui apparaît via le menu <text:span text:style-name="menu">Fichier &gt; Préférences</text:span>. </text:p>
+   <text:p text:style-name="Normal">Lorsque vous indiquez des noms de touches appliquez le style gras et encadrez la touche par des &lt; et &gt; : <text:span text:style-name="gras">&lt;Ctrl&gt;</text:span> + <text:span text:style-name="gras">&lt;C&gt;</text:span> par exemple.</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Heading_20_2">1.1 Titre de niveau 2</text:p>
+   <text:p text:style-name="Normal">Attention à l&apos;enchaînement des sections et sous-sections ! Il ne peut pas y avoir de section 1.1 s&apos;il n&apos;y a pas de 1.2, ni de 3.2.1 sans 3.2.2 !</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Heading_20_3">1.1.1 Titre de niveau 3</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Heading_20_4">1.1.1.1 Titre de niveau 4</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:p text:style-name="Normal">Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla. Bla blabla bla blabla, bla bla bla blabla.</text:p>
+   <text:h text:style-name="Heading_20_1" text:outline-level="1">Conclusion</text:h>
+   <text:p text:style-name="Normal">La conclusion ne comporte pas de numérotation. Il s&apos;agit de la dernière section de l&apos;article.</text:p>
+   <text:p text:style-name="Normal">N&apos;oubliez pas que pour vous faciliter la tâche, un fichier de raccourcis clavier ainsi que des directives de configuration de LibreOffice sont à votre disposition sur <text:span text:style-name="url">https://github.com/GLMF/outils_auteurs</text:span>.</text:p>
+   <text:h text:style-name="Heading_20_1" text:outline-level="1"><text:soft-page-break/>Références</text:h>
+   <text:p text:style-name="Normal"><text:span text:style-name="gras">[1]</text:span> Site officiel de <text:span text:style-name="italic">GNU/Linux Magazine</text:span> : <text:span text:style-name="url">http://www.gnulinuxmagazine.com</text:span> </text:p>
+   <text:p text:style-name="Normal"><text:span text:style-name="gras">[2]</text:span> COLOMBO T., <text:change-start text:change-id="ct94334450015408"/><text:span text:style-name="italic">« Titre de l&apos;article »</text:span><text:change-end text:change-id="ct94334450015408"/>, <text:span text:style-name="italic">GNU/Linux Magazine</text:span> n°171, Mai 2014, p. x à y.</text:p>
+   <text:p text:style-name="Normal"><text:span text:style-name="gras">[3]</text:span> NOM P. et AUTRENOM P., <text:change-start text:change-id="ct94334445858528"/><text:span text:style-name="italic">« Titre livre »</text:span><text:change-end text:change-id="ct94334445858528"/>, éditeur, année.</text:p>
+   <text:p text:style-name="Normal">Notez ci-dessus l&apos;utilisation du style « italic » pour les titres de magazines. Les références doivent être écrites en style « Normal ».</text:p>
+   <text:h text:style-name="Heading_20_1" text:outline-level="1">Pour aller plus loin</text:h>
+   <text:p text:style-name="Normal">Dans cette partie (<text:span text:style-name="gras">optionnelle</text:span>) vous pouvez donner une liste de liens, références bibliographiques sans les avoir cités dans le texte. Attention, il faut tout de même un petit texte indiquant à quoi se rapporte le lien :</text:p>
+   <text:p text:style-name="Normal">Conférence de R. Stallman du 28 septembre 2012 : <text:span text:style-name="url">https://www.youtube.com/watch?v=2onsOFWme-Q</text:span></text:p>
+   <text:p text:style-name="Normal">Le livre de R. Stallman, S. Williams et C. Masutti, <text:span text:style-name="italic">« Richard Stallman et la révolution du logiciel libre »</text:span>, Eyrolles, 2010.</text:p>
+  </office:text>
+ </office:body>
+</office:document-content>
