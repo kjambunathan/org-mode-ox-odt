@@ -100,12 +100,6 @@
 	(cons (funcall predicate dom) matches)
       matches)))
 
-(defun odt-dom:type->node (type dom)
-  (let ((nodes (odt-dom:type->nodes type dom)))
-    (unless (cdr nodes)
-      (error "Multiple nodes of type `%s' in DOM.  Refusing to return a unique node" type))
-    (car nodes)))
-
 (defun odt-dom:remove-nodes-satisfying (f dom)
   (prog1 dom
     (cl-loop with nodes = (odt-dom-map
@@ -544,7 +538,7 @@
 	  (when (stringp rng-file-name-or-rng-nodes)
 	    rng-file-name-or-rng-nodes))
 	 (rng-nodes (or rng-nodes
-			(list (odt-dom:file->dom rng-file-name))))
+			(list (odt-file-to-dom rng-file-name))))
 	 (info (list :use-newline nil
 		     :dom rng-nodes))
 	 (rnc-file-dir
@@ -612,7 +606,7 @@ C-x C-s
 ;;;; RNG Variables
 
 (defvar odt-rngdom:odf-v1.2-os-schema
-  (odt-dom:file->dom
+  (odt-file-to-dom
    (expand-file-name "odf1.2/OpenDocument-v1.2-os-schema.rng" org-odt-schema-dir)))
 
 (defvar odt-rngdom:odf-v1.2-os-schema-data-types
@@ -657,7 +651,10 @@ C-x C-s
        node))
    dom))
 
-;; (mapcar #'odt-stylesdom:style-signature (odt-stylesdom:style-name->nodes (odt-stylesdom:file->dom (buffer-file-name)) "OrgOutline"))
+;; (mapcar #'odt-stylesdom:style-signature
+;;         (odt-stylesdom:style-name->nodes
+;;          (odt-dom:file->dom (buffer-file-name))
+;;          "OrgOutline"))
 
 ;; ((text:outline-style "OrgOutline" nil)
 ;;  (text:list-style "OrgOutline" nil))
@@ -799,33 +796,11 @@ C-x C-s
    :child-tags
    (odt-stylesdom:type->child-tags type dom)))
 
-;; (defun odt-stylesdom:dom->add-nodes-to (to nodes op dom)
-;;   (prog1 dom
-;;     (cl-loop with type = to
-;; 	     with edited-node = (odt-dom:type->node type dom)
-;; 	     for node in nodes
-;; 	     do (pcase op
-;; 		  ('append
-;; 		   (dom-append-child edited-node node))
-;; 		  ('prepend
-;; 		   (dom-add-child-before edited-node node nil))
-;; 		  (_ (error "Invalid OP `%S'" op))))))
-
-;; (defun odt-stylesdom:dom->office:styles+ (nodes op dom)
-;;   (odt-stylesdom:dom->add-nodes-to 'office:styles nodes op dom))
-
-;; (defun odt-stylesdom:dom->office:master-styles+ (nodes op dom)
-;;   (odt-stylesdom:dom->add-nodes-to 'office:master-styles nodes op dom))
-
-;; (defun odt-stylesdom:dom->office:automatic-styles+ (nodes op dom)
-;;   (odt-stylesdom:dom->add-nodes-to 'office:automatic-styles nodes op dom))
-
 ;;;; Styles Variables
 
 (defvar org-odt-styles-dom
   (odt-dom:file->dom
-   (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir)
-   'remove-xmlns-attributes))
+   (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir)))
 
 ;;;; Styles Test
 
@@ -896,7 +871,8 @@ C-x C-s
     (erase-buffer)
     (pop-to-buffer (current-buffer))
     (call-interactively 'set-mark-command)
-    (insert (odt-contentsdom:dom->string (odt-dom:file->dom contents-file-name 'remove-xmlns-attributes)))
+    (insert (odt-contentsdom:dom->string
+             (odt-dom:file->dom contents-file-name)))
     (call-interactively 'org-fill-paragraph)
     (call-interactively 'set-mark-command)))
 
@@ -911,8 +887,7 @@ C-x C-s
 
 (defvar org-odt-content-template-dom
   (odt-dom:file->dom
-   (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir)
-   'remove-xmlns-attributes))
+   (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir)))
 
 ;;;; Contents Test
 
@@ -921,8 +896,7 @@ C-x C-s
   (odt-contentsdom:dom->text:style-names
    (odt-dom:file->dom
     (concat (file-name-parent-directory org-odt-lib-dir)
-	    "testing/examples/odtxml/gnulinuxmagazine/gnulinuxmagazine/content.xml")
-    t))))
+	    "testing/examples/odtxml/gnulinuxmagazine/gnulinuxmagazine/content.xml")))))
 
 ;;; Elfile
 
@@ -1518,7 +1492,7 @@ C-x C-s
 	  (when (stringp rng-file-name-or-rng-nodes)
 	    rng-file-name-or-rng-nodes))
 	 (rng-nodes (or rng-nodes
-			(list (odt-dom:file->dom rng-file-name))))
+			(list (odt-file-to-dom rng-file-name))))
 	 (rnc-file-dir
 	  (concat (file-name-parent-directory org-odt-lib-dir)
 		  "testing/examples/odtxml/"))

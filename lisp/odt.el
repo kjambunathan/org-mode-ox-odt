@@ -91,6 +91,11 @@
 		(point-max))))
     (libxml-parse-xml-region beg end)))
 
+(defun odt-file-to-dom (file-name)
+  (with-temp-buffer
+    (insert-file-contents file-name)
+    (odt-current-buffer-or-region-to-dom)))
+
 ;;; DOM
 
 ;;;; DOM: Bare Essentials
@@ -146,35 +151,36 @@
 
 ;;; ODT DOM
 
-(defun odt-dom:xml-string->dom (xml-string &optional remove-xmlns-attributes)
+(defun odt-dom:file->dom (file-name)
   (with-temp-buffer
-    (insert (or xml-string ""))
-    (when remove-xmlns-attributes
-      (goto-char (point-min))
-      (when (re-search-forward (rx "<office:document-styles") nil t)
-	(delete-region (match-beginning 0)
-		       (save-excursion
-			 (goto-char (match-beginning 0))
-			 (xmltok-forward)
-			 (point)))
-	(insert "<office:document-styles>"))
-      (goto-char (point-min))
-      (when (re-search-forward (rx "<office:document-content") nil t)
-	(delete-region (match-beginning 0)
-		       (save-excursion
-			 (goto-char (match-beginning 0))
-			 (xmltok-forward)
-			 (point)))
-	(insert "<office:document-content>")))
-    (odt-xml-string-to-dom
-     (buffer-substring-no-properties (point-min) (point-max)))))
-
-(defun odt-dom:file->dom (file-name &optional remove-xmlns-attributes)
-  (odt-dom:xml-string->dom
-   (with-temp-buffer
-     (insert-file-contents file-name)
-     (buffer-substring-no-properties (point-min) (point-max)))
-   remove-xmlns-attributes))
+    (insert-file-contents file-name)
+    (goto-char (point-min))
+    (when (re-search-forward
+	   (rx-to-string `(and "<"
+			       (group
+				(or ,@(mapcar #'symbol-name
+					      '(office:document
+						office:document-styles
+						office:document-content
+						office:document-meta))))
+			       (group (or ""
+					  (and space (one-or-more (not ">")))))
+			       ">"))
+	   nil 'noerror)
+      (let* ((tag (intern (match-string 1)))
+	     (attrs (prog1 (match-string 2)
+		      (delete-region (match-beginning 2) (match-end 2))))
+	     (dom (progn
+		    (odt-current-buffer-or-region-to-dom)))
+	     (subdom (car (odt-dom:type->nodes tag dom))))
+	(prog1 subdom
+	  (prog1 subdom
+	    (setcar (cdr subdom)
+		    (cl-loop for attr-and-value in (split-string attrs)
+			     collect (pcase-let ((`(,attr ,value)
+						  (split-string attr-and-value "=")))
+				       (cons (intern attr) (when value
+							     (read value))))))))))))
 
 (defun odt-dom:dom->file (file-name prettifyp dom)
   (with-temp-buffer
@@ -186,39 +192,12 @@
 
 ;;;; Styles.xml <-> DOM
 
-(defun odt-stylesdom:get-attrs (file-name type)
-  (with-current-buffer (find-file-noselect file-name)
-    (goto-char (point-min))
-    (when (re-search-forward (rx-to-string `(and (group ,(format "<%s" type)
-							(one-or-more space))))
-			     nil t)
-      (let ((attr-start (match-end 1)))
-	(when (re-search-forward ">" nil t)
-	  (let* ((attrs (buffer-substring-no-properties attr-start (1- (match-end 0))))
-		 (attr-list (split-string attrs)))
-	    (cl-loop for attr-and-value in attr-list
-		     collect (pcase-let ((`(,attr ,value)
-					  (split-string attr-and-value "=")))
-			       (cons (intern attr) (read value))))))))))
-
-(defun odt-stylesdom:file->dom (styles-file)
-  (let* ((dom (odt-dom:file->dom styles-file 'remove-xmlns-attributes))
-	 (attrs (odt-stylesdom:get-attrs styles-file 'office:document-styles))
-	 (document-styles-node (car (odt-dom:type->nodes 'office:document-styles dom))))
-    (prog1 document-styles-node
-      (setcar (cdr document-styles-node)
-	      attrs))))
-
 (defun odt-stylesdom:dom->file (file-name prettifyp dom)
   (cl-assert (eq 'office:document-styles (odt-dom-type dom)))
   (let ((coding-system-for-write 'utf-8))
     (write-region (concat "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 			  (odt-dom-to-xml-string dom nil prettifyp))
-		  nil file-name
-		  (not 'append)
-		  (not 'visit)
-		  (not 'lockname)
-		  'mustbenew)))
+		  nil file-name)))
 
 (defun odt-stylesdom:dom->style-nodes (dom)
   (odt-dom-map
@@ -229,9 +208,9 @@
 
 (defun odt-stylesdom:style-signature (node)
   (cl-assert (odt-dom-property node 'style:name))
-  (list (odt-dom-type node)
-	(odt-dom-property node 'style:name)
-	(odt-dom-property node 'style:family)))
+  (list (odt-dom-property node 'style:name)
+	(odt-dom-property node 'style:family)
+	(odt-dom-type node)))
 
 (defun odt-stylesdom:styles= (node1 node2)
   (equal (odt-stylesdom:style-signature node1)
@@ -254,6 +233,28 @@
 		  (setcar (cdr style2) (cadr shared-style1))
 		  (setcdr (cdr style2) (cddr shared-style1)))
 	     (dom-remove-node dom1 shared-style1))))
+
+(defun odt-dom:type->node (type dom)
+  (let ((nodes (odt-dom:type->nodes type dom)))
+    (when (cdr nodes)
+      (error "Multiple nodes of type `%s' in DOM.  Refusing to return a unique node" type))
+    (car nodes)))
+
+(defun odt-stylesdom:dom->add-nodes-to (to nodes dom)
+  (prog1 dom
+    (cl-loop with type = to
+	     with edited-node = (odt-dom:type->node type dom)
+	     for node in nodes
+	     do (dom-append-child edited-node node))))
+
+(defun odt-stylesdom:dom->office:styles+ (nodes dom)
+  (odt-stylesdom:dom->add-nodes-to 'office:styles nodes dom))
+
+(defun odt-stylesdom:dom->office:master-styles+ (nodes dom)
+  (odt-stylesdom:dom->add-nodes-to 'office:master-styles nodes dom))
+
+(defun odt-stylesdom:dom->office:automatic-styles+ (nodes dom)
+  (odt-stylesdom:dom->add-nodes-to 'office:automatic-styles nodes dom))
 
 (provide 'odt)
 ;;; odt.el ends here

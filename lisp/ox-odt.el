@@ -10115,8 +10115,8 @@ This function is used for prettifying XML files when user option
     (nxml-mode)
     (indent-region (point-min) (point-max))))
 
-(defun org-odt-yank-styles (&optional yank-method)
-  "Yank `current-kill', (presumably )a ODT (styles) XML, at point.
+(defun org-odt-yank-styles (&optional yank-method which-style xml-string)
+  "Yank `current-kill', (presumably) a ODT styles XML, at point.
 
 `current-kill' is assumed to be a XML string, most likely an XML
 string copied over from one of the component XML files (i.e.,
@@ -10196,7 +10196,27 @@ or
     to true.
 
 This command further prettifies the LibreOffice-prettified XML.
-See `org-odt-prettify-xml-buffer' for more information."
+See `org-odt-prettify-xml-buffer' for more information.
+
+In case of non-interactive use,
+
+XML-STRING specifies the string to be yanked.
+
+YANK-METHOD, a symbol, can be one of
+
+    - `use-keywords'
+    - `use-nxml-src-block' or
+    - `simple'
+
+WHICH-STYLE, a keyword, can be one of
+
+    - `:odt-extra-styles'
+    - `:odt-extra-automatic-styles'
+    - `:odt-master-styles'
+    - `:odt-automatic-styles'
+
+If you are yanking a style, rather than an arbitrary blob of XML,
+use the command `org-odt-insert-style-from-file'."
   (interactive "P")
   (let* ((yank-method-1
 	  (cond
@@ -10204,21 +10224,32 @@ See `org-odt-prettify-xml-buffer' for more information."
 	   ;; and insert style the prettified string devoid of any
 	   ;; style decorations.
 	   ((not (derived-mode-p 'org-mode)) 'simple)
-	   ((called-interactively-p 'any)
-	    (assoc-default yank-method
-			   '(
-			     ;; Without a prefix argument, insert
-			     ;; style using keywords
-			     (nil . use-keywords)
-			     ;; With a single prefix argument, insert
-			     ;; style using an `nxml-mode' src block
-			     ((4) . use-nxml-src-block)
-			     ;; With a double prefix argument, insert
-			     ;; the prettifed string devoid of any
-			     ;; style decorations.
-			     ((16) . simple))))
-	   (t (user-error "This function is for interactive use only"))))
-	 (text (or (and kill-ring (current-kill 0)) ""))
+	   (t
+	    (or (assoc-default yank-method
+			       '(
+                                 ;; YANK-METHOD is explicitly specified.
+                                 (use-keywords . use-keywords)
+                                 (use-nxml-src-block . use-nxml-src-block)
+                                 (simple . simple)
+
+                                 ;; YANK-METHOD is implicitly specified
+			         ;; using prefix argument.
+                                 
+                                 ;; Case 1: Without a prefix argument, insert
+			         ;; style using keywords
+			         (nil . use-keywords)
+			         ;; Case 2: With a single prefix argument, insert
+			         ;; style using an `nxml-mode' src block
+			         ((4) . use-nxml-src-block)
+			         ;; Case 3: With a double prefix argument, insert
+			         ;; the prettifed string devoid of any
+			         ;; style decorations.
+			         ((16) . simple)))
+                'simple))))
+	 (text (or xml-string
+                   (when kill-ring
+                     (current-kill 0))
+                   ""))
 	 (start (point))
 	 (prettified-text
 	  ;; Prettify XML
@@ -10264,11 +10295,18 @@ See `org-odt-prettify-xml-buffer' for more information."
 			  (point))
 	  (point))
 	 (string-rectangle start (line-beginning-position)
-			   (completing-read "Prefix: "
-					    '("#+odt_extra_styles: "
-					      "#+odt_extra_automatic_styles: "
-					      "#+odt_master_styles: "
-					      "#+odt_automatic_styles: ")))
+			   (let* ((choices '(
+					     (:odt-extra-styles            . "#+odt_extra_styles: ")
+					     (:odt-extra-automatic-styles  . "#+odt_extra_automatic_styles: ")
+					     (:odt-master-styles           . "#+odt_master_styles: ")
+					     (:odt-automatic-styles        . "#+odt_automatic_styles: ")
+                                             )))
+			     (cond
+			      (which-style
+			       (alist-get which-style choices))
+			      (t
+			       (completing-read "Prefix: "
+						(mapcar #'cdr choices))))))
 	 (goto-char (line-end-position))
 	 (insert "\n")))
       (use-nxml-src-block
@@ -10282,13 +10320,98 @@ See `org-odt-prettify-xml-buffer' for more information."
 	   (insert prettified-and-pruned-text)
 	   (insert "\n#+end_src\n\n"))
 	 (insert (format "\n#+ATTR_ODT: :target \"%s\"\n"
-			 (completing-read "Target: "
-					  '("extra_styles"
-					    "extra_automatic_styles"
-					    "master_styles"
-					    "automatic_styles"))))
+			 (let* ((choices '(
+					   (:odt-extra-styles            . "extra_styles")
+					   (:odt-extra-automatic-styles  . "extra_automatic_styles")
+					   (:odt-master-styles           . "master_styles")
+					   (:odt-automatic-styles        . "automatic_styles")
+                                           )))
+			   (cond
+			    (which-style
+			     (alist-get which-style choices))
+			    (t
+			     (completing-read "Target: "
+					      (mapcar #'cdr choices)))))))
 	 (goto-char p)))
       (t (user-error "This shouldn't happen")))))
+
+(defun org-odt-insert-style-from-file (&optional query-for-file)
+  "Insert a XML definition of a style from `OrgOdtStyles.xml'.
+
+With a prefix argument QUERY-FOR-FILE, prompt for the name of the
+XML file.  At the prompt, you can use the
+\\<minibuffer-local-map>\\[next-history-element] to pick one of
+the following XML files that come with this exporter
+
+    [ODT]
+
+      - OrgOdtStyles.xml
+      - OrgOdtContentTemplate.xml
+
+    [ODS]
+
+      - ods/styles.xml
+      - ods/content.xml
+
+See `org-odt-styles-dir' and its subdirectories for the list of
+XML files that ship with this exporter.
+
+Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
+  (interactive "P")
+  (let* ((factory-styles
+	  (cl-loop for backend in '(odt ods)
+		   appending (cl-loop for which-file in
+				      '(:styles-file :content-template-file)
+				      collect (org-odt-get-backend-property
+					       backend which-file))))
+	 (styles-file
+	  (cond
+	   (query-for-file
+	    (read-file-name "OD XML File name:" nil factory-styles
+			    nil nil nil))
+	   (t (org-odt-get-backend-property 'odt :styles-file))))
+	 (dom (odt-dom:file->dom styles-file))
+	 (choices
+          (progn 
+            (unless dom
+              (user-error "File `%s' doesn't look like OpenDocument XML file" styles-file))
+	    (cl-loop with nodes = (odt-stylesdom:dom->style-nodes dom)
+		     for node in nodes
+		     for signature = (odt-stylesdom:style-signature node)
+		     for qualifier = (format "%-30s [%s] "
+					     (nth 0 signature)
+					     (or (nth 1 signature)
+					         (nth 2 signature)))
+		     collect (cons qualifier node))))
+	 (choice (progn
+                   (unless choices
+                     (user-error "No OD styles in file `%s'" styles-file))
+                   (completing-read "Style name: " choices)))
+	 (node (assoc-default choice choices))
+	 (parent (dom-parent dom node))
+	 (parent-type (odt-dom-type parent))
+	 (which-style (alist-get parent-type
+				 (pcase (car dom)
+				   (`office:document-styles
+				    '(
+				      (office:styles            . :odt-extra-styles)
+				      (office:automatic-styles  . :odt-extra-automatic-styles)
+				      (office:master-styles     . :odt-master-styles)
+				      (office:automatic-styles  . :odt-automatic-styles)
+                                      ))
+				   (`office:document-content
+				    '(
+                                      (office:automatic-styles  . :odt-automatic-styles)
+                                      ))
+				   (`office:document
+				    '(
+				      (office:styles            . :odt-extra-styles)
+				      (office:automatic-styles  . :odt-extra-automatic-styles)
+				      (office:master-styles     . :odt-master-styles)
+				      (office:automatic-styles  . :odt-automatic-styles)
+                                      )))))
+	 (xml-string (odt-dom-to-xml-string node)))
+    (org-odt-yank-styles 'use-nxml-src-block which-style xml-string)))
 
 ;;; Publishing
 
