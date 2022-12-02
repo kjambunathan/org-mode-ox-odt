@@ -3855,6 +3855,8 @@ holding export options."
   ;; Write the default LANGUAGE for body text.
   (org-odt--lisp-to-xml
    (cond
+    ;; Inject the "Standard" Paragraph style. This style inherits from
+    ;; "OrgUser" paragraph style.
     ((not (memq 'language org-odt-experimental-features))
      '(style:style
        ((style:name . "Standard")
@@ -3867,7 +3869,10 @@ holding export options."
 		    ;; (plist-get info :language)
 		    lang-or-locale)))
 	(when script-type
-	  `((style:style
+	  `(
+	    ;; Inject "OrgLocale" Paragraph style.  This style
+	    ;; inherits from "OrgUser" paragraph style.
+	    (style:style
 	     ((style:name . "OrgLocale")
 	      (style:family . "paragraph")
 	      (style:parent-style-name . "OrgUser"))
@@ -3882,12 +3887,29 @@ holding export options."
 	       ;; CTL script
 	       (style:language-complex . ,(if (eq script-type 'ctl) lang "none"))
 	       (style:country-complex . ,(if (eq script-type 'ctl) country "none")))))
+	    ;; Inject "Standard" Paragraph style.  This style inherits
+	    ;; from "OrgLocale" paragraph style.
 	    (style:style
 	     ((style:name . "Standard")
 	      (style:family . "paragraph")
 	      (style:parent-style-name . "OrgLocale"))))))
       "")))
-   nil 'prettify))
+   nil 'prettify)
+
+  ;; The extra styles supercede the above auto-generated extra styles -- Standard and OrgLocale.
+  ;; 
+  ;; This way, if the user has defined the `Standard' style in ODT_EXTRA_STYLES then that is what is
+  ;; effective in the final exported document.  What this means is that when the EXPERIMENTAL
+  ;; `language' feature is ON, the re-definition of `Standard' via `OrgLocale' inserted by the
+  ;; exporter gets overridden.  This behavour is deliberate so that existing org files continue
+  ;; to function in the same way as they were well-before the availability of the EXPERIMENTAL
+  ;; `language' feature.
+  ;;
+  ;; A WORD OF ADVICE TO THE USER: Don't define `Standard' style in ODT_EXTRA_STYLES.  Instead
+  ;; define the style `OrgUser'.  This way you can enable have best of both worlds: custom
+  ;; inline definition of styles, AND setting up of locale according to LANGUAGE keyword in the
+  ;; document.
+  )
 
 (defun org-odt-write-styles-file (_contents _backend info)
   (let* ((styles-file
@@ -3945,23 +3967,95 @@ holding export options."
 	   (org-odt--copy-image-file info full-path target-path))))
       (_ (error "Styles file is invalid: %s" styles-file)))
 
-    ;; Collect auto-generated styles.
-    ;; Auto-generated styles are factory styles that are
-    ;; programmatically generated, and injected in to `OrgOdtStyles.xml'
-    ;; during export.
+    ;; The ODT exporter the styles are arranged in 3-tiers, and a
+    ;; style name may be introduced at any of the tiers.
+    ;;
+    ;; A lower-numbered tier is of low priority, and thus a style
+    ;; definition introduced at a lower tier is may be overridden by a
+    ;; style definition with the same name name at a higher tier.
+    ;;
+    ;; Here is a quick overview of the different tiers and thier
+    ;; functions.
+    ;;
+    ;; 1) Tier-1 :: Factory styles.
+    ;;
+    ;;    These are of two types
+    ;;
+    ;;    - Statically-defined styles :: These are the styles that
+    ;;      come with factory-shipped styles in `org-odt-styles-dir'.
+    ;;
+    ;;    - Programmatically generated styles :: These styles are
+    ;;      programmatically generated, and for all purposes is
+    ;;      considered as part of factory styles.
+    ;;
+    ;;      There are two types of these styles
+    ;;
+    ;;      1. Htmlfontify styles :: These are the styles used for
+    ;;         fontifying source blocks.  It is impossibe to define
+    ;;         these styles upfront--the name and number depends on
+    ;;         the src block modes in use, and their definition
+    ;;         depends on the theme that the user desires for the
+    ;;         exported document.  (Note that the theme of the
+    ;;         exported document could be very different from the
+    ;;         Emacs custom theme used for editing.)
+    ;;
+    ;;      2. All other programmatically-generated styles ::
+    ;;         Specifically paragraph styles generated for Table
+    ;;         cells.  Even though these styles can be defined
+    ;;         upfront, they are too numerous, and cumbersome to
+    ;;         generate manually. The "combinatorial" and
+    ;;         "ritualistic" nature of these styles imply that these
+    ;;         styles are best generated programmatically, as opposed
+    ;;         to manually.
+    ;;
+    ;; 2) Tier-2 :: Styles specified via user-specified XML files.
+    ;;
+    ;;    These are the styles that occur in the following files, or
+    ;;    their other counterparts.
+    ;;
+    ;;    - #+odt_styles_file:
+    ;;    - #+odt_content_template_file:
+    ;;
+    ;; 3) Tier-3 :: Styles specified via following keywords, or their
+    ;;    other counterparts.
+    ;;
+    ;;    - #+odt_extra_styles:
+    ;;    - #+odt_extra_automatic_styles:
+    ;;    - #+odt_master_styles:
+    ;;    - #+odt_automatic_styles:
+    ;;
+    ;; As mentioned earlier, a style defined in a lower-numbered tier,
+    ;; gets overridden by the style name of the same name defined in a
+    ;; higher-numbered tier.
+    ;;
+    ;; We want the Htmlfontify styles to be completely overridden by
+    ;; other styles or not overridden at all.  That is, we want no
+    ;; partial overlap between the Htmlfontify styles and rest of the
+    ;; styles.  This is because a partial overlap most likely means
+    ;; inconsistent theming in final ODT document.  Inconsitent
+    ;; theming can occur if a user happened to introduce a src block
+    ;; of new type in to the document (long after the original styles
+    ;; were defined).  In other words, consistent theming in a final
+    ;; exported document, necessitate that Htmlfontify styles go
+    ;; through additional checks.
+
+    ;; Gather Hfy styles.
+    (plist-put info :odt-hfy-styles
+	       ;; Custom styles for source blocks
+	       ;; These STYLES are used for colorizing of source blocks, and are
+	       ;; collected as part of `org-odt-hfy-face-to-css' callbacks.
+	       (concat "\n<!-- BEGIN: Org Htmlfontify Styles -->\n"
+		       (mapconcat #'identity
+				  (cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
+					   when (cddr style)
+					   collect it)
+				  "\n")
+		       "\n<!-- END: Org Htmlfontify Styles -->\n"))
+
+    ;; Gather Auto-generated extra styles.
     (plist-put info :odt-auto-generated-extra-styles
                (mapconcat #'identity
 	                  (list
-		           ;; Custom styles for source blocks
-		           ;; These STYLES are used for colorizing of source blocks, and are
-		           ;; collected as part of `org-odt-hfy-face-to-css' callbacks.
-		           (concat "\n<!-- BEGIN: Org Htmlfontify Styles -->\n"
-			           (mapconcat #'identity
-                                              (cl-loop for style in (plist-get info :odt-hfy-user-sheet-assoc)
-				                       when (cddr style)
-				                       collect it)
-                                              "\n")
-			           "\n<!-- END: Org Htmlfontify Styles -->\n")
 		           ;; Write the default LANGUAGE for body text.
 		           (org-odt-adjust-styles-for-locale (plist-get info :language))
 		           ;; Write extra styles.
@@ -3971,71 +4065,113 @@ holding export options."
 			              "\n"))
 	                  "\n"))
 
-    ;; create a manifest entry for styles.xml
+    ;; Create a manifest entry for styles.xml
     (org-odt-create-manifest-file-entry info "text/xml" "styles.xml")
 
-    ;; Update styles.xml
+    ;; Retrieve Styles.xml as DOM.
+    (plist-put info :odt-styles-dom
+	       (odt-dom:file->dom
+		(concat (plist-get info :odt-zip-dir) "styles.xml")))
+
+    ;; Update styles.xml.
+    ;;
+    ;; - Specifically de-duplicate the style name defintions
+    ;; - Modify outline numbering style
+    
+    ;; The MINUS and PLUS operations in the comments below are Set
+    ;; Opertaions.
+    
+    ;; Styles.xml <- (Auto-generated styles - Styles.xml) + Styles.xml
+    (let* (;; DOM1 <- Auto-generated styles (= Locale & Table Paragraph styles)
+           (dom1 (odt-xml-string-to-dom
+                  (odt-dom-to-xml-string
+                   (list 'office:styles nil
+			 (plist-get info :odt-auto-generated-extra-styles)))))
+           ;; DOM2 <- Styles.xml
+	   (dom2 (plist-get info :odt-styles-dom)))
+      ;; Auto-generated styles <- Auto-generated styles - Styles.xml
+      (odt-stylesdom:trim-dom1 dom1 dom2)
+      ;; Styles.xml <- Styles.xml + whatever is left in  Auto-generated styles.
+      (let ((children (dom-children dom1)))
+	(odt-stylesdom:dom->add-nodes-to 'office:styles children dom2)))
+
+    ;; Styles.xml <- (Styles.xml - Extra styles) + Extra styles
+    ;; Styles.xml <- (Styles.xml - Extra Automatic styles) + Extra Automatic styles
+    ;; Styles.xml <- (Styles.xml - Master styles) + Master Styles.
+    (cl-loop for (subdom . style-keyword) in '((office:styles . :odt-extra-styles)
+					       (office:automatic-styles . :odt-extra-automatic-styles)
+					       (office:master-styles . :odt-master-styles))
+	     ;; DOM1 <- Styles.xml
+	     for dom1 = (plist-get info :odt-styles-dom)
+	     for style-fragment = (plist-get info style-keyword)
+	     ;; DOM2 <- Extra styles,
+	     ;; DOM2 <- Extra Automatic Styles
+	     ;; DOM2 <- Master styles.
+	     for dom2 = (when style-fragment
+			  (odt-xml-string-to-dom
+			   (odt-dom-to-xml-string
+			    (list subdom nil style-fragment))))
+	     when dom2
+	     do
+	     ;; Styles.xml <- Styles.xml - Extra styles etc.
+	     (odt-stylesdom:trim-dom1 dom1 dom2)
+	     ;; Styles.xml <- Styles.xml + all of Extra styles.
+	     (let ((children (dom-children dom2)))
+	       (odt-stylesdom:dom->add-nodes-to subdom children dom1)))
+
+    ;; Hfy Styles <- Hfy Styles - Styles.xml 
+    (let* (;; DOM1 <- Hfy styles
+	   (dom1 (odt-xml-string-to-dom
+		  (odt-dom-to-xml-string
+		   (list 'office:styles nil
+			 (plist-get info :odt-hfy-styles)))))
+	   ;; DOM2 <- Styles.xml
+	   (dom2 (plist-get info :odt-styles-dom))
+	   (styles1-before (odt-stylesdom:dom->style-names dom1)))
+      (odt-stylesdom:trim-dom1 dom1 dom2)
+      ;; Check for inconsistent theming.
+      (let* ((styles1-after (odt-stylesdom:dom->style-names dom1))
+	     (nstyles-before (length styles1-before))
+	     (nstyles-after (length styles1-after)))
+	(unless (or
+		 ;; All Hfy styles are overridden elsewhere
+		 (zerop nstyles-after)
+		 ;; All Hfy styles are generated by us; User hasn't
+		 ;; specified any of these styles.
+		 (= nstyles-after nstyles-before))
+	  (user-error "You have defined only %s of %s Htmlfontify styles.
+Define the following themes to avoid inconsistent theming of source blocks\n\n%S"
+		      nstyles-after nstyles-before
+		      styles1-after
+		      (dom-children dom1))))
+      ;; Styles.xml <- Styles.xml + whatever is left in Hfy Styles
+      (let ((children (dom-children dom1)))
+	(odt-stylesdom:dom->add-nodes-to 'office:styles children dom2)))
+
+    ;; Update styles.xml - Take care of outline numbering
+    ;; Outline numbering is retained only upto LEVEL.
+    ;; To disable outline numbering pass a LEVEL of 0.
+    (cl-loop with sec-num = (plist-get info :section-numbers)
+	       with dom = (plist-get info :odt-styles-dom)
+	       with outline-style = (odt-dom:type->node 'text:outline-style dom)
+	       for outline-level-style in (dom-children outline-style)
+	       for level = (string-to-number (odt-dom-property outline-level-style 'text:level))
+	       when (cond
+                     ((wholenump sec-num)
+                      (> level sec-num))
+	             (t (not sec-num)))
+	       do (setcar (cdr outline-level-style)
+		          (list (cons 'text:level (number-to-string level))
+			        (cons 'style:num-format "")))
+	       finally return outline-style)
+    
+    ;; Styles.xml has no dupicate styles.  Persist it.
+    (odt-stylesdom:dom->file (concat (plist-get info :odt-zip-dir) "styles.xml") 'prettify
+                             (plist-get info :odt-styles-dom))
+    
     (with-temp-buffer
       (insert-file-contents (concat (plist-get info :odt-zip-dir) "styles.xml"))
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:master-styles>" nil t)
-	(goto-char (match-beginning 0)))
-
-      ;; Write master styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-master-styles)) ""))
       
-      ;; Position the cursor.
-      ;; (goto-char (point-min))
-      ;; (when (re-search-forward "</office:automatic-styles>" nil t)
-      ;; 	(goto-char (match-beginning 0)))
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      ;; When there are duplicate page layouts with same name defined,
-      ;; LibreOffice seems to go with the first definition it
-      ;; encounters.  So, inserting at the beginning of automatic
-      ;; styles section, gives us the flexibility of redefining page
-      ;; layouts using '#+ODT_EXTRA_AUTOMATIC_STYLES: ...'.  You can
-      ;; see this in action in doc/org-odt-manual/list-table-1.org etc
-      ;; where I change the page height to create an image file that
-      ;; is aesthetically pleasing for inclusion in the manuals.
-      (when (re-search-forward "<office:automatic-styles>" nil t)
-	(goto-char (match-end 0)))
-
-      ;; Write automatic styles.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-automatic-styles)) ""))
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0)))
-      ;; Write auto-generated extra styles.
-      (insert "\n" (plist-get info :odt-auto-generated-extra-styles) "\n")
-
-      ;; Position the cursor.
-      (goto-char (point-min))
-      (when (re-search-forward "</office:styles>" nil t)
-	(goto-char (match-beginning 0)))
-      ;; Write extra styles.
-      ;;
-      ;; Ensure that the extra styles come after the auto-generated extra styles.
-      ;; This way, if the user has defined the `Standard' style in ODT_EXTRA_STYLES then that is what is
-      ;; effective in the final exported document.  What this means is that when the EXPERIMENTAL
-      ;; `language' feature is ON, the re-definition of `Standard' via `OrgLocale' inserted by the
-      ;; exporter gets overridden.  This behavour is deliberate so that existing org files continue
-      ;; to function in the same way as they were well-before the availability of the EXPERIMENTAL
-      ;; `language' feature.
-      ;;
-      ;; A WORD OF ADVICE TO THE USER: Don't define `Standard' style in ODT_EXTRA_STYLES.  Instead
-      ;; define the style `OrgUser'.  This way you can enable have best of both worlds: custom
-      ;; inline definition of styles, AND setting up of locale according to LANGUAGE keyword in the
-      ;; document.
-      (insert (or (org-element-normalize-string (plist-get info :odt-extra-styles)) ""))
-
-      ;; Update styles.xml - take care of outline numbering
-
       ;; Don't make automatic backup of styles.xml file. This setting
       ;; prevents the backed-up styles.xml file from being zipped in to
       ;; odt file. This is more of a hackish fix. Better alternative
@@ -4047,19 +4183,6 @@ holding export options."
       ;; the resulting odt file.
       (setq-local backup-inhibited t)
 
-      ;; Outline numbering is retained only upto LEVEL.
-      ;; To disable outline numbering pass a LEVEL of 0.
-
-      (goto-char (point-min))
-      (let ((regex
-	     "<text:outline-level-style\\([^>]*\\)text:level=\"\\([^\"]*\\)\"\\([^>]*\\)>")
-	    (replacement
-	     "<text:outline-level-style\\1text:level=\"\\2\" style:num-format=\"\">"))
-	(while (re-search-forward regex nil t)
-	  (unless (let ((sec-num (plist-get info :section-numbers))
-			(level (string-to-number (match-string 2))))
-		    (if (wholenump sec-num) (<= level sec-num) sec-num))
-	    (replace-match replacement t nil))))
       ;; Prettify buffer contents, if needed
       (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Write styles.xml

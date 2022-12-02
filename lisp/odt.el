@@ -42,6 +42,8 @@
 		       " "))))
     (setq depth (or depth 0))
     (cond
+     ((null dom)
+      "")
      ((stringp dom)
       dom)
      ((symbolp (car dom))
@@ -143,13 +145,25 @@
 			  results))))
 		  dom))
 
+;;;; DOM: Retrieve Nodes of specific type
+
 (defun odt-dom:type->nodes (type dom)
   (odt-dom-map (lambda (node)
 		 (when (eq type (odt-dom-type node))
 		   node))
 	       dom))
 
+;;;; DOM: Retrieve a unique Node
+
+(defun odt-dom:type->node (type dom)
+  (let ((nodes (odt-dom:type->nodes type dom)))
+    (when (cdr nodes)
+      (error "Multiple nodes of type `%s' in DOM.  Refusing to return a unique node" type))
+    (car nodes)))
+
 ;;; ODT DOM
+
+;;;; File <-> DOM
 
 (defun odt-dom:file->dom (file-name)
   (with-temp-buffer
@@ -183,21 +197,20 @@
 							     (read value))))))))))))
 
 (defun odt-dom:dom->file (file-name prettifyp dom)
-  (with-temp-buffer
-    (insert (odt-dom-to-xml-string dom nil prettifyp))
-    (write-region nil nil (or file-name
-			      (make-temp-file "odt-rewritten-styles-" nil ".xml")))))
-
-;;; Styles
-
-;;;; Styles.xml <-> DOM
-
-(defun odt-stylesdom:dom->file (file-name prettifyp dom)
-  (cl-assert (eq 'office:document-styles (odt-dom-type dom)))
   (let ((coding-system-for-write 'utf-8))
     (write-region (concat "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 			  (odt-dom-to-xml-string dom nil prettifyp))
 		  nil file-name)))
+
+;;; Styles
+
+;;;; DOM -> File
+
+(defun odt-stylesdom:dom->file (file-name prettifyp dom)
+  (cl-assert (eq 'office:document-styles (odt-dom-type dom)))
+  (odt-dom:dom->file file-name prettifyp dom))
+
+;;;; Get Style Nodes
 
 (defun odt-stylesdom:dom->style-nodes (dom)
   (odt-dom-map
@@ -205,6 +218,15 @@
      (when-let* ((style-name (odt-dom-property node 'style:name)))
        node))
    dom))
+
+(defun odt-stylesdom:dom->style-names (dom)
+  (odt-dom-map
+   (lambda (node)
+     (when-let* ((style-name (odt-dom-property node 'style:name)))
+       style-name))
+   dom))
+
+;;;; Compare two Style nodes
 
 (defun odt-stylesdom:style-signature (node)
   (cl-assert (odt-dom-property node 'style:name))
@@ -216,7 +238,21 @@
   (equal (odt-stylesdom:style-signature node1)
 	 (odt-stylesdom:style-signature node2)))
 
-(defun odt-stylesdom:trim-dom1 (dom1 dom2 &optional rewrite-dom2)
+;;;; Diff two Style Trees
+
+(defun odt-stylesdom:trim-dom1 (dom1 dom2)
+  ;; DOM1 <- DOM1 - DOM2;  MINUS here is Set Difference
+  ;; DOM2 <- DOM2       ;  DOM2 is left untouched
+
+  ;; Modification of DOM1 happens by side-effects. This function
+  ;; doesn't return anything, and so it is assumed that the root node
+  ;; of DOM1 stays intact;
+
+  ;; Conceptually DOM1 is the low-priority "base" styles, and
+  ;; DOM2 is the high-priority overlay.
+  ;;
+  ;; At the end of this call DOM1 and DOM2 are disjoint, and share no
+  ;; styles between them.  Together they define the "effective" style.
   (when (and dom2 dom1)
     (cl-loop with styles2 = (odt-stylesdom:dom->style-nodes dom2)
 	     with styles1 = (odt-stylesdom:dom->style-nodes dom1)
@@ -227,34 +263,17 @@
 				      style1))
 				  styles1)
 	     when shared-style1
-	     do (when rewrite-dom2
-		  ;; Overwrite style2 with replacement
-		  (setcar style2 (car shared-style1))
-		  (setcar (cdr style2) (cadr shared-style1))
-		  (setcdr (cdr style2) (cddr shared-style1)))
-	     (dom-remove-node dom1 shared-style1))))
+	     do (dom-remove-node dom1 shared-style1))))
 
-(defun odt-dom:type->node (type dom)
-  (let ((nodes (odt-dom:type->nodes type dom)))
-    (when (cdr nodes)
-      (error "Multiple nodes of type `%s' in DOM.  Refusing to return a unique node" type))
-    (car nodes)))
+;;;; Merge two Trees
 
 (defun odt-stylesdom:dom->add-nodes-to (to nodes dom)
+  (cl-assert dom)
   (prog1 dom
     (cl-loop with type = to
 	     with edited-node = (odt-dom:type->node type dom)
 	     for node in nodes
 	     do (dom-append-child edited-node node))))
-
-(defun odt-stylesdom:dom->office:styles+ (nodes dom)
-  (odt-stylesdom:dom->add-nodes-to 'office:styles nodes dom))
-
-(defun odt-stylesdom:dom->office:master-styles+ (nodes dom)
-  (odt-stylesdom:dom->add-nodes-to 'office:master-styles nodes dom))
-
-(defun odt-stylesdom:dom->office:automatic-styles+ (nodes dom)
-  (odt-stylesdom:dom->add-nodes-to 'office:automatic-styles nodes dom))
 
 (provide 'odt)
 ;;; odt.el ends here
