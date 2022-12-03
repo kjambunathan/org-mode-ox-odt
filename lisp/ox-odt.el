@@ -10461,8 +10461,17 @@ use the command `org-odt-insert-style-from-file'."
 (defun org-odt-insert-style-from-file (&optional query-for-file)
   "Insert a XML definition of a style from `OrgOdtStyles.xml'.
 
-With a prefix argument QUERY-FOR-FILE, prompt for the name of the
-XML file.  At the prompt, you can use the
+With a prefix argument QUERY-FOR-FILE, prompt for the name of a
+XML / ODT / OTT file.
+
+If you pick an XML file, ensure that it is a OpenDocument XML
+styles file, or a content file.
+
+If you pick an ODT / OTT file, you will be queried once again
+prompted to choose one among the `styles.xml' or `content.xml'
+contained within that ODT / OTT file.
+
+At the prompt, you can use the
 \\<minibuffer-local-map>\\[next-history-element] to pick one of
 the following XML files that come with this exporter
 
@@ -10487,13 +10496,31 @@ Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
 				      '(:styles-file :content-template-file)
 				      collect (org-odt-get-backend-property
 					       backend which-file))))
+         (zip-dir nil)
 	 (styles-file
 	  (cond
 	   (query-for-file
-	    (read-file-name "OD XML File name:" nil factory-styles
-			    nil nil nil))
+	    (let* ((styles-file (read-file-name "OD XML File name:" nil factory-styles
+						nil nil nil))
+		   (styles-file-type (file-name-extension styles-file)))
+	      (pcase styles-file-type
+		((or "odt" "ott")
+		 (setq zip-dir (file-name-as-directory (make-temp-file "odt-yank-styles-" t)))
+		 (let* ((zipfile styles-file)
+			(members '("styles.xml" "content.xml")))
+		   (org-odt--zip-extract zipfile members zip-dir)
+		   (read-file-name "OD XML File name:" zip-dir
+				   (mapcar (lambda (m)
+					     (expand-file-name m zip-dir))
+					   members)
+				   t nil nil)))
+		("xml"
+		 styles-file)
+		(_ (error "Styles file is invalid: %s" styles-file)))))
 	   (t (org-odt-get-backend-property 'odt :styles-file))))
-	 (dom (odt-dom:file->dom styles-file))
+	 (dom (unwind-protect (odt-dom:file->dom styles-file)
+                (when zip-dir
+                  (delete-directory zip-dir t nil))))
 	 (choices
           (progn 
             (unless dom
