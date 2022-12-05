@@ -4155,18 +4155,18 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
     ;; Outline numbering is retained only upto LEVEL.
     ;; To disable outline numbering pass a LEVEL of 0.
     (cl-loop with sec-num = (plist-get info :section-numbers)
-	       with dom = (plist-get info :odt-styles-dom)
-	       with outline-style = (odt-dom:type->node 'text:outline-style dom)
-	       for outline-level-style in (dom-children outline-style)
-	       for level = (string-to-number (odt-dom-property outline-level-style 'text:level))
-	       when (cond
-                     ((wholenump sec-num)
-                      (> level sec-num))
-	             (t (not sec-num)))
-	       do (setcar (cdr outline-level-style)
-		          (list (cons 'text:level (number-to-string level))
-			        (cons 'style:num-format "")))
-	       finally return outline-style)
+	     with dom = (plist-get info :odt-styles-dom)
+	     with outline-style = (odt-dom:type->node 'text:outline-style dom)
+	     for outline-level-style in (dom-children outline-style)
+	     for level = (string-to-number (odt-dom-property outline-level-style 'text:level))
+	     when (cond
+		   ((wholenump sec-num)
+		    (> level sec-num))
+		   (t (not sec-num)))
+	     do (setcar (cdr outline-level-style)
+			(list (cons 'text:level (number-to-string level))
+			      (cons 'style:num-format "")))
+	     finally return outline-style)
 
     ;; Create/Modify/Delete page header and footers introduced by
     ;; `header' and `footer' special blocks.
@@ -4189,7 +4189,7 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 				   new-plist)
 	     do (cl-loop for what in '(style:footer style:header)
 			 for prop in '(:footer-contents :header-contents)
-			 for contents = (plist-get new-plist prop)
+			 for contents = (plist-get modified-plist prop)
 			 when contents
 			 do (dom-append-child master-page
 					      (list what nil contents))))    
