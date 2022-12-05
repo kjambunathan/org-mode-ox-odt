@@ -178,7 +178,10 @@
     ;; exported document are created here.
     (:odt-zip-dir nil nil (let ((dir (file-name-as-directory (make-temp-file "odt-" t))))
 			    (prog1 dir (message "ODT Zip Dir is %s" dir))))
-    (:odt-hfy-user-sheet-assoc nil nil nil)))
+    (:odt-hfy-user-sheet-assoc nil nil nil)
+    ;; See `header' and `footer' special blocks in
+    ;; `org-odt-special-block'.
+    (:odt-page-style-alist nil nil nil)))
 
 
 ;;; Dependencies
@@ -4164,6 +4167,32 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 		          (list (cons 'text:level (number-to-string level))
 			        (cons 'style:num-format "")))
 	       finally return outline-style)
+
+    ;; Create/Modify/Delete page header and footers introduced by
+    ;; `header' and `footer' special blocks.
+    (cl-loop with dom = (plist-get info :odt-styles-dom)
+	     for (page-style-name . new-plist) in (plist-get info :odt-page-style-alist)
+	     for master-page = (car (odt-dom-map
+				     (lambda (node)
+				       (when (and (eq (odt-dom-type node) 'style:master-page)
+						  (string= page-style-name (odt-dom-property node 'style:name)))
+					 node))
+				     (odt-dom:type->node
+				      'office:master-styles dom)))
+	     for modified-plist = (org-combine-plists
+				   (cl-loop for what in '(style:footer style:header)
+					    for prop in '(:footer-contents :header-contents)
+					    for node = (assq what (dom-children master-page))
+					    when node
+					    do (dom-remove-node master-page node)
+					    append (list prop node))
+				   new-plist)
+	     do (cl-loop for what in '(style:footer style:header)
+			 for prop in '(:footer-contents :header-contents)
+			 for contents = (plist-get new-plist prop)
+			 when contents
+			 do (dom-append-child master-page
+					      (list what nil contents))))    
     
     ;; Styles.xml has no dupicate styles.  Persist it.
     (odt-stylesdom:dom->file (concat (plist-get info :odt-zip-dir) "styles.xml") 'prettify
@@ -7024,6 +7053,56 @@ holding contextual information."
 	;;  took care of all the formalities.  Nothing more to do.
 	contents)
        (t (org-odt-text:section special-block contents info))))
+     ;; Headers and Footers
+     ;;
+     ;; You can customize page headers and footers as follows.
+     ;;
+     ;; #+ATTR_ODT: :page-style "Standard"
+     ;; #+begin_header
+     ;;     #+ATTR_ODT: :style "Header"
+     ;;     {{{ODTTab}}}{{{ODTTitle}}}{{{ODTTab}}}
+     ;; #+end_header
+     ;;
+     ;; #+ATTR_ODT: :page-style "Standard"
+     ;; #+begin_footer
+     ;;     #+ATTR_ODT: :style "Footer"
+     ;;     {{{ODTTab}}}{{{ODTPageNumber}}} of {{{ODTPageCount}}}{{{ODTTab}}}
+     ;; #+end_footer
+     ;;
+     ;; Note that header and footer blocks allow /any/ Org content.
+     ;; Specifically, it can contain images (think, company logo) and
+     ;; a table (think, table with custom Document Metadata fields
+     ;; like the Document Owner, the Document Title and Version etc.)
+     ;;
+     ;; If you want to remove footer (or header) use an empty block like so
+     ;;
+     ;; #+ATTR_ODT: :page-style "Standard"
+     ;; #+begin_footer
+     ;; #+end_footer
+
+     ;; Header
+     ((string= type "header")
+      (prog1 nil
+	(let* ((page-style (or (org-odt--read-attribute special-block :page-style)
+			       "Standard"))
+	       (alist (plist-get info :odt-page-style-alist))
+	       (entry (assoc-string page-style alist)))
+          (if entry
+              (plist-put (cdr entry) :header-contents contents)
+            (push (list page-style :header-contents contents) alist))
+	  (plist-put info :odt-page-style-alist alist))))
+     ;; Footer
+     ((string= type "footer")
+      (prog1 nil
+	(let* ((page-style (or (org-odt--read-attribute special-block :page-style)
+			       "Standard"))
+	       (alist (plist-get info :odt-page-style-alist))
+	       (entry (assoc-string page-style alist)))
+          (if entry
+              (plist-put (cdr entry) :footer-contents contents)
+            (push (list page-style :footer-contents contents) alist))
+	  (plist-put info :odt-page-style-alist alist))))
+     
      ;; Textbox.
      ((string= type "textbox")
       ;; Textboxes an be used for centering tables etc horizontally
