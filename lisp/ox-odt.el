@@ -10418,7 +10418,7 @@ WHICH-STYLE, a keyword, can be one of
     - `:odt-automatic-styles'
 
 If you are yanking a style, rather than an arbitrary blob of XML,
-use the command `org-odt-insert-style-from-file'."
+use the command `org-odt-insert-style-name-or-style-definition-from-file'."
   (interactive "P")
   (let* ((yank-method-1
 	  (cond
@@ -10537,11 +10537,19 @@ use the command `org-odt-insert-style-from-file'."
 	 (goto-char p)))
       (t (user-error "This shouldn't happen")))))
 
-(defun org-odt-insert-style-from-file (&optional query-for-file)
-  "Insert a XML definition of a style from `OrgOdtStyles.xml'.
+(defun org-odt-insert-style-name-or-style-definition-from-file
+    (&optional query-for-file)
+  "Insert a style name or the XML definition of a style from `OrgOdtStyles.xml'.
 
-With a prefix argument QUERY-FOR-FILE, prompt for the name of a
-XML / ODT / OTT file.
+With a single prefix argument prompt for the name of a XML / ODT
+/ OTT file, and insert the XML definition for the style.  See
+`org-odt-yank-styles'.
+
+With a double prefix argument prompt for the name of a XML / ODT
+/ OTT file, and insert the name---as opposed to the XML
+definition---of a defined style.  Use this feature, if you want
+to plug-in a style name in the `:style', `:page-style' property
+of an `#+ATTR_ODT: ...' line.
 
 If you pick an XML file, ensure that it is a OpenDocument XML
 styles file, or a content file.
@@ -10569,13 +10577,20 @@ XML files that ship with this exporter.
 
 Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
   (interactive "P")
-  (let* ((factory-styles
+  (let* ((insert-what (or (assoc-default query-for-file
+					 '((nil . style-definition)
+					   ((4) . style-definition)
+					   ((16) . style-name)
+					   (style-definition . style-definition)
+					   (style-name . style-name)))
+			  'style-definition))
+	 (factory-styles
 	  (cl-loop for backend in '(odt ods)
 		   appending (cl-loop for which-file in
 				      '(:styles-file :content-template-file)
 				      collect (org-odt-get-backend-property
 					       backend which-file))))
-         (zip-dir nil)
+	 (zip-dir nil)
 	 (styles-file
 	  (cond
 	   (query-for-file
@@ -10598,49 +10613,50 @@ Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
 		(_ (error "Styles file is invalid: %s" styles-file)))))
 	   (t (org-odt-get-backend-property 'odt :styles-file))))
 	 (dom (unwind-protect (odt-dom:file->dom styles-file)
-                (when zip-dir
-                  (delete-directory zip-dir t nil))))
+		(when zip-dir
+		  (delete-directory zip-dir t nil))))
 	 (choices
-          (progn 
-            (unless dom
-              (user-error "File `%s' doesn't look like OpenDocument XML file" styles-file))
+	  (progn
+	    (unless dom
+	      (user-error "File `%s' doesn't look like OpenDocument XML file" styles-file))
 	    (cl-loop with nodes = (odt-stylesdom:dom->style-nodes dom)
 		     for node in nodes
 		     for signature = (odt-stylesdom:style-signature node)
 		     for qualifier = (format "%-30s [%s] "
 					     (nth 0 signature)
 					     (or (nth 1 signature)
-					         (nth 2 signature)))
+						 (nth 2 signature)))
 		     collect (cons qualifier node))))
 	 (choice (progn
-                   (unless choices
-                     (user-error "No OD styles in file `%s'" styles-file))
-                   (completing-read "Style name: " choices)))
-	 (node (assoc-default choice choices))
-	 (parent (dom-parent dom node))
-	 (parent-type (odt-dom-type parent))
-	 (which-style (alist-get parent-type
-				 (pcase (car dom)
-				   (`office:document-styles
-				    '(
-				      (office:styles            . :odt-extra-styles)
-				      (office:automatic-styles  . :odt-extra-automatic-styles)
-				      (office:master-styles     . :odt-master-styles)
-				      (office:automatic-styles  . :odt-automatic-styles)
-                                      ))
-				   (`office:document-content
-				    '(
-                                      (office:automatic-styles  . :odt-automatic-styles)
-                                      ))
-				   (`office:document
-				    '(
-				      (office:styles            . :odt-extra-styles)
-				      (office:automatic-styles  . :odt-extra-automatic-styles)
-				      (office:master-styles     . :odt-master-styles)
-				      (office:automatic-styles  . :odt-automatic-styles)
-                                      )))))
-	 (xml-string (odt-dom-to-xml-string node)))
-    (org-odt-yank-styles 'use-nxml-src-block which-style xml-string)))
+		   (unless choices
+		     (user-error "No OD styles in file `%s'" styles-file))
+		   (completing-read "Style name: " choices)))
+	 (node (assoc-default choice choices)))
+    (pcase insert-what
+      (`style-definition
+       (let* ((parent (dom-parent dom node))
+	      (parent-type (odt-dom-type parent))
+	      (which-style (alist-get parent-type
+				      (pcase (car dom)
+					(`office:document-styles
+					 '(
+					   (office:styles . :odt-extra-styles)
+					   (office:automatic-styles . :odt-extra-automatic-styles)
+					   (office:master-styles . :odt-master-styles)
+					   (office:automatic-styles . :odt-automatic-styles)))
+					(`office:document-content
+					 '(
+					   (office:automatic-styles . :odt-automatic-styles)))
+					(`office:document
+					 '(
+					   (office:styles . :odt-extra-styles)
+					   (office:automatic-styles . :odt-extra-automatic-styles)
+					   (office:master-styles . :odt-master-styles)
+					   (office:automatic-styles . :odt-automatic-styles))))))
+	      (xml-string (odt-dom-to-xml-string node)))
+	 (org-odt-yank-styles 'use-nxml-src-block which-style xml-string)))
+      (`style-name
+       (insert (format "\"%s\"" (odt-dom-property node 'style:name)))))))
 
 ;;; Publishing
 
