@@ -4180,15 +4180,15 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 				     (odt-dom:type->node
 				      'office:master-styles dom)))
 	     for modified-plist = (org-combine-plists
-				   (cl-loop for what in '(style:footer style:header)
-					    for prop in '(:footer-contents :header-contents)
+				   (cl-loop for what in '(style:header style:footer)
+					    for prop in '(:header-contents :footer-contents)
 					    for node = (assq what (dom-children master-page))
 					    when node
 					    do (dom-remove-node master-page node)
 					    append (list prop node))
 				   new-plist)
-	     do (cl-loop for what in '(style:footer style:header)
-			 for prop in '(:footer-contents :header-contents)
+	     do (cl-loop for what in '(style:header style:footer)
+			 for prop in '(:header-contents :footer-contents)
 			 for contents = (plist-get modified-plist prop)
 			 when contents
 			 do (dom-append-child master-page
