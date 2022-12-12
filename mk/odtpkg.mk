@@ -57,6 +57,8 @@ odtpkg: ELPA_PKG_REQ_L				= (org $(ELPA_PKG_VERSION0_L))
 odtpkg: ELPA_PKG_DIR				= $(ELPA_PKG_NAME)-$(ELPA_PKG_VERSION)
 
 odtpkg: ELPA_PKG_FILES				= lisp/ox-odt.el																\
+										lisp/ox-ods.el																\
+										lisp/odt.el																	\
 										etc/styles/																	\
 										etc/schema/odf1.0/OpenDocument-manifest-schema-v1.0-os.rnc					\
 										etc/schema/odf1.0/OpenDocument-schema-v1.0-os.rnc							\
