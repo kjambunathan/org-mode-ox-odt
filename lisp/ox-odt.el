@@ -5747,7 +5747,11 @@ SHORT-CAPTION are strings."
 				  (expand-file-name path))
 				 (t (expand-file-name path (file-name-directory
 							    (plist-get info :input-file))))))))
-	  (when (and expanded-path (file-readable-p expanded-path)) expanded-path)))
+	  (cond
+	   ((and expanded-path (file-readable-p expanded-path))
+	    expanded-path)
+	   (t (user-error "Cannot read image file: %s (= %s)"
+			  path expanded-path)))))
   (when path
     (let* ((width (plist-get attributes :width))
 	   (height (plist-get attributes :height))
@@ -7306,7 +7310,7 @@ and prefix with \"OrgSrc\".  For example,
 	      (with-temp-buffer
 		(insert code)
 		(funcall lang-mode)
-		(org-font-lock-ensure)
+		(font-lock-ensure)
 		(buffer-string)))
 	    code))
       ;; Transcode code in OpenDocument format.
