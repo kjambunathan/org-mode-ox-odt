@@ -1,4 +1,4 @@
-;;; test-ob-tangle.el --- tests for ob-tangle.el
+;;; test-ob-tangle.el --- tests for ob-tangle.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2010-2016, 2019 Eric Schulte
 ;; Authors: Eric Schulte
@@ -26,6 +26,8 @@
 ;;; Code:
 
 (require 'subr-x)
+(require 'ob-tangle)
+(require 'org)
 
 ;; TODO
 ;; (ert-deftest ob-tangle/noweb-on-tangle ()
@@ -157,6 +159,62 @@ echo 1
 	     (buffer-string)
 	     (goto-char (point-min))
 	     (search-forward (concat "[file:" file) nil t)))
+       (delete-file "test-ob-tangle.el")))))
+
+(ert-deftest ob-tangle/comment-noweb-relative ()
+  "Test :comments noweb tangling with relative file paths."
+  (should
+   (org-test-with-temp-text-in-file
+       "* Inner
+#+name: inner
+#+begin_src emacs-lisp
+2
+#+end_src
+
+* Main
+#+header: :tangle \"test-ob-tangle.el\" :comments noweb :noweb yes
+#+begin_src emacs-lisp
+1
+<<inner>>
+#+end_src"
+     (unwind-protect
+	 (let ((org-babel-tangle-use-relative-file-links t))
+           (org-babel-tangle)
+           (with-temp-buffer
+             (insert-file-contents "test-ob-tangle.el")
+             (buffer-string)
+             (goto-char (point-min))
+             (and
+              (search-forward (concat ";; [[file:" (file-name-nondirectory file) "::inner") nil t)
+              (search-forward ";; inner ends here" nil t))))
+       (delete-file "test-ob-tangle.el")))))
+
+(ert-deftest ob-tangle/comment-noweb-absolute ()
+  "Test :comments noweb tangling with absolute file path."
+  (should
+   (org-test-with-temp-text-in-file
+       "* Inner
+#+name: inner
+#+begin_src emacs-lisp
+2
+#+end_src
+
+* Main
+#+header: :tangle \"test-ob-tangle.el\" :comments noweb :noweb yes
+#+begin_src emacs-lisp
+1
+<<inner>>
+#+end_src"
+     (unwind-protect
+	 (let ((org-babel-tangle-use-relative-file-links nil))
+	   (org-babel-tangle)
+	   (with-temp-buffer
+	     (insert-file-contents "test-ob-tangle.el")
+	     (buffer-string)
+	     (goto-char (point-min))
+             (and
+              (search-forward (concat ";; [[file:" file "::inner") nil t)
+              (search-forward ";; inner ends here" nil t))))
        (delete-file "test-ob-tangle.el")))))
 
 (ert-deftest ob-tangle/jump-to-org ()
@@ -451,6 +509,32 @@ another block
 		    (insert-file-contents file)
 		    (org-split-string (buffer-string))))
 	      (delete-file file))))))
+
+(ert-deftest ob-tangle/strip-tangle ()
+  "Test if strip-tangle works correctly when tangling noweb code blocks."
+  (should
+   (equal '("1")
+          (let ((file (make-temp-file "org-tangle-")))
+            (unwind-protect
+                (progn
+                  (org-test-with-temp-text-in-file
+                   (format "
+#+name: block1
+#+begin_src elisp
+2
+#+end_src
+
+#+begin_src elisp :noweb strip-tangle :tangle %s
+1<<block1>>
+#+end_src
+" file)
+                   (let ((org-babel-noweb-error-all-langs nil)
+                         (org-babel-noweb-error-langs nil))
+                     (org-babel-tangle)))
+                  (with-temp-buffer
+                    (insert-file-contents file)
+                    (org-split-string (buffer-string))))
+              (delete-file file))))))
 
 (ert-deftest ob-tangle/detangle-false-positive ()
   "Test handling of false positive link during detangle."

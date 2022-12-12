@@ -65,7 +65,11 @@
   (should (= 4 (org-string-width
 		#("123" 1 2 (display #("abc" 1 2 (invisible t)))))))
   ;; Test `space' property in `display'.
-  (should (= 2 (org-string-width #(" " 0 1 (display (space :width 2)))))))
+  (should (= 2 (org-string-width #(" " 0 1 (display (space :width 2))))))
+  ;; Test `wrap-prefix' property.
+  (should (= 2 (org-string-width #("ab" 0 2 (wrap-prefix "  ")))))
+  ;; Test `line-prefix' property.
+  (should (= 2 (org-string-width #("ab" 0 2 (line-prefix "  "))))))
 
 
 ;;; Regexp
@@ -102,7 +106,16 @@
   (should-not
    (org-test-with-temp-text "xx abc<point> xx"
      (org-in-regexp "abc" nil t))))
+
+;;; Template
 
+(ert-deftest test-org/fill-template ()
+  "Test `org-fill-template'"
+  (should
+   (string= "working"
+            (org-fill-template "%var-long"
+                               '(("var" . "broken")
+                                 ("var-long" . "working"))))))
 
 ;;; Time
 
@@ -111,25 +124,25 @@
   (let ((system-time-locale "en_US"))
     (org-test-at-time "<2021-01-11 Mon 13:00>"
       (should (equal (list 0 0 13 11 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<now>"))
+                     (butlast (decode-time (org-matcher-time "<now>"))
                               3)))
       (should (equal (list 0 0 0 14 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<+3d>"))
+                     (butlast (decode-time (org-matcher-time "<+3d>"))
                               3)))
       (should (equal (list 0 0 0 9 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<-2d>"))
+                     (butlast (decode-time (org-matcher-time "<-2d>"))
                               3)))
       (should (equal (list 0 0 0 18 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<+1w>"))
+                     (butlast (decode-time (org-matcher-time "<+1w>"))
                               3)))
       (should (equal (list 0 0 17 11 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<+4h>"))
+                     (butlast (decode-time (org-matcher-time "<+4h>"))
                               3)))
       (should (equal (list 0 0 11 11 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<-2h>"))
+                     (butlast (decode-time (org-matcher-time "<-2h>"))
                               3)))
       (should (equal (list 0 0 3 12 1 2021)
-                     (butlast (org-decode-time (org-matcher-time "<+14h>"))
+                     (butlast (decode-time (org-matcher-time "<+14h>"))
                               3))))))
 
 (provide 'test-org-macs)

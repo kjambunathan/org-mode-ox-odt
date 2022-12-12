@@ -22,9 +22,8 @@
 ;;; Code:
 
 (require 'cl-lib)
-
-(unless (featurep 'ox)
-  (signal 'missing-test-dependency "org-export"))
+(require 'ox)
+(require 'org-inlinetask)
 
 (defun org-test-default-backend ()
   "Return a default export back-end.
@@ -55,11 +54,41 @@ variable, and communication channel under `info'."
        (org-export--remove-uninterpreted-data tree info)
        (let ((info (org-combine-plists
 		    info (org-export--collect-tree-properties tree info))))
+	 (ignore info) ;; Don't warn if the var is unused.
 	 ,@body))))
 
 
 
 ;;; Internal Tests
+
+(ert-deftest test-org-export/org-export-copy-buffer ()
+  "Test `org-export-copy-buffer' specifications."
+  ;; The copy must not overwrite the original file.
+  (org-test-with-temp-text-in-file
+      "* Heading"
+    (let ((file (buffer-file-name)))
+      (with-current-buffer (org-export-copy-buffer)
+        (insert "This must not go into the original file.")
+        (save-buffer)
+        (should
+         (equal
+          "* Heading"
+          (with-temp-buffer
+            (insert-file-contents file)
+            (buffer-string)))))))
+  ;; The copy must not show when re-opening the original file.
+  (org-test-with-temp-text-in-file
+      "* Heading"
+    (let ((file (buffer-file-name))
+          (buffer-copy (generate-new-buffer " *Org export copy*")))
+      (org-export-with-buffer-copy
+       :to-buffer buffer-copy
+       (insert "This must not show as the original file.")
+       (save-buffer))
+      ;; Unassign the original buffer from file.
+      (setq buffer-file-name nil)
+      (should-not
+       (equal buffer-copy (get-file-buffer file))))))
 
 (ert-deftest test-org-export/bind-keyword ()
   "Test reading #+BIND: keywords."
@@ -93,6 +122,7 @@ variable, and communication channel under `info'."
        (format "#+SETUPFILE: \"%s/examples/setupfile.org\"" org-test-dir)
      (let ((org-export-allow-bind-keywords t))
        (org-export-get-environment)
+       ;; `variable' is bound inside the setupfile.
        (eq variable 'value))))
   ;; Verify that bound variables are seen during export.
   (should
@@ -168,7 +198,10 @@ num:2 <:active")))
   (should
    (let ((options (org-export--parse-option-keyword "H: num:t")))
      (and (not (plist-get options :headline-levels))
-          (plist-get options :section-numbers)))))
+          (plist-get options :section-numbers))))
+  ;; Parse spaces inside brackets.
+  (let ((options (org-export--parse-option-keyword "html-postamble:\"test space\"" 'html)))
+    (should (equal "test space" (plist-get options :html-postamble)))))
 
 (ert-deftest test-org-export/get-inbuffer-options ()
   "Test reading all standard export keywords."
@@ -238,7 +271,8 @@ num:2 <:active")))
       (org-export--get-inbuffer-options))
     '(:language "fr" :select-tags ("a" "b" "c") :title ("a b c"))))
   ;; Options set through SETUPFILE specified using a URL.
-  (let ((buffer (generate-new-buffer "url-retrieve-output")))
+  (let ((buffer (generate-new-buffer "url-retrieve-output"))
+        (org-resource-download-policy t))
     (unwind-protect
 	;; Simulate successful retrieval of a setupfile from URL.
 	(cl-letf (((symbol-function 'url-retrieve-synchronously)
@@ -357,7 +391,7 @@ Paragraph"
 	    (plist-get (org-export-get-environment nil t) :date))))
   ;; Still grab correct options when section above is empty.
   (should
-   (equal '("H1")
+   (equal '("H12")
 	  (org-test-with-temp-text "* H1\n** H11\n** H12<point>"
 	    (plist-get (org-export-get-environment nil t) :title))))
   ;; More than one property can refer to the same node property.
@@ -536,24 +570,21 @@ Paragraph"
    (equal ""
 	  (let (org-export-filter-body-functions
 		org-export-filter-final-output-functions)
-	    (org-test-with-temp-text "* Head1 :archive:"
-	      (let ((org-archive-tag "archive"))
-		(org-export-as (org-test-default-backend)
-			       nil nil nil '(:with-archived-trees nil)))))))
+	    (org-test-with-temp-text "* Head1 :ARCHIVE:"
+	      (org-export-as (org-test-default-backend)
+			     nil nil nil '(:with-archived-trees nil))))))
   (should
    (string-match
-    "\\* Head1[ \t]+:archive:"
+    "\\* Head1[ \t]+:ARCHIVE:"
     (org-test-with-temp-text "* Head1 :archive:\nbody\n** Sub-head 2"
-      (let ((org-archive-tag "archive"))
-	(org-export-as (org-test-default-backend) nil nil nil
-		       '(:with-archived-trees headline))))))
+      (org-export-as (org-test-default-backend) nil nil nil
+		     '(:with-archived-trees headline)))))
   (should
    (string-match
-    "\\`\\* Head1[ \t]+:archive:\n\\'"
-    (org-test-with-temp-text "* Head1 :archive:"
-      (let ((org-archive-tag "archive"))
-	(org-export-as (org-test-default-backend)
-		       nil nil nil '(:with-archived-trees t))))))
+    "\\`\\* Head1[ \t]+:ARCHIVE:\n\\'"
+    (org-test-with-temp-text "* Head1 :ARCHIVE:"
+      (org-export-as (org-test-default-backend)
+		     nil nil nil '(:with-archived-trees t)))))
   ;; Broken links.  Depending on `org-export-with-broken-links', raise
   ;; an error, ignore link or mark is as broken in output.
   (should-error
@@ -2004,11 +2035,11 @@ Footnotes[fn:2], foot[fn:test] and [fn:inline:inline footnote]
 		 (org-export-create-backend
 		  :transcoders
 		  (list (cons 'headline
-			      (lambda (headline contents info)
+			      (lambda (headline _contents info)
 				(org-export-data
 				 (org-element-property :title headline)
 				 info)))
-			(cons 'plain-text (lambda (text info) "Success"))))))
+			(cons 'plain-text (lambda (_text _info) "Success"))))))
 	    (org-export-string-as
 	     "* Test"
 	     (org-export-create-backend
@@ -2145,7 +2176,7 @@ Para2"
       (setf (org-export-backend-name backend) 'test)
       (setf (org-export-backend-transcoders backend)
 	    (cons (cons 'export-snippet
-			(lambda (snippet contents info)
+			(lambda (snippet _contents _info)
 			  (when (eq (org-export-snippet-backend snippet) 'test)
 			    (org-element-property :value snippet))))
 		  (org-export-backend-transcoders backend)))
@@ -2192,15 +2223,15 @@ Para2"
   (should
    (equal ""
 	  (org-export-filter-apply-functions
-	   (list (lambda (value &rest _) "")
+	   (list (lambda (_value &rest _) "")
 		 (lambda (value &rest _) (concat "2" value)))
 	   "0" nil)))
   ;; Any function returning the empty string short-circuits the
   ;; process.
   (should
    (org-export-filter-apply-functions
-    (list (lambda (value &rest _) "")
-	  (lambda (value &rest _) (error "This shouldn't happen")))
+    (list (lambda (_value &rest _) "")
+	  (lambda (_value &rest _) (error "This shouldn't happen")))
     "0" nil)))
 
 
@@ -2217,7 +2248,7 @@ Para2"
 	 (org-export-create-backend
 	  :transcoders
 	  `(,(cons 'footnote-reference
-		   (lambda (f c i)
+		   (lambda (f _c i)
 		     (push (org-export-footnote-first-reference-p f i)
 			   result)
 		     ""))
@@ -2262,7 +2293,7 @@ Para2"
 	 (org-export-create-backend
 	  :transcoders
 	  `(,(cons 'footnote-reference
-		   (lambda (f c i)
+		   (lambda (f _c i)
 		     (when (org-element-lineage f '(drawer))
 		       (push (org-export-footnote-first-reference-p f i nil)
 			     result))
@@ -2283,7 +2314,7 @@ Para2"
 	 (org-export-create-backend
 	  :transcoders
 	  `(,(cons 'footnote-reference
-		   (lambda (f c i)
+		   (lambda (f _c i)
 		     (when (org-element-lineage f '(drawer))
 		       (push (org-export-footnote-first-reference-p f i nil t)
 			     result))
@@ -2981,7 +3012,7 @@ Para2"
    (string-match
     "success"
     (progn
-      (org-link-set-parameters "foo" :export (lambda (p d f i) "success"))
+      (org-link-set-parameters "foo" :export (lambda (_p _d _f _i) "success"))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -2997,7 +3028,7 @@ Para2"
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
+       "foo" :export (lambda (_p _d f _i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -3014,7 +3045,7 @@ Para2"
     "success"
     (progn
       (org-link-set-parameters
-       "foo" :export (lambda (p d f i) (and (eq f 'test) "success")))
+       "foo" :export (lambda (_p _d f _i) (and (eq f 'test) "success")))
       (org-export-string-as
        "[[foo:path]]"
        (org-export-create-backend
@@ -3981,7 +4012,7 @@ This test does not cover listings and custom environments."
 \\end{verbatim}
 \\caption{Caption is below, 60\\%s}
 \\end{figure*}"
-	     (let ((org-latex-listings 'minted) ; inactive due to missing lang
+	     (let ((org-latex-src-block-backend 'minted) ; inactive due to missing lang
 		   (org-latex-default-figure-position "tp"))
 	       ;; Namely "multicolumn" value to get just figure environment
 	       ;; looks like a bug.
@@ -4141,16 +4172,13 @@ This test does not cover listings and custom environments."
 	      (org-element-map tree 'plain-text
 		(lambda (s) (org-export-activate-smart-quotes s :html info))
 		info nil nil t)))))
-  ;; FIXME: Test failing non-interactively.
-  ;;
-  ;; (should
-  ;;  (equal '("&ldquo;foo&rdquo;")
-  ;; 	  (let ((org-export-default-language "en"))
-  ;; 	    (org-test-with-parsed-data "*\"foo\"*"
-  ;; 	      (org-element-map tree 'plain-text
-  ;; 		(lambda (s) (org-export-activate-smart-quotes s :html info))
-  ;; 		info nil nil t)))))
-)
+  (should
+   (equal '("&ldquo;foo&rdquo;")
+	  (let ((org-export-default-language "en"))
+	    (org-test-with-parsed-data "*\"foo\"*"
+	      (org-element-map tree 'plain-text
+		(lambda (s) (org-export-activate-smart-quotes s :html info))
+		info nil nil t))))))
 
 
 
@@ -5045,7 +5073,8 @@ This test does not cover listings and custom environments."
 	 (org-element-type
 	  (org-export-get-next-element
 	   (org-element-map
-	       (plist-get info :title) 'plain-text 'identity info t) info)))))
+	       (plist-get info :title) 'plain-text 'identity info t)
+	   info)))))
   ;; Find next element in parsed affiliated keywords.
   (should
    (eq 'verbatim
@@ -5059,7 +5088,7 @@ This test does not cover listings and custom environments."
    (equal
     '(bold code underline)
     (org-test-with-parsed-data "_a_ /b/ *c* ~d~ _e_"
-      (mapcar 'car
+      (mapcar #'car
 	      (org-export-get-next-element
 	       (org-element-map tree 'italic 'identity info t) info t)))))
   ;; When N is a positive integer, return a list containing up to
@@ -5068,7 +5097,7 @@ This test does not cover listings and custom environments."
    (equal
     '(bold code)
     (org-test-with-parsed-data "_a_ /b/ *c* ~d~ _e_"
-      (mapcar 'car
+      (mapcar #'car
 	      (org-export-get-next-element
 	       (org-element-map tree 'italic 'identity info t) info 2))))))
 
@@ -5111,7 +5140,8 @@ This test does not cover listings and custom environments."
 	 (org-element-type
 	  (org-export-get-previous-element
 	   (org-element-map
-	       (plist-get info :title) 'plain-text 'identity info t) info)))))
+	       (plist-get info :title) 'plain-text 'identity info t)
+	   info)))))
   ;; Find previous element in parsed affiliated keywords.
   (should
    (eq 'verbatim
@@ -5124,7 +5154,7 @@ This test does not cover listings and custom environments."
   (should
    (equal '(underline italic bold)
 	  (org-test-with-parsed-data "_a_ /b/ *c* ~d~"
-	    (mapcar 'car
+	    (mapcar #'car
 		    (org-export-get-previous-element
 		     (org-element-map tree 'code 'identity info t) info t)))))
   ;; When N is a positive integer, return a list containing up to
@@ -5132,7 +5162,7 @@ This test does not cover listings and custom environments."
   (should
    (equal '(italic bold)
 	  (org-test-with-parsed-data "_a_ /b/ *c* ~d~"
-	    (mapcar 'car
+	    (mapcar #'car
 		    (org-export-get-previous-element
 		     (org-element-map tree 'code 'identity info t) info 2))))))
 

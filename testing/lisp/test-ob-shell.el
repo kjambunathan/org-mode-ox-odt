@@ -1,4 +1,4 @@
-;;; test-ob-shell.el
+;;; test-ob-shell.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2010-2014, 2019 Eric Schulte
 ;; Authors: Eric Schulte
@@ -24,6 +24,7 @@
 
 ;;; Code:
 (org-test-for-executable "sh")
+(require 'ob-core)
 (unless (featurep 'ob-shell)
   (signal 'missing-test-dependency "Support for Shell code blocks"))
 
@@ -45,7 +46,13 @@ returned empty results."
 ob-comint.el, which was not previously tested."
   (let ((res (org-babel-execute:sh "echo 1; echo 2" '((:session . "yes")))))
     (should res)
-    (should (listp res))))
+    (should (listp res)))
+  ;; Test multi-line input.
+  (let ((result (org-babel-execute:sh
+		 "if true \n then \n echo yes \n fi"
+		 '((:session . "yes")))))
+    (should result)
+    (should (string= "yes" result))))
 
 ; A list of tests using the samples in ob-shell-test.org
 (ert-deftest ob-shell/generic-uses-no-arrays ()
@@ -105,6 +112,146 @@ ob-comint.el, which was not previously tested."
 	  (org-test-with-temp-text
 	   "#+BEGIN_SRC sh :results output :var l='(1 2)\necho ${l}\n#+END_SRC"
 	   (org-trim (org-babel-execute-src-block))))))
+
+(ert-deftest ob-shell/remote-with-stdin-or-cmdline ()
+  "Test :stdin and :cmdline with a remote directory."
+  ;; We assume `default-directory' is a local directory.
+  (skip-unless (not (memq system-type '(ms-dos windows-nt))))
+  (org-test-with-tramp-remote-dir remote-dir
+      (dolist (spec `( ()
+                       (:dir ,remote-dir)
+                       (:dir ,remote-dir :cmdline t)
+                       (:dir ,remote-dir :stdin   t)
+                       (:dir ,remote-dir :cmdline t :shebang t)
+                       (:dir ,remote-dir :stdin   t :shebang t)
+                       (:dir ,remote-dir :cmdline t :stdin t :shebang t)
+                       (:cmdline t)
+                       (:stdin   t)
+                       (:cmdline t :shebang t)
+                       (:stdin   t :shebang t)
+                       (:cmdline t :stdin t :shebang t)))
+        (let ((default-directory (or (plist-get spec :dir) default-directory))
+              (org-confirm-babel-evaluate nil)
+              (params-line "")
+              (who-line "  export who=tramp")
+              (args-line "  echo ARGS: --verbose 23 71"))
+          (when-let ((dir (plist-get spec :dir)))
+            (setq params-line (concat params-line " " ":dir " dir)))
+          (when (plist-get spec :stdin)
+            (setq who-line "  read -r who")
+            (setq params-line (concat params-line " :stdin input")))
+          (when (plist-get spec :cmdline)
+            (setq args-line "  echo \"ARGS: $*\"")
+            (setq params-line (concat params-line " :cmdline \"--verbose 23 71\"")))
+          (when (plist-get spec :shebang)
+            (setq params-line (concat params-line " :shebang \"#!/bin/sh\"")))
+          (let* ((result (org-test-with-temp-text
+                             (mapconcat #'identity
+                                        (list "#+name: input"
+                                              "tramp"
+                                              ""
+                                              (concat "<point>"
+                                                      "#+begin_src sh :results output " params-line)
+                                              args-line
+                                              who-line
+                                              "  echo \"hello $who from $(pwd)/\""
+                                              "#+end_src")
+                                        "\n")
+                           (org-trim (org-babel-execute-src-block))))
+                 (expected (concat "ARGS: --verbose 23 71"
+                                   "\nhello tramp from " (file-local-name default-directory))))
+            (should (equal result expected)))))))
+
+(ert-deftest ob-shell/results-table ()
+  "Test :results table."
+  (should
+   (equal '(("I \"want\" it all"))
+	  (org-test-with-temp-text
+	      "#+BEGIN_SRC sh :results table\necho 'I \"want\" it all'\n#+END_SRC"
+	    (org-babel-execute-src-block)))))
+
+;;; Standard output
+
+(ert-deftest ob-shell/standard-output-after-success ()
+  "Test standard output after exiting with a zero code."
+  (should (= 1
+             (org-babel-execute:sh
+              "echo 1" nil))))
+
+(ert-deftest ob-shell/standard-output-after-failure ()
+  "Test standard output after exiting with a non-zero code."
+  (should (= 1
+             (org-babel-execute:sh
+              "echo 1; exit 2" nil))))
+
+;;; Standard error
+
+(ert-deftest ob-shell/error-output-after-success ()
+  "Test that standard error shows in the error buffer, alongside the
+exit code, after exiting with a zero code."
+  (should
+   (string= "1
+[ Babel evaluation exited with code 0 ]"
+            (progn (org-babel-eval-wipe-error-buffer)
+                   (org-babel-execute:sh
+                    "echo 1 >&2" nil)
+                   (with-current-buffer org-babel-error-buffer-name
+                     (buffer-string))))))
+
+(ert-deftest ob-shell/error-output-after-failure ()
+  "Test that standard error shows in the error buffer, alongside the
+exit code, after exiting with a non-zero code."
+  (should
+   (string= "1
+[ Babel evaluation exited with code 2 ]"
+            (progn (org-babel-eval-wipe-error-buffer)
+                   (org-babel-execute:sh
+                    "echo 1 >&2; exit 2" nil)
+                   (with-current-buffer org-babel-error-buffer-name
+                     (buffer-string))))))
+
+(ert-deftest ob-shell/error-output-after-failure-multiple ()
+  "Test that multiple standard error strings show in the error
+buffer, alongside multiple exit codes."
+  (should
+   (string= "1
+[ Babel evaluation exited with code 2 ]
+3
+[ Babel evaluation exited with code 4 ]"
+            (progn (org-babel-eval-wipe-error-buffer)
+                   (org-babel-execute:sh
+                    "echo 1 >&2; exit 2" nil)
+                   (org-babel-execute:sh
+                    "echo 3 >&2; exit 4" nil)
+                   (with-current-buffer org-babel-error-buffer-name
+                     (buffer-string))))))
+
+;;; Exit codes
+
+(ert-deftest ob-shell/exit-code ()
+  "Test that the exit code shows in the error buffer after exiting
+with a non-zero return code."
+  (should
+   (string= "[ Babel evaluation exited with code 1 ]"
+            (progn (org-babel-eval-wipe-error-buffer)
+                   (org-babel-execute:sh
+                    "exit 1" nil)
+                   (with-current-buffer org-babel-error-buffer-name
+                     (buffer-string))))))
+
+(ert-deftest ob-shell/exit-code-multiple ()
+  "Test that multiple exit codes show in the error buffer after
+exiting with a non-zero return code multiple times."
+  (should
+   (string= "[ Babel evaluation exited with code 1 ]
+[ Babel evaluation exited with code 2 ]"
+            (progn (org-babel-eval-wipe-error-buffer)
+                   (org-babel-execute:sh
+                    "exit 1" nil)
+                   (org-babel-execute:sh
+                    "exit 2" nil)
+                   (with-current-buffer org-babel-error-buffer-name
+                     (buffer-string))))))
 
 (provide 'test-ob-shell)
 

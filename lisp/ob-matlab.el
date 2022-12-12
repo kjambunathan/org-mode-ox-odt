@@ -4,7 +4,7 @@
 
 ;; Author: Dan Davison
 ;; Keywords: literate programming, reproducible research
-;; Homepage: https://orgmode.org
+;; URL: https://orgmode.org
 
 ;; This file is part of GNU Emacs.
 
@@ -32,9 +32,13 @@
 
 ;; matlab.el required for interactive emacs sessions and matlab-mode
 ;; major mode for source code editing buffer
-;; http://matlab-emacs.sourceforge.net/
+;; https://matlab-emacs.sourceforge.net/
 
 ;;; Code:
+
+(require 'org-macs)
+(org-assert-version)
+
 (require 'ob)
 (require 'ob-octave)
 

@@ -32,6 +32,20 @@ TMPDIR ?= /tmp
 testdir = $(TMPDIR)/tmp-orgtest
 
 # Configuration for testing
+# Verbose ERT summary by default for Emacs-28 and above.
+# To override:
+# - Add to local.mk
+#   EMACS_TEST_VERBOSE =
+# - Export EMACS_TEST_VERBOSE environment variable with empty value
+# - Run tests as
+#   EMACS_TEST_VERBOSE= make test [OTHER_ARGUMENTS...]
+#   or as
+#   make test EMACS_TEST_VERBOSE= [OTHER_ARGUMENTS...]
+EMACS_TEST_VERBOSE ?= yes
+ifeq (,$(EMACS_TEST_VERBOSE))
+# Emacs-28 considers empty value as true, fixed in Emacs-29
+unexport EMACS_TEST_VERBOSE
+endif
 # add options before standard load-path
 BTEST_PRE   =
 # add options after standard load path
@@ -39,12 +53,17 @@ BTEST_POST  =
               # -L <path-to>/ert      # needed for Emacs23, Emacs24 has ert built in
               # -L <path-to>/ess      # needed for running R tests
               # -L <path-to>/htmlize  # need at least version 1.34 for source code formatting
-BTEST_OB_LANGUAGES = awk C fortran maxima lilypond octave perl python
+BTEST_OB_LANGUAGES = awk C fortran maxima lilypond octave perl python java
               # R                     # requires ESS to be installed and configured
               # ruby                  # requires inf-ruby to be installed and configured
 # extra packages to require for testing
 BTEST_EXTRA =
               # ess-site  # load ESS for R tests
+# Whether to activate extra debugging facilities for make repro.
+REPRO_DEBUG ?= yes
+# Extra arguments passed to Emacs for make repro.
+# e.g. -l config.el /tmp/bug.org
+REPRO_ARGS ?=
 ##->8-------------------------------------------------------------------
 ## YOU MAY NEED TO ADAPT THESE DEFINITIONS
 ##----------------------------------------------------------------------
@@ -53,7 +72,7 @@ BTEST_EXTRA =
 req-ob-lang = --eval '(require '"'"'ob-$(ob-lang))'
 lst-ob-lang = ($(ob-lang) . t)
 req-extra   = --eval '(require '"'"'$(req))'
-BTEST_RE   ?= \\(org\\|ob\\)
+BTEST_RE   ?= \\(org\\|ob\\|ox\\)
 BTEST_LOAD  = \
 	--eval '(add-to-list '"'"'load-path (concat default-directory "lisp"))' \
 	--eval '(add-to-list '"'"'load-path (concat default-directory "testing"))'
@@ -79,13 +98,29 @@ BTEST = $(BATCH) $(BTEST_INIT) \
 # should be useful for manual testing and verification of problems.
 NOBATCH = $(EMACSQ) $(BTEST_INIT) -l org -f org-version
 
+ifeq ($(REPRO_DEBUG), yes)
+REPRO_INIT = --eval "(setq \
+	debug-on-error t\
+	debug-on-signal nil\
+	debug-on-quit nil\
+	org-element--cache-self-verify 'backtrace\
+	org-element--cache-self-verify-frequency 1.0\
+	org-element--cache-map-statistics t)"
+else
+REPRO_INIT =
+endif
+
+# Running a plain emacs with no config, this Org mode loaded, and
+# debugging facilities activated.
+REPRO = $(NOBATCH) $(REPRO_INIT) $(REPRO_ARGS)
+
 # start Emacs with no user and site configuration
 # EMACSQ = -vanilla # XEmacs
 EMACSQ  = $(EMACS)  -Q
 
 # Using emacs in batch mode.
 BATCH	= $(EMACSQ) -batch \
-	  --eval '(setq vc-handled-backends nil org-startup-folded nil)'
+	  --eval '(setq vc-handled-backends nil org-startup-folded nil org-element-cache-persistent nil)'
 
 # Emacs must be started in toplevel directory
 BATCHO	= $(BATCH) \

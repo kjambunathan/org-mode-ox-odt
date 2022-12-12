@@ -3,7 +3,7 @@
 ;; Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
-;; Maintainer: Nicolas Goaziou <n.goaziou at gmail dot com>
+;; Maintainer: Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;; Keywords: outlines, hypermedia, calendar, wp
 
 ;; This file is part of GNU Emacs.
@@ -28,6 +28,9 @@
 
 ;;; Code:
 
+(require 'org-macs)
+(org-assert-version)
+
 (require 'ox)
 (require 'ox-publish)
 (require 'cl-lib)
@@ -35,6 +38,9 @@
 ;;; Function Declarations
 
 (declare-function aa2u "ext:ascii-art-to-unicode" ())
+(declare-function org-at-heading-p "org" (&optional _))
+(declare-function org-back-to-heading "org" (&optional invisible-ok))
+(declare-function org-next-visible-heading "org" (arg))
 
 ;;; Define Back-End
 ;;
@@ -456,7 +462,7 @@ Optional argument JUSTIFY can specify any type of justification
 among `left', `center', `right' or `full'.  A nil value is
 equivalent to `left'.  For a justification that doesn't also fill
 string, see `org-ascii--justify-lines' and
-`org-ascii--justify-block'.
+`org-ascii--justify-element'.
 
 Return nil if S isn't a string."
   (when (stringp s)

@@ -1,4 +1,4 @@
-;;; test-org-table.el --- tests for org-table.el
+;;; test-org-table.el --- tests for org-table.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c)  David Maus
 ;; Authors: David Maus, Michael Brand
@@ -28,6 +28,7 @@
 ;;; Code:
 
 (require 'org-table)  ; `org-table-make-reference'
+(require 'ox)
 
 (ert-deftest test-org-table/simple-formula/no-grouping/no-title-row ()
   "Simple sum without grouping rows, without title row."
@@ -992,11 +993,10 @@ See also URL `https://orgmode.org/worg/org-tutorials/org-lookups.html'."
   (should
    (string= "A2" (org-table-convert-refs-to-an "@2$1"))))
 
-;; TODO: Test broken
-;; (ert-deftest test-org-table/org-table-convert-refs-to-an/2 ()
-;;   "Self reference @1$1."
-;;   (should
-;;    (string= "A1 = $0" (org-table-convert-refs-to-an "@1$1 = $0"))))
+(ert-deftest test-org-table/org-table-convert-refs-to-an/2 ()
+  "Self reference @1$1."
+  (should
+   (string= "A1 = $0" (org-table-convert-refs-to-an "@1$1 = $0"))))
 
 (ert-deftest test-org-table/org-table-convert-refs-to-an/3 ()
   "Remote reference."
@@ -1013,11 +1013,10 @@ See also URL `https://orgmode.org/worg/org-tutorials/org-lookups.html'."
   (should
    (string= "@1$1 = $0" (org-table-convert-refs-to-rc "A1 = $0"))))
 
-;; TODO: Test Broken
-;; (ert-deftest test-org-table/org-table-convert-refs-to-rc/3 ()
-;;   "Remote reference."
-;;   (should
-;;    (string= "$3 = remote(FOO, @@#$2)" (org-table-convert-refs-to-rc "C& = remote(FOO, @@#B&)"))))
+(ert-deftest test-org-table/org-table-convert-refs-to-rc/3 ()
+  "Remote reference."
+  (should
+   (string= "$3 = remote(FOO, @@#$2)" (org-table-convert-refs-to-rc "C& = remote(FOO, @@#B&)"))))
 
 (ert-deftest test-org-table/remote-reference-access ()
   "Access to remote reference.
@@ -1613,7 +1612,7 @@ See also `test-org-table/copy-field'."
   (should
    (equal
     "a\nb"
-    (let* ((fun-list (list (lambda (backend) (search-forward "a") (insert "hook"))))
+    (let* ((fun-list (list (lambda (_backend) (search-forward "a") (insert "hook"))))
 	   (org-export-before-parsing-hook fun-list)
 	   (org-export-before-processing-hook fun-list))
       (orgtbl-to-generic (org-table-to-lisp "| a |\n|---|\n| b |")
@@ -1622,7 +1621,8 @@ See also `test-org-table/copy-field'."
   (should
    (equal
     "a\nb"
-    (let ((org-export-filter-table-cell-functions (list (lambda (c b i) "filter"))))
+    (let ((org-export-filter-table-cell-functions
+           (list (lambda (_c _b _i) "filter"))))
       (orgtbl-to-generic (org-table-to-lisp "| a |\n|---|\n| b |")
 			 '(:hline nil)))))
   ;; Macros, even if unknown, are returned as-is.
@@ -1633,11 +1633,11 @@ See also `test-org-table/copy-field'."
 (ert-deftest test-org-table/to-latex ()
   "Test `orgtbl-to-latex' specifications."
   (should
-   (equal "\\begin{tabular}{l}\na\\\\\n\\end{tabular}"
+   (equal "\\begin{tabular}{l}\na\\\\[0pt]\n\\end{tabular}"
 	  (orgtbl-to-latex (org-table-to-lisp "| a |") nil)))
   ;; Test :environment parameter.
   (should
-   (equal "\\begin{tabularx}{l}\na\\\\\n\\end{tabularx}"
+   (equal "\\begin{tabularx}{l}\na\\\\[0pt]\n\\end{tabularx}"
 	  (orgtbl-to-latex (org-table-to-lisp "| a |")
 			   '(:environment "tabularx"))))
   ;; Test :booktabs parameter.
@@ -1646,7 +1646,7 @@ See also `test-org-table/copy-field'."
     "\\toprule" (orgtbl-to-latex (org-table-to-lisp "| a |") '(:booktabs t))))
   ;; Handle LaTeX snippets.
   (should
-   (equal "\\begin{tabular}{l}\n\\(x\\)\\\\\n\\end{tabular}"
+   (equal "\\begin{tabular}{l}\n\\(x\\)\\\\[0pt]\n\\end{tabular}"
 	  (orgtbl-to-latex (org-table-to-lisp "| $x$ |") nil)))
   ;; Test pseudo objects and :raw parameter.
   (should
@@ -1891,7 +1891,7 @@ See also `test-org-table/copy-field'."
   ;; Sort alphabetically.  Enforce the C locale for consistent results.
   (let ((original-string-collate-lessp (symbol-function 'string-collate-lessp)))
     (cl-letf (((symbol-function 'string-collate-lessp)
-	       (lambda (s1 s2 &optional locale ignore-case)
+	       (lambda (s1 s2 &optional _locale ignore-case)
 		 (funcall original-string-collate-lessp
 			  s1 s2 "C" ignore-case))))
       (should
@@ -3047,23 +3047,36 @@ See also `test-org-table/copy-field'."
 	    (org-table-toggle-column-width)
 	    (buffer-substring (line-beginning-position)
 			      (overlay-start
-			       (car (overlays-in (line-beginning-position)
-						 (line-end-position))))))))
+			       (nth
+                                1
+                                (sort
+                                 (overlays-in (line-beginning-position)
+					      (line-end-position))
+                                 (lambda (ov1 ov2) (< (overlay-start ov1)
+                                                 (overlay-start ov2))))))))))
   (should
    (equal "| a  "
 	  (org-test-with-temp-text "| <3>  |\n| <point>a   |"
 	    (org-table-toggle-column-width)
 	    (buffer-substring (line-beginning-position)
 			      (overlay-start
-			       (car (overlays-in (line-beginning-position)
-						 (line-end-position))))))))
+			       (car
+                                (sort
+                                 (overlays-in (line-beginning-position)
+					      (line-end-position))
+                                 (lambda (ov1 ov2) (< (overlay-start ov1)
+                                                 (overlay-start ov2))))))))))
   (should
    (equal (concat "----" org-table-shrunk-column-indicator)
 	  (org-test-with-temp-text "| <3>  |\n|--<point>----|"
 	    (org-table-toggle-column-width)
 	    (overlay-get
-	     (car (overlays-in (line-beginning-position)
-			       (line-end-position)))
+	     (car
+              (sort
+               (overlays-in (line-beginning-position)
+			    (line-end-position))
+               (lambda (ov1 ov2) (< (overlay-start ov1)
+                               (overlay-start ov2)))))
 	     'display))))
   ;; Width only takes into account visible characters.
   (should
@@ -3072,8 +3085,13 @@ See also `test-org-table/copy-field'."
 	    (org-table-toggle-column-width)
 	    (buffer-substring (line-beginning-position)
 			      (overlay-start
-			       (car (overlays-in (line-beginning-position)
-						 (line-end-position))))))))
+			       (nth
+                                1
+                                (sort
+                                 (overlays-in (line-beginning-position)
+					      (line-end-position))
+                                 (lambda (ov1 ov2) (< (overlay-start ov1)
+                                                 (overlay-start ov2))))))))))
   ;; Before the first column or after the last one, ask for columns
   ;; ranges.
   (should

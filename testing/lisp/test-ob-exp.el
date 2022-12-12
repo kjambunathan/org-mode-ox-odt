@@ -1,4 +1,4 @@
-;;; test-ob-exp.el
+;;; test-ob-exp.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2010-2015, 2019 Eric Schulte
 ;; Authors: Eric Schulte
@@ -23,6 +23,10 @@
 ;; Template test file for Org tests
 
 ;;; Code:
+
+(require 'ob-exp)
+(require 'org-src)
+(require 'org-test "../testing/org-test")
 
 (defmacro org-test-with-expanded-babel-code (&rest body)
   "Execute BODY while in a buffer with all Babel code evaluated.
@@ -136,7 +140,7 @@ a table."
     '(property-drawer plain-list src-block fixed-width src-block plain-list)
     (org-test-at-id "5daa4d03-e3ea-46b7-b093-62c1b7632df3"
       (org-narrow-to-subtree)
-      (mapcar 'org-element-type
+      (mapcar #'org-element-type
 	      (org-element-map
 		  (org-test-with-expanded-babel-code
 		   (org-element-parse-buffer 'greater-element))
@@ -179,6 +183,7 @@ a table."
 	 nil t))))))
 
 (ert-deftest ob-exp/evaluate-all-executables-in-order ()
+  (defvar *evaluation-collector*)
   (should
    (equal '(5 4 3 2 1)
 	  (let ((org-export-use-babel t) *evaluation-collector*)
@@ -398,9 +403,9 @@ be evaluated."
 : 2
 
 #+NAME: src1
-#+BEGIN_SRC emacs-lisp
+#+begin_src emacs-lisp
 \(+ 1 1)
-#+END_SRC"
+#+end_src"
       (org-test-with-temp-text
 	  "#+RESULTS: src1
 
@@ -565,7 +570,7 @@ src_emacs-lisp{(+ 1 1)}"
 (ert-deftest ob-export/body-with-coderef ()
   "Test exporting a code block with coderefs."
   (should
-   (equal "#+BEGIN_SRC emacs-lisp\n0 (ref:foo)\n#+END_SRC"
+   (equal "#+begin_src emacs-lisp\n0 (ref:foo)\n#+end_src"
 	  (org-test-with-temp-text
 	      "#+BEGIN_SRC emacs-lisp :exports code\n0 (ref:foo)\n#+END_SRC"
 	    (let ((org-export-use-babel t)
@@ -574,7 +579,7 @@ src_emacs-lisp{(+ 1 1)}"
 	    (buffer-string))))
   (should
    (equal
-    "#+BEGIN_SRC emacs-lisp -l \"r:%s\"\n1 r:foo\n#+END_SRC"
+    "#+begin_src emacs-lisp -l \"r:%s\"\n1 r:foo\n#+end_src"
     (org-test-with-temp-text
 	"#+BEGIN_SRC emacs-lisp -l \"r:%s\" -lisp :exports code\n1 r:foo\n#+END_SRC"
       (let ((org-export-use-babel t))
@@ -586,7 +591,7 @@ src_emacs-lisp{(+ 1 1)}"
   ;; Pathological case: affiliated keyword matches inline source block
   ;; syntax.
   (should
-   (equal "#+name: call_foo\n#+BEGIN_SRC emacs-lisp\n42\n#+END_SRC"
+   (equal "#+name: call_foo\n#+begin_src emacs-lisp\n42\n#+end_src"
 	  (org-test-with-temp-text
 	      "#+name: call_foo\n#+BEGIN_SRC emacs-lisp\n42\n#+END_SRC"
 	    (let ((org-export-use-babel t))

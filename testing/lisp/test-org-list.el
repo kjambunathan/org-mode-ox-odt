@@ -1,4 +1,4 @@
-;;; test-org-list.el --- Tests for org-list.el
+;;; test-org-list.el --- Tests for org-list.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2012, 2013, 2014, 2018, 2019  Nicolas Goaziou
 
@@ -18,6 +18,9 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
+
+(require 'org-list)
+(require 'org)
 
 (ert-deftest test-org-list/list-ending ()
   "Test if lists end at the right place."
@@ -216,7 +219,55 @@
 	    (let ((org-plain-list-ordered-item-terminator t)
 		  (org-list-allow-alphabetical t))
 	      (org-cycle-list-bullet)
-	      (buffer-substring (point) (line-end-position)))))))
+	      (buffer-substring (point) (line-end-position))))))
+  ;; Preserve point position while cycling.
+  (org-test-with-temp-text "- this is test
+
+  - asd
+    - asd
+ <point> - this is
+* headline
+"
+    (should (= (point) 36))
+    (dotimes (_ 10)
+      (org-cycle-list-bullet)
+      (should (= 1 (- (point) (line-beginning-position))))))
+  (org-test-with-temp-text "
+- this is test
+  + asd
+    - asd
+  <point>+ this is
+* headline
+"
+    (should (= (point) 37))
+    (dotimes (_ 10)
+      (org-cycle-list-bullet)
+      (should (= 2 (- (point) (line-beginning-position))))))
+  (org-test-with-temp-text "
+- this is test
+  + asd
+    - asd
+  +<point> this is
+* headline
+"
+    (should (= (point) 38))
+    (dotimes (_ 10)
+      (org-cycle-list-bullet)
+      (should (= 3 (- (point) (line-beginning-position))))))
+  (org-test-with-temp-text "
+- this is test
+  - asd
+    - asd
+  - <point>this is
+* headline
+"
+    (should (= (point) 39))
+    (dotimes (i 5)
+      (org-cycle-list-bullet)
+      (should
+       (if (or (< i 2) (= i 4))
+           (should (= 4 (- (point) (line-beginning-position))))
+         (should (= 5 (- (point) (line-beginning-position)))))))))
 
 (ert-deftest test-org-list/indent-item ()
   "Test `org-indent-item' specifications."
@@ -261,6 +312,16 @@
 	    (buffer-string))))
   (should
    (equal "
+- [ ] list item 1
+  + [ ] list item 2"
+          (org-test-with-temp-text "
+- [ ] list item 1
+- [ ] list item 2<point>"
+            (let ((org-list-demote-modify-bullet '(("-" . "+"))))
+              (org-indent-item)
+              (buffer-string)))))
+  (should
+   (equal "
 1. Item 1
    + Item 2"
 	  (org-test-with-temp-text "
@@ -298,7 +359,21 @@ b. Item 2<point>"
 	    (push-mark (point) t t)
 	    (goto-char (point-max))
 	    (let (org-list-demote-modify-bullet) (org-indent-item))
-	    (buffer-string)))))
+	    (buffer-string))))
+  ;; When point is right after empty item, do not move point.
+  (should
+   (= 13
+      (org-test-with-temp-text "
+- item
+- <point> ::"
+        (org-indent-item)
+        (point))))
+  ;; Preserve space after point upon promoting level.
+  (org-test-with-temp-text "
+- item
+- <point> 	::"
+    (org-indent-item)
+    (should (looking-at-p " \t"))))
 
 (ert-deftest test-org-list/indent-item-tree ()
   "Test `org-indent-item-tree' specifications."
@@ -582,20 +657,38 @@ b. Item 2<point>"
   ;; Preserve item visibility.
   (should
    (equal
+    (make-list 2 'org-fold-outline)
+    (let ((org-fold-core-style 'text-properties))
+      (org-test-with-temp-text
+       "* Headline\n<point>- item 1\n  body 1\n- item 2\n  body 2"
+       (let ((org-cycle-include-plain-lists t))
+         (org-cycle)
+         (search-forward "- item 2")
+         (org-cycle))
+       (search-backward "- item 1")
+       (org-move-item-down)
+       (forward-line)
+       (list (org-fold-get-folding-spec)
+	     (progn
+	       (search-backward " body 2")
+	       (org-fold-get-folding-spec)))))))
+  (should
+   (equal
     '(outline outline)
-    (org-test-with-temp-text
-	"* Headline\n<point>- item 1\n  body 1\n- item 2\n  body 2"
-      (let ((org-cycle-include-plain-lists t))
-	(org-cycle)
-	(search-forward "- item 2")
-	(org-cycle))
-      (search-backward "- item 1")
-      (org-move-item-down)
-      (forward-line)
-      (list (org-invisible-p2)
-	    (progn
-	      (search-backward " body 2")
-	      (org-invisible-p2))))))
+    (let ((org-fold-core-style 'overlays))
+      (org-test-with-temp-text
+       "* Headline\n<point>- item 1\n  body 1\n- item 2\n  body 2"
+       (let ((org-cycle-include-plain-lists t))
+         (org-cycle)
+         (search-forward "- item 2")
+         (org-cycle))
+       (search-backward "- item 1")
+       (org-move-item-down)
+       (forward-line)
+       (list (org-fold-get-folding-spec)
+	     (progn
+	       (search-backward " body 2")
+	       (org-fold-get-folding-spec)))))))
   ;; Preserve children visibility.
   (org-test-with-temp-text "* Headline
 - item 1
@@ -627,7 +720,7 @@ b. Item 2<point>"
   #+BEGIN_CENTER
   Text2
   #+END_CENTER"
-    (org-hide-block-all)
+    (org-fold-hide-block-all)
     (let ((invisible-property-1
 	   (progn
 	     (search-forward "Text1")
@@ -871,15 +964,28 @@ b. Item 2<point>"
   ;; Preserve list visibility when inserting an item.
   (should
    (equal
+    `(org-fold-outline org-fold-outline)
+    (let ((org-fold-core-style 'text-properties))
+      (org-test-with-temp-text "- A\n  - B\n- C\n  - D"
+                               (let ((org-cycle-include-plain-lists t))
+	                         (org-cycle)
+	                         (forward-line 2)
+	                         (org-cycle)
+	                         (org-insert-item)
+	                         (list (org-fold-get-folding-spec nil (line-beginning-position 0))
+	                               (org-fold-get-folding-spec nil (line-end-position 2))))))))
+  (should
+   (equal
     '(outline outline)
-    (org-test-with-temp-text "- A\n  - B\n- C\n  - D"
-      (let ((org-cycle-include-plain-lists t))
-	(org-cycle)
-	(forward-line 2)
-	(org-cycle)
-	(org-insert-item)
-	(list (get-char-property (line-beginning-position 0) 'invisible)
-	      (get-char-property (line-end-position 2) 'invisible))))))
+    (let ((org-fold-core-style 'overlays))
+      (org-test-with-temp-text "- A\n  - B\n- C\n  - D"
+                               (let ((org-cycle-include-plain-lists t))
+	                         (org-cycle)
+	                         (forward-line 2)
+	                         (org-cycle)
+	                         (org-insert-item)
+	                         (list (get-char-property (line-beginning-position 0) 'invisible)
+	                               (get-char-property (line-end-position 2) 'invisible)))))))
   ;; Test insertion in area after a sub-list.  In particular, if point
   ;; is right at the end of the previous sub-list, still insert
   ;; a sub-item in that list.
@@ -1250,6 +1356,69 @@ b. Item 2<point>"
 	    (goto-char (point-max))
 	    (org-toggle-item nil)
 	    (buffer-string))))
+  ;; When headings contain footnote definitions, move the definition
+  ;; out of the list.  Footnote definitions cannot be indented.
+  (should
+   (equal "- Main headline
+  - Headline 1
+    bbbbbbbb [fn:1]
+
+- Headline 2
+[fn:1] cccccccccccccccc
+
+
+"
+          (org-test-with-temp-text "* Main headline
+** Headline 1
+bbbbbbbb [fn:1]
+
+[fn:1] cccccccccccccccc
+* Headline 2"
+            (transient-mark-mode 1)
+            (push-mark (point) t t)
+            (goto-char (point-max))
+            (org-toggle-item t)
+            (buffer-string))))
+  ;; Footnote definitions that did not have trailing double blank line
+  ;; must not slurp the following element.
+  (should
+   (equal "- Head 1
+- Head 2
+[fn:1] cccccccccccccccc
+
+
+Paragraph outside footnote definitions."
+          (org-test-with-temp-text "* Head 1
+[fn:1] cccccccccccccccc
+* Head 2
+
+
+Paragraph outside footnote definitions."
+            (transient-mark-mode 1)
+            (push-mark (point) t t)
+            (search-forward "Head 2")
+            (org-toggle-item t)
+            (buffer-string))))
+  ;; Move footnote definitions past pre-existing items after.
+  (should
+   (equal "- Line 1
+  Line 2
+- next item
+[fn:1] definition
+
+
+"
+          (org-test-with-temp-text "Line 1
+Line 2
+[fn:1] definition
+
+
+- next item"
+            (transient-mark-mode 1)
+            (push-mark (point) t t)
+            (search-forward "definition")
+            (org-toggle-item t)
+            (buffer-string))))
   ;; When argument ARG is non-nil, change the whole region into
   ;; a single item.
   (should
@@ -1266,7 +1435,7 @@ b. Item 2<point>"
   ;; Sort alphabetically.
   (let ((original-string-collate-lessp (symbol-function 'string-collate-lessp)))
     (cl-letf (((symbol-function 'string-collate-lessp)
-	       (lambda (s1 s2 &optional locale ignore-case)
+	       (lambda (s1 s2 &optional _locale ignore-case)
 		 (funcall original-string-collate-lessp
 			  s1 s2 "C" ignore-case))))
       (should

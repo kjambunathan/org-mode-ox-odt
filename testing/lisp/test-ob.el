@@ -1,4 +1,4 @@
-;;; test-ob.el --- tests for ob.el
+;;; test-ob.el --- tests for ob.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2010-2015, 2019 Eric Schulte
 ;; Authors: Eric Schulte, Martyn Jago
@@ -20,6 +20,10 @@
 
 ;;; Code:
 
+(require 'ob-core)
+(require 'org-src)
+(require 'ob-ref)
+(require 'org-table)
 (eval-and-compile (require 'cl-lib))
 
 (ert-deftest test-ob/indented-cached-org-bracket-link ()
@@ -132,6 +136,30 @@ should still return the link."
     (let ((info (org-babel-get-src-block-info)))
       (should (string= "no" (cdr (assq :tangle (nth 2 info))))))))
 
+(ert-deftest test-ob/post-header-arguments ()
+  "When the result of a post-processing source block is an empty
+list, then it should be treated as such; not as the symbol nil."
+  (should
+   (let ((default-directory temporary-file-directory))
+     (org-test-with-temp-text
+         "
+#+name: addheader
+#+header: :var rows=\"\"
+#+begin_src elisp :hlines yes
+  '()
+#+end_src
+#+header: :post addheader(*this*)
+#+<point>begin_src emacs-lisp :results table
+#+end_src
+#+RESULTS:
+: nil"
+       (org-babel-execute-src-block)
+       (goto-char (1- (point-max)))
+       (equal (buffer-substring-no-properties
+               (line-beginning-position)
+               (line-end-position))
+              "#+RESULTS:")))))
+
 (ert-deftest test-ob/elisp-in-header-arguments ()
   "Test execution of elisp forms in header arguments."
   (org-test-with-temp-text-in-file "
@@ -176,7 +204,42 @@ should still return the link."
     (forward-line 5)
     (should (string= ": 4" (buffer-substring
 			    (point-at-bol)
-			    (point-at-eol))))))
+			    (point-at-eol)))))
+  ;; Test reading lists.
+  (org-test-with-temp-text-in-file "
+
+#+NAME: example-list
+- simple
+  - not
+  - nested
+- list
+
+<point>#+BEGIN_SRC emacs-lisp :var x=example-list
+(print x)
+#+END_SRC"
+
+    (should (equal '("simple" "list") (org-babel-execute-src-block)))
+    (forward-line 5)
+    (should (string=
+             "| simple | list |"
+             (buffer-substring
+	      (point-at-bol)
+	      (point-at-eol))))))
+
+(ert-deftest test-ob/block-content-resolution ()
+  "Test block content resolution."
+  (org-test-with-temp-text-in-file "
+
+#+name: four
+#+begin_src emacs-lisp
+  (list 1 2 3 4)
+#+end_src
+
+#+begin_src emacs-lisp :var four=four[]
+  (length (eval (car (read-from-string four))))
+#+end_src"
+    (org-babel-next-src-block 2)
+    (should (= 4 (org-babel-execute-src-block)))))
 
 (ert-deftest test-ob/cons-cell-as-variable ()
   "Test that cons cell can be assigned as variable."
@@ -718,16 +781,17 @@ x
       (should (looking-at ": 2")))))
 
 (ert-deftest test-ob/eval-header-argument ()
+  (defvar test-ob--foo)
   (cl-flet ((check-eval (eval runp)
 			(org-test-with-temp-text (format "#+begin_src emacs-lisp :eval %s
-  (setq foo :evald)
+  (setq test-ob--foo :evald)
 #+end_src" eval)
-			  (let ((foo :not-run))
+			  (let ((test-ob--foo :not-run))
 			    (if runp
 				(progn (should (org-babel-execute-src-block))
-				       (should (eq foo :evald)))
+				       (should (eq test-ob--foo :evald)))
 			      (progn (should-not (org-babel-execute-src-block))
-				     (should-not (eq foo :evald))))))))
+				     (should-not (eq test-ob--foo :evald))))))))
     (check-eval "never" nil)
     (check-eval "no" nil)
     (check-eval "never-export" t)
@@ -863,7 +927,52 @@ x
 #+begin_src emacs-lisp :noweb yes<point>
 <<AA>>
 #+end_src"
-	    (org-babel-expand-noweb-references)))))
+	    (org-babel-expand-noweb-references))))
+  ;; Test :noweb-ref expansion.
+  (should
+   (equal "(message \"!! %s\" \"Running confpkg-test-setup\")
+
+(message \"- Ran `%s'\" 'confpkg-test-strip-package-statements)
+
+(message \"!! %s\" \"Still running confpkg-test-setup\")
+
+(message \"- Ran elisp blocks in `%s'\" 'confpkg-test-dependency-analysis)
+
+(message \"!! %s\" \"End of confpkg-test-setup\")"
+          (org-test-with-temp-text "
+* Setup
+
+#+name: confpkg-test-setup
+#+begin_src emacs-lisp :results silent :noweb no-export
+(message \"!! %s\" \"Running confpkg-test-setup\")
+
+<<confpkg-test-strip-package-statements>>
+
+(message \"!! %s\" \"Still running confpkg-test-setup\")
+
+<<confpkg-test-dependency-analysis>>
+
+(message \"!! %s\" \"End of confpkg-test-setup\")
+#+end_src
+
+#+call: confpkg-test-setup[:results none]()
+
+* Identify cross-package dependencies
+
+#+begin_src emacs-lisp :noweb-ref confpkg-test-dependency-analysis
+(message \"- Ran elisp blocks in `%s'\" 'confpkg-test-dependency-analysis)
+#+end_src
+
+* Commenting out ~package!~ statements
+
+#+name: confpkg-test-strip-package-statements
+#+begin_src emacs-lisp
+(message \"- Ran `%s'\" 'confpkg-test-strip-package-statements)
+#+end_src
+"
+            (goto-char (point-min))
+            (search-forward "begin_src")
+            (org-babel-expand-noweb-references)))))
 
 (ert-deftest test-ob/splitting-variable-lists-in-references ()
   (org-test-with-temp-text ""
@@ -1085,6 +1194,29 @@ trying to find the :END: marker."
     (org-babel-next-src-block 1)
     (org-babel-execute-src-block)
     (org-babel-execute-src-block)))
+
+(ert-deftest test-ob/org-babel-results-indented-list ()
+  "Test that :results value list indents multi-line items correctly."
+  (should
+   (string= "- Foo1
+  Bar1
+- Foo2
+
+  Bar2
+"
+            (org-test-with-temp-text
+                "#+begin_src emacs-lisp :results value list
+'(\"Foo1
+Bar1\"
+  \"Foo2
+
+Bar2\")
+#+end_src"
+              (org-babel-execute-src-block)
+              (org-forward-element)
+              (org-narrow-to-element)
+              (delete-trailing-whitespace)
+              (buffer-string)))))
 
 (ert-deftest test-ob/file-desc-header-argument ()
   "Test that the :file-desc header argument is used."
@@ -1369,7 +1501,7 @@ Line 3\"
 	  (org-test-with-temp-text "#+BEGIN_SRC emacs-lisp
 \(+ 1 2)
 #+END_SRC\n\n\n"
-	    (let ((org-babel-next-src-block "RESULTS"))
+	    (let ((org-babel-results-keyword "RESULTS"))
 	      (org-babel-execute-src-block))
 	    (buffer-string))))
   ;; Do not add spurious blank lines after results.
@@ -1522,7 +1654,7 @@ echo \"$data\"
 	    (should (re-search-forward org-babel-src-block-regexp nil t))
 	    (goto-char (match-beginning 0))
 	    ;; now that we've located the code block, it may be evaluated
-	    (let ((org-babel-execute-src-block "RESULTS"))
+	    (let ((org-babel-results-keyword "RESULTS"))
 	      (org-babel-execute-src-block))
 	    (buffer-string)))))
 
@@ -1557,8 +1689,8 @@ echo \"$data\"
     (org-test-with-temp-text "  #+begin_src emacs-lisp\n(+ 1 1)\n  #+end_src"
       (org-babel-execute-src-block)
       (let ((case-fold-search t)) (search-forward "RESULTS"))
-      (list (org-get-indentation)
-	    (progn (forward-line) (org-get-indentation))))))
+      (list (current-indentation)
+	    (progn (forward-line) (current-indentation))))))
   (should
    (equal
     '(2 2)
@@ -1566,8 +1698,8 @@ echo \"$data\"
 	"  #+name: block\n  #+begin_src emacs-lisp\n(+ 1 1)\n  #+end_src"
       (org-babel-execute-src-block)
       (let ((case-fold-search t)) (search-forward "RESULTS"))
-      (list (org-get-indentation)
-	    (progn (forward-line) (org-get-indentation))))))
+      (list (current-indentation)
+	    (progn (forward-line) (current-indentation))))))
   ;; Don't get fooled by TAB-based indentation.
   (should
    (equal
@@ -1577,8 +1709,8 @@ echo \"$data\"
       (setq tab-width 4)
       (org-babel-execute-src-block)
       (let ((case-fold-search t)) (search-forward "RESULTS"))
-      (list (org-get-indentation)
-	    (progn (forward-line) (org-get-indentation))))))
+      (list (current-indentation)
+	    (progn (forward-line) (current-indentation))))))
   ;; Properly indent examplified blocks.
   (should
    (equal
@@ -1704,6 +1836,7 @@ line 1
 
 (ert-deftest test-ob/noweb-expansions-in-cache ()
   "Ensure that noweb expansions are expanded before caching."
+  (defvar noweb-expansions-in-cache-var)
   (let ((noweb-expansions-in-cache-var 0))
     (org-test-with-temp-text "
 #+name: foo
@@ -1770,6 +1903,72 @@ nil
                 (file-modes "t.sh")
               (delete-file "t.sh"))))))
 
+(ert-deftest test-ob-core/dir-attach ()
+  "Test :dir header using special 'attach value"
+  (should
+   (org-test-with-temp-text-in-file
+    "* 'attach Symbol
+<point>#+begin_src elisp :dir 'attach :results file
+(with-temp-file \"test.txt\" (insert \"attachment testing\n\"))
+\"test.txt\"
+#+end_src"
+    (org-id-get-create)
+    (org-babel-execute-src-block)
+    (goto-char (org-babel-where-is-src-block-result))
+    (forward-line)
+    (and
+     (file-exists-p (format "%s/test.txt" (org-attach-dir nil t)))
+     (string= (buffer-substring-no-properties (point) (line-end-position))
+              "[[attachment:test.txt]]"))))
+  (should
+   (org-test-with-temp-text-in-file
+    "* 'attach String
+<point>#+begin_src elisp :dir \"'attach\" :results file
+(with-temp-file \"test.txt\" (insert \"attachment testing\n\"))
+\"test.txt\"
+#+end_src"
+    (org-id-get-create)
+    (org-babel-execute-src-block)
+    (goto-char (org-babel-where-is-src-block-result))
+    (forward-line)
+    (and
+     (file-exists-p (format "%s/test.txt" (org-attach-dir nil t)))
+     (string= (buffer-substring-no-properties (point) (line-end-position))
+              "[[attachment:test.txt]]"))))
+  (should
+   (org-test-with-temp-text-in-file
+    "* 'attach with Existing DIR property
+:PROPERTIES:
+:DIR:      custom-attach-dir
+:END:
+
+<point>#+begin_src elisp :dir 'attach :results file
+(with-temp-file \"test.txt\" (insert \"attachment testing\n\"))
+\"test.txt\"
+#+end_src"
+    (message "DIR: %s" (org-attach-dir t))
+    (org-babel-execute-src-block)
+    (goto-char (org-babel-where-is-src-block-result))
+    (forward-line)
+    (and
+     (file-exists-p (format "%s/test.txt" (org-attach-dir nil t)))
+     (string= (buffer-substring-no-properties (point) (line-end-position))
+              "[[attachment:test.txt]]"))))
+  (should-error
+   (org-test-with-temp-text-in-file
+    "* 'attach with no ID or DIR
+<point>#+begin_src elisp :dir 'attach :results file
+(with-temp-file \"test.txt\" (insert \"attachment testing\n\"))
+\"test.txt\"
+#+end_src"
+    (org-babel-execute-src-block)
+    (goto-char (org-babel-where-is-src-block-result))
+    (forward-line)
+    (and
+     (file-exists-p (format "%s/test.txt" (org-attach-dir nil t)))
+     (string= (buffer-substring-no-properties (point) (line-end-position))
+              "[[attachment:test.txt]]")))))
+
 (ert-deftest test-ob-core/dir-mkdirp ()
   "Test :mkdirp with :dir header combination."
   (should-not
@@ -1806,6 +2005,11 @@ default-directory
 	    (org-babel-execute-src-block)))))
 
 (ert-deftest test-ob/script-escape ()
+  ;; Empty list.
+  (should (equal nil (org-babel-script-escape "[]")))
+  (should (equal nil (org-babel-script-escape "()")))
+  (should (equal nil (org-babel-script-escape "'()")))
+  (should (equal nil (org-babel-script-escape "{}")))
   ;; Delimited lists of numbers
   (should (equal '(1 2 3)
 		 (org-babel-script-escape "[1 2 3]")))

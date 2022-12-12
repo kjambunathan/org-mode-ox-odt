@@ -1,4 +1,4 @@
-;;; test-org.el --- tests for org.el
+;;; test-org.el --- tests for org.el  -*- lexical-binding: t -*-
 
 ;; Copyright (c)  David Maus
 ;; Authors: David Maus
@@ -23,6 +23,25 @@
 ;;; Code:
 
 (eval-and-compile (require 'cl-lib))
+(eval-when-compile (require 'org-macs)) ;For `org-with-gensyms'.
+(require 'org)
+(require 'org-inlinetask)
+(require 'org-refile)
+(require 'org-agenda)
+
+
+;;; Helpers
+
+(defmacro org-test-with-timezone (tz &rest body)
+  "Evaluate BODY with TZ environment temporary set to the passed value."
+  (declare (indent 1))
+  (org-with-gensyms (tz-saved)
+    `(let ((,tz-saved (getenv "TZ")))
+       (unwind-protect
+           (progn
+             (setenv "TZ" ,tz)
+             ,@body)
+             (setenv "TZ" ,tz-saved)))))
 
 
 ;;; Comments
@@ -179,8 +198,86 @@
 
 ;;; Date and time analysis
 
+(ert-deftest test-org/org-encode-time ()
+  "Test various ways to call `org-encode-time'"
+  (org-test-with-timezone "UTC"
+    ;; list as the sole argument
+    (should (string-equal
+             "2022-03-24 23:30:01"
+             (format-time-string
+              "%F %T"
+              (org-encode-time '(1 30 23 24 3 2022 nil -1 nil)))))
+    ;; SECOND...YEAR
+    (should (string-equal
+             "2022-03-24 23:30:02"
+             (format-time-string
+              "%F %T"
+              (org-encode-time 2 30 23 24 3 2022))))
+    ;; SECOND...YEAR IGNORED DST ZONE
+    (should (string-equal
+             "2022-03-24 23:30:03"
+             (format-time-string
+              "%F %T"
+              (org-encode-time 3 30 23 24 3 2022 nil -1 nil))))
+    ;; function call
+    (should (string-equal
+             "2022-03-24 23:30:04"
+             (format-time-string
+              "%F %T"
+              (org-encode-time (apply #'list 4 30 23 '(24 3 2022 nil -1 nil))))))
+    ;; wrong number of arguments
+    (if (not (version< emacs-version "27.1"))
+        (should-error (string-equal
+                       "2022-03-24 23:30:05"
+                       (format-time-string
+                        "%F %T"
+                        (org-encode-time 5 30 23 24 3 2022 nil))))))
+  ;; daylight saving time
+  (if (not (version< emacs-version "27.1"))
+      ;; DST value is not ignored for multiple arguments unlike for `encode-time'
+      (should (string-equal
+               "2022-04-01 00:30:06 +0200 CEST"
+               (format-time-string
+                "%F %T %z %Z"
+                (org-encode-time 6 30 23 31 3 2022 nil nil "Europe/Madrid")
+                "Europe/Madrid")))
+    (should (string-equal
+             "2022-03-31 23:30:07 +0200 CEST"
+             (format-time-string
+              "%F %T %z %Z"
+              (org-encode-time 7 30 23 31 3 2022 nil t "Europe/Madrid")
+              "Europe/Madrid"))))
+  (org-test-with-timezone "Europe/Madrid"
+    ;; Standard time is not forced when DST is not specified
+    (should (string-equal
+             "2022-03-31 23:30:08"
+             (format-time-string
+              "%F %T"
+              (org-encode-time 8 30 23 31 3 2022))))))
+
+(ert-deftest test-org/org-time-string-to-time ()
+  "Test `org-time-string-to-time' around DST transition."
+  (org-test-with-timezone "UTC"
+    (should (string-equal
+             "2022-03-31 23:31:00"
+             (format-time-string
+              "%F %T"
+              (org-time-string-to-time "2022-03-31 23:31")))))
+  (org-test-with-timezone "Europe/Madrid"
+    (should (string-equal
+             "2022-03-24 23:32:00 +0100 CET"
+             (format-time-string
+              "%F %T %z %Z"
+              (org-time-string-to-time "2022-03-24 23:32"))))
+    (should (string-equal
+             "2022-03-31 23:33:00 +0200 CEST"
+             (format-time-string
+              "%F %T %z %Z"
+              (org-time-string-to-time "2022-03-31 23:33"))))))
+
 (ert-deftest test-org/org-read-date ()
   "Test `org-read-date' specifications."
+  (defvar org-time-was-given) ; dynamically scoped parameter
   ;; Parse ISO date with abbreviated year and month.
   (should (equal "2012-03-29 16:40"
 		 (let ((org-time-was-given t))
@@ -201,14 +298,14 @@
     (org-test-at-time "2014-03-04"
       (org-read-date
        t nil "+1y" nil
-       (apply #'encode-time (org-parse-time-string "2012-03-29"))))))
+       (org-time-string-to-time "2012-03-29")))))
   (should
    (equal
     "2013-03-29"
     (org-test-at-time "2014-03-04"
       (org-read-date
        t nil "++1y" nil
-       (apply #'encode-time (org-parse-time-string "2012-03-29"))))))
+       (org-time-string-to-time "2012-03-29")))))
   ;; When `org-read-date-prefer-future' is non-nil, prefer future
   ;; dates (relatively to now) when incomplete.  Otherwise, use
   ;; default date.
@@ -255,7 +352,7 @@
       (let ((org-read-date-prefer-future t))
 	(org-read-date
 	 t nil "1" nil
-	 (apply #'encode-time (org-parse-time-string "2012-03-29")))))))
+	 (org-time-string-to-time "2012-03-29"))))))
   (should
    (equal
     "2014-03-25"
@@ -263,20 +360,20 @@
       (let ((org-read-date-prefer-future t))
 	(org-read-date
 	 t nil "25" nil
-	 (apply #'encode-time (org-parse-time-string "2012-03-29"))))))))
+	 (org-time-string-to-time "2012-03-29")))))))
 
 (ert-deftest test-org/org-parse-time-string ()
   "Test `org-parse-time-string'."
   (should (equal (org-parse-time-string "2012-03-29 16:40")
-		 '(0 40 16 29 3 2012 nil nil nil)))
+		 '(0 40 16 29 3 2012 nil -1 nil)))
   (should (equal (org-parse-time-string "[2012-03-29 16:40]")
-		 '(0 40 16 29 3 2012 nil nil nil)))
+		 '(0 40 16 29 3 2012 nil -1 nil)))
   (should (equal (org-parse-time-string "<2012-03-29 16:40>")
-		 '(0 40 16 29 3 2012 nil nil nil)))
+		 '(0 40 16 29 3 2012 nil -1 nil)))
   (should (equal (org-parse-time-string "<2012-03-29>")
-		 '(0 0 0 29 3 2012 nil nil nil)))
+		 '(0 0 0 29 3 2012 nil -1 nil)))
   (should (equal (org-parse-time-string "<2012-03-29>" t)
-		 '(0 nil nil 29 3 2012 nil nil nil))))
+		 '(0 nil nil 29 3 2012 nil -1 nil))))
 
 (ert-deftest test-org/closest-date ()
   "Test `org-closest-date' specifications."
@@ -413,6 +510,10 @@
   ;; The function ignores incomplete drawers.
   (should-not
    (org-test-with-temp-text ":PROPERTIES:\n<point>:PROP: t\n"
+                            (org-at-property-drawer-p)))
+  ;; tab separating the value.
+  (should
+   (org-test-with-temp-text ":PROPERTIES:\n:PROP:	t\n:END:\n"
      (org-at-property-drawer-p))))
 
 (ert-deftest test-org/get-property-block ()
@@ -761,7 +862,48 @@
 	      (push-mark (point) t t)
 	      (goto-char (point-max))
 	      (call-interactively #'org-fill-paragraph)
+	      (buffer-string)))))
+  ;; Fill every list item in a region
+  (should
+   (equal "\n- 2345678\n  9\n- 2345678\n  9"
+	  (org-test-with-temp-text "\n- 2345678 9\n- 2345678 9"
+	    (let ((fill-column 10))
+	      (transient-mark-mode 1)
+	      (push-mark (point-min) t t)
+	      (goto-char (point-max))
+	      (call-interactively #'org-fill-paragraph)
+	      (buffer-string)))))
+  (should
+   (equal "\n- 2345678\n  9\n- 2345678"
+	  (org-test-with-temp-text "\n- 2345678 9\n- 2345678"
+	    (let ((fill-column 10))
+	      (transient-mark-mode 1)
+	      (push-mark (point-min) t t)
+	      (goto-char (point-max))
+	      (call-interactively #'org-fill-paragraph)
 	      (buffer-string))))))
+
+(ert-deftest test-org/fill-region ()
+  "Test `fill-region' behaviour."
+  ;; fill-region should fill every item of a list
+  (should
+   (equal "\n- 2345678\n  9\n- 2345678\n  9"
+	  (org-test-with-temp-text "\n- 2345678 9\n- 2345678 9"
+	                           (let ((fill-column 10))
+	                             (transient-mark-mode 1)
+	                             (push-mark (point-min) t t)
+	                             (goto-char (point-max))
+	                             (call-interactively #'fill-region)
+	                             (buffer-string)))))
+  (should
+   (equal "\n- 1 2\n- 1 2"
+	  (org-test-with-temp-text "\n- 1\n  2\n- 1\n  2"
+	                           (let ((fill-column 10))
+	                             (transient-mark-mode 1)
+	                             (push-mark (point-min) t t)
+	                             (goto-char (point-max))
+	                             (call-interactively #'fill-region)
+	                             (buffer-string)))))  )
 
 (ert-deftest test-org/auto-fill-function ()
   "Test auto-filling features."
@@ -1164,6 +1306,80 @@
 		  (org-adapt-indentation nil))
 	      (org-indent-region (point) (point-max)))
 	    (buffer-string))))
+  ;; Indent property drawers according to `org-adapt-indentation'.
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* H\n  :PROPERTIES:\n  :key:\n  :END:"
+            (org-test-with-temp-text "* H\n:PROPERTIES:\n:key:\n:END:"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  ;; Indent planning according to `org-adapt-indentation'.
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* H\n  SCHEDULED: <2022-11-03>"
+            (org-test-with-temp-text "* H\nSCHEDULED: <2022-11-03>"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  ;; Indent LOGBOOK according to `org-adapt-indentation'.
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* H\n  :LOGBOOK:
+  CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+  :END:"
+            (org-test-with-temp-text "* H\n:LOGBOOK:
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+:END:"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  ;; Indent clock lines according to `org-adapt-indentation'.
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* H
+  CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46"
+            (org-test-with-temp-text "* H
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  ;; Do not indent beyond headline data.
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* H\n  SCHEDULED: <2022-11-03>\nParagraph"
+            (org-test-with-temp-text "* H\nSCHEDULED: <2022-11-03>\nParagraph"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  (let ((org-adapt-indentation 'headline-data)
+        (org-log-into-drawer t))
+    (should
+     (equal "* TODO A task
+  :PROPERTIES:
+  :CAPTURED: [2022-09-11 dim. 21:25]
+  :END:
+  :LOGBOOK:
+  CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+  :END:
+Paragraph"
+            (org-test-with-temp-text "* TODO A task
+:PROPERTIES:
+:CAPTURED: [2022-09-11 dim. 21:25]
+:END:
+:LOGBOOK:
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+:END:
+Paragraph"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
+  (let ((org-adapt-indentation 'headline-data))
+    (should
+     (equal "* TODO A task
+  CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+Paragraph
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46"
+            (org-test-with-temp-text "* TODO A task
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46
+Paragraph
+CLOCK: [2022-09-17 sam. 11:00]--[2022-09-17 sam. 11:46] =>  0:46"
+              (org-indent-region (point-min) (point-max))
+              (buffer-string)))))
   ;; Indent plain lists.
   (let ((org-adapt-indentation t))
     (should
@@ -1188,6 +1404,26 @@
 	  (org-test-with-temp-text "\n  Paragraph"
 	    (org-indent-region (point-min) (point-max))
 	    (buffer-string)))))
+
+(ert-deftest test-org/default-indent-new-line ()
+  "Test behavior of default binding `M-j'."
+  ;; Calling `M-j' when point is not in an Org comment:
+  (should
+   (equal "* Some heading\n"
+  (org-test-with-temp-text "* Some heading<point>"
+                           (call-interactively #'default-indent-new-line)
+                           (buffer-string))))
+  ;; Calling `M-j' when point is in an Org comment:
+  (should
+   (equal "# Some Org comment\n# "
+  (org-test-with-temp-text "# Some Org comment<point>"
+                           (call-interactively #'default-indent-new-line)
+                           (buffer-string))))
+  (should
+   (equal "# Some Org\n# comment"
+  (org-test-with-temp-text "# Some Org <point>comment"
+                           (call-interactively #'default-indent-new-line)
+                           (buffer-string)))))
 
 
 
@@ -1511,6 +1747,7 @@
   (should
    (org-test-with-temp-text ":MYDRAWER:\n- a\n:END:"
      (forward-line)
+     (org-fold-reveal)
      (org-meta-return)
      (beginning-of-line)
      (looking-at "- $"))))
@@ -1828,7 +2065,7 @@
     "* H <2014-03-05"
     (org-test-with-temp-text "* H <2014-03-04 Tue><point>"
       (cl-letf (((symbol-function 'read-from-minibuffer)
-		 (lambda (&rest args) "+1d")))
+		 (lambda (&rest _args) "+1d")))
 	(org-clone-subtree-with-time-shift 1))
       (buffer-substring-no-properties (line-beginning-position 2)
 				      (line-end-position 2)))))
@@ -2307,6 +2544,31 @@
 				     ">>>>>>>>>>")
 	    ">>>>>>>>..")))
 
+(ert-deftest test-org/org-find-olp ()
+  "Test `org-find-olp' specifications."
+  (org-test-with-temp-text
+      "
+* Headline
+** COMMENT headline2
+** TODO headline3
+*** [#A] headline4 :tags:
+** [#A]headline5
+** [0%] headline6
+** headline7 [100%]
+** headline8 [1/5] :some:more:tags:
+* Test
+  "
+    (should (org-find-olp '("Headline") t))
+    (should-error (org-find-olp '("Headline" "Test") t))
+    (should-error (org-find-olp '("Headlinealksjd") t))
+    (should (org-find-olp '("Headline" "headline2") t))
+    (should (org-find-olp '("Headline" "headline3") t))
+    (should (org-find-olp '("Headline" "headline3" "headline4") t))
+    (should-error (org-find-olp '("Headline" "headline5") t))
+    (should (org-find-olp '("Headline" "headline6") t))
+    (should (org-find-olp '("Headline" "headline7") t))
+    (should (org-find-olp '("Headline" "headline8") t))))
+
 (ert-deftest test-org/map-entries ()
   "Test `org-map-entries' specifications."
   ;; Full match.
@@ -2394,7 +2656,29 @@ SCHEDULED: <2014-03-04 tue.>"
    (equal '(22)
 	  (org-test-with-temp-text "* H1 :yes:\n* H2 :no:\n* H3 :yes:no:"
 	    (let (org-odd-levels-only)
-	      (org-map-entries #'point "yes&no"))))))
+	      (org-map-entries #'point "yes&no")))))
+  ;; Setting `org-map-continue-from'
+  (should
+   (string= ""
+            (org-test-with-temp-text "* H1\n* H2\n* H3n* H4"
+              (org-map-entries
+               (lambda ()
+                 (org-cut-subtree)
+                 (setq org-map-continue-from (point))))
+              (buffer-string))))
+  (should
+   (string= "* H1\n* H2\n* H3\n"
+            (org-test-with-temp-text "* H1\n* H2\n* H3\n* H4"
+              (org-map-entries
+               (lambda ()
+                 (when (string= "H4"
+                                (org-element-property
+                                 :raw-value (org-element-at-point)))
+                   (org-cut-subtree)
+                   (setq org-map-continue-from
+                         (org-element-property
+                          :begin (org-element-at-point))))))
+              (buffer-string)))))
 
 (ert-deftest test-org/edit-headline ()
   "Test `org-edit-headline' specifications."
@@ -2473,7 +2757,7 @@ SCHEDULED: <2014-03-04 tue.>"
 	      org-current-tag-alist))))
   (should
    (equal '(("A" . ?a) ("B") ("C"))
-	  (let ((org-tag-persistant-alist nil))
+	  (let ((org-tag-persistent-alist nil))
 	    (org-test-with-temp-text "#+TAGS: A(a) B C"
 	      (org-mode-restart)
 	      org-current-tag-alist))))
@@ -2644,6 +2928,11 @@ SCHEDULED: <2014-03-04 tue.>"
 	    (org-mode-restart)
 	    (cdr (assoc "a" org-keyword-properties))))))
 
+(ert-deftest test-org/collect-keywords ()
+  "Test `org-collect-keywords'."
+  (should-not
+   (org-test-with-temp-text "#+begin_example\n#+foo: bar\n#+end_example"
+     (org-collect-keywords '("FOO")))))
 
 
 ;;; Links
@@ -2851,20 +3140,32 @@ Foo Bar
      (org-open-at-point)
      (eq (org-element-type (org-element-context)) 'radio-target))))
 
+(ert-deftest test-org/open-at-point/radio-target-shadowed ()
+  "Test `org-open-at-point' on shadowed radio targets."
+  (should
+   (org-test-with-temp-text
+       "<<<target shadowed>>> <<<target>>> <point>target shadowed"
+     (org-update-radio-target-regexp)
+     (org-open-at-point)
+     (string=
+      (org-element-property :value
+                            (org-element-radio-target-parser))
+      "target shadowed"))))
+
 (ert-deftest test-org/open-at-point/tag ()
   "Test `org-open-at-point' on tags."
   (should
    (org-test-with-temp-text "* H :<point>tag:"
      (catch :result
        (cl-letf (((symbol-function 'org-tags-view)
-		  (lambda (&rest args) (throw :result t))))
+		  (lambda (&rest _args) (throw :result t))))
 	 (org-open-at-point)
 	 nil))))
   (should-not
    (org-test-with-temp-text-in-file "* H<point> :tag:"
      (catch :result
        (cl-letf (((symbol-function 'org-tags-view)
-		  (lambda (&rest args) (throw :result t))))
+		  (lambda (&rest _args) (throw :result t))))
 	 ;; When point isn't on a tag it's going to try other things,
 	 ;; possibly trying to open attachments which will return an
 	 ;; error if there isn't an attachment. Suppress that error.
@@ -2905,6 +3206,7 @@ Foo Bar
    (let ((org-custom-properties '("FOO" "BAR")))
      (org-test-with-temp-text
 	 "* H\n:PROPERTIES:\n<point>:FOO: val\n:P: 1\n:BAR: baz\n:END:\n"
+       (org-fold-reveal)
        (org-toggle-custom-properties-visibility)
        (and (org-invisible-p2)
 	    (not (progn (forward-line) (org-invisible-p2)))
@@ -2925,6 +3227,7 @@ Foo Bar
    (let ((org-custom-properties '("A")))
      (org-test-with-temp-text
 	 "* H\n:PROPERTIES:\n:A: 1\n:END:\n\n:PROPERTIES:\n<point>:A: 2\n:END:"
+       (org-fold-reveal)
        (org-toggle-custom-properties-visibility)
        (org-invisible-p2)))))
 
@@ -3229,17 +3532,18 @@ SCHEDULED: <2017-05-06 Sat>
    (progn (org-file-contents "this-file-must-not-exist" :noerror) t))
   ;; Open URL.
   (should
-   (string= "foo"
-	    (let ((buffer (generate-new-buffer "url-retrieve-output")))
-	      (unwind-protect
-		  ;; Simulate successful retrieval of a URL.
-		  (cl-letf (((symbol-function 'url-retrieve-synchronously)
-			     (lambda (&rest_)
-			       (with-current-buffer buffer
-				 (insert "HTTP/1.1 200 OK\n\nfoo"))
-			       buffer)))
-		    (org-file-contents "http://some-valid-url"))
-		(kill-buffer buffer)))))
+   (let ((org-resource-download-policy t))
+     (string= "foo"
+              (let ((buffer (generate-new-buffer "url-retrieve-output")))
+                (unwind-protect
+                    ;; Simulate successful retrieval of a URL.
+                    (cl-letf (((symbol-function 'url-retrieve-synchronously)
+                               (lambda (&rest_)
+                                 (with-current-buffer buffer
+                                   (insert "HTTP/1.1 200 OK\n\nfoo"))
+                                 buffer)))
+                      (org-file-contents "http://some-valid-url"))
+                  (kill-buffer buffer))))))
   ;; Throw error when trying to access an invalid URL.
   (should-error
    (let ((buffer (generate-new-buffer "url-retrieve-output")))
@@ -3527,7 +3831,7 @@ SCHEDULED: <2017-05-06 Sat>
   (should-not
    (org-test-with-temp-text "A <point>long line of text\nSome other text"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (org-beginning-of-line)
      (bolp)))
   ;; In a wide headline, with `visual-line-mode', prefer going to the
@@ -3536,14 +3840,14 @@ SCHEDULED: <2017-05-06 Sat>
   (should-not
    (org-test-with-temp-text "* A <point>long headline"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (goto-char (point-max))
      (org-beginning-of-line)
      (bobp)))
   (should-not
    (org-test-with-temp-text "* A <point>long headline"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (goto-char (point-max))
      (let ((org-special-ctrl-a/e t)) (org-beginning-of-line))
      (bobp)))
@@ -3643,7 +3947,7 @@ SCHEDULED: <2017-05-06 Sat>
   (should-not
    (org-test-with-temp-text "A <point>long line of text\nSome other text"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (goto-char (point-min))
      (org-end-of-line)
      (eolp)))
@@ -3658,14 +3962,14 @@ SCHEDULED: <2017-05-06 Sat>
   (should-not
    (org-test-with-temp-text "* A <point>long headline"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (goto-char (point-min))
      (org-end-of-line)
      (eolp)))
   (should-not
    (org-test-with-temp-text "* A <point>long headline :tag:"
      (visual-line-mode)
-     (dotimes (i 1000) (insert "very "))
+     (dotimes (_ 1000) (insert "very "))
      (goto-char (point-min))
      (org-end-of-line)
      (eolp)))
@@ -3749,7 +4053,7 @@ SCHEDULED: <2017-05-06 Sat>
   (should-not
    (org-test-with-temp-text "#+BEGIN_CENTER\nContents\n#+END_CENTER"
      (let ((org-special-ctrl-a/e t))
-       (org-hide-block-toggle)
+       (org-fold-hide-block-toggle)
        (org-end-of-line)
        (eobp))))
   ;; Get past invisible characters at the end of line.
@@ -3897,7 +4201,7 @@ SCHEDULED: <2017-05-06 Sat>
   (should
    (= 6
       (org-test-with-temp-text "#+begin_center\nP1\n\nP2\n#+end_center\nP3"
-	(org-hide-block-toggle)
+	(org-fold-hide-block-toggle)
 	(org-forward-paragraph)
 	(org-current-line))))
   ;; On an item or a footnote definition, move past the first element
@@ -4017,7 +4321,7 @@ SCHEDULED: <2017-05-06 Sat>
      (bobp)))
   (should
    (org-test-with-temp-text "#+begin_center\nP1\n\nP2\n#+end_center\n"
-     (org-hide-block-toggle)
+     (org-fold-hide-block-toggle)
      (goto-char (point-max))
      (org-backward-paragraph)
      (bobp)))
@@ -4421,7 +4725,9 @@ Outside."
   ;; Preserve visibility of elements and their contents.
   (should
    (equal '((63 . 82) (26 . 48))
-	  (org-test-with-temp-text "
+          (let ((org-fold-core-style 'text-properties))
+	    (org-test-with-temp-text
+             "
 #+BEGIN_CENTER
 Text.
 #+END_CENTER
@@ -4429,11 +4735,35 @@ Text.
   #+BEGIN_QUOTE
   Text.
   #+END_QUOTE"
-	    (while (search-forward "BEGIN_" nil t) (org-cycle))
-	    (search-backward "- item 1")
-	    (org-drag-element-backward)
-	    (mapcar (lambda (ov) (cons (overlay-start ov) (overlay-end ov)))
-		    (overlays-in (point-min) (point-max))))))
+	     (while (search-forward "BEGIN_" nil t) (org-cycle))
+	     (search-backward "- item 1")
+	     (org-drag-element-backward)
+             (let (regions)
+               (goto-char (point-min))
+               (while (< (point) (point-max))
+	         (let ((region (org-fold-get-region-at-point)))
+                   (if (not region)
+                       (goto-char (org-fold-next-folding-state-change))
+                     (goto-char (cdr region))
+                     (push region regions))))
+               regions)))))
+  (should
+   (equal '((26 . 48) (63 . 82))
+          (let ((org-fold-core-style 'overlays))
+	    (org-test-with-temp-text
+             "
+#+BEGIN_CENTER
+Text.
+#+END_CENTER
+- item 1
+  #+BEGIN_QUOTE
+  Text.
+  #+END_QUOTE"
+             (while (search-forward "BEGIN_" nil t) (org-cycle))
+	     (search-backward "- item 1")
+	     (org-drag-element-backward)
+	     (mapcar (lambda (ov) (cons (overlay-start ov) (overlay-end ov)))
+		     (overlays-in (point-min) (point-max)))))))
   ;; Pathological case: handle call with point in blank lines right
   ;; after a headline.
   (should
@@ -4470,7 +4800,9 @@ Text.
     (should (equal (buffer-string) "Para2\n\n\nParagraph 1\n\nPara3"))
     (should (looking-at " 1")))
   ;; 5. Preserve visibility of elements and their contents.
-  (org-test-with-temp-text "
+  (let ((org-fold-core-style 'text-properties))
+    (org-test-with-temp-text
+     "
 #+BEGIN_CENTER
 Text.
 #+END_CENTER
@@ -4478,14 +4810,39 @@ Text.
   #+BEGIN_QUOTE
   Text.
   #+END_QUOTE"
-    (while (search-forward "BEGIN_" nil t) (org-cycle))
-    (search-backward "#+BEGIN_CENTER")
-    (org-drag-element-forward)
-    (should
-     (equal
-      '((63 . 82) (26 . 48))
-      (mapcar (lambda (ov) (cons (overlay-start ov) (overlay-end ov)))
-	      (overlays-in (point-min) (point-max)))))))
+     (while (search-forward "BEGIN_" nil t) (org-cycle))
+     (search-backward "#+BEGIN_CENTER")
+     (org-drag-element-forward)
+     (should
+      (equal
+       '((63 . 82) (26 . 48))
+       (let (regions)
+         (goto-char (point-min))
+         (while (< (point) (point-max))
+	   (let ((region (org-fold-get-region-at-point)))
+             (if (not region)
+                 (goto-char (org-fold-next-folding-state-change))
+               (goto-char (cdr region))
+               (push region regions))))
+         regions)))))
+  (let ((org-fold-core-style 'overlays))
+    (org-test-with-temp-text
+     "
+#+BEGIN_CENTER
+Text.
+#+END_CENTER
+- item 1
+  #+BEGIN_QUOTE
+  Text.
+  #+END_QUOTE"
+     (while (search-forward "BEGIN_" nil t) (org-cycle))
+     (search-backward "#+BEGIN_CENTER")
+     (org-drag-element-forward)
+     (should
+      (equal
+       '((26 . 48) (63 . 82))
+       (mapcar (lambda (ov) (cons (overlay-start ov) (overlay-end ov)))
+	       (overlays-in (point-min) (point-max))))))))
 
 (ert-deftest test-org/next-block ()
   "Test `org-next-block' specifications."
@@ -5320,6 +5677,23 @@ Paragraph<point>"
 	      (org-deadline nil "<2012-03-29 Tue +2y>"))
 	    (replace-regexp-in-string
 	     "\\( [.A-Za-z]+\\) " "" (buffer-string) nil nil 1))))
+  ;; Preserve warning period.
+  (should
+   (equal "* H\nDEADLINE: <2021-07-20 -1d>"
+	  (org-test-with-temp-text "* H"
+	    (let ((org-adapt-indentation nil)
+		  (org-last-inserted-timestamp nil))
+	      (org-deadline nil "<2021-07-20 Tue -1d>"))
+	    (replace-regexp-in-string
+	     "\\( [.A-Za-z]+\\) " "" (buffer-string) nil nil 1))))
+  (should
+   (equal "* H\nDEADLINE: <2021-07-20 +1m -3d>"
+	  (org-test-with-temp-text "* H"
+	    (let ((org-adapt-indentation nil)
+		  (org-last-inserted-timestamp nil))
+	      (org-deadline nil "<2021-07-20 Tue +1m -3d>"))
+	    (replace-regexp-in-string
+	     "\\( [.A-Za-z]+\\) " "" (buffer-string) nil nil 1))))
   ;; Remove CLOSED keyword, if any.
   (should
    (equal "* H\nDEADLINE: <2012-03-29>"
@@ -5348,9 +5722,8 @@ Paragraph<point>"
   (should
    (equal "* H\nDEADLINE: <2012-03-29 -705d>"
 	  (cl-letf (((symbol-function 'org-read-date)
-		     (lambda (&rest args)
-		       (apply #'encode-time
-			      (org-parse-time-string "2014-03-04")))))
+		     (lambda (&rest _args)
+		       (org-time-string-to-time "2014-03-04"))))
 	    (org-test-with-temp-text "* H\nDEADLINE: <2012-03-29>"
 	      (let ((org-adapt-indentation nil)
 		    (org-last-inserted-timestamp nil))
@@ -5358,9 +5731,8 @@ Paragraph<point>"
 	      (buffer-string)))))
   (should-error
    (cl-letf (((symbol-function 'org-read-date)
-	      (lambda (&rest args)
-		(apply #'encode-time
-		       (org-parse-time-string "2014-03-04")))))
+	      (lambda (&rest _args)
+		(org-time-string-to-time "2014-03-04"))))
      (org-test-with-temp-text "* H"
        (let ((org-adapt-indentation nil)
 	     (org-last-inserted-timestamp nil))
@@ -5462,9 +5834,8 @@ Paragraph<point>"
   (should
    (equal "* H\nSCHEDULED: <2012-03-29 -705d>"
 	  (cl-letf (((symbol-function 'org-read-date)
-		     (lambda (&rest args)
-		       (apply #'encode-time
-			      (org-parse-time-string "2014-03-04")))))
+		     (lambda (&rest _args)
+		       (org-time-string-to-time "2014-03-04"))))
 	    (org-test-with-temp-text "* H\nSCHEDULED: <2012-03-29>"
 	      (let ((org-adapt-indentation nil)
 		    (org-last-inserted-timestamp nil))
@@ -5472,9 +5843,8 @@ Paragraph<point>"
 	      (buffer-string)))))
   (should-error
    (cl-letf (((symbol-function 'org-read-date)
-	      (lambda (&rest args)
-		(apply #'encode-time
-		       (org-parse-time-string "2014-03-04")))))
+	      (lambda (&rest _args)
+		(org-time-string-to-time "2014-03-04"))))
      (org-test-with-temp-text "* H"
        (let ((org-adapt-indentation nil)
 	     (org-last-inserted-timestamp nil))
@@ -5831,6 +6201,10 @@ Paragraph<point>"
    (org-test-with-temp-text "* H\n:PROPERTIES:\n:A: 1\n:END:\n** H2"
      (let ((org-use-property-inheritance nil))
        (org-entry-get (point-max) "A" 'selective))))
+  (should-not
+   (org-test-with-temp-text "* H\n:PROPERTIES:\n:A: 1\n:END:\n* H2"
+     (let ((org-use-property-inheritance t))
+       (org-entry-get (point-max) "A" t))))
   (should
    (equal
     "1 2"
@@ -5853,7 +6227,7 @@ Paragraph<point>"
    (equal
     "1 2"
     (org-test-with-temp-text
-	"* H1\n:PROPERTIES:\n:A: 1\n:END:\n* H2.1\n* H2.2\n:PROPERTIES:\n:A+: 2\n:END:"
+	"* H1\n:PROPERTIES:\n:A: 1\n:END:\n** H2.1\n** H2.2\n:PROPERTIES:\n:A+: 2\n:END:"
       (org-entry-get (point-max) "A" t))))
   (should
    (equal "1"
@@ -5874,7 +6248,35 @@ Paragraph<point>"
 	  (org-test-with-temp-text
 	      ":PROPERTIES:\n:A: 0\n:END:\n#+PROPERTY: A 1\n* H\n:PROPERTIES:\n:A+: 2\n:END:"
 	    (org-mode-restart)
-	    (org-entry-get (point-max) "A" t)))))
+	    (org-entry-get (point-max) "A" t))))
+  ;; Use alternate separators
+  (should
+   (equal "0~2"
+          (org-test-with-temp-text
+           ":PROPERTIES:\n:A: 0\n:A+: 2\n:END:"
+           (let ((org-property-separators '((("A") . "~"))))
+             (org-entry-get (point) "A")))))
+  ;; Default separator is single space
+  (should
+   (equal "0 2"
+          (org-test-with-temp-text
+           ":PROPERTIES:\n:A: 0\n:B: 1\n:A+: 2\n:B+: 3\n:END:"
+           (let ((org-property-separators '((("B") . "~"))))
+             (org-entry-get (point) "A")))))
+  ;; Regular expression matching for separator
+  (should
+   (equal "0/2"
+          (org-test-with-temp-text
+           ":PROPERTIES:\n:A: 0\n:A+: 2\n:END:"
+           (let ((org-property-separators '((("B") . "~") ("[AC]" . "/"))))
+             (org-entry-get (point) "A")))))
+  ;; Separator works with inheritance
+  (should
+   (equal "1~2"
+          (org-test-with-temp-text
+           "* H\n:PROPERTIES:\n:A: 1\n:END:\n** H2\n:PROPERTIES:\n:A+: 2\n:END:"
+           (let ((org-property-separators '((("A") . "~"))))
+             (org-entry-get (point-max) "A" t))))))
 
 (ert-deftest test-org/entry-properties ()
   "Test `org-entry-properties' specifications."
@@ -6275,13 +6677,13 @@ Paragraph<point>"
 	  (org-test-with-temp-text
 	      ":PROPERTIES:\n:CATEGORY: cat1\n:END:"
 	    (org-refresh-category-properties)
-	    (get-text-property (point) 'org-category))))
+            (org-get-category))))
   (should
    (equal "cat1"
 	  (org-test-with-temp-text
 	      "* H\n:PROPERTIES:\n:CATEGORY: cat1\n:END:"
 	    (org-refresh-category-properties)
-	    (get-text-property (point) 'org-category))))
+	    (org-get-category))))
   ;; Even though property-inheritance is deactivated, category
   ;; property should be inherited.  As described in
   ;; `org-use-property-inheritance'.
@@ -6292,7 +6694,7 @@ Paragraph<point>"
 	    (org-mode-restart)
 	    (let ((org-use-property-inheritance nil))
 	      (org-refresh-category-properties))
-	    (get-text-property (point) 'org-category))))
+	    (org-get-category))))
   (should
    (equal "cat1"
 	  (org-test-with-temp-text
@@ -6300,7 +6702,7 @@ Paragraph<point>"
 	    (org-mode-restart)
 	    (let ((org-use-property-inheritance t))
 	      (org-refresh-category-properties))
-	    (get-text-property (point) 'org-category))))
+	    (org-get-category))))
   (should
    (equal "cat2"
 	  (org-test-with-temp-text
@@ -6308,7 +6710,7 @@ Paragraph<point>"
 	    (org-mode-restart)
 	    (let ((org-use-property-inheritance t))
 	      (org-refresh-category-properties))
-	    (get-text-property (point) 'org-category)))))
+	    (org-get-category)))))
 
 
 ;;; Refile
@@ -6419,7 +6821,60 @@ Paragraph<point>"
    (org-test-with-temp-text "* H1"
      (let* ((org-refile-use-outline-path 'buffer-name)
 	    (org-refile-targets `((nil :level . 1))))
-       (member (buffer-name) (mapcar #'car (org-refile-get-targets)))))))
+       (member (buffer-name) (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title', return extracted
+  ;; document title
+  (should
+   (equal '("T" "T/H1")
+     (org-test-with-temp-text-in-file "#+title: T\n* H1"
+      (let* ((org-refile-use-outline-path 'title)
+             (org-refile-targets `((nil :level . 1))))
+        (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title' validate that
+  ;; deeper levels are correctly reported too (the same behaviour as
+  ;; 'file)
+  (should
+   (equal '("T" "T/H1" "T/H1/H2" "T/H1/H2/H3" "T/H1")
+     (org-test-with-temp-text-in-file "#+title: T\n* H1\n** H2\n*** H3\n* H1"
+       (let ((org-refile-use-outline-path 'title)
+             (org-refile-targets `((nil :maxlevel . 3))))
+         (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title' and document do not
+  ;; have an extracted document title, return just the file name
+  (should
+   (org-test-with-temp-text-in-file "* H1"
+     (let* ((filename (buffer-file-name))
+            (org-refile-use-outline-path 'title)
+            (org-refile-targets `((nil :level . 1))))
+       (member (file-name-nondirectory filename)
+               (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title' and document is a
+  ;; temporary buffer without a file, it is still possible to extract
+  ;; a title
+  (should
+   (equal '("T" "T/H1")
+     (org-test-with-temp-text "#+title: T\n* H1\n** H2"
+      (let* ((org-refile-use-outline-path 'title)
+             (org-refile-targets `((nil :level . 1))))
+      (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title' and there are two
+  ;; title keywords in the file, titles are concatenated into a single
+  ;; one.
+  (should
+   (equal '("T1 T2" "T1 T2/H1")
+     (org-test-with-temp-text "#+title: T1\n#+title: T2\n* H1\n** H2"
+       (let* ((org-refile-use-outline-path 'title)
+              (org-refile-targets `((nil :level . 1))))
+       (mapcar #'car (org-refile-get-targets))))))
+  ;; When `org-refile-use-outline-path' is `title' and there are two
+  ;; title keywords in the file, titles are concatenated into a single
+  ;; one even if they are in the middle of the file.
+  (should
+   (equal '("T1 T2" "T1 T2/H1")
+     (org-test-with-temp-text "#+title: T1\n* H1\n** H2\n#+title: T2\n"
+       (let* ((org-refile-use-outline-path 'title)
+              (org-refile-targets `((nil :level . 1))))
+       (mapcar #'car (org-refile-get-targets)))))))
 
 
 
@@ -6772,6 +7227,19 @@ Paragraph<point>"
   (should
    (equal '("foo" "bar")
 	  (org-test-with-temp-text "* Test :foo:bar:" (org-get-tags))))
+  ;; Tags for inlinetasks.
+  (should
+   (equal '("foo" "bar")
+          (progn
+            (require 'org-inlinetask)
+            (org-test-with-temp-text (concat (make-string org-inlinetask-min-level ?*) " Test :foo:bar:")
+              (org-get-tags (org-element-at-point))))))
+  (should
+   (equal '("foo" "bar")
+          (progn
+            (require 'org-inlinetask)
+            (org-test-with-temp-text (concat (make-string org-inlinetask-min-level ?*) " Test :foo:bar:")
+              (org-get-tags nil)))))
   ;; Return nil when there is no tag.
   (should-not
    (org-test-with-temp-text "* Test" (org-get-tags)))
@@ -6985,7 +7453,7 @@ Paragraph<point>"
    (equal "* H1 :foo:"
 	  (org-test-with-temp-text "* H1"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -6995,7 +7463,7 @@ Paragraph<point>"
    (equal "* H1 :foo:\nContents"
 	  (org-test-with-temp-text "* H1\n<point>Contents"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7004,7 +7472,7 @@ Paragraph<point>"
    (equal "* H1 :foo:\nContents2"
 	  (org-test-with-temp-text "* H1\n<point>Contents2"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7016,7 +7484,7 @@ Paragraph<point>"
    (equal "* H1 :foo:\nContents\n* H2 :foo:"
 	  (org-test-with-temp-text "* H1\nContents\n* H2"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-loop-over-headlines-in-active-region t)
 		    (org-tags-column 1))
@@ -7029,7 +7497,7 @@ Paragraph<point>"
    (equal "* H1\nContents\n* H2 :foo:"
 	  (org-test-with-temp-text "* H1\nContents\n* H2"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-loop-over-headlines-in-active-region nil)
 		    (org-tags-column 1))
@@ -7049,7 +7517,7 @@ Paragraph<point>"
    (equal ":foo:"
 	  (org-test-with-temp-text "* <point>"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7059,7 +7527,7 @@ Paragraph<point>"
    (equal "* H1 :foo:"
 	  (org-test-with-temp-text "* H1"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7069,7 +7537,7 @@ Paragraph<point>"
    (equal "* H1 :foo:"
 	  (org-test-with-temp-text "*<point>* H1"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7079,7 +7547,7 @@ Paragraph<point>"
    (equal " b :foo:"
 	  (org-test-with-temp-text "* a<point> b"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (&rest args) '("foo"))))
+		       (lambda (&rest _args) '("foo"))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
 		(org-set-tags-command)))
@@ -7089,7 +7557,7 @@ Paragraph<point>"
    (equal "b :foo:"
 	  (org-test-with-temp-text "* a :foo:\n** <point>b :foo:"
 	    (cl-letf (((symbol-function 'completing-read-multiple)
-		       (lambda (prompt coll &optional pred req initial &rest args)
+		       (lambda (_prompt _coll &optional _pred _req initial &rest _)
 			 (list initial))))
 	      (let ((org-use-fast-tag-selection nil)
 		    (org-tags-column 1))
@@ -7365,7 +7833,7 @@ Paragraph<point>"
     (let ((org-todo-keywords '((sequence "TODO" "DONE")))
 	  (org-log-repeat nil))
       (cl-letf (((symbol-function 'org-add-log-setup)
-		 (lambda (&rest args) nil)))
+		 (lambda (&rest _args) nil)))
 	(org-test-with-temp-text "* TODO H\n<2012-03-29 Thu. +2y>"
 	  (org-todo "DONE")
 	  (buffer-string))))))
@@ -7375,7 +7843,7 @@ Paragraph<point>"
     (let ((org-todo-keywords '((sequence "TODO" "DONE")))
 	  (org-log-repeat t))
       (cl-letf (((symbol-function 'org-add-log-setup)
-		 (lambda (&rest args) nil)))
+		 (lambda (&rest _args) nil)))
 	(org-test-with-temp-text "* TODO H\n<2012-03-29 Thu. +2y>"
 	  (org-todo "DONE")
 	  (buffer-string))))))
@@ -7384,7 +7852,7 @@ Paragraph<point>"
     ":LAST_REPEAT:"
     (let ((org-todo-keywords '((sequence "TODO" "DONE"))))
       (cl-letf (((symbol-function 'org-add-log-setup)
-		 (lambda (&rest args) nil)))
+		 (lambda (&rest _args) nil)))
 	(org-test-with-temp-text
 	    "* TODO H\n<2012-03-29 Thu +2y>\nCLOCK: [2012-03-29 Thu 16:40]"
 	  (org-todo "DONE")
@@ -7560,6 +8028,26 @@ CLOSED: %s
           (org-add-log-note))
         (buffer-string))))))
 
+(ert-deftest test-org/org-todo-prefix ()
+  "Test `org-todo' prefix arg behavior."
+  ;; FIXME: Add tests for all other allowed prefix arguments.
+  ;; -1 prefix arg should cancel repeater and mark DONE.
+  (should
+   (string-match-p
+    "DONE H\\(.*\n\\)*<2012-03-29 Thu \\+0y>"
+    (let ((org-todo-keywords '((sequence "TODO" "DONE"))))
+      (org-test-with-temp-text "* TODO H\n<2012-03-29 Thu +2y>"
+	(org-todo -1)
+	(buffer-string)))))
+  ;; - prefix arg should cancel repeater and mark DONE.
+  (should
+   (string-match-p
+    "DONE H\\(.*\n\\)*<2012-03-29 Thu \\+0y>"
+    (let ((org-todo-keywords '((sequence "TODO" "DONE"))))
+      (org-test-with-temp-text "* TODO H\n<2012-03-29 Thu +2y>"
+	(org-todo '-)
+	(buffer-string))))))
+
 
 ;;; Timestamps API
 
@@ -7674,8 +8162,8 @@ CLOSED: %s
     "Te<2014-03-04 .*?>xt"
     (org-test-with-temp-text "Te<point>xt"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(org-time-stamp nil)
 	(buffer-string)))))
   ;; With a prefix argument, also insert time.
@@ -7684,9 +8172,8 @@ CLOSED: %s
     "Te<2014-03-04 .*? 00:41>xt"
     (org-test-with-temp-text "Te<point>xt"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time
-			  (org-parse-time-string "2014-03-04 00:41")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04 00:41"))))
 	(org-time-stamp '(4))
 	(buffer-string)))))
   ;; With two universal prefix arguments, insert an active timestamp
@@ -7704,8 +8191,8 @@ CLOSED: %s
     "Te\\[2014-03-04 .*?\\]xt"
     (org-test-with-temp-text "Te<point>xt"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(org-time-stamp nil t)
 	(buffer-string)))))
   ;; When called from a timestamp, replace existing one.
@@ -7714,8 +8201,8 @@ CLOSED: %s
     "<2014-03-04 .*?>"
     (org-test-with-temp-text "<2012-03-29<point> thu.>"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(org-time-stamp nil)
 	(buffer-string)))))
   (should
@@ -7723,8 +8210,8 @@ CLOSED: %s
     "<2014-03-04 .*?>--<2014-03-04 .*?>"
     (org-test-with-temp-text "<2012-03-29<point> thu.>--<2014-03-04 tue.>"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(org-time-stamp nil)
 	(buffer-string)))))
   ;; When replacing a timestamp, preserve repeater, if any.
@@ -7733,8 +8220,8 @@ CLOSED: %s
     "<2014-03-04 .*? \\+2y>"
     (org-test-with-temp-text "<2012-03-29<point> thu. +2y>"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(org-time-stamp nil)
 	(buffer-string)))))
   ;; When called twice in a raw, build a date range.
@@ -7743,8 +8230,8 @@ CLOSED: %s
     "<2012-03-29 .*?>--<2014-03-04 .*?>"
     (org-test-with-temp-text "<2012-03-29 thu.><point>"
       (cl-letf (((symbol-function 'org-read-date)
-		 (lambda (&rest args)
-		   (apply #'encode-time (org-parse-time-string "2014-03-04")))))
+		 (lambda (&rest _args)
+		   (org-time-string-to-time "2014-03-04"))))
 	(let ((last-command 'org-time-stamp)
 	      (this-command 'org-time-stamp))
 	  (org-time-stamp nil))
@@ -7792,19 +8279,19 @@ CLOSED: %s
   (should-not (org-get-repeat "<2012-03-29 Thu 16:40>")))
 
 (ert-deftest test-org/timestamp-format ()
-  "Test `org-timestamp-format' specifications."
+  "Test `org-format-timestamp' specifications."
   ;; Regular test.
   (should
    (equal
     "2012-03-29 16:40"
     (org-test-with-temp-text "<2012-03-29 Thu 16:40>"
-      (org-timestamp-format (org-element-context) "%Y-%m-%d %R"))))
+      (org-format-timestamp (org-element-context) "%Y-%m-%d %R"))))
   ;; Range end.
   (should
    (equal
     "2012-03-29"
     (org-test-with-temp-text "[2011-07-14 Thu]--[2012-03-29 Thu]"
-      (org-timestamp-format (org-element-context) "%Y-%m-%d" t)))))
+      (org-format-timestamp (org-element-context) "%Y-%m-%d" t)))))
 
 (ert-deftest test-org/timestamp-split-range ()
   "Test `org-timestamp-split-range' specifications."
@@ -7919,8 +8406,7 @@ CLOSED: %s
     "<2012-03-29 .+>"
     (org-element-interpret-data
      (org-timestamp-from-time
-      (apply #'encode-time
-	     (org-parse-time-string "<2012-03-29 Thu 16:40>"))))))
+      (org-time-string-to-time "<2012-03-29 Thu 16:40>")))))
   ;; When optional argument WITH-TIME is non-nil, provide time
   ;; information.
   (should
@@ -7928,8 +8414,7 @@ CLOSED: %s
     "<2012-03-29 .+ 16:40>"
     (org-element-interpret-data
      (org-timestamp-from-time
-      (apply #'encode-time
-	     (org-parse-time-string "<2012-03-29 Thu 16:40>"))
+      (org-time-string-to-time "<2012-03-29 Thu 16:40>")
       t))))
   ;; When optional argument INACTIVE is non-nil, return an inactive
   ;; timestamp.
@@ -7938,8 +8423,7 @@ CLOSED: %s
     "[2012-03-29 .+]"
     (org-element-interpret-data
      (org-timestamp-from-time
-      (apply #'encode-time
-	     (org-parse-time-string "<2012-03-29 Thu 16:40>"))
+      (org-time-string-to-time "<2012-03-29 Thu 16:40>")
       nil t)))))
 
 (ert-deftest test-org/timestamp-to-time ()
@@ -7997,367 +8481,6 @@ CLOSED: %s
 	   (org-timestamp-to-time
 	    (org-timestamp-from-string "[2012-03-29 Thu]--[2014-03-04 Tue]")
 	    t)))))
-
-
-;;; Visibility
-
-(ert-deftest test-org/hide-drawer-toggle ()
-  "Test `org-hide-drawer-toggle' specifications."
-  ;; Error when not at a drawer.
-  (should-error
-   (org-test-with-temp-text ":fake-drawer:\ncontents"
-     (org-hide-drawer-toggle 'off)
-     (get-char-property (line-end-position) 'invisible)))
-  (should-error
-   (org-test-with-temp-text
-       "#+begin_example\n<point>:D:\nc\n:END:\n#+end_example"
-     (org-hide-drawer-toggle t)))
-  ;; Hide drawer.
-  (should
-   (org-test-with-temp-text ":drawer:\ncontents\n:end:"
-     (org-hide-drawer-toggle)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Show drawer unconditionally when optional argument is `off'.
-  (should-not
-   (org-test-with-temp-text ":drawer:\ncontents\n:end:"
-     (org-hide-drawer-toggle)
-     (org-hide-drawer-toggle 'off)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Hide drawer unconditionally when optional argument is non-nil.
-  (should
-   (org-test-with-temp-text ":drawer:\ncontents\n:end:"
-     (org-hide-drawer-toggle t)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Do not hide drawer when called from final blank lines.
-  (should-not
-   (org-test-with-temp-text ":drawer:\ncontents\n:end:\n\n<point>"
-     (org-hide-drawer-toggle)
-     (goto-char (point-min))
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Don't leave point in an invisible part of the buffer when hiding
-  ;; a drawer away.
-  (should-not
-   (org-test-with-temp-text ":drawer:\ncontents\n<point>:end:"
-     (org-hide-drawer-toggle)
-     (get-char-property (point) 'invisible))))
-
-(ert-deftest test-org/hide-block-toggle ()
-  "Test `org-hide-block-toggle' specifications."
-  ;; Error when not at a block.
-  (should-error
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents"
-     (org-hide-block-toggle 'off)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Hide block.
-  (should
-   (org-test-with-temp-text "#+BEGIN_CENTER\ncontents\n#+END_CENTER"
-     (org-hide-block-toggle)
-     (get-char-property (line-end-position) 'invisible)))
-  (should
-   (org-test-with-temp-text "#+BEGIN_EXAMPLE\ncontents\n#+END_EXAMPLE"
-     (org-hide-block-toggle)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Show block unconditionally when optional argument is `off'.
-  (should-not
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n#+END_QUOTE"
-     (org-hide-block-toggle)
-     (org-hide-block-toggle 'off)
-     (get-char-property (line-end-position) 'invisible)))
-  (should-not
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n#+END_QUOTE"
-     (org-hide-block-toggle 'off)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Hide block unconditionally when optional argument is non-nil.
-  (should
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n#+END_QUOTE"
-     (org-hide-block-toggle t)
-     (get-char-property (line-end-position) 'invisible)))
-  (should
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n#+END_QUOTE"
-     (org-hide-block-toggle)
-     (org-hide-block-toggle t)
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Do not hide block when called from final blank lines.
-  (should-not
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n#+END_QUOTE\n\n<point>"
-     (org-hide-block-toggle)
-     (goto-char (point-min))
-     (get-char-property (line-end-position) 'invisible)))
-  ;; Don't leave point in an invisible part of the buffer when hiding
-  ;; a block away.
-  (should-not
-   (org-test-with-temp-text "#+BEGIN_QUOTE\ncontents\n<point>#+END_QUOTE"
-     (org-hide-block-toggle)
-     (get-char-property (point) 'invisible))))
-
-(ert-deftest test-org/hide-block-toggle-maybe ()
-  "Test `org-hide-block-toggle-maybe' specifications."
-  (should
-   (org-test-with-temp-text "#+BEGIN: dynamic\nContents\n#+END:"
-     (org-hide-block-toggle-maybe)))
-  (should-not
-   (org-test-with-temp-text "Paragraph" (org-hide-block-toggle-maybe))))
-
-(ert-deftest test-org/show-set-visibility ()
-  "Test `org-show-set-visibility' specifications."
-  ;; Do not throw an error before first heading.
-  (should
-   (org-test-with-temp-text "Preamble\n* Headline"
-     (org-show-set-visibility 'tree)
-     t))
-  ;; Test all visibility spans, both on headline and in entry.
-  (let ((list-visible-lines
-	 (lambda (state headerp)
-	   (org-test-with-temp-text "* Grandmother  (0)
-** Uncle              (1)
-*** Heir              (2)
-** Father             (3)
-   Ancestor text      (4)
-*** Sister            (5)
-    Sibling text      (6)
-*** Self              (7)
-    Match	      (8)
-**** First born	      (9)
-     Child text	      (10)
-**** The other child  (11)
-*** Brother	      (12)
-** Aunt               (13)
-"
-	     (org-cycle t)
-	     (search-forward (if headerp "Self" "Match"))
-	     (org-show-set-visibility state)
-	     (goto-char (point-min))
-	     (let (result (line 0))
-	       (while (not (eobp))
-		 (unless (org-invisible-p2) (push line result))
-		 (cl-incf line)
-		 (forward-line))
-	       (nreverse result))))))
-    (should (equal '(0 7) (funcall list-visible-lines 'minimal t)))
-    (should (equal '(0 7 8) (funcall list-visible-lines 'minimal nil)))
-    (should (equal '(0 7 8 9) (funcall list-visible-lines 'local t)))
-    (should (equal '(0 7 8 9) (funcall list-visible-lines 'local nil)))
-    (should (equal '(0 3 7) (funcall list-visible-lines 'ancestors t)))
-    (should (equal '(0 3 7 8) (funcall list-visible-lines 'ancestors nil)))
-    (should (equal '(0 3 7 8 9 10 11)
-                   (funcall list-visible-lines 'ancestors-full t)))
-    (should (equal '(0 3 7 8 9 10 11)
-                   (funcall list-visible-lines 'ancestors-full nil)))
-    (should (equal '(0 3 5 7 12) (funcall list-visible-lines 'lineage t)))
-    (should (equal '(0 3 5 7 8 9 12) (funcall list-visible-lines 'lineage nil)))
-    (should (equal '(0 1 3 5 7 12 13) (funcall list-visible-lines 'tree t)))
-    (should (equal '(0 1 3 5 7 8 9 11 12 13)
-		   (funcall list-visible-lines 'tree nil)))
-    (should (equal '(0 1 3 4 5 7 12 13)
-		   (funcall list-visible-lines 'canonical t)))
-    (should (equal '(0 1 3 4 5 7 8 9 11 12 13)
-		   (funcall list-visible-lines 'canonical nil))))
-  ;; When point is hidden in a drawer or a block, make sure to make it
-  ;; visible.
-  (should-not
-   (org-test-with-temp-text "#+BEGIN_QUOTE\nText\n#+END_QUOTE"
-     (org-hide-block-toggle)
-     (search-forward "Text")
-     (org-show-set-visibility 'minimal)
-     (org-invisible-p2)))
-  (should-not
-   (org-test-with-temp-text ":DRAWER:\nText\n:END:"
-     (org-hide-drawer-toggle)
-     (search-forward "Text")
-     (org-show-set-visibility 'minimal)
-     (org-invisible-p2)))
-  (should-not
-   (org-test-with-temp-text
-       "#+BEGIN_QUOTE\n<point>:DRAWER:\nText\n:END:\n#+END_QUOTE"
-     (org-hide-drawer-toggle)
-     (forward-line -1)
-     (org-hide-block-toggle)
-     (search-forward "Text")
-     (org-show-set-visibility 'minimal)
-     (org-invisible-p2))))
-
-(ert-deftest test-org/copy-visible ()
-  "Test `org-copy-visible' specifications."
-  ;;`org-unfontify-region', which is wired up to
-  ;; `font-lock-unfontify-region-function', removes the invisible text
-  ;; property, among other things.
-  (cl-letf (((symbol-function 'org-unfontify-region) #'ignore))
-    (should
-     (equal "Foo"
-	    (org-test-with-temp-text "Foo"
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Skip invisible characters by text property.
-    (should
-     (equal "Foo"
-	    (org-test-with-temp-text #("F<hidden>oo" 1 9 (invisible t))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Skip invisible characters by overlay.
-    (should
-     (equal "Foo"
-	    (org-test-with-temp-text "F<hidden>oo"
-	      (let ((o (make-overlay 2 10)))
-	        (overlay-put o 'invisible t))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Handle invisible characters at the beginning and the end of the
-    ;; buffer.
-    (should
-     (equal "Foo"
-	    (org-test-with-temp-text #("<hidden>Foo" 0 8 (invisible t))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    (should
-     (equal "Foo"
-	    (org-test-with-temp-text #("Foo<hidden>" 3 11 (invisible t))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Handle multiple visible parts.
-    (should
-     (equal "abc"
-	    (org-test-with-temp-text
-	        #("aXbXc" 1 2 (invisible t) 3 4 (invisible t))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Handle adjacent invisible parts.
-    (should
-     (equal "ab"
-	    (org-test-with-temp-text
-	        #("aXXb" 1 2 (invisible t) 2 3 (invisible org-link))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))
-    ;; Copies text based on what's actually visible, as defined by
-    ;; `buffer-invisibility-spec'.
-    (should
-     (equal "aYb"
-	    (org-test-with-temp-text
-	        #("aXYb"
-                  1 2 (invisible t)
-                  2 3 (invisible org-test-copy-visible))
-	      (let ((kill-ring nil))
-	        (org-copy-visible (point-min) (point-max))
-	        (current-kill 0 t)))))))
-
-(ert-deftest test-org/set-visibility-according-to-property ()
-  "Test `org-set-visibility-according-to-property' specifications."
-  ;; "folded" state.
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-** <point>b"
-     (org-set-visibility-according-to-property)
-     (invisible-p (point))))
-  ;; "children" state.
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: children
-:END:
-** b
-<point>Contents
-** c"
-     (org-set-visibility-according-to-property)
-     (invisible-p (point))))
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: children
-:END:
-** b
-Contents
-*** <point>c"
-     (org-set-visibility-according-to-property)
-     (invisible-p (point))))
-  ;; "content" state.
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: content
-:END:
-** b
-<point>Contents
-*** c"
-     (org-set-visibility-according-to-property)
-     (invisible-p (point))))
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: content
-:END:
-** b
-Contents
-*** <point>c"
-     (org-set-visibility-according-to-property)
-     (not (invisible-p (point)))))
-  ;; "showall" state.
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: showall
-:END:
-** b
-<point>Contents
-*** c"
-     (org-set-visibility-according-to-property)
-     (not (invisible-p (point)))))
-  (should
-   (org-test-with-temp-text
-       "
-* a
-:PROPERTIES:
-:VISIBILITY: showall
-:END:
-** b
-Contents
-*** <point>c"
-     (org-set-visibility-according-to-property)
-     (not (invisible-p (point)))))
-  ;; When VISIBILITY properties are nested, ignore inner ones.
-  (should
-   (org-test-with-temp-text
-       "
-* A
-:PROPERTIES:
-:VISIBILITY: folded
-:END:
-** <point>B
-:PROPERTIES:
-:VISIBILITY: folded
-:END:"
-     (org-set-visibility-according-to-property)
-     (invisible-p (point)))))
-
-(ert-deftest test-org/visibility-show-branches ()
-  "Test visibility of inline archived subtrees."
-  (org-test-with-temp-text
-   "* Foo<point>
-** Bar :ARCHIVE:
-*** Baz
-"
-   (org-kill-note-or-show-branches)
-   (should (org-invisible-p (- (point-max) 2)))))
 
 
 ;;; Yank and Kill
@@ -8443,6 +8566,166 @@ two
      (backward-char)
      (call-interactively #'org-paste-subtree)
      (buffer-string)))))
+
+(ert-deftest test-org/org--open-file-format-command ()
+  "Test `org--open-file-format-command' helper for `org-open-file'."
+  (let ((system-type 'gnu/linux)) ; Fix behavior of `shell-quote-argument'.
+    ;; No additional groups in `org-file-apps' key.
+    (let ((file "/file.pdf")
+          (pattern "\\.pdf\\'"))
+      (should
+       (equal "simple /file.pdf"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "simple %s" file file (match-data)))))
+      (should
+       (equal "single-quotes /file.pdf"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "single-quotes '%s'" file file (match-data)))))
+      (should
+       (equal "double-quotes /file.pdf"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "double-quotes \"%s\"" file file (match-data)))))
+      (should
+       (equal "quotes 'mismatch \"/file.pdf'"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "quotes 'mismatch \"%s'" file file (match-data)))))
+      (should
+       (equal "no subst"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "no subst" file file (match-data)))))
+      (should
+       (equal "% literal percent 100% %s"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "\\% literal percent 100\\% \\%s" file file (match-data)))))
+      (should
+       (equal "escape \"/file.pdf\" \\ more"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    ;; Second quote is not escaped.
+                    "escape \\\"%s\" \\\\ more" file file (match-data)))))
+      (should
+       (equal "/file.pdf file at start"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "%s file at start" file file (match-data)))))
+      (should
+       (equal "backslash-newline\n/file.pdf"
+              (and (string-match pattern file)
+                   (org--open-file-format-command
+                    "backslash-newline\\\n%s" file file (match-data))))))
+    ;; Anchors within target file.
+    (let ((file "/page-search.pdf")
+          (link "/page-search.pdf::10::some words")
+          (pattern "\\.pdf::\\([0-9]+\\)::\\(.*\\)\\'"))
+      (should
+       (equal "zathura --page 10 --find some\\ words /page-search.pdf"
+              (and (string-match pattern link)
+                   (org--open-file-format-command
+                    "zathura --page '%1' --find %2 \"%s\"" file link (match-data)))))
+      ;; Unused %2.
+      (should
+       (equal "firefox file:///page-search.pdf\\#page=10"
+              (and (string-match pattern link)
+                   (org--open-file-format-command
+                    "firefox file://%s\\\\#page=%1" file link (match-data)))))
+      (should
+       (equal "adjucent-subst /page-search.pdfsome\\ words10some\\ words"
+              (and (string-match pattern link)
+                   (org--open-file-format-command
+                    "adjucent-subst %s%2'%1'%2" file link (match-data))))))
+    ;; No more than 9 substitutions are supported.
+    (let ((file "/many.pdf")
+          (link "/many.pdf::one:2:3:4:5:6:7:8:9:a:b:c")
+          (pattern (concat "\\.pdf:"
+                           (mapconcat (lambda (_) ":\\([^:]+\\)")
+                                      (number-sequence 1 12)
+                                      "")
+                           "\\'")))
+      (should
+       (equal "overflow /many.pdf::one:2:3:4:5:6:7:8:9:one0:one1:one2"
+              (and (string-match pattern link)
+                   (org--open-file-format-command
+                    "overflow %s::%1:%2:%3:%4:%5:%6:%7:%8:%9:%10:%11:%12"
+                    file link (match-data))))))
+    ;; Percent character in link fields does not cause any problem.
+    (let ((file "/file-%2.pdf")
+          (link "/file-%2.pdf::anchor-%3::search %1")
+          (pattern "\\.pdf::\\([^:]+\\)::\\(.+\\)\\'"))
+      (should
+       (equal "percents --find search\\ \\%1 file:///file-\\%2.pdf\\#anchor-\\%3"
+              (and (string-match pattern link)
+                   (org--open-file-format-command
+                    "percents --find %2 file://%s\\\\#%1"
+                    file link (match-data))))))
+    ;; Errors.
+    (let ((file "/error.pdf")
+          (pattern "\\.pdf\\'"))
+      (let* ((err (should-error
+                   (and (string-match pattern file)
+                        (org--open-file-format-command
+                         "trailing-percent %s %" file file (match-data)))
+                   :type 'error))
+             (err-text (cadr err)))
+        (should-not (unless (and (stringp err-text)
+                                 (string-match-p "\\`Invalid format .*%" err-text))
+                      err)))
+      (let* ((err (should-error
+                   (and (string-match pattern file)
+                        (org--open-file-format-command
+                         "trailing-backslash %s \\" file file (match-data)))
+                   :type 'error))
+             (err-text (cadr err)))
+        (should-not (unless (and (stringp err-text)
+                                 (string-match-p "\\`Invalid format .*\\\\" err-text))
+                      err)))
+      (let* ((err (should-error
+                   (and (string-match pattern file)
+                        (org--open-file-format-command
+                         "percent-newline %\n%s" file file (match-data)))
+                   :type 'error))
+             (err-text (cadr err)))
+        (should-not (unless (and (stringp err-text)
+                                 (string-match-p "\\`Invalid format .*%\n" err-text))
+                      err)))
+      ;; Mailcap escape for "%" is "\%", not "%%".
+      (let* ((err (should-error
+                   (and (string-match pattern file)
+                        (org--open-file-format-command
+                         "percent-percent %s%%" file file (match-data)))
+                   :type 'error))
+             (err-text (cadr err)))
+        (should-not (unless (and (stringp err-text)
+                                 (string-match-p "\\`Invalid format .*%%" err-text))
+                      err)))
+      ;; Mailcap allows "%t" for MIME type, but Org has no such information.
+      (let* ((err (should-error
+                   (and (string-match pattern file)
+                        (org--open-file-format-command
+                         "percent-t-unsupported --type '%t' %s" file file (match-data)))
+                   :type 'error))
+             (err-text (cadr err)))
+        (should-not (unless (and (stringp err-text)
+                                 (string-match-p "\\`Invalid format .*%t" err-text))
+                      err))))
+    ;; Optional regular expression groups have no point in `org-file-apps' patterns.
+    (let* ((file "/error.pdf")
+           (link "/error.pdf::1")
+           (pattern "\\.pdf::\\([^:]+\\)\\(?:::\\(.+\\)\\)?\\'")
+           (err (should-error
+                 (and (string-match pattern link)
+                      (org--open-file-format-command
+                       "no-such-match --search %2 %s" file link (match-data)))
+                 :type 'error))
+           (err-text (cadr err)))
+      (should-not (unless (and (stringp err-text)
+                               (string-match-p "\\`Invalid format.*%2" err-text))
+                    err)))))
 
 (provide 'test-org)
 

@@ -1419,14 +1419,16 @@ file.
 @enumerate
 @item
 It contains automatic styles for formatting of tables which
+@end enumerate
 are referenced by the exporter.
 
+@enumerate
 @item
 It contains @samp{<text:sequence-decl>}
+@end enumerate
 @dots{} @samp{</text:sequence-decl>} elements that control how
 various entities - tables, images, equations etc - are
 numbered.
-@end enumerate
 @end table
 
 @node Overriding factory styles

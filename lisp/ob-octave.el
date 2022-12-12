@@ -4,7 +4,7 @@
 
 ;; Author: Dan Davison
 ;; Keywords: literate programming, reproducible research
-;; Homepage: https://orgmode.org
+;; URL: https://orgmode.org
 
 ;; This file is part of GNU Emacs.
 
@@ -29,6 +29,10 @@
 ;; octave-mode.el and octave-inf.el come with GNU emacs
 
 ;;; Code:
+
+(require 'org-macs)
+(org-assert-version)
+
 (require 'ob)
 (require 'org-macs)
 
@@ -57,7 +61,7 @@ delete('%s')
 ")
 (defvar org-babel-octave-wrapper-method
   "%s
-if ischar(ans), fid = fopen('%s', 'w'); fprintf(fid, '%%s\\n', ans); fclose(fid);
+if ischar(ans), fid = fopen('%s', 'w'); fdisp(fid, ans); fclose(fid);
 else, dlmwrite('%s', ans, '\\t')
 end")
 
@@ -255,7 +259,7 @@ This removes initial blank and comment lines and then calls
       (insert-file-contents file-name)
       (re-search-forward "^[ \t]*[^# \t]" nil t)
       (when (< (setq beg (point-min))
-	       (setq end (point-at-bol)))
+               (setq end (line-beginning-position)))
 	(delete-region beg end)))
     (org-babel-import-elisp-from-file temp-file '(16))))
 

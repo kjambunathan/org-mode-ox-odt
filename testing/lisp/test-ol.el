@@ -19,10 +19,14 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'ol)
+(require 'org-id)
+
 
 ;;; Decode and Encode Links
 
-(ert-deftest test-ol/encode ()
+(ert-deftest test-org-link/encode ()
   "Test `org-link-encode' specifications."
   ;; Regural test.
   (should (string= "Foo%3A%42ar" (org-link-encode "Foo:Bar" '(?\: ?\B))))
@@ -33,7 +37,7 @@
   ;; Encode a Unicode multibyte character.
   (should (string= "%E2%82%AC" (org-link-encode "€" '(?\€)))))
 
-(ert-deftest test-ol/decode ()
+(ert-deftest test-org-link/decode ()
   "Test `org-link-decode' specifications."
   ;; Decode an ASCII character.
   (should (string= "[" (org-link-decode "%5B")))
@@ -42,7 +46,7 @@
   ;; Decode a Unicode multibyte character.
   (should (string= "€" (org-link-decode "%E2%82%AC"))))
 
-(ert-deftest test-ol/encode-url-with-escaped-char ()
+(ert-deftest test-org-link/encode-url-with-escaped-char ()
   "Encode and decode a URL that includes an encoded char."
   (should
    (string= "http://some.host.com/form?&id=blah%2Bblah25"
@@ -50,10 +54,34 @@
 	     (org-link-encode "http://some.host.com/form?&id=blah%2Bblah25"
 			      '(?\s ?\[ ?\] ?%))))))
 
+(ert-deftest test-org-link/toggle-link-display ()
+  "Make sure that `org-toggle-link-display' is working.
+See https://github.com/yantar92/org/issues/4."
+  (dolist (org-link-descriptive '(nil t))
+    (org-test-with-temp-text "* Org link test
+[[https://example.com][A link to a site]]"
+      (dotimes (_ 2)
+        (goto-char 1)
+        (re-search-forward "\\[")
+        (should-not (org-xor org-link-descriptive (org-invisible-p)))
+        (re-search-forward "example")
+        (should-not (org-xor org-link-descriptive (org-invisible-p)))
+        (re-search-forward "com")
+        (should-not (org-xor org-link-descriptive (org-invisible-p)))
+        (re-search-forward "]")
+        (should-not (org-xor org-link-descriptive (org-invisible-p)))
+        (re-search-forward "\\[")
+        (should-not (org-invisible-p))
+        (re-search-forward "link")
+        (should-not (org-invisible-p))
+        (re-search-forward "]")
+        (should-not (org-xor org-link-descriptive (org-invisible-p)))
+        (org-toggle-link-display)))))
+
 
 ;;; Escape and Unescape Links
 
-(ert-deftest test-ol/escape ()
+(ert-deftest test-org-link/escape ()
   "Test `org-link-escape' specifications."
   ;; No-op when there is no backslash or square bracket.
   (should (string= "foo" (org-link-escape "foo")))
@@ -77,7 +105,7 @@
   (should (string= "\\[\\[\\[foo\\]\\]\\]" (org-link-escape "[[[foo]]]")))
   (should (string= "\\[\\[foo\\]\\] bar" (org-link-escape "[[foo]] bar"))))
 
-(ert-deftest test-ol/unescape ()
+(ert-deftest test-org-link/unescape ()
   "Test `org-link-unescape' specifications."
   ;; No-op if there is no backslash.
   (should (string= "foo" (org-link-unescape "foo")))
@@ -98,7 +126,7 @@
   (should (string= "[[[foo]]]" (org-link-unescape "\\[\\[\\[foo\\]\\]\\]")))
   (should (string= "[[foo]] bar" (org-link-unescape "\\[\\[foo\\]\\] bar"))))
 
-(ert-deftest test-ol/make-string ()
+(ert-deftest test-org-link/make-string ()
   "Test `org-link-make-string' specifications."
   ;; Throw an error on empty URI.
   (should-error (org-link-make-string ""))
@@ -123,7 +151,7 @@
 
 ;;; Store links
 
-(ert-deftest test-ol/store-link ()
+(ert-deftest test-org-link/store-link ()
   "Test `org-store-link' specifications."
   ;; On a headline, link to that headline.  Use heading as the
   ;; description of the link.
@@ -205,7 +233,7 @@
 	 (org-context-in-file-links nil))
      (org-test-with-temp-text-in-file "* h1"
        (let ((file (buffer-file-name)))
-	 (equal (format "[[file:%s][file:%s]]" file file)
+	 (equal (format "[[file:%s]]" file file)
 		(org-store-link nil))))))
   ;; C-u prefix reverses `org-context-in-file-links' in Org buffer.
   (should
@@ -224,7 +252,7 @@
 	 (org-context-in-file-links nil))
      (org-test-with-temp-text-in-file "* h1"
        (let ((file (buffer-file-name)))
-	 (equal (format "[[file:%s][file:%s]]" file file)
+	 (equal (format "[[file:%s]]" file file)
 		(org-store-link '(16)))))))
   ;; Store file link to non-Org buffer, with context.
   (should
@@ -242,7 +270,7 @@
      (org-test-with-temp-text-in-file "one\n<point>two"
        (fundamental-mode)
        (let ((file (buffer-file-name)))
-	 (equal (format "[[file:%s][file:%s]]" file file)
+	 (equal (format "[[file:%s]]" file file)
 		(org-store-link nil))))))
   ;; C-u prefix reverses `org-context-in-file-links' in non-Org
   ;; buffer.
@@ -262,7 +290,7 @@
      (org-test-with-temp-text-in-file "one\n<point>two"
        (fundamental-mode)
        (let ((file (buffer-file-name)))
-	 (equal (format "[[file:%s][file:%s]]" file file)
+	 (equal (format "[[file:%s]]" file file)
 		(org-store-link '(16)))))))
   ;; Context does not include special search syntax.
   (should
@@ -356,7 +384,7 @@
 
 ;;; Radio Targets
 
-(ert-deftest test-ol/update-radio-target-regexp ()
+(ert-deftest test-org-link/update-radio-target-regexp ()
   "Test `org-update-radio-target-regexp' specifications."
   ;; Properly update cache with no previous radio target regexp.
   (should
@@ -390,7 +418,7 @@
 
 ;;; Navigation
 
-(ert-deftest test-ol/next-link ()
+(ert-deftest test-org-link/next-link ()
   "Test `org-next-link' specifications."
   ;; Move to any type of link.
   (should
@@ -441,7 +469,7 @@
 	    (org-next-link)
 	    (buffer-substring (point) (search-forward "]]" nil t))))))
 
-(ert-deftest test-ol/previous-link ()
+(ert-deftest test-org-link/previous-link ()
   "Test `org-previous-link' specifications."
   ;; Move to any type of link.
   (should
@@ -503,7 +531,7 @@
      (list (org-element-property :type (org-element-link-parser))
            (org-element-property :path (org-element-link-parser)))))
 
-(ert-deftest test-ol/plain-link-re ()
+(ert-deftest test-org-link/plain-link-re ()
   "Test `org-link-plain-re'."
   (should
    (equal
@@ -600,6 +628,97 @@
     '("http" "//foo.com/(something)?after=parens")
     (test-ol-parse-link-in-text
         "The <point>http://foo.com/(something)?after=parens link"))))
+
+;;; Insert Links
+
+(defmacro test-ol-with-link-parameters-as (type parameters &rest body)
+  "Pass TYPE/PARAMETERS to `org-link-parameters' and execute BODY.
+
+Save the original value of `org-link-parameters', execute
+`org-link-set-parameters' with the relevant args, execute BODY
+and restore `org-link-parameters'.
+
+TYPE is as in `org-link-set-parameters'.  PARAMETERS is a plist to
+be passed to `org-link-set-parameters'."
+  (declare (indent 2))
+  (let (orig-parameters)
+    ;; Copy all keys in `parameters' and their original values to
+    ;; `orig-parameters'.
+    (cl-loop for param in parameters by 'cddr
+             do (setq orig-parameters
+                      (plist-put orig-parameters param (org-link-get-parameter type param))))
+    `(unwind-protect
+         ;; Set `parameters' values and execute body.
+         (progn (org-link-set-parameters ,type ,@parameters) ,@body)
+       ;; Restore original values.
+       (apply 'org-link-set-parameters ,type ',orig-parameters))))
+
+(defun test-ol-insert-link-get-desc (&optional link-location description)
+  "Insert link in temp buffer, return description.
+
+LINK-LOCATION and DESCRIPTION are passed to
+`org-insert-link' (COMPLETE-FILE is always nil)."
+  (org-test-with-temp-text ""
+    (org-insert-link nil link-location description)
+    (save-match-data
+      (when (and
+             (org-in-regexp org-link-bracket-re 1)
+             (match-end 2))
+        (match-string-no-properties 2)))))
+
+(defun test-ol/return-foobar (_link-test _desc)
+  "Return string \"foobar\".
+
+Take (and ignore) arguments conforming to `:insert-description'
+API in `org-link-parameters'.  Used in test
+`test-ol/insert-link-insert-description', for the case where
+`:insert-description' is a function symbol."
+  "foobar-from-function")
+
+(ert-deftest test-org-link/insert-link-insert-description ()
+  "Test `:insert-description' parameter handling."
+  ;; String case.
+  (should
+   (string=
+    "foobar-string"
+    (test-ol-with-link-parameters-as
+        "id" (:insert-description "foobar-string")
+      (test-ol-insert-link-get-desc "id:foo-bar"))))
+  ;; Lambda case.
+  (should
+   (string=
+    "foobar-lambda"
+    (test-ol-with-link-parameters-as
+        "id" (:insert-description (lambda (_link-test _desc) "foobar-lambda"))
+      (test-ol-insert-link-get-desc "id:foo-bar"))))
+  ;; Function symbol case.
+  (should
+   (string=
+    "foobar-from-function"
+    (test-ol-with-link-parameters-as
+        "id" (:insert-description #'test-ol/return-foobar)
+      (test-ol-insert-link-get-desc "id:foo-bar"))))
+  ;; `:insert-description' parameter is defined, but doesn't return a
+  ;; string.
+  (should
+   (null
+    (test-ol-with-link-parameters-as
+        "id" (:insert-description #'ignore)
+      (test-ol-insert-link-get-desc "id:foo-bar"))))
+  ;; Description argument should override `:insert-description'.
+  (should
+   (string=
+    "foobar-desc-arg"
+    (test-ol-with-link-parameters-as
+        "id" (:insert-description "foobar")
+      (test-ol-insert-link-get-desc "id:foo-bar" "foobar-desc-arg"))))
+  ;; When neither `:insert-description' nor
+  ;; `org-link-make-description-function' is defined, there should be
+  ;; no description
+  (should
+   (null
+    (let ((org-link-make-description-function nil))
+      (test-ol-insert-link-get-desc "fake-link-type:foo-bar")))))
 
 (provide 'test-ol)
 ;;; test-ol.el ends here

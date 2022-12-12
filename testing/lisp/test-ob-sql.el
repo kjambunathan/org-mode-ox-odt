@@ -1,4 +1,4 @@
-;;; test-ob-sql.el --- tests for ob-sql.el
+;;; test-ob-sql.el --- tests for ob-sql.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021 Robin Joy
 
@@ -377,4 +377,5 @@
   select * from dummy;
 #+end_src"))
 
-;;; test-ob-sqlite.el ends here
+(provide 'test-ob-sql)
+;;; test-ob-sql.el ends here

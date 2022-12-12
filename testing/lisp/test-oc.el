@@ -306,6 +306,14 @@
             (org-cite-register-processor 'test
               :cite-styles '((("foo" "f")) ((""))))
             (org-cite-supported-styles))))
+  ;; Also support functions generating the list.
+  (should
+   (equal '((("foo" "f")) (("")))
+          (let ((org-cite--processors nil)
+                (org-cite-export-processors '((t test))))
+            (org-cite-register-processor 'test
+              :cite-styles (lambda () '((("foo" "f")) (("")))))
+            (org-cite-supported-styles))))
   ;; Explicitly provide a processor.
   (should
    (equal '((("")))
@@ -762,6 +770,41 @@
                 (org-cite-register-processor 'foo
                   :export-citation (lambda (_ s _ _) (throw :exit s)))
                 (org-export-as (org-export-create-backend))))))))
+
+(ert-deftest test-org-cite/read-processor-declaration ()
+  "Test `org-cite-read-processor-declaration'."
+  ;; Argument should contain 1-3 tokens.
+  (should-error
+   (org-cite-read-processor-declaration ""))
+  (should
+   (equal '(foo nil nil)
+          (org-cite-read-processor-declaration "foo")))
+  (should
+   (equal '(foo "bar" nil)
+          (org-cite-read-processor-declaration "foo bar")))
+  (should
+   (equal '(foo "bar" "baz")
+          (org-cite-read-processor-declaration "foo bar baz")))
+  (should-error
+   (org-cite-read-processor-declaration "foo bar baz qux"))
+  ;; nil in second and third arguments is read as `nil'.
+  (should
+   (equal '(foo nil "baz")
+          (org-cite-read-processor-declaration "foo nil baz")))
+  (should
+   (equal '(foo "bar" nil)
+          (org-cite-read-processor-declaration "foo bar nil")))
+  ;; Second and third arguments may contain spaces if they are quoted.
+  (should
+   (equal '(foo "bar baz" nil)
+          (org-cite-read-processor-declaration "foo \"bar baz\"")))
+  (should
+   (equal '(foo "bar" "baz qux")
+          (org-cite-read-processor-declaration "foo bar \"baz qux\"")))
+  ;; Spurious spaces are ignored.
+  (should
+   (equal '(foo "bar" "baz")
+          (org-cite-read-processor-declaration "  foo   bar    baz  "))))
 
 (ert-deftest test-org-cite/list-citations ()
   "Test `org-cite-list-citations'."
@@ -1548,7 +1591,7 @@ arguments.  Replace citation with \"@\" character in the output."
     '(p1 p1 p1 p3)
     (org-test-with-temp-text "[cite:@a]"
       (let ((org-export-registered-backends nil)
-            (org-cite--procesors nil)
+            (org-cite--processors nil)
             (org-cite-export-processors
              '((b1 . (p1))
                (t  . (p3)))))
@@ -1569,7 +1612,7 @@ arguments.  Replace citation with \"@\" character in the output."
    (eq 'p2
        (org-test-with-temp-text "#+cite_export: p2\n[cite:@a]"
          (let ((org-export-registered-backends nil)
-               (org-cite--procesors nil)
+               (org-cite--processors nil)
                (org-cite-export-processors '((t  . (p1)))))
            (org-cite-register-processor 'p1
              :export-citation (lambda (&rest _) (throw :exit 'p1)))

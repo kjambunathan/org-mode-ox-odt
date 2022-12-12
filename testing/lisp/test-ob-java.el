@@ -1,4 +1,4 @@
-;;; test-ob-java.el --- tests for ob-java.el
+;;; test-ob-java.el --- tests for ob-java.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2020-2022 Free Software Foundation, Inc.
 ;; Authors: Eric Schulte
@@ -21,18 +21,61 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
-(require 'org-test "../testing/org-test")
 
+(require 'org-test "../testing/org-test")
 (require 'ob-core)
-(defvar org-babel-temporary-directory ; from ob-core
-  (if (boundp 'org-babel-temporary-directory)
-    org-babel-temporary-directory
-  (temporary-file-directory)))
+;; ob-java is needed for linter tests as well.  org-lint relies on
+;; default header arg value.
+(unless (featurep 'ob-java)
+  (signal 'missing-test-dependency "Support for java code blocks"))
+
+;;; No Java required
+
+(ert-deftest ob-java/lint-header-args-buffer ()
+  ;; Test that the Org linter accepts every supported Java source
+  ;; block header argument at the buffer level.
+  (org-test-with-temp-text "
+#+property: header-args:java+ :dir /tmp
+#+property: header-args:java+ :classname com.example.Example
+#+property: header-args:java+ :imports com.example.OtherExample
+#+property: header-args:java+ :cmpflag -classpath .:/tmp/example/
+#+property: header-args:java+ :cmdline -classpath .:/tmp/example/
+#+property: header-args:java+ :cmdarg -verbose"
+    (should-not (org-lint '(wrong-header-argument)))))
+
+(ert-deftest ob-java/lint-header-args-heading ()
+  ;; Test that the Org linter accepts every supported Java source
+  ;; block header argument at the heading level.
+  (org-test-with-temp-text "
+* Test
+:PROPERTIES:
+:header-args:java+: :dir /tmp
+:header-args:java+: :classname com.example.Example
+:header-args:java+: :imports com.example.OtherExample
+:header-args:java+: :cmpflag -classpath .:/tmp/example/
+:header-args:java+: :cmdline -classpath .:/tmp/example/
+:header-args:java+: :cmdarg -verbose
+:END:"
+    (should-not (org-lint '(wrong-header-argument)))))
+
+(ert-deftest ob-java/lint-header-args-block ()
+  ;; Test that the Org linter accepts every supported Java source
+  ;; block header argument at the block level.
+  (org-test-with-temp-text "
+#+header: :dir /tmp
+#+header: :classname com.example.Example
+#+header: :imports com.example.OtherExample
+#+header: :cmpflag -classpath .:/tmp/example/
+#+header: :cmdline -classpath .:/tmp/example/
+#+header: :cmdarg -verbose
+#+begin_src java
+#+end_src"
+    (should-not (org-lint '(wrong-header-argument)))))
+
+;;; Java required
 
 (org-test-for-executable "java")
 (org-test-for-executable "javac")
-(unless (featurep 'ob-java)
-  (signal 'missing-test-dependency "Support for java code blocks"))
 
 ; simple tests
 
@@ -336,8 +379,8 @@ return a;
       "#+begin_src java :dir 'nil :var a=java_list :results value silent
 import java.util.List;
 import java.util.Arrays;
-List<String> b = Arrays.asList(a.get(0).get(0),
-                               a.get(1).get(0));
+List<String> b = Arrays.asList(a.get(0),
+                               a.get(1));
 return b;
 #+end_src
 
@@ -351,7 +394,7 @@ return b;
   "Read a list and return an array."
   (org-test-with-temp-text
       "#+begin_src java :dir 'nil :var a=java_list :results value silent
-String[] b = {a.get(0).get(0), a.get(1).get(0)};
+String[] b = {a.get(0), a.get(1)};
 return b;
 #+end_src
 
@@ -368,8 +411,8 @@ return b;
 package pkg;
 import java.util.List;
 import java.util.Arrays;
-List<String> b = Arrays.asList(a.get(0).get(0),
-                               a.get(1).get(0));
+List<String> b = Arrays.asList(a.get(0),
+                               a.get(1));
 return b;
 #+end_src
 
@@ -579,14 +622,14 @@ public class Tangle {
   (org-test-with-temp-text
       (format  "#+begin_src java :dir %s :results output silent
 System.out.print(42);
-#+end_src" org-babel-temporary-directory)
+#+end_src" temporary-file-directory)
     (should (string=
              "42"
              (unwind-protect
                  (org-babel-execute-src-block)
-               (delete-file (concat (file-name-as-directory org-babel-temporary-directory)
+               (delete-file (concat (file-name-as-directory temporary-file-directory)
                                     "Main.java"))
-               (delete-file (concat (file-name-as-directory org-babel-temporary-directory)
+               (delete-file (concat (file-name-as-directory temporary-file-directory)
                                     "Main.class")))))))
 
 (ert-deftest ob-java/simple-dir-with-package ()
@@ -600,17 +643,17 @@ public class Main {
       System.out.print(42);
     }
 }
-#+end_src" org-babel-temporary-directory)
+#+end_src" temporary-file-directory)
     (should (string=
              "42"
              (unwind-protect
                  (org-babel-execute-src-block)
-               (delete-file (concat (file-name-as-directory org-babel-temporary-directory)
+               (delete-file (concat (file-name-as-directory temporary-file-directory)
                                     "pkg/Main.java"))
-               (delete-file (concat (file-name-as-directory org-babel-temporary-directory)
+               (delete-file (concat (file-name-as-directory temporary-file-directory)
                                     "pkg/Main.class"))
-               (delete-directory (concat (file-name-as-directory org-babel-temporary-directory)
+               (delete-directory (concat (file-name-as-directory temporary-file-directory)
                                          "pkg")))))))
 
-
+(provide 'test-ob-java)
 ;;; test-ob-java.el ends here

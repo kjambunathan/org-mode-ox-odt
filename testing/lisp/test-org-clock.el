@@ -1,4 +1,4 @@
-;;; test-org-clock.el --- Tests for org-clock.el
+;;; test-org-clock.el --- Tests for org-clock.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2012, 2014, 2015, 2019  Nicolas Goaziou
 
@@ -13,6 +13,9 @@
 
 ;;; Code:
 
+(require 'org-duration)
+(require 'org-clock)
+
 (defun org-test-clock-create-timestamp (input &optional inactive with-time)
   "Create a timestamp out of a date/time prompt string.
 
@@ -26,10 +29,10 @@ insert hours and minutes.
 Return the timestamp as a string."
   (org-element-interpret-data
    (let ((time (decode-time
-                (apply #'encode-time
-                       (mapcar (lambda (el) (or el 0))
-                               (org-read-date-analyze
-                                input nil (decode-time (current-time))))))))
+                (org-encode-time
+                 (org-fix-decoded-time
+                  (org-read-date-analyze
+                   input nil (decode-time (current-time))))))))
      (list 'timestamp
            (list :type (if inactive 'inactive 'active)
                  :minute-start (and with-time (nth 1 time))
@@ -269,6 +272,22 @@ the buffer."
             (let ((org-clock-into-drawer 1)
                   (org-log-into-drawer nil))
               (org-clock-drawer-name))))))
+
+(ert-deftest test-org-clock/clock-drawer-dwim ()
+  "Test DWIM update of days for clocks in logbook drawers."
+  (should (equal "* Foo
+:LOGBOOK:
+CLOCK: [2022-11-03 Thu 06:00]--[2022-11-03 Thu 06:01] =>  0:01
+:END:
+"
+         (org-test-with-temp-text
+             "* Foo
+:LOGBOOK:
+<point>CLOCK: [2022-11-03 ??? 06:00]--[2022-11-03 ??? 06:01] =>  0:01
+:END:
+"
+           (org-ctrl-c-ctrl-c)
+           (buffer-string)))))
 
 
 ;;; Clocktable
@@ -1053,6 +1072,40 @@ CLOCK: [2014-04-03 Thu 08:00]--[2014-04-03 Thu 16:00] =>  8:00"
       (let ((system-time-locale "en_US"))
         (test-org-clock-clocktable-contents
 	    ":step month :mstart 4 :block 2014 :stepskip0 t")))))
+  ;; Test ":step quarter".
+  (should
+   (string-match-p
+    "
+Quarterly report starting on:.*?\\[2014-01-01 .*
+.*
+.*
+|.*?| \\*8:00\\* |
+.*
+| Foo +| 8:00 +|
+
+.*?\\[2014-04-01 .*
+.*
+.*
+|.*?| \\*16:00\\* |
+.*
+| Foo +| 16:00 +|
+
+.*?\\[2014-07-01 .*
+.*
+.*
+|.*?| \\*8:00\\* |
+.*
+| Foo +| 8:00 +|
+"
+    (org-test-with-temp-text
+        "* Foo
+CLOCK: [2014-03-04 Tue 08:00]--[2014-03-04 Tue 16:00] =>  8:00
+CLOCK: [2014-04-03 Thu 08:00]--[2014-04-03 Thu 16:00] =>  8:00
+CLOCK: [2014-06-04 Wed 08:00]--[2014-06-04 Wed 16:00] =>  8:00
+CLOCK: [2014-07-03 Thu 08:00]--[2014-07-03 Thu 16:00] =>  8:00"
+      (let ((system-time-locale "en_US"))
+        (test-org-clock-clocktable-contents
+	    ":step quarter :block 2014 :stepskip0 t")))))
   ;; Test ":step semimonth".
   (should
    (string-match-p

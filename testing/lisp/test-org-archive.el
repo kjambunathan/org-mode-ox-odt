@@ -19,6 +19,8 @@
 
 ;;; Code:
 
+(require 'org-archive)
+
 (ert-deftest test-org-archive/update-status-cookie ()
   "Test archiving properly updating status cookies."
   ;; Test org-archive-subtree with two children.
@@ -30,7 +32,7 @@
       (forward-line)
       (org-archive-subtree)
       (forward-line -1)
-      (org-element-property :title (org-element-at-point)))))
+      (org-element-property :raw-value (org-element-at-point)))))
   ;; Test org-archive-subtree with one child.
   (should
    (equal
@@ -39,7 +41,7 @@
       (forward-line)
       (org-archive-subtree)
       (forward-line -1)
-      (org-element-property :title (org-element-at-point)))))
+      (org-element-property :raw-value (org-element-at-point)))))
   ;; Test org-archive-to-archive-sibling with two children.
   (should
    (equal
@@ -47,7 +49,7 @@
     (org-test-with-temp-text "* Top [%]\n<point>** TODO One\n** DONE Two"
       (org-archive-to-archive-sibling)
       (forward-line -1)
-      (org-element-property :title (org-element-at-point)))))
+      (org-element-property :raw-value (org-element-at-point)))))
   ;; Test org-archive-to-archive-sibling with two children.
   (should
    (equal
@@ -55,7 +57,7 @@
     (org-test-with-temp-text "* Top [%]\n<point>** DONE Two"
       (org-archive-to-archive-sibling)
       (forward-line -1)
-      (org-element-property :title (org-element-at-point))))))
+      (org-element-property :raw-value (org-element-at-point))))))
 
 (ert-deftest test-org-archive/datetree ()
   "Test `org-archive-subtree' with a datetree target."

@@ -22,6 +22,9 @@
 ;;; Column view
 
 (require 'cl-lib)
+(require 'org-colview)
+(require 'org-duration)
+(require 'org-inlinetask)
 
 (ert-deftest test-org-colview/get-format ()
   "Test `org-columns-get-format' specifications."
@@ -991,6 +994,7 @@
 	(let ((org-columns-default-format "%A{min}")
 	      (org-columns-ellipses "..")
 	      (org-inlinetask-min-level 15))
+          (org-element-update-syntax)
 	  (org-columns))
 	(get-char-property (point-min) 'org-columns-value)))))
   ;; Handle `org-columns-modify-value-for-display-function', even with
@@ -1000,7 +1004,7 @@
 	  (org-test-with-temp-text "* H"
 	    (let ((org-columns-default-format "%ITEM %ITEM(Name)")
 		  (org-columns-modify-value-for-display-function
-		   (lambda (title value)
+		   (lambda (title _value)
 		     (pcase title ("ITEM" "foo") ("Name" "bar") (_ "baz")))))
 	      (org-columns))
 	    (list (get-char-property 1 'org-columns-value-modified)
