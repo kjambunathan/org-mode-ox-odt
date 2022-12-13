@@ -5741,17 +5741,16 @@ SHORT-CAPTION are strings."
 
 (defun org-odt--do-image-size (path attributes info)
   (setq path
-	(let* ((expanded-path (when path
-				(cond
-				 ((file-name-absolute-p path)
-				  (expand-file-name path))
-				 (t (expand-file-name path (file-name-directory
-							    (plist-get info :input-file))))))))
-	  (cond
-	   ((and expanded-path (file-readable-p expanded-path))
-	    expanded-path)
-	   (t (user-error "Cannot read image file: %s (= %s)"
-			  path expanded-path)))))
+	(when-let* ((path)
+		    (expanded-path (cond
+				    ((file-name-absolute-p path)
+				     (expand-file-name path))
+				    (t (expand-file-name path (file-name-directory
+							       (plist-get info :input-file)))))))
+	  (unless (file-readable-p expanded-path)
+	    (user-error "Cannot read image file: %s (= %s)"
+			path expanded-path))
+	  expanded-path))
   (when path
     (let* ((width (plist-get attributes :width))
 	   (height (plist-get attributes :height))
