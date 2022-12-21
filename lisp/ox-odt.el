@@ -4185,7 +4185,7 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 					    for node = (assq what (dom-children master-page))
 					    when node
 					    do (dom-remove-node master-page node)
-					    append (list prop node))
+					    append (list prop (org-odt--lisp-to-xml (dom-children node))))
 				   new-plist)
 	     do (cl-loop for what in '(style:header style:footer)
 			 for prop in '(:header-contents :footer-contents)
@@ -4195,7 +4195,7 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 					      (list what nil contents))))    
     
     ;; Styles.xml has no dupicate styles.  Persist it.
-    (odt-stylesdom:dom->file (concat (plist-get info :odt-zip-dir) "styles.xml") 'prettify
+    (odt-stylesdom:dom->file (concat (plist-get info :odt-zip-dir) "styles.xml") (not 'prettify)
                              (plist-get info :odt-styles-dom))
     
     (with-temp-buffer
