@@ -1,7 +1,7 @@
 ;;; org.el --- Outline-based notes management and organizer -*- lexical-binding: t; -*-
 
 ;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Maintainer: Bastien Guerry <bzg@gnu.org>
@@ -9,7 +9,7 @@
 ;; URL: https://orgmode.org
 ;; Package-Requires: ((emacs "25.1"))
 
-;; Version: 9.6
+;; Version: 9.6.1
 
 ;; This file is part of GNU Emacs.
 ;;
@@ -102,6 +102,7 @@
 
 (require 'org-cycle)
 (defvaralias 'org-hide-block-startup 'org-cycle-hide-block-startup)
+(defvaralias 'org-hide-drawer-startup 'org-cycle-hide-drawer-startup)
 (defvaralias 'org-pre-cycle-hook 'org-cycle-pre-hook)
 (defvaralias 'org-tab-first-hook 'org-cycle-tab-first-hook)
 (defalias 'org-global-cycle #'org-cycle-global)
@@ -1383,13 +1384,13 @@ For more examples, see the system specific constants
 (defcustom org-resource-download-policy 'prompt
   "The policy applied to requests to obtain remote resources.
 
-This affects keywords like #+setupfile and #+incude on export,
+This affects keywords like #+setupfile and #+include on export,
 `org-persist-write:url',and `org-attach-url' in non-interactive
 Emacs sessions.
 
-This recognises four possible values:
+This recognizes four possible values:
 - t, remote resources should always be downloaded.
-- prompt, you will be prompted to download resources nt considered safe.
+- prompt, you will be prompted to download resources not considered safe.
 - safe, only resources considered safe will be downloaded.
 - nil, never download remote resources.
 
@@ -1408,7 +1409,7 @@ URI regexps are applied to both URLs and Org files requesting
 remote resources."
   :group 'org
   :package-version '(Org . "9.6")
-  :type '(list regexp))
+  :type '(repeat regexp))
 
 (defcustom org-open-non-existing-files nil
   "Non-nil means `org-open-file' opens non-existing files.
@@ -4596,8 +4597,8 @@ is available.  This option applies only if FILE is a URL."
 This checks every pattern in `org-safe-remote-resources', and
 returns non-nil if any of them match."
   (let ((uri-patterns org-safe-remote-resources)
-        (file-uri (and buffer-file-name
-                       (concat "file://" (file-truename buffer-file-name))))
+        (file-uri (and (buffer-file-name (buffer-base-buffer))
+                       (concat "file://" (file-truename (buffer-file-name (buffer-base-buffer))))))
         match-p)
     (while (and (not match-p) uri-patterns)
       (setq match-p (or (string-match-p (car uri-patterns) uri)
@@ -4608,7 +4609,8 @@ returns non-nil if any of them match."
 (defun org--confirm-resource-safe (uri)
   "Ask the user if URI should be considered safe, returning non-nil if so."
   (unless noninteractive
-    (let ((current-file (and buffer-file-name (file-truename buffer-file-name)))
+    (let ((current-file (and (buffer-file-name (buffer-base-buffer))
+                             (file-truename (buffer-file-name (buffer-base-buffer)))))
           (domain (and (string-match
                         (rx (seq "http" (? "s") "://")
                             (optional (+ (not (any "@/\n"))) "@")
@@ -4625,7 +4627,7 @@ returns non-nil if any of them match."
                 ", which is not considered safe.\n\n"
                 "Do you want to download this?  You can type\n "
                 (propertize "!" 'face 'success)
-                " to download this resource, and permanantly mark it as safe.\n "
+                " to download this resource, and permanently mark it as safe.\n "
                 (if domain
                     (concat
                      (propertize "d" 'face 'success)
@@ -4636,7 +4638,7 @@ returns non-nil if any of them match."
                 (propertize "f" 'face 'success)
                 (if current-file
                     (concat
-                     " to download this resource, and permanantly mark all resources in "
+                     " to download this resource, and permanently mark all resources in "
                      (propertize current-file 'face 'underline)
                      " as safe.\n ")
                   "")
@@ -4764,7 +4766,7 @@ This is for getting out of special buffers like capture.")
 (defvar org-element-cache-persistent); Defined in org-element.el
 (defvar org-element-use-cache); Defined in org-element.el
 (defvar org-mode-loading nil
-  "Non-nil during Org mode initialisation.")
+  "Non-nil during Org mode initialization.")
 
 (defvar org-agenda-file-menu-enabled t
   "When non-nil, refresh Agenda files in Org menu when loading Org.")
@@ -4896,16 +4898,20 @@ The following commands are available:
 	     (= (point-min) (point-max)))
     (insert "#    -*- mode: org -*-\n\n"))
   (unless org-inhibit-startup
+    (when (or org-startup-align-all-tables org-startup-shrink-all-tables)
+      (org-table-map-tables
+       (cond ((and org-startup-align-all-tables
+		   org-startup-shrink-all-tables)
+	      (lambda () (org-table-align) (org-table-shrink)))
+	     (org-startup-align-all-tables #'org-table-align)
+	     (t #'org-table-shrink))
+       t))
+    ;; Suppress modification hooks to speed up the startup.
+    ;; However, do it only when text properties/overlays, but not
+    ;; buffer text are actually modified.  We still need to track text
+    ;; modifications to make cache updates work reliably.
     (org-unmodified
      (when org-startup-with-beamer-mode (org-beamer-mode))
-     (when (or org-startup-align-all-tables org-startup-shrink-all-tables)
-       (org-table-map-tables
-	(cond ((and org-startup-align-all-tables
-		    org-startup-shrink-all-tables)
-	       (lambda () (org-table-align) (org-table-shrink)))
-	      (org-startup-align-all-tables #'org-table-align)
-	      (t #'org-table-shrink))
-	t))
      (when org-startup-with-inline-images (org-display-inline-images))
      (when org-startup-with-latex-preview (org-latex-preview '(16)))
      (unless org-inhibit-startup-visibility-stuff (org-cycle-set-startup-visibility))
@@ -5270,7 +5276,7 @@ This includes angle, plain, and bracket links."
 		(progn
                   (add-face-text-property start end face-property)
 		  (add-text-properties start end properties))
-              ;; Initialise folding when used outside org-mode.
+              ;; Initialize folding when used outside org-mode.
               (unless (or (derived-mode-p 'org-mode)
 			  (and (org-fold-folding-spec-p 'org-link-description)
                                (org-fold-folding-spec-p 'org-link)))
@@ -5287,7 +5293,7 @@ This includes angle, plain, and bracket links."
                   (org-fold-core-set-folding-spec-property spec :visible t))
                 (org-fold-region start end nil 'org-link)
                 (org-fold-region start end nil 'org-link-description)
-                ;; We are folding the whole emphasised text with SPEC
+                ;; We are folding the whole emphasized text with SPEC
                 ;; first.  It makes everything invisible (or whatever
                 ;; the user wants).
                 (org-fold-region start end t spec)
@@ -6407,7 +6413,7 @@ Return nil before first heading."
 			    "" h))
 			  (h h)))
 	      (tags (and (not no-tags) (match-string 5))))
-          ;; Restore cleared optimisation.
+          ;; Restore cleared optimization.
           (org-fold-core-update-optimisation (match-beginning 0) (match-end 0))
 	  (mapconcat #'identity
 		     (delq nil (list todo priority headline tags))
@@ -8853,7 +8859,7 @@ keywords relative to each registered export back-end."
     "EXCLUDE_TAGS:" "FILETAGS:" "INCLUDE:" "INDEX:" "KEYWORDS:" "LANGUAGE:"
     "MACRO:" "OPTIONS:" "PROPERTY:" "PRINT_BIBLIOGRAPHY" "PRIORITIES:"
     "SELECT_TAGS:" "SEQ_TODO:" "SETUPFILE:" "STARTUP:" "TAGS:" "TITLE:" "TODO:"
-    "TYP_TODO:" "SELECT_TAGS:" "EXCLUDE_TAGS:"))
+    "TYP_TODO:" "SELECT_TAGS:" "EXCLUDE_TAGS:" "EXPORT_FILE_NAME:"))
 
 (defcustom org-structure-template-alist
   '(("a" . "export ascii")
@@ -11380,7 +11386,7 @@ See also `org-scan-tags'."
 			     (pv (match-string 7 term))
 			     (regexp (eq (string-to-char pv) ?{))
 			     (strp (eq (string-to-char pv) ?\"))
-			     (timep (string-match-p "^\"[[<][0-9]+.*[]>]\"$" pv))
+			     (timep (string-match-p "^\"[[<]\\(?:[0-9]+\\|now\\|today\\|tomorrow\\|[+-][0-9]+[dmwy]\\).*[]>]\"$" pv))
 			     (po (org-op-to-function (match-string 6 term)
 						     (if timep 'time strp))))
 			(setq pv (if (or regexp strp) (substring pv 1 -1) pv))
@@ -16322,6 +16328,10 @@ buffer boundaries with possible narrowing."
 					  (org-element-property :end link))
 					 (skip-chars-backward " \t")
 					 (point)))))
+                              ;; FIXME: See bug#59902.  We cannot rely
+                              ;; on Emacs to update image if the file
+                              ;; has changed.
+                              (image-flush image)
 			      (overlay-put ov 'display image)
 			      (overlay-put ov 'face 'default)
 			      (overlay-put ov 'org-image-overlay t)
@@ -16395,6 +16405,10 @@ buffer boundaries with possible narrowing."
   "Remove inline-display overlay if a corresponding region is modified."
   (when (and ov after)
     (delete ov org-inline-image-overlays)
+    ;; Clear image from cache to avoid image not updating upon
+    ;; changing on disk.  See Emacs bug#59902.
+    (when (overlay-get ov 'org-image-overlay)
+      (image-flush (overlay-get ov 'display)))
     (delete-overlay ov)))
 
 (defun org-remove-inline-images (&optional beg end)
@@ -20203,7 +20217,10 @@ interactive command with similar behavior."
 (defun org-back-to-heading (&optional invisible-ok)
   "Go back to beginning of heading."
   (beginning-of-line)
-  (or (org-at-heading-p (not invisible-ok))
+  (or (and (org-at-heading-p (not invisible-ok))
+           (not (and (featurep 'org-inlinetask)
+                   (fboundp 'org-inlinetask-end-p)
+                   (org-inlinetask-end-p))))
       (if (org-element--cache-active-p)
           (let ((heading (org-element-lineage (org-element-at-point)
                                            '(headline inlinetask)

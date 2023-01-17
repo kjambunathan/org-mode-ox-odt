@@ -1,6 +1,6 @@
 ;;; org-clock.el --- The time clocking code for Org mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -1198,8 +1198,11 @@ If `only-dangling-p' is non-nil, only ask to resolve dangling
   (string-to-number (shell-command-to-string "ioreg -c IOHIDSystem | perl -ane 'if (/Idle/) {$idle=(pop @F)/1000000000; print $idle; last}'")))
 
 (defvar org-x11idle-exists-p
-  ;; Check that x11idle exists
-  (and (eq 0 (call-process-shell-command
+  ;; Check that x11idle exists.  But don't do that on DOS/Windows,
+  ;; since the command definitely does NOT exist there, and invoking
+  ;; COMMAND.COM on MS-Windows is a bad idea -- it hangs.
+  (and (null (memq system-type '(windows-nt ms-dos)))
+       (eq 0 (call-process-shell-command
               (format "command -v %s" org-clock-x11idle-program-name)))
        ;; Check that x11idle can retrieve the idle time
        ;; FIXME: Why "..-shell-command" rather than just `call-process'?
@@ -3046,53 +3049,58 @@ PROPERTIES: The list properties specified in the `:properties' parameter
   "If this is a CLOCK line, update it and return t.
 Otherwise, return nil."
   (interactive)
-  (save-excursion
-    (beginning-of-line 1)
-    (skip-chars-forward " \t")
-    (when (looking-at org-clock-string)
-      (let ((re (concat "[ \t]*" org-clock-string
-			" *[[<]\\([^]>]+\\)[]>]\\(-+[[<]\\([^]>]+\\)[]>]"
-			"\\([ \t]*=>.*\\)?\\)?"))
-	    ts te h m s neg)
-	(cond
-	 ((not (looking-at re))
-	  nil)
-	 ((not (match-end 2))
-	  (when (and (equal (marker-buffer org-clock-marker) (current-buffer))
-		     (> org-clock-marker (point))
-                     (<= org-clock-marker (line-end-position)))
-	    ;; The clock is running here
-	    (setq org-clock-start-time
-		  (org-time-string-to-time (match-string 1)))
-	    (org-clock-update-mode-line)))
-	 (t
-          ;; Prevent recursive call from `org-timestamp-change'.
-          (cl-letf (((symbol-function 'org-clock-update-time-maybe) #'ignore))
-            ;; Update timestamps.
-            (save-excursion
-              (goto-char (match-beginning 1)) ; opening timestamp
-              (save-match-data (org-timestamp-change 0 'day)))
+  (let ((origin (point))) ;; `save-excursion' may not work when deleting.
+    (save-excursion
+      (beginning-of-line 1)
+      (skip-chars-forward " \t")
+      (when (looking-at org-clock-string)
+        (let ((re (concat "[ \t]*" org-clock-string
+		          " *[[<]\\([^]>]+\\)[]>]\\(-+[[<]\\([^]>]+\\)[]>]"
+		          "\\([ \t]*=>.*\\)?\\)?"))
+	      ts te h m s neg)
+          (cond
+	   ((not (looking-at re))
+	    nil)
+	   ((not (match-end 2))
+	    (when (and (equal (marker-buffer org-clock-marker) (current-buffer))
+		       (> org-clock-marker (point))
+                       (<= org-clock-marker (line-end-position)))
+	      ;; The clock is running here
+	      (setq org-clock-start-time
+		    (org-time-string-to-time (match-string 1)))
+	      (org-clock-update-mode-line)))
+	   (t
+            ;; Prevent recursive call from `org-timestamp-change'.
+            (cl-letf (((symbol-function 'org-clock-update-time-maybe) #'ignore))
+              ;; Update timestamps.
+              (save-excursion
+                (goto-char (match-beginning 1)) ; opening timestamp
+                (save-match-data (org-timestamp-change 0 'day)))
+              ;; Refresh match data.
+              (looking-at re)
+              (save-excursion
+                (goto-char (match-beginning 3)) ; closing timestamp
+                (save-match-data (org-timestamp-change 0 'day))))
             ;; Refresh match data.
             (looking-at re)
-            (save-excursion
-              (goto-char (match-beginning 3)) ; closing timestamp
-              (save-match-data (org-timestamp-change 0 'day))))
-          ;; Refresh match data.
-          (looking-at re)
-          (and (match-end 4) (delete-region (match-beginning 4) (match-end 4)))
-          (end-of-line 1)
-          (setq ts (match-string 1)
-                te (match-string 3))
-          (setq s (- (org-time-string-to-seconds te)
-		     (org-time-string-to-seconds ts))
-                neg (< s 0)
-                s (abs s)
-                h (floor (/ s 3600))
-                s (- s (* 3600 h))
-                m (floor (/ s 60))
-                s (- s (* 60 s)))
-	  (insert " => " (format (if neg "-%d:%02d" "%2d:%02d") h m))
-	  t))))))
+            (and (match-end 4) (delete-region (match-beginning 4) (match-end 4)))
+            (end-of-line 1)
+            (setq ts (match-string 1)
+                  te (match-string 3))
+            (setq s (- (org-time-string-to-seconds te)
+		       (org-time-string-to-seconds ts))
+                  neg (< s 0)
+                  s (abs s)
+                  h (floor (/ s 3600))
+                  s (- s (* 3600 h))
+                  m (floor (/ s 60))
+                  s (- s (* 60 s)))
+	    (insert " => " (format (if neg "-%d:%02d" "%2d:%02d") h m))
+	    t)))))
+    ;; Move back to initial position, but never beyond updated
+    ;; clock.
+    (unless (< (point) origin)
+      (goto-char origin))))
 
 (defun org-clock-save ()
   "Persist various clock-related data to disk.

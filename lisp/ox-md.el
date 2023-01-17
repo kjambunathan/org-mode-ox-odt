@@ -1,6 +1,6 @@
 ;;; ox-md.el --- Markdown Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2023 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou@gmail.com>
 ;; Maintainer: Nicolas Goaziou <mail@nicolasgoaziou.fr>
@@ -87,7 +87,8 @@ included into another document or application that reserves top-level
 headings for its own use."
   :group 'org-export-md
   :package-version '(Org . "9.6")
-  :type 'string)
+  ;; Avoid `natnum' because that's not available until Emacs 28.1.
+  :type 'integer)
 
 
 

@@ -1,6 +1,6 @@
 ;;; org-fold-core.el --- Folding buffer text -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2020-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2020-2023 Free Software Foundation, Inc.
 ;;
 ;; Author: Ihor Radchenko <yantar92 at gmail dot com>
 ;; Keywords: folding, invisible text
@@ -78,7 +78,7 @@
 
 ;; Similar to 'org-fold-visible, display of any arbitrary folding spec
 ;; can be configured using folding spec properties.  In particular,
-;; `:visible' folding spec proprety controls whether the folded text
+;; `:visible' folding spec property controls whether the folded text
 ;; is visible or not.  If the `:visible' folding spec property is nil,
 ;; folded text is hidden or displayed as a constant string (ellipsis)
 ;; according to the value of `:ellipsis' folding spec property.  See
@@ -91,7 +91,7 @@
 ;; If necessary, one can add or remove folding specs using
 ;; `org-fold-core-add-folding-spec' and `org-fold-core-remove-folding-spec'.
 
-;; If a buffer initialised with `org-fold-core-initialize' is cloned into indirect
+;; If a buffer initialized with `org-fold-core-initialize' is cloned into indirect
 ;; buffers, it's folding state is copied to that indirect buffer.
 ;; The folding states are independent.
 
@@ -145,10 +145,10 @@
 
 ;; All the folding specs can be specified by symbol representing their
 ;; name.  However, this is not always convenient, especially if the
-;; same spec can be used for fold different syntaxical structures.
+;; same spec can be used for fold different syntactical structures.
 ;; Any folding spec can be additionally referenced by a symbol listed
 ;; in the spec's `:alias' folding spec property.  For example, Org
-;; mode's `org-fold-outline' folding spec can be referened as any
+;; mode's `org-fold-outline' folding spec can be referenced as any
 ;; symbol from the following list: '(headline heading outline
 ;; inlinetask plain-list) The list is the value of the spec's `:alias'
 ;; property.
@@ -170,7 +170,7 @@
 ;; possible to control to unfold it temporarily during interactive
 ;; isearch session.
 
-;; The isearch behaviour is controlled on per-folding-spec basis by
+;; The isearch behavior is controlled on per-folding-spec basis by
 ;; setting `isearch-open' and `isearch-ignore' folding spec
 ;; properties.  The the docstring of `org-fold-core--specs' for more details.
 
@@ -179,19 +179,19 @@
 ;; The visibility of the text inserted in front, rear, or in the
 ;; middle of a folded region is managed according to `:front-sticky'
 ;; and `:rear-sticky' folding properties of the corresponding folding
-;; spec.  The rules are the same with stickyness of text properties in
+;; spec.  The rules are the same with stickiness of text properties in
 ;; Elisp.
 
 ;; If a text being inserted into the buffer is already folded and
-;; invisible (before applying the stickyness rules), then it is
-;; revealed.  This behaviour can be changed by wrapping the insertion
+;; invisible (before applying the stickiness rules), then it is
+;; revealed.  This behavior can be changed by wrapping the insertion
 ;; code into `org-fold-core-ignore-modifications' macro.  The macro will disable
 ;; all the processing related to buffer modifications.
 
 ;; The library also provides a way to unfold the text after some
-;; destructive changes breaking syntaxical structure of the buffer.
+;; destructive changes breaking syntactical structure of the buffer.
 ;; For example, Org mode automatically reveals folded drawers when the
-;; drawer becomes syntaxically incorrect:
+;; drawer becomes syntactically incorrect:
 ;; ------- before modification -------
 ;; :DRAWER:<begin fold>
 ;; Some folded text inside drawer
@@ -233,13 +233,13 @@
 ;; visible part of a buffer may cause noticeable lags (which is still
 ;; orders of magnitude better in comparison with overlays).  If the
 ;; performance issues become critical while using this library, it is
-;; recommended to minimise the number of folding specs used in the
+;; recommended to minimize the number of folding specs used in the
 ;; same buffer at a time.
 
 ;; Alternatively, the library provides `org-fold-core--optimise-for-huge-buffers'
 ;; for additional speedup.  This can be used as a file-local variable
 ;; in huge buffers.  The variable can be set to enable various levels
-;; of extra optimisation.  See the docstring for detailed information.
+;; of extra optimization.  See the docstring for detailed information.
 
 ;; It is worth noting that when using `org-fold-core--optimise-for-huge-buffers'
 ;; with `grab-invisible' option, folded regions copied to other
@@ -250,7 +250,7 @@
 
 ;; Another possible bottleneck is the fragility check after the change
 ;; related to the folded text.  The functions used in `:fragile'
-;; folding properties must be optimised.  Also,
+;; folding properties must be optimized.  Also,
 ;; `org-fold-core-ignore-fragility-checks' or even `org-fold-core-ignore-modifications' may be
 ;; used when appropriate in the performance-critical code.  When
 ;; inserting text from within `org-fold-core-ignore-modifications' macro, it is
@@ -302,7 +302,7 @@ be revealed.")
 (defvar-local org-fold-core--optimise-for-huge-buffers nil
   "Non-nil turns on extra speedup on huge buffers (Mbs of folded text).
 
-This setting is risky and may cause various artefacts and degraded
+This setting is risky and may cause various artifacts and degraded
 functionality, especially when using external packages.  It is
 recommended to enable it on per-buffer basis as file-local variable.
 
@@ -321,7 +321,7 @@ following symbols:
   functions relying on this package might not be able to unfold the
   edited text.  For example, removed leading stars from a folded
   headline in Org mode will break visibility cycling since Org mode
-  will not be avare that the following folded text belonged to
+  will not be aware that the following folded text belonged to
   headline.
 
 - `ignore-modification-checks': Do not try to detect insertions in the
@@ -337,7 +337,7 @@ following symbols:
   used.
 
 - `merge-folds': Do not distinguish between different types of folding
-  specs.  This is the most aggressive optimisation with unforeseen and
+  specs.  This is the most aggressive optimization with unforeseen and
   potentially drastic effects.")
 (put 'org-fold-core--optimise-for-huge-buffers 'safe-local-variable 'listp)
 
@@ -355,7 +355,7 @@ following symbols:
   "Folding specs defined in current buffer.
 
 Each spec is a list (SPEC-SYMBOL SPEC-PROPERTIES).
-SPEC-SYMBOL is the symbol respresenting the folding spec.
+SPEC-SYMBOL is the symbol representing the folding spec.
 SPEC-PROPERTIES is an alist defining folding spec properties.
 
 If a text region is folded using multiple specs, only the folding spec
@@ -497,7 +497,7 @@ hanging around."
   (declare (debug (form body)) (indent 0))
   `(let (buffers dead-properties)
      (if (and (not (buffer-base-buffer))
-              (not (eq (current-buffer) (car org-fold-core--indirect-buffers))))
+              (not (memq (current-buffer) org-fold-core--indirect-buffers)))
          ;; We are in base buffer with `org-fold-core--indirect-buffers' value from
          ;; different buffer.  This can happen, for example, when
          ;; org-capture copies local variables into *Capture* buffer.
@@ -600,7 +600,7 @@ unless RETURN-ONLY is non-nil."
 				                  (org-fold-core-folding-spec-list)))
 		                    (remove (assq 'invisible char-property-alias-alist)
 			                    char-property-alias-alist)))
-                  ;; Set folding property stickyness according to
+                  ;; Set folding property stickiness according to
                   ;; their `:font-sticky' and `:rear-sticky'
                   ;; parameters.
                   (let (full-prop-list)
@@ -930,6 +930,8 @@ are provided.
 
 If FROM is non-nil and TO is nil, search the folded regions at FROM.
 
+When both FROM and TO are nil, search folded regions in the whole buffer.
+
 When SPECS is non-nil it should be a list of folding specs or a symbol.
 Only return the matching fold types.
 
@@ -946,6 +948,9 @@ WITH-MARKERS must be nil when RELATIVE is non-nil."
   (unless (listp specs) (setq specs (list specs)))
   (let (regions region mk-region)
     (org-with-wide-buffer
+     (when (and (not from) (not to))
+       (setq from (point-min)
+             to (point-max)))
      (when (and from (not to)) (setq to (point-max)))
      (when (and from (< from (point-min))) (setq from (point-min)))
      (when (and to (> to (point-max))) (setq to (point-max)))
@@ -1058,7 +1063,7 @@ means that the buffer should stay alive during the operation,
 because otherwise all these markers will point to nowhere."
   (declare (debug (form body)) (indent 1))
   (org-with-gensyms (regions)
-    `(let* ((,regions ,(org-fold-core-get-regions :with-markers use-markers)))
+    `(let* ((,regions (org-fold-core-get-regions :with-markers ,use-markers)))
        (unwind-protect (progn ,@body)
          (org-fold-core-regions ,regions :override t :clean-markers t)))))
 
@@ -1185,7 +1190,7 @@ instead of text properties.  The created overlays will be stored in
 	    ;; We do not want it here.
 	    (with-silent-modifications
               (org-fold-core-region (car region) (cdr region) nil spec)
-	      ;; The overlay is modelled after `outline-flag-region'
+	      ;; The overlay is modeled after `outline-flag-region'
 	      ;; [2020-05-09 Sat] overlay for 'outline blocks.
 	      (let ((o (make-overlay (car region) (cdr region) nil 'front-advance)))
 	        (overlay-put o 'evaporate t)
@@ -1303,7 +1308,7 @@ property, unfold the region if the :fragile function returns non-nil."
               (unless (org-fold-core-region-folded-p from to spec)
 	        (let ((spec-to (org-fold-core-get-folding-spec spec (min to (1- (point-max)))))
 		      (spec-from (org-fold-core-get-folding-spec spec (max (point-min) (1- from)))))
-                  ;; Reveal folds around undoed deletion.
+                  ;; Reveal folds around undone deletion.
                   (when undo-in-progress
                     (let ((lregion (org-fold-core-get-region-at-point spec (max (point-min) (1- from))))
                           (rregion (org-fold-core-get-region-at-point spec (min to (1- (point-max))))))
@@ -1412,7 +1417,7 @@ property, unfold the region if the :fragile function returns non-nil."
 ;; To avoid the above situation, we simply clear all the properties,
 ;; unrealated to current buffer when a text is copied.
 ;; FIXME: Ideally, we may want to carry the folding state of copied
-;; text between buffer (probably via user customisation).
+;; text between buffer (probably via user customization).
 (defun org-fold-core--buffer-substring-filter (beg end &optional delete)
   "Clear folding state in killed text.
 This function is intended to be used as `filter-buffer-substring-function'.
@@ -1421,7 +1426,7 @@ The arguments and return value are as specified for `filter-buffer-substring'."
 	;; The list will be used as an argument to `remove-text-properties'.
 	props-list)
     ;; There is no easy way to examine all the text properties of a
-    ;; string, so we utilise the fact that printed string
+    ;; string, so we utilize the fact that printed string
     ;; representation lists all its properties.
     ;; Loop over the elements of string representation.
     (unless (or (string= "" return-string)
@@ -1481,7 +1486,7 @@ The arguments and return value are as specified for `filter-buffer-substring'."
     return-string))
 
 (defun org-fold-core-update-optimisation (beg end)
-  "Update huge buffer optimisation between BEG and END.
+  "Update huge buffer optimization between BEG and END.
 See `org-fold-core--optimise-for-huge-buffers'."
   (when (and (memql 'grab-invisible org-fold-core--optimise-for-huge-buffers)
              (eq org-fold-core-style 'text-properties))
@@ -1494,7 +1499,7 @@ See `org-fold-core--optimise-for-huge-buffers'."
         (setq pos (org-fold-core-next-folding-state-change (caar org-fold-core--specs) pos end))))))
 
 (defun org-fold-core-remove-optimisation (beg end)
-  "Remove huge buffer optimisation between BEG and END.
+  "Remove huge buffer optimization between BEG and END.
 See `org-fold-core--optimise-for-huge-buffers'."
   (when (and (memql 'grab-invisible org-fold-core--optimise-for-huge-buffers)
              (eq org-fold-core-style 'text-properties))

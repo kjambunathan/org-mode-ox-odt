@@ -1,6 +1,6 @@
 ;;; org-attach.el --- Manage file attachments to Org outlines -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2008-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2008-2023 Free Software Foundation, Inc.
 
 ;; Author: John Wiegley <johnw@newartisans.com>
 ;; Keywords: org data attachment
@@ -524,7 +524,7 @@ DIR-property exists (that is different from the unset one)."
   "Attach URL."
   (interactive "MURL of the file to attach: \n")
   (let ((org-attach-method 'url)
-        (org-safe-remote-resources ; Assume saftey if in an interactive session.
+        (org-safe-remote-resources ; Assume safety if in an interactive session.
          (if noninteractive org-safe-remote-resources '(""))))
     (org-attach-attach url)))
 

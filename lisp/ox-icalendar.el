@@ -1,6 +1,6 @@
 ;;; ox-icalendar.el --- iCalendar Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;;      Nicolas Goaziou <mail@nicolasgoaziou.fr>
@@ -75,7 +75,7 @@ for timed events.  If non-zero, alarms are created.
 (defcustom org-icalendar-force-alarm nil
   "Non-nil means alarm will be created even if is set to zero.
 
-This overrides default behaviour where zero means no alarm.  With
+This overrides default behavior where zero means no alarm.  With
 this set to non-nil and alarm set to zero, alarm will be created
 and will fire at the event start."
   :group 'org-export-icalendar

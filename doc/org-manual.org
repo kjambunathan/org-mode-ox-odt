@@ -1249,11 +1249,12 @@ After the drawer.
 #+findex: org-insert-drawer
 You can interactively insert a drawer at point by calling
 ~org-insert-drawer~, which is bound to {{{kbd(C-c C-x d)}}}.  With an
-active region, this command puts the region inside the drawer.  With
-a prefix argument, this command calls ~org-insert-property-drawer~,
-which creates a =PROPERTIES= drawer right below the current headline.
-Org mode uses this special drawer for storing properties (see
-[[*Properties and Columns]]).  You cannot use it for anything else.
+active region, this command puts the region inside the drawer.  With a
+prefix argument, this command calls non-interactive function
+~org-insert-property-drawer~, which creates a =PROPERTIES= drawer
+right below the current headline.  Org mode uses this special drawer
+for storing properties (see [[*Properties and Columns]]).  You cannot use
+it for anything else.
 
 Completion over drawer keywords is also possible using
 {{{kbd(M-TAB)}}}[fn:6].
@@ -1401,7 +1402,7 @@ you, configure the option ~org-table-auto-blank-field~.
 - {{{kbd(M-x org-table-blank-field)}}} ::
 
   #+findex: org-table-blank-field
-  Blank the field at point.
+  Blank the current table field or active region.
 
 - {{{kbd(S-TAB)}}} (~org-table-previous-field~) ::
 
@@ -13722,7 +13723,7 @@ A sample Org file with the above headers:
 #+vindex: org-export-default-language
 LaTeX packages =babel= or =polyglossia= can also be loaded in a
 document.  The "AUTO" string will be replaced in both cases by the
-appropiate value for the =LANGUAGE= keyword, if present in the
+appropriate value for the =LANGUAGE= keyword, if present in the
 document, or by the value of ~org-export-default-language~.  Let's see
 some examples in one or another case.
 
@@ -18491,7 +18492,7 @@ options; they are mutually exclusive.
 
   Ignore the results completely.  This option is similar to =none=,
   but no processing is performed on the return value.  Calling the
-  code block programatically (see [[*How to evaluate source code]]) or by
+  code block programmatically (see [[*How to evaluate source code]]) or by
   reference (see [[*Passing arguments]] and [[*Noweb Reference Syntax]]) will
   always yield nil.
 
@@ -18784,7 +18785,7 @@ a octal shorthand is defined, =oXXX= (=o= for octal). Using this, our
 read-only example is =:tangle-mode o444=. Omitting the =o= prefix will
 cause the argument to be interpreted as an integer, which can lead to
 unexpected results (=444= is the same as =o674=).
-Two other shorthands are recognised, ls-style strings like
+Two other shorthands are recognized, ls-style strings like
 =rw-r--r--=, and chmod-style permissions like =g+w=.
 Note that chmod-style permissions are based on
 ~org-babel-tangle-default-file-mode~, which is =#o544= by default.
@@ -18792,7 +18793,7 @@ Note that chmod-style permissions are based on
 When =:tangle-mode= and =:shebang= are both specified, the give
 =:tangle-mode= will override the permissions from =:shebang=. When
 multiple source code blocks tangle to a single file with conflicting
-=:tangle-mode= header arguments, Org's behaviour is undefined.
+=:tangle-mode= header arguments, Org's behavior is undefined.
 
 #+cindex: @samp{no-expand}, header argument
 By default Org expands code blocks during tangling.  The =no-expand=
@@ -20021,11 +20022,16 @@ changes.
   | =nofnadjust= | Do not renumber and sort automatically.                |
 
   #+vindex: org-hide-block-startup
-  To hide blocks on startup, use these keywords.  The
-  corresponding variable is ~org-hide-block-startup~.
+  #+vindex: org-hide-drawer-startup
+  To hide blocks or drawers on startup, use these keywords.  The
+  corresponding variables are ~org-hide-block-startup~ and
+  ~org-hide-drawer-startup~.
 
-  | =hideblocks=   | Hide all begin/end blocks on startup. |
-  | =nohideblocks= | Do not hide blocks on startup.        |
+  | =hideblocks=    | Hide all begin/end blocks on startup. |
+  | =nohideblocks=  | Do not hide blocks on startup.        |
+  | =hidedrawers=   | Hide all begin/end blocks on startup. |
+  | =nohidedrawers= | Do not hide blocks on startup.        |
+
 
   #+vindex: org-pretty-entities
   The display of entities as UTF-8 characters is governed by the
@@ -22300,7 +22306,7 @@ that are mentioned in the manual.  For a more complete list, use
 
 This manual is for Org version {{{version}}}.
 
-Copyright \copy 2004--2022 Free Software Foundation, Inc.
+Copyright \copy 2004--2023 Free Software Foundation, Inc.
 
 #+begin_quote
 Permission is granted to copy, distribute and/or modify this document

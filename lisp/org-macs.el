@@ -1,6 +1,6 @@
 ;;; org-macs.el --- Top-level Definitions for Org -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -74,11 +74,15 @@ Version mismatch is commonly encountered in the following situations:
    loading of the newer Org version.
 
    It is recommended to put
-    (straight-use-package 'org)
+
+    %s
+
    early in the config.  Ideally, right after the straight.el
    bootstrap.  Moving `use-package' :straight declaration may not be
    sufficient if the corresponding `use-package' statement is
-   deferring the loading.")
+   deferring the loading."
+           ;; Avoid `warn' replacing "'" with "’" (see `format-message').
+           "(straight-use-package 'org)")
      (error "Org version mismatch.  Make sure that correct `load-path' is set early in init.el")))
 
 ;; We rely on org-macs when generating Org version.  Checking Org
@@ -368,18 +372,23 @@ be set to a buffer or a buffer name.  `shell-command' then uses
 it for output."
   (let* ((base-name (file-name-base source))
 	 (full-name (file-truename source))
-	 (out-dir (or (file-name-directory source) "./"))
+         (relative-name (file-relative-name source))
+	 (out-dir (if (file-name-directory source)
+                      ;; Expand "~".  Shell expansion will be disabled
+                      ;; in the shell command call.
+                      (file-name-directory full-name)
+                    "./"))
 	 (output (expand-file-name (concat base-name "." ext) out-dir))
 	 (time (file-attribute-modification-time (file-attributes output)))
 	 (err-msg (if (stringp err-msg) (concat ".  " err-msg) "")))
     (save-window-excursion
       (pcase process
-	((pred functionp) (funcall process (shell-quote-argument source)))
+	((pred functionp) (funcall process (shell-quote-argument relative-name)))
 	((pred consp)
 	 (let ((log-buf (and log-buf (get-buffer-create log-buf)))
 	       (spec (append spec
 			     `((?b . ,(shell-quote-argument base-name))
-			       (?f . ,(shell-quote-argument source))
+			       (?f . ,(shell-quote-argument relative-name))
 			       (?F . ,(shell-quote-argument full-name))
 			       (?o . ,(shell-quote-argument out-dir))
 			       (?O . ,(shell-quote-argument output))))))
@@ -1082,7 +1091,7 @@ Return width in pixels when PIXELS is non-nil."
         (setq-local buffer-invisibility-spec
                     (if (listp current-invisibility-spec)
                         (mapcar (lambda (el)
-                                  ;; Consider elipsis to have 0 width.
+                                  ;; Consider ellipsis to have 0 width.
                                   ;; It is what Emacs 28+ does, but we have
                                   ;; to force it in earlier Emacs versions.
                                   (if (and (consp el) (cdr el))

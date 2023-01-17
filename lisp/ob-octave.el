@@ -1,6 +1,6 @@
 ;;; ob-octave.el --- Babel Functions for Octave and Matlab -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2010-2023 Free Software Foundation, Inc.
 
 ;; Author: Dan Davison
 ;; Keywords: literate programming, reproducible research
@@ -91,7 +91,7 @@ end")
 				 (list
 				  "set (0, \"defaultfigurevisible\", \"off\");"
 				  full-body
-				  (format "print -dpng %s" gfx-file))
+				  (format "print -dpng %S\nans=%S" gfx-file gfx-file))
 				 "\n")
 		    full-body)
 		  result-type matlabp)))

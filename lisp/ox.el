@@ -1,6 +1,6 @@
 ;;; ox.el --- Export Framework for Org Mode          -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2023 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;; Maintainer: Nicolas Goaziou <mail@nicolasgoaziou.fr>
@@ -2559,7 +2559,7 @@ variable and do not do anything that might alter it (like calling a
 major mode) to prevent data corruption.  Also, do note that Emacs may
 jump into the created buffer if the original file buffer is closed and
 then re-opened.  Making edits in the buffer copy may also trigger
-Emacs save dialogue.  Prefer using `org-export-with-buffer-copy' macro
+Emacs save dialog.  Prefer using `org-export-with-buffer-copy' macro
 when possible.
 
 When optional key `:to-buffer' is non-nil, copy into BUFFER.
@@ -3036,6 +3036,11 @@ Return code as a string."
 	       (org-narrow-to-subtree)
 	       (goto-char (point-min))
 	       (org-end-of-meta-data)
+               ;; Make the region include top heading in the subtree.
+               ;; This way, we will be able to retrieve its export
+               ;; options when calling
+               ;; `org-export--get-subtree-options'.
+               (backward-char)
 	       (narrow-to-region (point) (point-max))))
         ;; Initialize communication channel with original buffer
         ;; attributes, unavailable in its copy.
@@ -4607,12 +4612,17 @@ If LINK refers to a remote resource, modify it to point to a local
 downloaded copy.  Otherwise, return unchanged LINK."
   (when (org-export-link-remote-p link)
     (let* ((local-path (org-export-link--remote-local-copy link)))
-      (setcdr link
-              (thread-first (cadr link)
-                            (plist-put :type "file")
-                            (plist-put :path local-path)
-                            (plist-put :raw-link (concat "file:" local-path))
-                            list))))
+      (if local-path
+          (setcdr link
+                  (thread-first (cadr link)
+                                (plist-put :type "file")
+                                (plist-put :path local-path)
+                                (plist-put :raw-link (concat "file:" local-path))
+                                list))
+        (display-warning
+         '(org export)
+         (format "unable to obtain local copy of %s"
+                 (org-element-property :raw-link link))))))
   link)
 
 ;;;; For References
@@ -4748,23 +4758,27 @@ objects of the same type."
      (let ((counter 0))
        ;; Increment counter until ELEMENT is found again.
        (org-element-map (plist-get info :parse-tree)
-	   (or types (org-element-type element))
+	   (or (and types (cons (org-element-type element) types))
+               (org-element-type element))
 	 (lambda (el)
            (let ((cached (org-element-property :org-export--counter el)))
 	     (cond
 	      ((eq element el) (1+ counter))
               ;; Use cached result.
-              ((and cached (equal predicate (car cached)))
-               (cdr cached))
+              ((and cached
+                    (equal predicate (car cached))
+                    (equal types (cadr cached)))
+               (setq counter (nth 2 cached))
+               nil)
 	      ((not predicate)
                (cl-incf counter)
                (org-element-put-property
-                el :org-export--counter (cons predicate counter))
+                el :org-export--counter (list predicate types counter))
                nil)
 	      ((funcall predicate el info)
                (cl-incf counter)
                (org-element-put-property
-                el :org-export--counter (cons predicate counter))
+                el :org-export--counter (list predicate types counter))
                nil))))
 	 info 'first-match)))))
 
@@ -6743,7 +6757,6 @@ Return file name as a string."
 	  (cond
 	   (pub-dir (concat (file-name-as-directory pub-dir)
 			    (file-name-nondirectory base-name)))
-	   ((file-name-absolute-p base-name) base-name)
 	   (t base-name))))
     ;; If writing to OUTPUT-FILE would overwrite original file, append
     ;; EXTENSION another time to final name.

@@ -1,6 +1,6 @@
 ;;; ob-tangle.el --- Extract Source Code From Org Files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2023 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Keywords: literate programming, reproducible research
@@ -339,7 +339,7 @@ matching a regular expression."
 
 (defun org-babel-interpret-file-mode (mode)
   "Determine the integer representation of a file MODE specification.
-The following forms are currently recognised:
+The following forms are currently recognized:
 - an integer (returned without modification)
 - \"o755\" (chmod style octal)
 - \"rwxrw-r--\" (ls style specification)
@@ -354,7 +354,7 @@ The following forms are currently recognised:
       (user-error "%1$o is not a valid file mode octal. \
 Did you give the decimal value %1$d by mistake?" mode)))
    ((not (stringp mode))
-    (error "File mode %S not recognised as a valid format." mode))
+    (error "File mode %S not recognized as a valid format." mode))
    ((string-match-p "^o0?[0-7][0-7][0-7]$" mode)
     (string-to-number (replace-regexp-in-string "^o" "" mode) 8))
    ((string-match-p "^[ugoa]*\\(?:[+-=][rwxXstugo]*\\)+\\(,[ugoa]*\\(?:[+-=][rwxXstugo]*\\)+\\)*$" mode)
@@ -365,7 +365,7 @@ Did you give the decimal value %1$d by mistake?" mode)))
                                             ",g=" (substring mode 3 6)
                                             ",o=" (substring mode 6 9))
                                    0))
-   (t (error "File mode %S not recognised as a valid format. See `org-babel-interpret-file-mode'." mode))))
+   (t (error "File mode %S not recognized as a valid format. See `org-babel-interpret-file-mode'." mode))))
 
 (defun org-babel-tangle-clean ()
   "Remove comments inserted by `org-babel-tangle'.
@@ -500,7 +500,8 @@ The PARAMS are the 3rd element of the info for the same src block."
                  (cl-letf (((symbol-function 'org-store-link-functions)
                             (lambda () nil)))
                    (org-store-link nil))))
-             (bare (and (string-match org-link-bracket-re l)
+             (bare (and l
+                        (string-match org-link-bracket-re l)
                         (match-string 1 l))))
         (when bare
           (if (and org-babel-tangle-use-relative-file-links

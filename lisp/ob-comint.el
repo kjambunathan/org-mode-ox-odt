@@ -1,6 +1,6 @@
 ;;; ob-comint.el --- Babel Functions for Interaction with Comint Buffers -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2022 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2023 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Keywords: literate programming, reproducible research, comint
@@ -117,6 +117,14 @@ or user `keyboard-quit' during execution of body."
 	 (goto-char (process-mark (get-buffer-process (current-buffer))))
 	 (insert dangling-text)
 
+         ;; Replace partially supplied input lines.
+         ;; This is needed when output filter spits partial lines that
+         ;; do not include a full prompt at a time.
+         (setq string-buffer
+               (replace-regexp-in-string
+                comint-prompt-regexp
+                ,org-babel-comint-prompt-separator
+                string-buffer))
 	 ;; remove echo'd FULL-BODY from input
 	 (when (and ,remove-echo ,full-body
 		    (string-match
