@@ -25,6 +25,8 @@
 
 ;;; Code:
 
+(require 'dom)
+
 ;;;; XML String <-> DOM
 
 (defun odt-xml-string-to-dom (xml-string)
