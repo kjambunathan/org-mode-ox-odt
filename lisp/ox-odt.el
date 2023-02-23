@@ -1462,7 +1462,9 @@ from `org-odt-convert-processes'."
      (("pdf" "pdf") ("odt" "odt") ("rtf" "rtf") ("ott" "ott")
       ("doc" "doc" ":\"MS Word 97\"") ("docx" "docx") ("html" "html")
       ("txt" "txt" ":\"Text (encoded)\"")
-      ("fodt" "fodt")))
+      ("fodt" "fodt")
+      ;; Export to image file; converts only the first page of the document
+      ("png" "png") ("jpg" "jpg") ("jpeg" "jpeg")))
     ("Web"
      ("html")
      (("pdf" "pdf") ("odt" "odt") ("html" "html")))
