@@ -3579,113 +3579,167 @@ holding export options."
 	  (if org-display-custom-times
 	      (cons (substring (car org-time-stamp-custom-formats) 1 -1)
 		    (substring (cdr org-time-stamp-custom-formats) 1 -1))
-	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M"))))
+	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M")))
+         (content-template-file
+	  (let* ((file (plist-get info :odt-content-template-file))
+                 (content-template-file
+                  (cond
+	           ((or (not file) (string= file ""))
+                    (org-odt-get-backend-property org-export-current-backend :content-template-file))
+	           ((file-name-absolute-p file) file)
+	           (t (expand-file-name
+		       file (file-name-directory (plist-get info :input-file)))))))
+            (message "ox-odt: Content template file is %s" content-template-file)
+            ;; Copy over the content template file to the zip dir.
+            (copy-file content-template-file (concat (plist-get info :odt-zip-dir) "content.xml") t)
+            ;; The file in copied over to the zip dir is the content template file going forward.
+            (concat (plist-get info :odt-zip-dir) "content.xml"))))
+
+    ;; Retrieve Content.xml as DOM.
+    (plist-put info :odt-content-dom
+	       (odt-dom:file->dom content-template-file))
+
+    ;; Update content.xml.
+    ;; - Modify display level in sequence number declarations
+    (unless (eq org-export-current-backend 'ods)
+      (let* ((content-dom (plist-get info :odt-content-dom))
+             (sequence-decls (car (odt-dom:type->nodes 'text:sequence-decls content-dom)))
+             (office-text (car (odt-dom:type->nodes 'office:text content-dom))))
+        ;; Remove existing sequence decls.
+        (when sequence-decls
+          (dom-remove-node content-dom sequence-decls))
+        ;; Re-build sequence decls according to user's preferred display level.
+        (dom-add-child-before
+         office-text
+         `(text:sequence-decls
+           nil ,@(cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings collect
+		          `(text:sequence-decl
+			    ((text:display-outline-level
+			      . ;; Modify display level.
+                              ,(number-to-string
+                                (if (plist-get category-props :use-outline-levelp)
+			            (string-to-number (plist-get info :odt-display-outline-level))
+			          0)))
+			     (text:name . ,(plist-get category-props :variable)))))))))
+    
+    ;; Gather Auto-generated extra styles.
+    (plist-put info :odt-auto-generated-automatic-styles
+               (string-join
+	        (list
+                 ;; - Dump these automatic styles:
+                 (cl-loop for table-cell-style in
+	                  (cl-loop with cell-preferences = nil
+			           for x in `(("OrgTable%sCell" "0.002cm solid #000000" "fo:padding=\"0.159cm\"")
+				              ("CustomTable%sCell" nil
+				               ,(mapconcat #'identity
+						           '("fo:background-color=\"transparent\""
+						             "fo:border-bottom=\"0.002cm solid #000000\""
+						             "fo:border-left=\"0.002cm solid #000000\""
+						             "fo:border-right=\"0.002cm solid #000000\""
+						             "fo:border-top=\"0.002cm solid #000000\""
+						             "fo:padding=\"0.097cm\"")
+						           " ")))
+			           appending (cl-loop for variant in
+					              '("" "FirstColumn" "LastColumn"
+					                "FirstRow" "LastRow"
+					                "EvenRow" "OddRow"
+					                "EvenColumn" "OddColumn")
+					              for y = (copy-tree x) do
+					              (let* ((base-style (format (car y) variant))
+						             (cell-props (plist-get (assoc-default base-style cell-preferences)
+									            :table-cell-properties)))
+					                (setcar y base-style)
+					                (when cell-props (setcar (last y) cell-props)))
+					              collect y))
+	                  concat (apply #'org-odt--table-cell-build-table-cell-styles table-cell-style))
+
+                 ;; - Dump automatic styles for paragraphs within a table.  See
+                 ;;   `org-odt--table-cell-get-paragraph-style'.
+                 (let* ((p-styles (cl-delete-duplicates
+			           (org-element-map (plist-get info :parse-tree) 'table
+			             (lambda (table)
+			               (org-odt--read-attribute table :p-style))
+			             info)
+                                   :test 'string=)))
+                   (org-odt--lisp-to-xml 
+	            (cl-loop for p-style in p-styles
+                             when p-style append
+                             (cl-loop for cell-type in '("Heading" "Contents") append
+			              (cl-loop for cell-alignment in '(left right center) collect
+                                               `(style:style
+                                                 ((style:name
+                                                   . ,(concat p-style cell-type
+						              (capitalize (symbol-name cell-alignment))))
+                                                  (style:family . "paragraph")
+                                                  (style:parent-style-name
+                                                   . ,(concat p-style cell-type)))
+                                                 (style:paragraph-properties
+                                                  ((fo:text-align
+                                                    . ,(assoc-default cell-alignment
+							              '((left . "start")
+							                (right . "end")
+							                (center . "center"))))
+                                                   (style:justify-single-word . "false")))))))))
+                 
+                 ;; - Dump date-styles.
+                 (or (when (or t (plist-get info :odt-use-date-fields))
+	               (concat (org-odt--build-date-styles (car custom-time-fmts)
+					                   "OrgDate1")
+		               (org-odt--build-date-styles (cdr custom-time-fmts)
+					                   "OrgDate2")))
+                     "")
+                 )
+	        "\n"))
+
+    ;; De-duplicate styles
+    ;;
+    ;; The MINUS and PLUS operations in the comments below are Set
+    ;; Opertaions.
+    
+    ;; Content.xml <- (Auto-generated styles - Content.xml) + Content.xml
+    (let* (;; DOM1 <- Auto-generated styles
+           (dom1 (odt-xml-string-to-dom
+                  (odt-dom-to-xml-string
+                   (list 'office:automatic-styles nil
+			 (plist-get info :odt-auto-generated-automatic-styles)))))
+           ;; DOM2 <- Content.xml
+	   (dom2 (plist-get info :odt-content-dom)))
+      ;; Auto-generated styles <- Auto-generated styles - Content.xml
+      (odt-stylesdom:trim-dom1 dom1 dom2)
+      ;; Content.xml <- Content.xml + whatever is left in  Auto-generated styles.
+      (let ((children (dom-children dom1)))
+	(odt-stylesdom:dom->add-nodes-to 'office:automatic-styles children dom2)))
+
+    ;; Content.xml <- (Content.xml - Automatic styles) + Automatic styles
+    (cl-loop for (subdom . style-keyword) in '((office:automatic-styles
+                                                .
+                                                ;;   1. styles specified with "#+ODT_AUTOMATIC_STYLES: ..."
+                                                ;;   2. paragraph styles that request pagebreaks
+                                                ;;   3. table styles that specify `:rel-width'
+                                                :odt-automatic-styles))
+	     ;; DOM1 <- Content.xml
+	     for dom1 = (plist-get info :odt-content-dom)
+	     for style-fragment = (plist-get info style-keyword)
+             ;; DOM2 <- Automatic Styles
+	     for dom2 = (when style-fragment
+			  (odt-xml-string-to-dom
+			   (odt-dom-to-xml-string
+			    (list subdom nil style-fragment))))
+	     when dom2
+	     do
+	     ;; Content.xml <- Content.xml - Automatic styles etc.
+	     (odt-stylesdom:trim-dom1 dom1 dom2)
+	     ;; Content.xml <- Content.xml + all of Automatic styles.
+	     (let ((children (dom-children dom2)))
+	       (odt-stylesdom:dom->add-nodes-to subdom children dom1)))
+
+    ;; Content.xml has no dupicate styles.  Persist it.
+    (odt-stylesdom:dom->file content-template-file (not 'prettify)
+                             (plist-get info :odt-content-dom))
+    
     (with-temp-buffer
-      (insert-file-contents
-       (let ((content-template-file
-	      (let ((file (plist-get info :odt-content-template-file)))
-		(cond
-		 ((or (not file) (string= file ""))
-                  (org-odt-get-backend-property org-export-current-backend :content-template-file))
-		 ((file-name-absolute-p file) file)
-		 (t (expand-file-name
-		     file (file-name-directory (plist-get info :input-file))))))))
-	 (message "ox-odt: Content template file is %s" content-template-file)
-	 content-template-file))
-      ;; Write automatic styles.
-      ;; - Position the cursor.
-      (goto-char (point-min))
-      (re-search-forward "<office:automatic-styles>" nil t)
-      (goto-char (match-end 0))
-      (newline)
+      (insert-file-contents content-template-file)
 
-      ;; - Dump these automatic styles:
-      (cl-loop for table-cell-style in
-	       (cl-loop with cell-preferences = nil
-			for x in `(("OrgTable%sCell" "0.002cm solid #000000" "fo:padding=\"0.159cm\"")
-				   ("CustomTable%sCell" nil
-				    ,(mapconcat #'identity
-						'("fo:background-color=\"transparent\""
-						  "fo:border-bottom=\"0.002cm solid #000000\""
-						  "fo:border-left=\"0.002cm solid #000000\""
-						  "fo:border-right=\"0.002cm solid #000000\""
-						  "fo:border-top=\"0.002cm solid #000000\""
-						  "fo:padding=\"0.097cm\"")
-						" ")))
-			appending (cl-loop for variant in
-					   '("" "FirstColumn" "LastColumn"
-					     "FirstRow" "LastRow"
-					     "EvenRow" "OddRow"
-					     "EvenColumn" "OddColumn")
-					   for y = (copy-tree x) do
-					   (let* ((base-style (format (car y) variant))
-						  (cell-props (plist-get (assoc-default base-style cell-preferences)
-									 :table-cell-properties)))
-					     (setcar y base-style)
-					     (when cell-props (setcar (last y) cell-props)))
-					   collect y))
-	       do (insert (apply #'org-odt--table-cell-build-table-cell-styles table-cell-style)))
-
-      ;;   1. styles specified with "#+ODT_AUTOMATIC_STYLES: ..."
-      ;;   2. paragraph styles that request pagebreaks
-      ;;   3. table styles that specify `:rel-width'
-      (insert "\n<!-- BEGIN: OFFICE:AUTOMATIC-STYLES -->\n")
-      (insert (org-element-normalize-string (or (plist-get info :odt-automatic-styles) "")))
-
-      ;; - Dump automatic styles for paragraphs within a table.  See
-      ;;   `org-odt--table-cell-get-paragraph-style'.
-      (let* ((p-styles (cl-delete-duplicates
-			(org-element-map (plist-get info :parse-tree) 'table
-			  (lambda (table)
-			    (org-odt--read-attribute table :p-style))
-			  info)
-                        :test 'string=)))
-	(cl-loop for p-style in p-styles do
-		 (when p-style
-		   (cl-loop for cell-type in '("Heading" "Contents") do
-			    (cl-loop for cell-alignment in '(left right center) do
-				     (insert
-				      (format "
-  <style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\">
-    <style:paragraph-properties fo:text-align=\"%s\" style:justify-single-word=\"false\"/>
-  </style:style>
-"
-					      (concat p-style cell-type
-						      (capitalize (symbol-name cell-alignment)))
-					      (concat p-style cell-type)
-					      (assoc-default cell-alignment
-							     '((left . "start")
-							       (right . "end")
-							       (center . "center"))))))))))
-
-      ;; - Dump date-styles.
-      (when (or t (plist-get info :odt-use-date-fields))
-	(insert (org-odt--build-date-styles (car custom-time-fmts)
-					    "OrgDate1")
-		(org-odt--build-date-styles (cdr custom-time-fmts)
-					    "OrgDate2")))
-      (insert "\n<!-- END: OFFICE:AUTOMATIC-STYLES -->\n")
-
-      ;; Update display level.
-      ;; - Remove existing sequence decls.  Also position the cursor.
-      (unless (eq org-export-current-backend 'ods)
-        (goto-char (point-min))
-        (when (re-search-forward "<text:sequence-decls" nil t)
-	  (delete-region (match-beginning 0)
-		         (re-search-forward "</text:sequence-decls>" nil nil)))
-        (insert "\n<!-- BEGIN: TEXT:SEQUENCE-DECLS -->\n")
-        ;; Update sequence decls according to user preference.
-        (insert
-         (format
-	  "\n<text:sequence-decls>%s\n</text:sequence-decls>"
-	  (cl-loop for (_category . category-props) in org-odt-caption-and-numbering-settings concat
-		   (format "\n<text:sequence-decl text:display-outline-level=\"%d\" text:name=\"%s\"/>"
-			   (if (plist-get category-props :use-outline-levelp)
-			       (string-to-number (plist-get info :odt-display-outline-level))
-			     0)
-			   (plist-get category-props :variable)))))
-        (insert "\n<!-- END: TEXT:SEQUENCE-DECLS -->\n"))
-      
       ;; Position the cursor to document body.
       (goto-char (point-min))
       (let ((end-tag (cdr (org-odt-get-backend-property org-export-current-backend :content-tags))))
@@ -3782,7 +3836,7 @@ holding export options."
     ;; Write content.xml.
     (let ((coding-system-for-write 'utf-8))
       (write-region nil nil
-       (concat (plist-get info :odt-zip-dir) "content.xml")))
+                    (concat (plist-get info :odt-zip-dir) "content.xml")))
     ;; Create a manifest entry for content.xml.
     (org-odt-create-manifest-file-entry info "text/xml" "content.xml")))
 
