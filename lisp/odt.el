@@ -209,7 +209,7 @@
 ;;;; DOM -> File
 
 (defun odt-stylesdom:dom->file (file-name prettifyp dom)
-  (cl-assert (eq 'office:document-styles (odt-dom-type dom)))
+  (cl-assert (memq (odt-dom-type dom) '(office:document-styles office:document-content)))
   (odt-dom:dom->file file-name prettifyp dom))
 
 ;;;; Get Style Nodes
