@@ -6,7 +6,7 @@
         - [Ensure that you are using the *enhanced `ox-odt`* and *not* the `ox-odt` that comes with *upstream* `emacs` or `org-mode`](#ensure-that-you-are-using-the-enhanced-ox-odt-and-not-the-ox-odt-that-comes-with-upstream-emacs-or-org-mode)
         - [What to do if the `ox-odt` from previous step is *not* the enhanced `ox-odt`](#what-to-do-if-the-ox-odt-from-previous-step-is-not-the-enhanced-ox-odt)
             - [If you use Emacs' `package.el` ...](#if-you-use-emacs-packageel-)
-            - [If you use `straight<.el` ...](#if-you-use-straightel-)
+            - [If you use `straight.el` ...](#if-you-use-straightel-)
             - [If you use Doom Emacs' `straight.el` ...](#if-you-use-doom-emacs-straightel-)
             - [If you use a `git` checkout of this repo ...](#if-you-use-a-git-checkout-of-this-repo-)
             - [If you have lost all hope of using this exporter ...](#if-you-have-lost-all-hope-of-using-this-exporter-)
