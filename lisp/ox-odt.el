@@ -8700,14 +8700,23 @@ channel."
   "Transcode a VERSE-BLOCK element from Org to ODT.
 CONTENTS is verse block contents.  INFO is a plist holding
 contextual information."
-  ;; Add line breaks to each line of verse.
-  (setq contents (replace-regexp-in-string
-		  "\\(<text:line-break/>\\)?[ \t]*\n"
-		  "<text:line-break/>" contents))
-  ;; Replace tabs and spaces.
-  (setq contents (org-odt--encode-tabs-and-spaces contents))
-  ;; Surround it in a verse environment.
-  (org-odt-paragraph verse-block contents info))
+  (rx-let ((ODT-LINE-BREAK "<text:line-break/>")
+           (SPACE (or " " "\t"))
+	   (LINE-BREAK (or "\r" "\n" "\r\n"))
+	   (LINE-END (and (optional ODT-LINE-BREAK)
+                          (zero-or-more SPACE)
+                          LINE-BREAK)))
+    ;; Remove the trailing line end character
+    (setq contents (string-trim-right contents (rx LINE-END)))
+    ;; Add line breaks to each line of verse.
+    (setq contents (replace-regexp-in-string
+		    (rx LINE-END)
+		    "<text:line-break/>"
+                    contents))
+    ;; Replace tabs and spaces.
+    (setq contents (org-odt--encode-tabs-and-spaces contents))
+    ;; Surround it in a verse environment.
+    (org-odt-paragraph verse-block contents info)))
 
 
 

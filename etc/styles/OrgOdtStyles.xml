@@ -284,10 +284,8 @@
   </style:style>
 
   <style:style style:name="OrgVerse" style:family="paragraph" style:parent-style-name="Preformatted_20_Text">
-   <style:paragraph-properties fo:background-color="transparent" fo:padding="0cm" fo:border="none" style:shadow="none">
-    <style:background-image/>
-   </style:paragraph-properties>
-  </style:style>
+   <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.21cm" fo:background-color="transparent" fo:padding="0cm" fo:border="none" style:shadow="none"/>
+  </style:style>  
 
   <style:style style:name="OrgClock" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm"/>
