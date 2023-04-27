@@ -981,7 +981,7 @@
   <style:style style:name="OrgTextBoxFrame" style:family="graphic" style:parent-style-name="Frame">
    <style:graphic-properties text:anchor-type="char" style:vertical-pos="top" style:vertical-rel="paragraph" style:horizontal-pos="center" style:horizontal-rel="paragraph-content" style:wrap="none" draw:wrap-influence-on-position="once-concurrent"/>
   </style:style>
-                              
+
   <draw:marker draw:name="Arrowheads_20_2" draw:display-name="Arrowheads 2" svg:viewBox="0 0 20 20" svg:d="M0 20l10-20 10 20z"/>
 
   <style:style style:name="OrgToCharImage" style:family="graphic" style:parent-style-name="Graphics">
@@ -998,7 +998,7 @@
 
   <style:style style:name="OrgToCharFormulaCaptionAbove" style:family="graphic" style:parent-style-name="Formula">
    <style:graphic-properties text:anchor-type="char" fo:margin-top="0.199cm" fo:margin-bottom="0.199cm" style:wrap="none" style:vertical-pos="bottom" style:vertical-rel="paragraph" style:horizontal-pos="from-left" style:horizontal-rel="paragraph-content" draw:wrap-influence-on-position="once-concurrent" draw:ole-draw-aspect="1"/>
-  </style:style>  
+  </style:style>
 
 </office:styles>
  <office:automatic-styles>
@@ -1075,7 +1075,7 @@
    <style:footer-style>
     <style:header-footer-properties fo:min-height="0.6cm" fo:margin-left="0cm" fo:margin-right="0cm" fo:margin-top="0.499cm" style:dynamic-spacing="false"/>
    </style:footer-style>
-  </style:page-layout>  
+  </style:page-layout>
  </office:automatic-styles>
  <office:master-styles>
   <style:master-page style:name="Standard" style:page-layout-name="A4PortraitLayout">
@@ -1087,7 +1087,7 @@
    <style:footer>
     <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"></text:page-number></text:p>
    </style:footer>
-  </style:master-page>  
+  </style:master-page>
   <style:master-page style:name="OrgTitlePage" style:page-layout-name="OrgTitlePageLayout" style:next-style-name="OrgFrontMatterPage"/>
   <style:master-page style:name="OrgFrontMatterPage" style:page-layout-name="OrgFrontMatterPageLayout">
    <style:footer>
@@ -1108,7 +1108,7 @@
    <style:footer>
     <text:p text:style-name="OrgFooter"><text:page-number text:select-page="current"></text:page-number></text:p>
    </style:footer>
-  </style:master-page>  
+  </style:master-page>
   <!-- Endnotes & Footnotes: Page styles -->
   <style:master-page style:name="Footnote" style:page-layout-name="FootnoteLayout"/>
   <style:master-page style:name="Endnote" style:page-layout-name="FootnoteLayout"/>
