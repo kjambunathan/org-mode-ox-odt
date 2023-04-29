@@ -1201,6 +1201,30 @@ Letter (Portrait), A4 (Landscape), and other page layouts."
   :type 'integer)
 
 
+;;;; Document Production
+
+(defcustom org-odt-lock-file-behaviour 'query
+  "Behaviour of the exporter when the target file is locked by LibreOffice.
+
+The values and its interpretation are as below:
+
+- `ignore' :: Don't check for the lock file, and proceed ahead with
+  document export.
+
+- `abort' :: Check for lock file, and if it exists abort the export.
+
+- `delete' :: Check for lock file, and if it exists delete the lock
+  file, and proceed ahread with export.
+
+-  any other value :: Query for one of the above behaviours."
+  :group 'org-export-odt
+  :type '(choice
+	  (const :tag "Interactively query for the behaviour" query)
+	  (const :tag "Don't check for lock file" ignore)
+	  (const :tag "Check for lock file; if it is present, abort the export" abort)
+	  (const :tag "Check for lock file; and always delete it before export" delete)))
+
+
 ;;;; Document validation
 
 (defcustom org-odt-validate-process nil
@@ -4414,6 +4438,65 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 	 (target-name (file-name-nondirectory target))
 	 (cmds `(("zip" "-mX0" ,target-name "mimetype")
 		 ("zip" "-rmTq" ,target-name "."))))
+    ;; Check if the target file is locked by LibreOffice.  If yes, ask
+    ;; the user permission to snatch ownership of the file away from
+    ;; LibreOffice, and make ourselves the owner.
+    ;;
+    ;; The fact that the user is using this exporter, implies that
+    ;; LibreOffice is used most likely as a viewer--and not as an
+    ;; editor--of this OpenDocument file.
+    ;;
+    ;; When the user is using LibreOffice to view and review an older
+    ;; version of OpenDocument file created by this exporter, deleting
+    ;; the lock file, and recreating a new version of the file is what
+    ;; he wants the most on another round of
+    ;; `org-odt-export-as-odf-and-open'.  Once a revised version of
+    ;; OpenDocument file is created, he is most likely to reload the
+    ;; file from disk when in LibreOffice, or he has already configured
+    ;; the system to automatically reload the file on
+    ;; `org-odt-export-as-odf-and-open'. (See notes on `Reload' macro in
+    ;; `org-odt-transform-processes' for more information.)
+    (let* ((lock-file (concat (file-name-directory target)
+			      (format ".~lock.%s#" target-name)))
+	   ;; Pull out the normalized value of `org-odt-lock-file-behaviour'.
+	   (lock-file-behaviour (or (car (memq org-odt-lock-file-behaviour
+					       '(abort delete ignore)))
+				    'query)))
+      ;; When we are NOT ignoring the lock file, and the intended
+      ;; OpenDocument file is locked, additional steps are needed.
+      (when (and (not (eq lock-file-behaviour 'ignore))
+		 (file-exists-p lock-file))
+	;; If lock file behaviour is `query', query the user for the
+	;; behaviour.
+	(when (eq lock-file-behaviour 'query)
+	  (let* ((choice nil))
+	    (while (not (memq choice '(?i ?d ?a)))
+	      (setq choice
+		    (event-basic-type
+		     (read-char-exclusive
+		      (format "Target `%s' is locked with `%s'.  What should I do? (a)bort export, (i)gnore lock, (d)elete lock"
+			      target-name
+			      lock-file)))))
+	    (setq lock-file-behaviour
+		  (alist-get choice
+			     '((?i . ignore)
+			       (?d . delete)
+			       (?a . abort))))))
+	;; Honour lock file behaviour.
+	(pcase lock-file-behaviour
+	  (`ignore
+	   (message "Ignored lock `%s'.  Proceeding ahead with export ..." lock-file)
+	   (ignore))
+	  (`delete
+	   (delete-file lock-file)
+	   (message "Deleted `%s'.  Proceeding ahead with export ..." lock-file))
+	  (`abort
+	   (user-error "File `%s' is locked with lock `%s'; refusing to proceed ahead."
+		       target-name
+		       lock-file))
+	  (_
+	   ;; Shouldn't come here
+	   ))))
     ;; If a file with same name as the desired output file
     ;; exists, remove it.
     (when (file-exists-p target)
