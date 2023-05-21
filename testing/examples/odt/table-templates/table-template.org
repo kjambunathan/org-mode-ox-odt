@@ -1,0 +1,37 @@
+While applying a table template, one can optionally choose the following:
+
+- Number Format
+- Font
+- Alignment
+- Borders
+- Pattern
+
+
+* Simple Grid Columns
+
+#+CAPTION: Following table is styled with "Simple Grid Columns"
+| SGC:FirstRow    |             |               |                |                |
+| SGC:FirstColumn |             | SGC:OddColumn | SGC:EvenColumn | SGC:LastColumn |
+|                 | SGC:OddRow  |               |                |                |
+|                 | SGC:EvenRow |               |                |                |
+| SGC:LastRow     |             |               |                |                |
+
+
+* Simple Grid Rows
+
+#+CAPTION: Following table is styled with "Simple Grid Rows"
+| SGR:FirstRow    |             |               |                |                |
+| SGR:FirstColumn |             | SGR:OddColumn | SGR:EvenColumn | SGR:LastColumn |
+|                 | SGR:OddRow  |               |                |                |
+|                 | SGR:EvenRow |               |                |                |
+| SGR:LastRow     |             |               |                |                |
+
+
+* Box List Blue
+
+#+CAPTION: Following table is styled with "Box List Blue"
+| BLB:FirstRow    |             |               |                |                |
+| BLB:FirstColumn |             | BLB:OddColumn | BLB:EvenColumn | BLB:LastColumn |
+|                 | BLB:OddRow  |               |                |                |
+|                 | BLB:EvenRow |               |                |                |
+| BLB:LastRow     |             |               |                |                |
