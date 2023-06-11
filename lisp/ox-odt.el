@@ -8874,6 +8874,7 @@ contextual information."
 	  (substring latex-frag (length preamble) (- (length postamble))))))
      (t (error "Couldn't match latex-frag: %S" latex-frag)))))
 
+;;;###autoload
 (defun org-create-math-formula-from-starmath (latex-frag &optional mathml-file)
   "Convert LATEX-FRAG to MathML and store it in MATHML-FILE.
 
@@ -9982,6 +9983,7 @@ function to create page headers:
 
 ;;;; Validate OpenDocument a file
 
+;;;###autoload
 (defun org-odt-validate (in-file &optional abortp)
   "Validate IN-FILE using `org-odt-validate-process'."
   (interactive "fOpenDocument file: ")
@@ -10238,6 +10240,7 @@ values.  Here are the differences between this function and the
 			   collect it)
 	     collect it)))
 
+;;;###autoload
 (defun org-odt-table-suggest-spans ()
   "Insert `:span' lines for a table at point.
 
@@ -10367,6 +10370,7 @@ specifically to help with subsequent tweaks."
 
 ;;;; Insert prettifed XML
 
+;;;###autoload
 (defun org-odt-prettify-xml-buffer (&optional arg)
   "Run HTML Tidy (i.e., `tidy' on debian) on current buffer.
 
@@ -10468,6 +10472,7 @@ This function is used for prettifying XML files when user option
     (nxml-mode)
     (indent-region (point-min) (point-max))))
 
+;;;###autoload
 (defun org-odt-yank-styles (&optional yank-method which-style xml-string)
   "Yank `current-kill', (presumably) a ODT styles XML, at point.
 
@@ -10688,6 +10693,7 @@ use the command `org-odt-insert-style-name-or-style-definition-from-file'."
 	 (goto-char p)))
       (t (user-error "This shouldn't happen")))))
 
+;;;###autoload
 (defun org-odt-insert-style-name-or-style-definition-from-file
     (&optional query-for-file)
   "Insert a style name or the XML definition of a style from `OrgOdtStyles.xml'.
