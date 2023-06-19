@@ -121,7 +121,8 @@
 	     (odt-dom-properties node))))
 
 (defun odt-dom-contents (node)
-  (cddr node))
+  (when (odt-dom-node-p node)
+    (cddr node)))
 
 ;;;; DOM: Query or Transform
 
@@ -138,6 +139,7 @@
       (funcall f dom)))))
 
 (defun odt-dom-map (f dom)
+  (cl-assert (odt-dom-node-p dom))
   (odt-dom-do-map f
 		  (lambda (dom results)
 		    (when (odt-dom-node-p dom)
@@ -276,6 +278,174 @@
 	     with edited-node = (odt-dom:type->node type dom)
 	     for node in nodes
 	     do (dom-append-child edited-node node))))
+
+;;;; WIP-1
+
+(defun odt-dom-values->parentvalues (&optional values value->V value->parentvalues V->values &rest env)
+  (let* (G Vs sortedVs value)
+    (while (setq value (pop values))
+      (let* ((V (funcall value->V value)))
+        (unless (member V (map-keys G))
+          (let* ((parentvalues (funcall value->parentvalues value))
+                 (parentVs (seq-map value->V parentvalues)))
+            (setq values (append parentvalues values))
+            (setq Vs (delete-dups (append parentVs Vs)))
+            (push (cons V parentVs) G)))))
+    G
+    (while G
+      (let* ((partition (seq-group-by (lambda (it)
+                                        (null (null (cdr it))))
+                                      G))
+             (orphanedVs (map-keys (alist-get nil partition))))
+        (setq G (alist-get t partition))
+        (seq-map
+         (lambda (it)
+           (when (cdr it)
+             (setcdr it (seq-difference (cdr it) sortedVs))))
+         G)
+        (setq sortedVs (append sortedVs orphanedVs))))
+    sortedVs
+    (seq-map (lambda (id)
+               (apply V->values id env))
+             sortedVs)))
+
+;;;; WIP-2
+
+(defvar let-dom-separator "%")
+
+(defun let-dom--data->special-vars (data)
+  (delete-dups
+   (cond
+    ((symbolp data)
+     (let ((name (symbol-name data)))
+       (cond
+        ((string-match (rx-to-string `(and bos ,let-dom-separator)) name)
+         (list data)))))
+    ((vectorp data)
+     (apply #'nconc (mapcar #'let-dom--data->special-vars data)))
+    ((not (consp data)) nil)
+    ((eq (car data) 'let-dom)
+     (let-dom--data->special-vars (cadr data)))
+    (t (append (let-dom--data->special-vars (car data))
+               (let-dom--data->special-vars (cdr data)))))))
+
+(defun let-dom--sym->valueform (sym expr)
+  (let* ((this sym))
+    (pcase this
+      ('_self
+       expr)
+      ('_tag
+       `(odt-dom-type ,expr))
+      ('_properties
+       `(odt-dom-properties ,expr))
+      ((or '_children '_contents)
+       `(odt-dom-contents ,expr))
+      ('_text
+       `(odt-dom-contents ,expr))
+      ('_all
+       `(odt-dom-map (lambda (dom)
+                       (when (odt-dom-node-p dom)
+                         dom))
+                     ,expr))
+      (_
+       (cond
+        ((string-prefix-p "//" (symbol-name this))
+         `(odt-dom-map (lambda (dom)
+                         (when (eq (odt-dom-type dom) ',(intern (substring (symbol-name this) 2)))
+                           dom))
+                       ,expr))
+        ((string-prefix-p "/" (symbol-name this))
+         `(odt-dom-map-nodes (let-dom ,expr
+                                      %_children)
+                             (eq %_tag ',(intern (substring (symbol-name this) 1)))))
+        (t
+         `(odt-dom-property ,expr ',sym)))))))
+
+(defmacro let-dom-1 (dom &rest body)
+  (declare (indent 1) (debug t))
+  (cl-labels ((dottedsym->valueform (dottedsym-or-symnames expr)
+                (message "%S" `(dottedsym->valueform :dottedsym ,dottedsym-or-symnames :expr ,expr))
+                (let ((symnames (if (symbolp dottedsym-or-symnames)
+                                    (cdr (split-string (symbol-name dottedsym-or-symnames) let-dom-separator))
+                                  dottedsym-or-symnames)))
+                  (cond
+                   ((and (consp symnames)
+                         (cdr symnames))
+                    (let-dom--sym->valueform (intern (car (last symnames)))
+                                             (dottedsym->valueform (butlast symnames) expr)))
+                   ((and (consp symnames)
+                         (null (cdr symnames)))
+                    (let-dom--sym->valueform (intern (car symnames)) expr))
+                   (t
+                    (let-dom--sym->valueform (intern symnames) expr))))))
+    (let* ((var (gensym "dom")))
+      `(let ((,var ,dom))
+         (let ,(seq-map
+                (lambda (dottedsym)
+                  (list dottedsym
+                        (dottedsym->valueform dottedsym var)))
+                (let-dom--data->special-vars body))
+           ,@body)))))
+
+(defmacro let-dom-2 (dom &rest body)
+  (declare (indent 1) (debug t))
+  (cl-labels ((dottedsym->parentdottedsyms (dottedsym)
+                (let ((components (cdr (split-string (symbol-name dottedsym) let-dom-separator))))
+                  (when (cdr components)
+                    (list (intern (concat let-dom-separator (string-join (butlast components) let-dom-separator)))))))
+              (symnames->valueform (dottedsym expr)
+                (let ((symnames (cdr (split-string (symbol-name dottedsym) let-dom-separator))))
+                  (cond
+                   ((and (consp symnames)
+                         (cdr symnames))
+                    (let* ((prev (intern (string-join (butlast symnames) let-dom-separator)))
+                           (@prev (intern (format "%s%s" let-dom-separator prev))))
+                      (let-dom--sym->valueform (intern (car (last symnames))) @prev)))
+                   ((and (consp symnames)
+                         (null (cdr symnames)))
+                    (let-dom--sym->valueform (intern (car symnames)) expr))
+                   (t
+                    (let-dom--sym->valueform (intern symnames) expr)))))
+              (dottedsym->dottedsym-and-valueform (dottedsym expr)
+                (list dottedsym
+                      (symnames->valueform dottedsym expr))))
+    (let ((var (gensym "dom")))
+      `(let ((,var ,dom))
+         (let* ,(odt-dom-values->parentvalues (let-dom--data->special-vars body)
+                                              #'identity
+                                              #'dottedsym->parentdottedsyms
+                                              #'dottedsym->dottedsym-and-valueform
+                                              var)
+
+           ,@body)))))
+
+(defalias 'let-dom 'let-dom-1)
+
+(defmacro odt-dom-%-predicate-function (%-predicate &optional %-result)
+  `(lambda (dom)
+     (let-dom dom
+              (when (progn ,%-predicate)
+                (or ,%-result dom)))))
+
+(defmacro odt-dom-map* (%-predicate %-result dom)
+  `(odt-dom-map
+    (odt-dom-%-predicate-function ,%-predicate ,%-result)
+    ,dom))
+
+(defmacro odt-dom-map-nodes (nodes %-predicate &optional %-result)
+  `(seq-keep
+    (odt-dom-%-predicate-function ,%-predicate ,%-result)
+    ,nodes))
+
+(defmacro odt-dom--step (dom expander predicate &optional result)
+  (let* ((--dom-- (gensym "dom")))
+    `(let ((,--dom-- ,dom))
+       (odt-dom-map-nodes
+        (let-dom ,--dom--
+                 ,expander)
+        ,predicate
+        (let-dom ,--dom--
+                 ,result)))))
 
 (provide 'odt)
 ;;; odt.el ends here
