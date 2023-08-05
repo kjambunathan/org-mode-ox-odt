@@ -411,13 +411,13 @@
   <style:style style:name="OrgTimestampWrapper" style:family="text"/>
   <style:style style:name="OrgTarget" style:family="text"/>
 
-  <number:date-style style:name="OrgDate" number:automatic-order="true">
-   <number:day number:style="long"/>
-   <number:text>/</number:text>
-   <number:month number:style="long"/>
-   <number:text>/</number:text>
-   <number:year number:style="long"/>
-  </number:date-style>
+  <!-- <number:date-style style:name="OrgDate" number:automatic-order="true"> -->
+  <!--  <number:day number:style="long"/> -->
+  <!--  <number:text>/</number:text> -->
+  <!--  <number:month number:style="long"/> -->
+  <!--  <number:text>/</number:text> -->
+  <!--  <number:year number:style="long"/> -->
+  <!-- </number:date-style> -->
   <!-- END: Org Agenda Styles -->
 
   <style:style style:name="Bold" style:family="text">

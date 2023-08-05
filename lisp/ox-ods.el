@@ -1,6 +1,6 @@
 ;;; ox-ods.el --- OpenDocument Spreadsheet Document for Org Mode -*- lexical-binding: t; coding: utf-8-emacs; -*-
 
-;; Copyright (C) 2022 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2022-23 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
@@ -1281,7 +1281,7 @@ from `org-odt-convert-processes'."
 (defvar org-ods-data-types
   '(formula date float))
 
-(defun org-ods-table-cell (table-cell contents _info)
+(defun org-ods-table-cell (table-cell contents info)
   (org-ods-message (list 'org-ods-table-cell
 			 :ods-formula (org-element-property :ods-formula table-cell)
 			 :el-contents (org-element-contents table-cell)
@@ -1301,13 +1301,17 @@ from `org-odt-convert-processes'."
 	      ""))
        ;; Timestamp
        ((and (consp content)
-	     (eq (org-element-type content) 'timestamp))
-	(list :data-type 'date
-	      :attributes
-	      (format "office:date-value=\"%s\" office:value-type=\"date\""
-		      (org-odt--format-timestamp content nil 'iso-date))
-	      :contents
-	      ""))
+	     (eq (org-element-type content) 'timestamp)
+             (org-odt-timestamp-is-plain-p content))
+	(when (plist-get (plist-get info :odt-timestamp-options) :emit-date-as-date-object)
+          (list :data-type (if (org-timestamp-has-time-p content)
+                               "OrgDateAndTime"
+                             "OrgDate")
+	        :attributes
+	        (format "office:date-value=\"%s\" office:value-type=\"date\""
+		        (org-odt--format-a-time-in-timestamp content 'iso))
+	        :contents
+	        "")))
        ;; Float
        ((stringp content)
 	(when-let* ((trimmed-content (org-trim content))

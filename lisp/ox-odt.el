@@ -1,6 +1,6 @@
 ;;; ox-odt.el --- OpenDocument Text Exporter for Org Mode -*- lexical-binding: t; coding: utf-8-emacs; -*-
 
-;; Copyright (C) 2010-2022 Jambunathan K <kjambunathan at gmail dot com>
+;; Copyright (C) 2010-2023 Jambunathan K <kjambunathan at gmail dot com>
 
 ;; Author: Jambunathan K <kjambunathan at gmail dot com>
 ;; Maintainer: Jambunathan K <kjambunathan at gmail dot com>
@@ -167,7 +167,7 @@
     (:odt-link-org-files-as-odt nil nil org-odt-link-org-files-as-odt)
     (:odt-pixels-per-inch nil nil org-odt-pixels-per-inch)
     (:odt-table-styles nil nil org-odt-table-styles)
-    (:odt-use-date-fields nil nil org-odt-use-date-fields)
+    (:odt-timestamp-options nil nil org-odt-timestamp-options)
     (:odt-indices nil nil org-odt-indices)
     ;; Variables that are used per-session of export.
     ;; Running counters for various objects.  Use this to generate
@@ -2239,12 +2239,12 @@ Choose one of HTML or LaTeX style."
     ("ODTTableCount" text:table-count nil "0")
     ;; Date and/or Time
     ("ODTDate" text:time
-     ((style:data-style-name . "OrgDate1")
+     ((style:data-style-name . "OrgDate")
       (text:time-value . "2022-05-16T09:50:12.615588982")
       (text:fixed . "false"))
      "09:50:12")
     ("ODTDateAndTime" text:time
-     ((style:data-style-name . "OrgDate2")
+     ((style:data-style-name . "OrgDateAndTime")
       (text:time-value . "2022-05-16T09:50:36.528331437")
       (text:fixed . "false"))
      "09:50:36 AM"))
@@ -2523,16 +2523,21 @@ style from the list."
 
 ;;;; Timestamps
 
-(defcustom org-odt-use-date-fields nil
+(defcustom org-odt-timestamp-options
+  '( :strip-brackets-around-date nil
+     :emit-date-as-date-field nil
+     :emit-date-as-date-object nil
+     :number:date-style-attributes
+     ( :number:automatic-order nil))
   "Non-nil, if timestamps should be exported as date fields.
 
 When nil, export timestamps as plain text.
 
 When non-nil, map `org-time-stamp-custom-formats' to a pair of
-OpenDocument date-styles with names \"OrgDate1\" and \"OrgDate2\"
+OpenDocument date-styles with names \"OrgDate\" and \"OrgDateAndTime\"
 respectively.  A timestamp with no time component is formatted
-with style \"OrgDate1\" while one with explicit hour and minutes
-is formatted with style \"OrgDate2\".
+with style \"OrgDate\" while one with explicit hour and minutes
+is formatted with style \"OrgDateAndTime\".
 
 This feature is experimental.  Most (but not all) of the common
 %-specifiers in `format-time-string' are supported.
@@ -2550,9 +2555,18 @@ the application UI or through a custom styles file.
 
 See `org-odt--build-date-styles' for implementation details."
   :group 'org-export-odt
-  :version "24.4"
-  :package-version '(Org . "8.0")
-  :type 'boolean)
+  :type '(choice
+          (const :tag "Strip brackets and Typeset literally" nil)
+          (plist :tag "Options"
+                 :inline t
+	         ;; Give the most common options as checkboxes
+	         :options (
+                           (:strip-brackets-around-date (boolean))
+                           (:emit-date-as-date-field (boolean))
+                           (:emit-date-as-date-object (boolean))
+                           (:number:date-style-attributes
+			    (plist :options
+                                   ((:number:automatic-order (boolean)))))))))
 
 
 ;;;; Experimental features: LANGUAGE keyword
@@ -2645,54 +2659,72 @@ available:
 
 ;;;; Date
 
-(defun org-odt--format-timestamp (timestamp &optional end iso-date-p)
-  (let* ((format-timestamp
-	  (lambda (timestamp format &optional end utc)
-	    (if timestamp
-		(org-timestamp-format timestamp format end utc)
-	      (format-time-string format nil utc))))
+(defun org-odt-time-stamp-formats-sans-brackets (format-or-formats)
+  (setq format-or-formats
+        (pcase format-or-formats
+          (`iso
+           '("%Y-%m-%dT%H:%M:%S" . "%Y-%m-%dT%H:%M:%S"))
+          (`nil
+           (if org-display-custom-times
+	       org-time-stamp-custom-formats
+             org-time-stamp-formats))
+          (_ format-or-formats)))
+  (let* ((strip-brackets
+          (lambda (format)
+            (or
+             ;; Strip brackets, if any.
+             (when (or (and (string-prefix-p "<" format)
+		            (string-suffix-p ">" format))
+	               (and (string-prefix-p "[" format)
+		            (string-suffix-p "]" format)))
+               (substring format 1 -1))
+             format))))
+    (cond
+     ((stringp format-or-formats)
+      (funcall strip-brackets  format-or-formats))
+     ((consp format-or-formats)
+      (cons
+       (funcall strip-brackets  (car format-or-formats))
+       (funcall strip-brackets  (cdr format-or-formats)))))))
+
+(defun org-odt--format-a-time-in-timestamp (timestamp formats &optional end utc)
+  (let* ((has-time-p (or (not timestamp)
+			 (org-timestamp-has-time-p timestamp)))
+	 (formats (org-odt-time-stamp-formats-sans-brackets formats))
+	 (format (if has-time-p (cdr formats) (car formats))))
+    (format-time-string format
+			(when timestamp
+			  (org-timestamp-to-time timestamp end))
+			(and utc t))))
+
+(defun org-odt--encode-a-time-in-timestamp (timestamp end info)
+  (let* ((date-contents (org-odt--format-a-time-in-timestamp timestamp nil end))
 	 (has-time-p (or (not timestamp)
 			 (org-timestamp-has-time-p timestamp)))
-	 (iso-date (let ((format (if has-time-p "%Y-%m-%dT%H:%M:%S"
-				   "%Y-%m-%dT%H:%M:%S")))
-		     (funcall format-timestamp timestamp format end))))
-    (if iso-date-p iso-date
-      (let* ((style (if has-time-p "OrgDate2" "OrgDate1"))
-	     ;; LibreOffice does not care about end goes as content
-	     ;; within the "<text:date>...</text:date>" field.  The
-	     ;; displayed date is automagically corrected to match the
-	     ;; format requested by "style:data-style-name" attribute.  So
-	     ;; don't bother about formatting the date contents to be
-	     ;; compatible with "OrgDate1" and "OrgDateTime" styles.  A
-	     ;; simple Org-style date should suffice.
-	     (date (let* ((formats
-			   (if org-display-custom-times
-			       (cons (substring
-				      (car org-time-stamp-custom-formats) 1 -1)
-				     (substring
-				      (cdr org-time-stamp-custom-formats) 1 -1))
-			     '("%Y-%m-%d %a" . "%Y-%m-%d %a %H:%M")))
-			  (format (if has-time-p (cdr formats) (car formats))))
-		     (funcall format-timestamp timestamp format end)))
-	     (repeater (let ((repeater-type (org-element-property
-					     :repeater-type timestamp))
-			     (repeater-value (org-element-property
-					      :repeater-value timestamp))
-			     (repeater-unit (org-element-property
-					     :repeater-unit timestamp)))
-			 (concat
-			  (cl-case repeater-type
-			    (catchup "++") (restart ".+") (cumulate "+"))
-			  (when repeater-value
-			    (number-to-string repeater-value))
-			  (cl-case repeater-unit
-			    (hour "h") (day "d") (week "w") (month "m")
-			    (year "y"))))))
-	(concat
-	 (format "<text:date text:date-value=\"%s\" style:data-style-name=\"%s\" text:fixed=\"true\">%s</text:date>"
-		 iso-date style date)
-	 (and (not (string= repeater ""))  " ")
-	 repeater)))))
+         (target-fmt (if (plist-get (plist-get info :odt-timestamp-options) :emit-date-as-date-field)
+                         'field
+                       nil)))
+    (pcase target-fmt
+      ;; Typeset timestamp literally
+      (`nil
+       (org-odt-plain-text date-contents info))
+      ;; Typeset timestamp as a date field
+      (`field
+       (org-odt--lisp-to-xml
+        `(text:date
+	  ((text:date-value . ,(org-odt--format-a-time-in-timestamp timestamp 'iso end))
+	   (style:data-style-name . ,(if has-time-p "OrgDateAndTime" "OrgDate"))
+	   (text:fixed . "true"))
+          ;; LibreOffice does not care about what goes as content within
+	  ;; the "<text:date>...</text:date>" element.  The displayed date
+	  ;; is automagically corrected to match the format requested by
+	  ;; "style:data-style-name" attribute.  So one need not bother
+	  ;; about formatting the date contents to be compatible with
+	  ;; "OrgDate" and "OrgDateTime" styles.  A simple Org-style
+	  ;; date should suffice.  Nevertheless, do emit the date
+	  ;; contents in the user-specified format.
+	  ,(org-odt-plain-text date-contents info))))
+      (_ (error "Invalid target-fmt (= `%S')" target-fmt)))))
 
 
 ;;;; Locale-specific
@@ -3451,20 +3483,20 @@ significance.  All other values are ignored."
 				      border-properties
 				      valign-properties)
 				     " ")))
-                        (cl-loop with data-types = '(date)
-                                 for data-type in data-types
-                                 for data-type-as-string = (capitalize (symbol-name data-type)) do
-                                 (insert
-                                  (org-odt--lisp-to-xml
-                                   `(style:style
-                                     ((style:name . ,(format "%s%s" style-name  data-type-as-string))
-                                      (style:parent-style-name . ,style-name)
-                                      (style:family . "table-cell")
-                                      (style:data-style-name . ,(format "%s%s%s" "Org" data-type-as-string "Style")))))))))
+                        (cl-loop with data-types = '((date . ("OrgDate" "OrgDateAndTime")))
+                                 for (_data-type . data-styles) in data-types
+                                 do (cl-loop for data-style in data-styles
+                                             do (insert
+                                                 (org-odt--lisp-to-xml
+                                                  `(style:style
+                                                    ((style:name . ,(format "%s%s" style-name  data-style))
+                                                     (style:parent-style-name . ,style-name)
+                                                     (style:family . "table-cell")
+                                                     (style:data-style-name . ,data-style)))))))))
       (insert (format "\n\n<!-- END: table-cell styles %s -->\n\n" base-style-name))
       (buffer-string))))
 
-(defun org-odt--build-date-styles (fmt style)
+(cl-defun org-odt--build-date-styles (fmt style &key number:automatic-order)
   ;; In LibreOffice 3.4.6, there doesn't seem to be a convenient way
   ;; to modify the date fields.  A date could be modified by
   ;; offsetting in days.  That's about it.  Also, date and time may
@@ -3543,11 +3575,12 @@ significance.  All other values are ignored."
 	(setq output (concat output
 			     (format "\n<number:text>%s</number:text>"
 				     (org-odt--encode-plain-text filler)))))
-      (format "\n<number:date-style style:name=\"%s\" %s>%s\n</number:date-style>"
-	      style
-	      (concat " number:automatic-order=\"true\""
-		      " number:format-source=\"fixed\"")
-	      output ))))
+      (org-odt--lisp-to-xml
+       `(number:date-style
+         ((style:name . ,style)
+          (number:automatic-order . ,(if number:automatic-order "true" "false"))
+          (number:format-source . "fixed"))
+         ,output)))))
 
 (defun org-odt-create-manifest-file-entry (info &rest args)
   (plist-put info :odt-manifest-file-entries
@@ -3598,15 +3631,7 @@ See entry titled `keyword-to-documentproperty' in
   "Return body of document string after ODT conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
-  (let* (;; `org-display-custom-times' should be accessed right
-	 ;; within the context of the Org buffer.  So obtain its
-	 ;; value before moving on to temp-buffer context down below.
-	 (custom-time-fmts
-	  (if org-display-custom-times
-	      (cons (substring (car org-time-stamp-custom-formats) 1 -1)
-		    (substring (cdr org-time-stamp-custom-formats) 1 -1))
-	    '("%Y-%M-%d %a" . "%Y-%M-%d %a %H:%M")))
-         (content-template-file
+  (let* ((content-template-file
 	  (let* ((file (plist-get info :odt-content-template-file))
                  (content-template-file
                   (cond
@@ -3708,13 +3733,20 @@ holding export options."
                                                    (style:justify-single-word . "false")))))))))
                  
                  ;; - Dump date-styles.
-                 (or (when (or t (plist-get info :odt-use-date-fields))
-	               (concat (org-odt--build-date-styles (car custom-time-fmts)
-					                   "OrgDate1")
-		               (org-odt--build-date-styles (cdr custom-time-fmts)
-					                   "OrgDate2")))
-                     "")
-                 )
+                 (let* (;; `org-display-custom-times' should be accessed right
+	                ;; within the context of the Org buffer.  So obtain its
+	                ;; value before moving on to temp-buffer context down below.
+	                (custom-time-fmts (org-odt-time-stamp-formats-sans-brackets nil)))
+                   (concat (apply #'org-odt--build-date-styles
+                                  (car custom-time-fmts)
+			          "OrgDate"
+                                  (plist-get (plist-get info :odt-timestamp-options)
+                                             :number:date-style-attributes))
+		           (apply #'org-odt--build-date-styles
+                                  (cdr custom-time-fmts)
+			          "OrgDateAndTime"
+                                  (plist-get (plist-get info :odt-timestamp-options)
+                                             :number:date-style-attributes)))))
 	        "\n"))
 
     ;; De-duplicate styles
@@ -3796,9 +3828,10 @@ holding export options."
 				   (unless (cdr date)
 				     (when (eq (org-element-type (car date)) 'timestamp)
 				       (car date)))))
-			      (or (when (and (plist-get info :odt-use-date-fields)
+			      (or (when (and (plist-get (plist-get info :odt-timestamp-options)
+                                                        :emit-date-as-date-field)
 					     timestamp)
-				    (org-odt--format-timestamp timestamp)))
+				    (org-odt--encode-a-time-in-timestamp timestamp nil info)))
 			      (org-export-data (plist-get info :date) info))))))
 	        (_keywords (let ((data (plist-get info :keywords)))
 			     (org-odt--encode-plain-text
@@ -4319,7 +4352,7 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
 		    (let ((date (plist-get info :date)))
 		      (when (and (not (cdr date))
 				 (eq (org-element-type (car date)) 'timestamp))
-			(org-odt--format-timestamp (car date) nil 'iso-date)))))
+			(org-odt--format-a-time-in-timestamp (car date) 'iso)))))
 	(keywords (let ((data (plist-get info :keywords)))
 		    (org-odt--encode-plain-text
 		     (org-element-interpret-data data))))
@@ -7184,7 +7217,7 @@ holding contextual information."
 			      (format "<dc:creator>%s</dc:creator>" author))
 			 (and date
 			      (format "<dc:date>%s</dc:date>"
-				      (org-odt--format-timestamp date nil 'iso-date)))
+				      (org-odt--format-a-time-in-timestamp date 'iso)))
 			 contents)))))
      ;; Section.
      ((string= type "section")
@@ -8321,7 +8354,9 @@ channel."
 		   (concat style-name
 			   ;; In case of ODS backend, suffix data type to style name.
 			   (or (when-let* ((data-type (plist-get ods-plist :data-type)))
-				 (capitalize (format "%s" data-type)))
+                                 (if (symbolp data-type)
+                                     (capitalize (format "%s" data-type))
+                                   data-type))
 			       ""))
 		   (concat attributes " "
 			   ;; In case of ODS backend, add data type attributes.
@@ -8417,7 +8452,7 @@ communication channel."
 		   (if (memq 'left (org-export-table-cell-borders table-cell info))
 		       (cl-incf n)
 		     n))
-	      info nil 'table-cell))))
+	         info nil 'table-cell))))
     (if (zerop (car ns)) (mapcar #'1+ ns) ns)))
 
 (defun org-odt--table (table contents info)
@@ -8442,38 +8477,74 @@ contextual information."
 	    (caption-position (plist-get captions-plist :caption-position))
 	    (custom-table-style (nth 1 (org-odt-table-style-spec table info)))
 	    (table-column-specs
-	     (lambda (table info)
+	     (lambda (table info rel-width)
 	       (let* ((table-style (or custom-table-style "OrgTable"))
 		      (column-style (format "%sColumn" table-style))
 		      (widths (org-odt--table-cell-widths table info)))
-		 (cond
-		  (widths
-		   (mapconcat
-		    (lambda (width)
-		      (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
-			(plist-put info :odt-automatic-styles
-				   (concat (plist-get info :odt-automatic-styles)
-					   (format
-					    "
+                 (cond
+                  ;; Non-ODS backend; may be ODT
+                  ((not (eq org-export-current-backend 'ods))
+                   (cond
+		    (widths
+		     (mapconcat
+		      (lambda (width)
+		        (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
+			  (plist-put info :odt-automatic-styles
+				     (concat (plist-get info :odt-automatic-styles)
+					     (format
+					      "
 					   <style:style style:name=\"%s\" style:family=\"table-column\" style:parent-style-name=\"%s\">
 					        <style:table-column-properties style:rel-column-width=\"%d*\"/>
 					   </style:style>"
-					    derived-column-style column-style width)))
-			(format "\n<table:table-column table:style-name=\"%s\"/>"
-				derived-column-style)))
-		    widths "\n"))
-		  (t
-		   (format "\n<table:table-column table:style-name=\"%s\" table:number-columns-repeated=\"%d\"/>"
-			   column-style
-			   (cdr (org-odt-table-dimensions table info))))))))
+					      derived-column-style column-style width)))
+			  (format "\n<table:table-column table:style-name=\"%s\"/>"
+				  derived-column-style)))
+		      widths "\n"))
+		    (t
+		     (format "\n<table:table-column table:style-name=\"%s\" table:number-columns-repeated=\"%d\"/>"
+			     column-style
+			     (cdr (org-odt-table-dimensions table info))))))
+                  ;; ODS backend
+                  (t
+                   (let* ((table-width
+                           ;; Size of spreadsheet tables is apparently orthogonal to the
+                           ;; printable page size.
+                           (*
+                            (- 21.0 (* 2 2.0))  ; A4 paper width sans 2cm margin on either side.
+                            (/ rel-width 100.0) ; rel-width can be > 100%.
+                            ))
+                          (widths (or widths
+                                      (make-list (cdr (org-odt-table-dimensions table info)) 1.0)))
+                          (total-widths (float (apply #'+ widths)))
+                          (widths (mapcar
+                                   (lambda (width)
+                                     (* table-width (/ width total-widths)))
+                                   widths)))
+                     (mapconcat
+		      (lambda (width)
+		        (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
+			  (plist-put info :odt-automatic-styles
+				     (concat (plist-get info :odt-automatic-styles)
+                                             
+                                             (org-odt--lisp-to-xml
+                                              `(style:style
+                                                ((style:name . ,derived-column-style)
+                                                 (style:family . "table-column")
+                                                 (style:parent-style-name . ,column-style))
+                                                (style:table-column-properties
+	                                         (;; (fo:break-before . "auto")
+		                                  (style:column-width . ,(format "%.2fcm" width))))))))
+			  (format "\n<table:table-column table:style-name=\"%s\"/>"
+				  derived-column-style)))
+		      widths "\n")))))))
+            (props (org-odt--read-attribute table))
+	    (rel-width (let ((value (plist-get props :rel-width)))
+			 (if (numberp value) value 96)))
 	    (text (concat
 		   ;; begin table.
 		   (format
 		    "\n<table:table table:style-name=\"%s\"%s>"
 		    (let* ((base-style-name (or custom-table-style "OrgTable"))
-			   (props (org-odt--read-attribute table))
-			   (rel-width (let ((value (plist-get props :rel-width)))
-					(if (numberp value) value 96)))
 			   (pagebreak-type (let ((page-break (plist-get props :page-break)))
 					     (cond
 					      ((null page-break)
@@ -8541,7 +8612,7 @@ contextual information."
 		    (concat (when short-caption
 			      (format " table:name=\"%s\"" short-caption))))
 		   ;; column specification.
-		   (funcall table-column-specs table info)
+		   (funcall table-column-specs table info rel-width)
 		   ;; actual contents.
 		   "\n" contents
 		   ;; end table.
@@ -8711,49 +8782,112 @@ information."
 
 ;;;; Timestamp
 
+(defun org-odt-timestamp-is-plain-p (timestamp)
+  (and (memq (org-element-property :type timestamp)
+	     '(active inactive))
+       (not (or (memq (org-element-property :repeater-type timestamp)
+		      '(cumulate catch-up restart))
+		(org-element-property :repeater-value timestamp)
+		(memq (org-element-property :repeater-unit timestamp)
+		      '(hour day week month year))
+		(memq (org-element-property :warning-type timestamp)
+		      '(first all))
+		(org-element-property :warning-value timestamp)
+		(memq (org-element-property :warning-unit timestamp)
+		      '(hour day week month year))))))
+
 (defun org-odt-timestamp (timestamp _contents info)
   "Transcode a TIMESTAMP object from Org to ODT.
 CONTENTS is nil.  INFO is a plist used as a communication
 channel."
-  (let* ((_raw-value (org-element-property :raw-value timestamp))
-	 (type (org-element-property :type timestamp)))
-    (if (not (plist-get info :odt-use-date-fields))
-	(let ((value (org-odt-plain-text
-		      (org-timestamp-translate timestamp) info)))
-	  (cl-case (org-element-property :type timestamp)
-	    ((active active-range)
-	     (format "<text:span text:style-name=\"%s\">%s</text:span>"
-		     "OrgActiveTimestamp" value))
-	    ((inactive inactive-range)
-	     (format "<text:span text:style-name=\"%s\">%s</text:span>"
-		     "OrgInactiveTimestamp" value))
-	    (otherwise value)))
-      (cl-case type
-	(active
-	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
+  (let* ((repeat-string
+	  (concat
+	   (pcase (org-element-property :repeater-type timestamp)
+	     (`cumulate "+") (`catch-up "++") (`restart ".+"))
+	   (let ((val (org-element-property :repeater-value timestamp)))
+	     (and val (number-to-string val)))
+	   (pcase (org-element-property :repeater-unit timestamp)
+	     (`hour "h") (`day "d") (`week "w") (`month "m") (`year "y"))))
+	 (warning-string
+	  (concat
+	   (pcase (org-element-property :warning-type timestamp)
+	     (`first "--") (`all "-"))
+	   (let ((val (org-element-property :warning-value timestamp)))
+	     (and val (number-to-string val)))
+	   (pcase (org-element-property :warning-unit timestamp)
+	     (`hour "h") (`day "d") (`week "w") (`month "m") (`year "y"))))
+	 (repeat-and-warning-strings (string-join
+				      (mapcar (lambda (s)
+						(when (org-string-nw-p s)
+						  (concat " " s)))
+					      (list repeat-string warning-string))))
+	 (timestamp-is-plain-p (not (org-string-nw-p repeat-and-warning-strings)))
+	 (build-ts-string
+	  (lambda (timestamp end enclosing-pairs)
+	    (pcase-let* ((`(,open ,close)
+			  (cond
+			   ;; Strip brackets
+			   ((and (plist-get (plist-get info :odt-timestamp-options)
+                                            :strip-brackets-around-date)
+				 timestamp-is-plain-p)
+			    (cons "" ""))
+			   ;; Retain brackets
+			   (t
+			    enclosing-pairs))))
+	      (list
+	       ;; open bracket
+	       open
+	       ;; translated timestamp,
+	       (cons (org-odt--encode-a-time-in-timestamp timestamp end info)
+		     ;; its an XML string; no need to transcode it again
+		     t)
+	       ;; repeater and/or warning strings
+	       repeat-and-warning-strings
+	       ;; close bracket
+	       close)))))
+    (let* ((start nil) (end 'end)
+	   (active-pairs '("<" ">")) (inactive-pairs '("[" "]"))
+	   (encode-strings (lambda (texts)
+			     (message "texts: %S" texts)
+			     (string-join
+			      (mapcar (lambda (text)
+					(pcase text
+					  (`nil
+					   "")
+					  ((pred stringp)
+					   (org-odt-plain-text text info))
+					  (`(,(and (pred stringp) encoded-text) . t)
+					   encoded-text)
+					  (_ (error "Shouldn't come here: text: %S" text))))
+				      texts)))))
+      (pcase (org-element-property :type timestamp)
+        (`active
+         (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgActiveTimestamp"
-		 (format "&lt;%s&gt;" (org-odt--format-timestamp timestamp))))
-	(inactive
-	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
+                 (funcall encode-strings
+                          (funcall build-ts-string timestamp start active-pairs))))
+        (`inactive
+         (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgInactiveTimestamp"
-		 (format "[%s]" (org-odt--format-timestamp timestamp))))
-	(active-range
-	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
+		 (funcall encode-strings
+                          (funcall build-ts-string timestamp start inactive-pairs))))
+        (`active-range
+         (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgActiveTimestamp"
-		 (format "&lt;%s&gt;&#x2013;&lt;%s&gt;"
-			 (org-odt--format-timestamp timestamp)
-			 (org-odt--format-timestamp timestamp 'end))))
-	(inactive-range
-	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
+                 (funcall encode-strings
+                          `(,@(funcall build-ts-string timestamp start active-pairs) "--"
+	                    ,@(funcall build-ts-string timestamp end active-pairs)))))
+        (`inactive-range
+         (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgInactiveTimestamp"
-		 (format "[%s]&#x2013;[%s]"
-			 (org-odt--format-timestamp timestamp)
-			 (org-odt--format-timestamp timestamp 'end))))
-	(otherwise
-	 (format "<text:span text:style-name=\"%s\">%s</text:span>"
+		 (funcall encode-strings
+                          `(,@(funcall build-ts-string timestamp start inactive-pairs) "--"
+	                    ,@(funcall build-ts-string timestamp end inactive-pairs)))))
+        (_
+         (format "<text:span text:style-name=\"%s\">%s</text:span>"
 		 "OrgDiaryTimestamp"
-		 (org-odt-plain-text (org-timestamp-translate timestamp)
-				     info)))))))
+		 (funcall encode-strings
+                          (list (org-element-property :raw-value timestamp)))))))))
 
 
 ;;;; Underline

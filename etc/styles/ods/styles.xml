@@ -72,13 +72,13 @@
   <style:style style:name="Result" style:family="table-cell" style:parent-style-name="Default">
    <style:text-properties fo:font-style="italic" style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color" fo:font-weight="bold" style:font-style-asian="italic" style:font-weight-asian="bold" style:font-style-complex="italic" style:font-weight-complex="bold"/>
   </style:style>
-  <number:date-style style:name="OrgDateStyle" number:automatic-order="true">
-    <number:day number:style="long" />
-    <number:text>/</number:text>
-    <number:month number:style="long" />
-    <number:text>/</number:text>
-    <number:year />
-  </number:date-style>
+  <!-- <number:date-style style:name="OrgDateStyle" number:automatic-order="true"> -->
+  <!--   <number:day number:style="long" /> -->
+  <!--   <number:text>/</number:text> -->
+  <!--   <number:month number:style="long" /> -->
+  <!--   <number:text>/</number:text> -->
+  <!--   <number:year /> -->
+  <!-- </number:date-style> -->
  </office:styles>
  <office:automatic-styles>
   <style:page-layout style:name="Mpm1">
