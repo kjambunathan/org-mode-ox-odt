@@ -7930,8 +7930,11 @@ modifications to account for nested tables."
 
     (let* ((cum-width (apply #'+ widths))
 	   (normalized-cum-width 1000))
-      (cl-loop for width in widths
-	       collect (/ (* normalized-cum-width width) cum-width)))))
+      (cond
+       ((org-odt--read-attribute table :col-width)
+        widths)
+       (t (cl-loop for width in widths
+                   collect (/ (* normalized-cum-width width) cum-width)))))))
 
 (defun org-odt--table-col-cookies (table _info)
   (let* ((cookies
@@ -8506,24 +8509,25 @@ contextual information."
 			     (cdr (org-odt-table-dimensions table info))))))
                   ;; ODS backend
                   (t
-                   (let* ((table-width
-                           ;; Size of spreadsheet tables is apparently orthogonal to the
-                           ;; printable page size.
-                           (*
-                            (- 21.0 (* 2 2.0))  ; A4 paper width sans 2cm margin on either side.
-                            (/ rel-width 100.0) ; rel-width can be > 100%.
-                            ))
-                          (widths (or widths
-                                      (make-list (cdr (org-odt-table-dimensions table info)) 1.0)))
-                          (total-widths (float (apply #'+ widths)))
-                          (widths (mapcar
-                                   (lambda (width)
-                                     (* table-width (/ width total-widths)))
-                                   widths)))
+                   (let* ((rel-col-widths (or widths
+                                              (make-list (cdr (org-odt-table-dimensions table info)) 1.0)))
+                          (scaling-factor (or (org-odt--read-attribute table :col-width)
+                                              (let* ((table-width
+                                                      ;; Size of spreadsheet tables is apparently orthogonal to the
+                                                      ;; printable page size.
+                                                      (*
+                                                       (- 21.0 (* 2 2.0))  ; A4 paper width sans 2cm margin on either side.
+                                                       (/ rel-width 100.0) ; rel-width can be > 100%.
+                                                       )))
+                                                (/ table-width (float (apply #'+ rel-col-widths))))))
+                          (col-widths (mapcar
+                                       (lambda (rel-col-width)
+                                         (* scaling-factor rel-col-width))
+                                       rel-col-widths)))
                      (mapconcat
-		      (lambda (width)
+		      (lambda (col-width)
 		        (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
-			  (plist-put info :odt-automatic-styles
+		          (plist-put info :odt-automatic-styles
 				     (concat (plist-get info :odt-automatic-styles)
                                              
                                              (org-odt--lisp-to-xml
@@ -8533,10 +8537,10 @@ contextual information."
                                                  (style:parent-style-name . ,column-style))
                                                 (style:table-column-properties
 	                                         (;; (fo:break-before . "auto")
-		                                  (style:column-width . ,(format "%.2fcm" width))))))))
-			  (format "\n<table:table-column table:style-name=\"%s\"/>"
-				  derived-column-style)))
-		      widths "\n")))))))
+		                                  (style:column-width . ,(format "%.2fcm" col-width))))))))
+		          (format "\n<table:table-column table:style-name=\"%s\"/>"
+			          derived-column-style)))
+		      col-widths "\n")))))))
             (props (org-odt--read-attribute table))
 	    (rel-width (let ((value (plist-get props :rel-width)))
 			 (if (numberp value) value 96)))
@@ -8848,7 +8852,6 @@ channel."
     (let* ((start nil) (end 'end)
 	   (active-pairs '("<" ">")) (inactive-pairs '("[" "]"))
 	   (encode-strings (lambda (texts)
-			     (message "texts: %S" texts)
 			     (string-join
 			      (mapcar (lambda (text)
 					(pcase text
