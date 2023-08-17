@@ -2740,7 +2740,64 @@ SCHEDULED: <2014-03-04 tue.>"
                    (setq org-map-continue-from
                          (org-element-property
                           :begin (org-element-at-point))))))
-              (buffer-string)))))
+              (buffer-string))))
+  ;; Move point.
+  (should
+   (= 1
+      (org-test-with-temp-text "* H1\n** H1.1\n** H1.2\n"
+        (let (acc)
+          (org-map-entries
+           (lambda ()
+             (push (org-element-property :title (org-element-at-point)) acc)
+             (setq org-map-continue-from
+                   (org-element-property :end (org-element-at-point)))))
+          (length acc)))))
+  (should
+   (= 2
+      (org-test-with-temp-text "* H1\n** H1.1\n** H1.2\n"
+        (let (acc)
+          (org-map-entries
+           (lambda ()
+             (push (org-element-property :title (org-element-at-point)) acc)
+             (setq org-map-continue-from
+                   (line-end-position 2))))
+          (length acc)))))
+  ;; Modifications inside indirect buffer.
+  (should
+   (= 3
+      (org-test-with-temp-text "<point>* H1\n** H1.1\n** H1.2\n"
+        (with-current-buffer (org-get-indirect-buffer)
+          (let ((acc 0))
+            (org-map-entries
+             (lambda ()
+               (cl-incf acc)
+               (beginning-of-line 2)
+               (insert "test\n")
+               (beginning-of-line -1)))
+            acc)))))
+  ;; Removing heading being processed.
+  (should
+   (equal
+    "Some text
+Some text
+Some more text
+Let’s stop here
+"
+    (org-test-with-temp-text
+        "* Heading 1
+Some text
+** Heading 1.1
+Some text
+* Heading 2
+Some more text
+** Heading 2.1
+Let’s stop here
+"
+      (org-map-entries
+       (lambda ()
+         (delete-region (point) (line-beginning-position 2))
+         (setq org-map-continue-from (point))))
+      (buffer-string)))))
 
 (ert-deftest test-org/edit-headline ()
   "Test `org-edit-headline' specifications."

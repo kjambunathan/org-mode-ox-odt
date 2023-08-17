@@ -2426,7 +2426,8 @@ INFO may provide the values of these header arguments (in the
 		  (delete-region (point) (org-babel-result-end)))
 		 ((member "append" result-params)
 		  (goto-char (org-babel-result-end)) (setq beg (point-marker)))
-		 ((member "prepend" result-params))) ; already there
+		 ;; ((member "prepend" result-params)) ; already there
+                 )
 		(setq results-switches
 		      (if results-switches (concat " " results-switches) ""))
 		(let ((wrap
@@ -3277,7 +3278,7 @@ Emacs shutdown.")
       (while (or (not dir) (file-exists-p dir))
         (setq dir (expand-file-name
                    (format "babel-stable-%d" (random 1000))
-                   (temporary-file-directory))))
+                   temporary-file-directory)))
       (make-directory dir)
       dir))
   "Directory to hold temporary files created to execute code blocks.

@@ -241,7 +241,7 @@ return `:middle'."
    (t :middle)))
 
 (defun org-mouse-empty-line ()
-  "Return non-nil iff the line contains only white space."
+  "Return non-nil if the line contains only white space."
   (save-excursion (beginning-of-line) (looking-at "[ \t]*$")))
 
 (defun org-mouse-next-heading ()
@@ -283,7 +283,7 @@ keyword as the only argument.
 
 If SELECTED is nil, then all items are normal menu items.  If
 SELECTED is a function, then each item is a checkbox, which is
-enabled for a given keyword iff (funcall SELECTED keyword) return
+enabled for a given keyword if (funcall SELECTED keyword) return
 non-nil.  If SELECTED is neither nil nor a function, then the
 items are radio buttons.  A radio button is enabled for the
 keyword `equal' to SELECTED.
@@ -975,7 +975,7 @@ This means, between the beginning of line and the point."
   (interactive)
   (org-back-to-heading)
   (let ((minlevel 1000)
-	(replace-text (concat (match-string 0) "* ")))
+	(replace-text (concat (make-string (org-current-level) ?*) "* ")))
     (beginning-of-line 2)
     (save-excursion
       (while (not (or (eobp) (looking-at org-outline-regexp)))

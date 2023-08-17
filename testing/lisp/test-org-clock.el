@@ -89,6 +89,44 @@ the buffer."
     ;; Remove clocktable.
     (delete-region (point) (search-forward "#+END:\n"))))
 
+(ert-deftest test-org-clok/org-clock-timestamps-change ()
+  "Test `org-clock-timestamps-change' specifications."
+  (should
+   (equal
+    "CLOCK: [2023-02-19 Sun 21:30]--[2023-02-19 Sun 23:35] =>  2:05"
+    (org-test-with-temp-text
+        "CLOCK: [2023-02-19 Sun 2<point>2:30]--[2023-02-20 Mon 00:35] =>  2:05"
+      (org-clock-timestamps-change 'down 1)
+      (buffer-string))))
+  (should
+   (equal
+    "CLOCK: [2023-02-20 Mon 00:00]--[2023-02-20 Mon 00:40] =>  0:40"
+    (org-test-with-temp-text
+        "CLOCK: [2023-02-19 Sun 23:<point>55]--[2023-02-20 Mon 00:35] =>  0:40"
+      (org-clock-timestamps-change 'up 1)
+      (buffer-string))))
+  (should
+   (equal
+    "CLOCK: [2023-02-20 Mon 00:30]--[2023-02-20 Mon 01:35] =>  1:05"
+    (org-test-with-temp-text
+        "CLOCK: [2023-02-19 Sun 2<point>3:30]--[2023-02-20 Mon 00:35] =>  1:05"
+      (org-clock-timestamps-change 'up 1)
+      (buffer-string)))))
+
+(ert-deftest test-org-clok/org-clock-update-time-maybe ()
+  "Test `org-clock-update-time-maybe' specifications."
+  (should
+   (equal
+    "CLOCK: [2023-04-29 Sat 00:00]--[2023-05-04 Thu 01:00] => 121:00"
+    (org-test-with-temp-text
+        "CLOCK: [2023-04-29 Sat 00:00]--[2023-05-04 Thu 01:00]"
+      (should (org-clock-update-time-maybe))
+      (buffer-string))))
+  (should-not
+   (org-test-with-temp-text
+       "[2023-04-29 Sat 00:00]--[2023-05-04 Thu 01:00]"
+     (org-clock-update-time-maybe))))
+
 
 ;;; Clock drawer
 
@@ -1251,6 +1289,41 @@ CLOCK: [2012-03-29 Thu 16:00]--[2012-03-29 Thu 17:00] =>  1:00"
         (org-test-with-temp-text-in-file ""
           (test-org-clock-clocktable-contents
            (format ":hidefiles t :scope (lambda () (list %S))" the-file))))))))
+
+;;; Mode line
+
+(ert-deftest test-org-clock/mode-line ()
+  "Test mode line string ends in a space.
+
+\"Elements that are added to [the mode line] should normally end
+in a space (to ensure that consecutive 'global-mode-string'
+elements display properly)\" per Emacs manual, Section 24.4.4
+Variables Used in the Mode Line."
+  ;; Test the variant without effort.
+  (should
+   (equal
+    "<before> [0:00] (Heading) <after> "
+    (org-test-with-temp-text
+        "* Heading"
+      (org-clock-in)
+      (prog1 (concat "<before> "
+                     (org-clock-get-clock-string)
+                     "<after> ")
+        (org-clock-out)))))
+  ;; Test the variant with effort.
+  (should
+   (equal
+    "<before> [0:00/1:00] (Heading) <after> "
+    (org-test-with-temp-text
+        "* Heading
+:PROPERTIES:
+:EFFORT: 1h
+:END:"
+      (org-clock-in)
+      (prog1 (concat "<before> "
+                     (org-clock-get-clock-string)
+                     "<after> ")
+        (org-clock-out))))))
 
 (provide 'test-org-clock)
 ;;; test-org-clock.el end here

@@ -54,6 +54,7 @@
 (require 'org)
 (require 'org-macs)
 (require 'org-refile)
+(require 'org-element)
 
 (declare-function diary-add-to-list "diary-lib"
                   (date string specifier &optional marker globcolor literal))
@@ -80,11 +81,6 @@
 (declare-function org-columns-quit              "org-colview" ())
 (declare-function diary-date-display-form       "diary-lib"  (&optional type))
 (declare-function org-mobile-write-agenda-for-mobile "org-mobile" (file))
-(declare-function org-element-property "org-element" (property element))
-(declare-function org-element--cache-active-p "org-element"
-                  (&optional called-from-cache-change-func-p))
-(declare-function org-element-lineage "org-element"
-                  (datum &optional types with-self))
 (declare-function org-habit-insert-consistency-graphs
 		  "org-habit" (&optional line))
 (declare-function org-is-habit-p "org-habit" (&optional pom))
@@ -94,8 +90,6 @@
 (declare-function org-add-archive-files "org-archive" (files))
 (declare-function org-capture "org-capture" (&optional goto keys))
 (declare-function org-clock-modify-effort-estimate "org-clock" (&optional value))
-
-(declare-function org-element-type "org-element" (&optional element))
 
 (defvar calendar-mode-map)
 (defvar org-clock-current-task)
@@ -1184,7 +1178,9 @@ Custom commands can set this variable in the options section."
   "Non-nil means start the overview always on the specified weekday.
 0 denotes Sunday, 1 denotes Monday, etc.
 When nil, always start on the current day.
-Custom commands can set this variable in the options section."
+Custom commands can set this variable in the options section.
+
+This variable only applies when agenda spans either 7 or 14 days."
   :group 'org-agenda-daily/weekly
   :type '(choice (const :tag "Today" nil)
 		 (integer :tag "Weekday No.")))
@@ -3352,7 +3348,7 @@ s   Search for keywords                 M   Like m, but only TODO entries
 	      (`agenda
 	       (call-interactively 'org-agenda-list))
 	      (`agenda*
-	       (funcall 'org-agenda-list nil nil t))
+	       (funcall 'org-agenda-list nil nil nil t))
 	      (`alltodo
 	       (call-interactively 'org-todo-list))
 	      (`search
@@ -3478,13 +3474,17 @@ This ensures the export commands can easily use it."
     (when (setq tmp (plist-get props 'date))
       (when (integerp tmp) (setq tmp (calendar-gregorian-from-absolute tmp)))
       (let ((calendar-date-display-form
-             '(year "-" (string-pad month 2 ?0 'left) "-" (string-pad day 2 ?0 'left))))
+             '((format "%s-%.2d-%.2d" year
+                       (string-to-number month)
+                       (string-to-number day)))))
 	(setq tmp (calendar-date-string tmp)))
       (setq props (plist-put props 'date tmp)))
     (when (setq tmp (plist-get props 'day))
       (when (integerp tmp) (setq tmp (calendar-gregorian-from-absolute tmp)))
       (let ((calendar-date-display-form
-             '(year "-" (string-pad month 2 ?0 'left) "-" (string-pad day 2 ?0 'left))))
+             '((format "%s-%.2d-%.2d" year
+                       (string-to-number month)
+                       (string-to-number day)))))
 	(setq tmp (calendar-date-string tmp)))
       (setq props (plist-put props 'day tmp))
       (setq props (plist-put props 'agenda-day tmp)))
@@ -4357,7 +4357,10 @@ This check for agenda markers in all agenda buffers currently active."
 Custom commands can set this variable in the options section.
 This is usually a string like \"2007-11-01\", \"+2d\" or any other
 input allowed when reading a date through the Org calendar.
-See the docstring of `org-read-date' for details.")
+See the docstring of `org-read-date' for details.
+
+This variable has no effect when `org-agenda-start-on-weekday' is set
+and agenda spans 7 or 14 days.")
 (defvar org-starting-day nil) ; local variable in the agenda buffer
 (defvar org-arg-loc nil) ; local variable
 
@@ -7327,7 +7330,7 @@ Any match of REMOVE-RE will be removed from TXT."
 			      (let ((s (org-format-outline-path (org-get-outline-path)
 								(1- (frame-width))
 								nil org-agenda-breadcrumbs-separator)))
-				(if (eq "" s) "" (concat s org-agenda-breadcrumbs-separator))))))
+				(if (equal "" s) "" (concat s org-agenda-breadcrumbs-separator))))))
 	(setq time (cond (s2 (concat
 			      (org-agenda-time-of-day-to-ampm-maybe s1)
 			      "-" (org-agenda-time-of-day-to-ampm-maybe s2)
@@ -7721,8 +7724,7 @@ The optional argument TYPE tells the agenda type."
                    (unless (string= org-agenda-todo-keyword-format "")
                      ;; Remove `display' property as the icon could leak
                      ;; on the white space.
-                     (org-add-props " " (org-plist-delete (text-properties-at 0 x)
-                                                          'display)))
+                     (apply #'propertize " " (org-plist-delete (text-properties-at 0 x) 'display)))
                    (substring x (match-end 3)))))))
       x)))
 
@@ -8208,7 +8210,7 @@ filter."
   (if (and org-agenda-filtered-by-category
 	   org-agenda-category-filter)
       (org-agenda-filter-show-all-cat)
-    (let ((cat (org-no-properties (org-get-at-eol 'org-category 1))))
+    (let ((cat (org-no-properties (org-agenda-get-category))))
       (cond
        ((and cat strip)
         (org-agenda-filter-apply
