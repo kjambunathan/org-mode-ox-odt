@@ -1315,35 +1315,8 @@ from `org-odt-convert-processes'."
        ;; Float
        ((stringp content)
 	(when-let* ((trimmed-content (org-trim content))
-		    (number-may-be (string-to-number trimmed-content))
-		    (number (numberp
-			     (cond
-			      ;; Case 1: If `number-may-be' is
-			      ;; non-zero number, `trimmed-content' is
-			      ;; truly a number.
-			      ((not (zerop number-may-be))
-			       number-may-be)
-			      ;; Case 2: If `number-may-be' is zero;
-			      ;; `trimmed-content' is either zero or
-			      ;; not at all a number.  Pattern match
-			      ;; `trimmed-content' against the ZERO
-			      ;; pattern, and return 0 or nil.
-			      ((string-match-p
-				(rx-let ((SIGN (or "+" "-"))
-					 (ZEROS (one-or-more "0"))
-					 (DECIMAL-POINT ".")
-					 (DECIMAL-ZEROS (and DECIMAL-POINT (optional ZEROS)))
-					 (ZERO (and bos
-						    (optional SIGN)
-						    (or (and ZEROS (optional DECIMAL-ZEROS))
-							DECIMAL-ZEROS)
-						    eos)))
-				  (rx ZERO))
-				trimmed-content)
-			       0)
-			      ;; Case 3: The result is zero, and the
-			      ;; input doesn't match the ZERO pattern.
-			      (t nil)))))
+                    ((numberp trimmed-content))
+		    (number (string-to-number trimmed-content)))
 	  (list :data-type 'float
 		:attributes
 		(format "office:value=\"%s\" office:value-type=\"float\""
