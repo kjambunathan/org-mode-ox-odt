@@ -6977,18 +6977,21 @@ channel."
 	       (concat
 		(format "<text:span text:style-name=\"%s\">%s</text:span>"
 			"OrgClosedKeyword" org-closed-string)
+                " "
 		(org-odt-timestamp closed contents info))))
 	   (let ((deadline (org-element-property :deadline planning)))
 	     (when deadline
 	       (concat
 		(format "<text:span text:style-name=\"%s\">%s</text:span>"
 			"OrgDeadlineKeyword" org-deadline-string)
+                " "
 		(org-odt-timestamp deadline contents info))))
 	   (let ((scheduled (org-element-property :scheduled planning)))
 	     (when scheduled
 	       (concat
 		(format "<text:span text:style-name=\"%s\">%s</text:span>"
-			"OrgScheduledKeyword" org-deadline-string)
+			"OrgScheduledKeyword" org-scheduled-string)
+                " "
 		(org-odt-timestamp scheduled contents info)))))))
 
 
