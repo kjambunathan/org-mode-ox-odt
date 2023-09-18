@@ -538,7 +538,7 @@
 	  (when (stringp rng-file-name-or-rng-nodes)
 	    rng-file-name-or-rng-nodes))
 	 (rng-nodes (or rng-nodes
-			(list (odt-file-to-dom rng-file-name))))
+			(list (odt-file-to-dom rng-file-name (not 'strip-comment-nodes-p)))))
 	 (info (list :use-newline nil
 		     :dom rng-nodes))
 	 (rnc-file-dir
@@ -607,7 +607,8 @@ C-x C-s
 
 (defvar odt-rngdom:odf-v1.2-os-schema
   (odt-file-to-dom
-   (expand-file-name "odf1.2/OpenDocument-v1.2-os-schema.rng" org-odt-schema-dir)))
+   (expand-file-name "odf1.2/OpenDocument-v1.2-os-schema.rng" org-odt-schema-dir)
+   (not 'strip-comment-nodes-p)))
 
 (defvar odt-rngdom:odf-v1.2-os-schema-data-types
   (odt-rngdom:collect-data-types odt-rngdom:odf-v1.2-os-schema))
@@ -800,7 +801,8 @@ C-x C-s
 
 (defvar org-odt-styles-dom
   (odt-dom:file->dom
-   (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir)))
+   (expand-file-name "OrgOdtStyles.xml" org-odt-styles-dir)
+   (not 'strip-comment-nodes-p)))
 
 ;;;; Styles Test
 
@@ -872,7 +874,7 @@ C-x C-s
     (pop-to-buffer (current-buffer))
     (call-interactively 'set-mark-command)
     (insert (odt-contentsdom:dom->string
-             (odt-dom:file->dom contents-file-name)))
+             (odt-dom:file->dom contents-file-name (not 'strip-comment-nodes-p))))
     (call-interactively 'org-fill-paragraph)
     (call-interactively 'set-mark-command)))
 
@@ -887,7 +889,8 @@ C-x C-s
 
 (defvar org-odt-content-template-dom
   (odt-dom:file->dom
-   (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir)))
+   (expand-file-name "OrgOdtContentTemplate.xml" org-odt-styles-dir)
+   (not 'strip-comment-nodes-p)))
 
 ;;;; Contents Test
 
@@ -896,7 +899,8 @@ C-x C-s
   (odt-contentsdom:dom->text:style-names
    (odt-dom:file->dom
     (concat (file-name-parent-directory org-odt-lib-dir)
-	    "testing/examples/odtxml/gnulinuxmagazine/gnulinuxmagazine/content.xml")))))
+	    "testing/examples/odtxml/gnulinuxmagazine/gnulinuxmagazine/content.xml")
+    (not 'strip-comment-nodes-p)))))
 
 ;;; Elfile
 
@@ -1492,7 +1496,7 @@ C-x C-s
 	  (when (stringp rng-file-name-or-rng-nodes)
 	    rng-file-name-or-rng-nodes))
 	 (rng-nodes (or rng-nodes
-			(list (odt-file-to-dom rng-file-name))))
+			(list (odt-file-to-dom rng-file-name (not 'strip-comment-nodes-p)))))
 	 (rnc-file-dir
 	  (concat (file-name-parent-directory org-odt-lib-dir)
 		  "testing/examples/odtxml/"))

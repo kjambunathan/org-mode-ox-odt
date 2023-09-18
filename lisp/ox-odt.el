@@ -3648,7 +3648,7 @@ holding export options."
 
     ;; Retrieve Content.xml as DOM.
     (plist-put info :odt-content-dom
-	       (odt-dom:file->dom content-template-file))
+	       (odt-dom:file->dom content-template-file 'strip-comment-nodes-p))
 
     ;; Update content.xml.
     ;; - Modify display level in sequence number declarations
@@ -3759,7 +3759,8 @@ holding export options."
            (dom1 (odt-xml-string-to-dom
                   (odt-dom-to-xml-string
                    (list 'office:automatic-styles nil
-			 (plist-get info :odt-auto-generated-automatic-styles)))))
+			 (plist-get info :odt-auto-generated-automatic-styles)))
+		  'strip-comment-nodes-p))
            ;; DOM2 <- Content.xml
 	   (dom2 (plist-get info :odt-content-dom)))
       ;; Auto-generated styles <- Auto-generated styles - Content.xml
@@ -3782,7 +3783,8 @@ holding export options."
 	     for dom2 = (when style-fragment
 			  (odt-xml-string-to-dom
 			   (odt-dom-to-xml-string
-			    (list subdom nil style-fragment))))
+			    (list subdom nil style-fragment))
+			   'strip-comment-nodes-p))
 	     when dom2
 	     do
 	     ;; Content.xml <- Content.xml - Automatic styles etc.
@@ -4187,7 +4189,8 @@ holding export options."
     ;; Retrieve Styles.xml as DOM.
     (plist-put info :odt-styles-dom
 	       (odt-dom:file->dom
-		(concat (plist-get info :odt-zip-dir) "styles.xml")))
+		(concat (plist-get info :odt-zip-dir) "styles.xml")
+		'strip-comment-nodes-p))
 
     ;; Update styles.xml.
     ;;
@@ -4202,7 +4205,8 @@ holding export options."
            (dom1 (odt-xml-string-to-dom
                   (odt-dom-to-xml-string
                    (list 'office:styles nil
-			 (plist-get info :odt-auto-generated-extra-styles)))))
+			 (plist-get info :odt-auto-generated-extra-styles)))
+		  'strip-comment-nodes-p))
            ;; DOM2 <- Styles.xml
 	   (dom2 (plist-get info :odt-styles-dom)))
       ;; Auto-generated styles <- Auto-generated styles - Styles.xml
@@ -4226,7 +4230,8 @@ holding export options."
 	     for dom2 = (when style-fragment
 			  (odt-xml-string-to-dom
 			   (odt-dom-to-xml-string
-			    (list subdom nil style-fragment))))
+			    (list subdom nil style-fragment))
+			   'strip-comment-nodes-p))
 	     when dom2
 	     do
 	     ;; Styles.xml <- Styles.xml - Extra styles etc.
@@ -4240,7 +4245,8 @@ holding export options."
 	   (dom1 (odt-xml-string-to-dom
 		  (odt-dom-to-xml-string
 		   (list 'office:styles nil
-			 (plist-get info :odt-hfy-styles)))))
+			 (plist-get info :odt-hfy-styles)))
+		  'strip-comment-nodes-p))
 	   ;; DOM2 <- Styles.xml
 	   (dom2 (plist-get info :odt-styles-dom))
 	   (styles1-before (odt-stylesdom:dom->style-names dom1)))
@@ -10909,7 +10915,7 @@ Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
 		 styles-file)
 		(_ (error "Styles file is invalid: %s" styles-file)))))
 	   (t (org-odt-get-backend-property 'odt :styles-file))))
-	 (dom (unwind-protect (odt-dom:file->dom styles-file)
+	 (dom (unwind-protect (odt-dom:file->dom styles-file 'strip-comment-nodes-p)
 		(when zip-dir
 		  (delete-directory zip-dir t nil))))
 	 (choices

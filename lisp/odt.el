@@ -29,10 +29,12 @@
 
 ;;;; XML String <-> DOM
 
-(defun odt-xml-string-to-dom (xml-string)
+(defun odt-xml-string-to-dom (xml-string strip-comment-nodes-p)
   (when xml-string
     (with-temp-buffer
       (insert xml-string)
+      (when strip-comment-nodes-p
+	(xml-remove-comments (point-min) (point-max)))
       (libxml-parse-xml-region (point-min) (point-max)))))
 
 (defun odt-dom-to-xml-string (dom &optional depth prettify)
@@ -86,19 +88,19 @@
 
 ;;;; XML Buffer/Region -> DOM
 
-(defun odt-current-buffer-or-region-to-dom ()
+(defun odt-current-buffer-or-region-to-dom (strip-comment-nodes-p)
   (let* ((beg (if (use-region-p)
 		  (region-beginning)
 		(point-min)))
 	 (end (if (use-region-p)
 		  (region-end)
 		(point-max))))
-    (libxml-parse-xml-region beg end)))
+    (odt-xml-string-to-dom (buffer-substring-no-properties beg end) strip-comment-nodes-p)))
 
-(defun odt-file-to-dom (file-name)
+(defun odt-file-to-dom (file-name strip-comment-nodes-p)
   (with-temp-buffer
     (insert-file-contents file-name)
-    (odt-current-buffer-or-region-to-dom)))
+    (odt-current-buffer-or-region-to-dom strip-comment-nodes-p)))
 
 ;;; DOM
 
@@ -167,9 +169,11 @@
 
 ;;;; File <-> DOM
 
-(defun odt-dom:file->dom (file-name)
+(defun odt-dom:file->dom (file-name strip-comment-nodes-p)
   (with-temp-buffer
     (insert-file-contents file-name)
+    (when strip-comment-nodes-p
+      (xml-remove-comments (point-min) (point-max)))
     (goto-char (point-min))
     (when (re-search-forward
 	   (rx-to-string `(and "<"
@@ -187,7 +191,7 @@
 	     (attrs (prog1 (match-string 2)
 		      (delete-region (match-beginning 2) (match-end 2))))
 	     (dom (progn
-		    (odt-current-buffer-or-region-to-dom)))
+		    (odt-current-buffer-or-region-to-dom strip-comment-nodes-p)))
 	     (subdom (car (odt-dom:type->nodes tag dom))))
 	(prog1 subdom
 	  (prog1 subdom
