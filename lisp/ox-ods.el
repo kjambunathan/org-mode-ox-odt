@@ -451,6 +451,8 @@
 
 ;; TBLFM
 
+(defvar org-ods-formula-arg-separator ";")
+
 (defun org-ods-table->tblfms (tinfo)
   (let* ((table (plist-get tinfo :table))
 	 (tblfmlines (org-element-property :tblfm table))
@@ -613,7 +615,10 @@
 		       do (unless table-cell
 			    (error (concat (format "Table cell at address %S is empty." cell-address)
 					   "Create that row / column by re-executing the TBLFM")))
-		       (plist-put (cadr table-cell) :ods-formula formula)
+		       (plist-put (cadr table-cell) :ods-formula
+			          (org-ods-substitute-vars-in-expression
+			           (list (cons "," org-ods-formula-arg-separator))
+			           formula))
 		       (setcdr (cdr table-cell) (list formula)))))
 
 (defun org-ods-table->ods-table (table)
@@ -1281,12 +1286,22 @@ from `org-odt-convert-processes'."
 (defvar org-ods-data-types
   '(formula date float))
 
-(defun org-ods-table-cell (table-cell contents info)
+(defun org-ods-table-cell (table-cell _contents info)
   (org-ods-message (list 'org-ods-table-cell
 			 :ods-formula (org-element-property :ods-formula table-cell)
 			 :el-contents (org-element-contents table-cell)
 			 :el-properties (cadr table-cell)))
-  (let* ((el-contents (org-element-contents table-cell))
+  (let* ((to-number (lambda (s trim)
+		      (with-temp-buffer
+			(save-excursion
+			  (insert (if trim
+				      (org-trim s)
+				    s)))
+			(when-let* ((x (read (current-buffer)))
+				    ((eobp))
+				    ((numberp x)))
+			  x))))
+	 (el-contents (org-element-contents table-cell))
 	 (content (car el-contents))
 	 (rest (cdr el-contents)))
     (when (and (null rest) content)
@@ -1295,8 +1310,8 @@ from `org-odt-convert-processes'."
        ((stringp (org-element-property :ods-formula table-cell))
 	(list :data-type 'formula
 	      :attributes
-	      (format "office:value=\"0\" office:value-type=\"float\" table:formula=\"of:%s\""
-		      (org-element-property :ods-formula table-cell))
+              (format "table:formula=\"of:%s\""
+                      (org-element-property :ods-formula table-cell))
 	      :contents
 	      ""))
        ;; Timestamp
@@ -1314,13 +1329,11 @@ from `org-odt-convert-processes'."
 	        "")))
        ;; Float
        ((stringp content)
-	(when-let* ((trimmed-content (org-trim content))
-                    ((numberp trimmed-content))
-		    (number (string-to-number trimmed-content)))
+	(when-let* ((number (funcall to-number content 'trim)))
 	  (list :data-type 'float
 		:attributes
 		(format "office:value=\"%s\" office:value-type=\"float\""
-			contents)
+			(number-to-string number))
 		:contents
 		"")))))))
 

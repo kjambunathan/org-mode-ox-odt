@@ -8373,11 +8373,20 @@ channel."
 		   (concat attributes " "
 			   ;; In case of ODS backend, add data type attributes.
 			   (or (plist-get ods-plist :attributes) ""))
-		   (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
-			   (org-odt--table-cell-get-paragraph-style table-cell info)
-			   ;; In case of ODS backend, use the contents provided by it.
-			   (or (plist-get ods-plist :contents)
-			       contents))))))
+		   (cond
+                    ;; When the cell is empty, do NOT even emit an empty
+                    ;; paragraph.  Essentially, ISBLANK() on this cell will
+                    ;; be TRUE.
+		    ((string-empty-p (or (plist-get ods-plist :contents)
+					 contents))
+		     "")
+                    ;; Cell is non-empty
+		    (t
+		     (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+			     (org-odt--table-cell-get-paragraph-style table-cell info)
+			     ;; In case of ODS backend, use the contents provided by it.
+			     (or (plist-get ods-plist :contents)
+				 contents))))))))
        "\n")))))
 
 (defun org-odt--table-type (element info)
