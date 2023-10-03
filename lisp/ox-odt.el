@@ -7971,12 +7971,13 @@ modifications to account for nested tables."
 					(substring-no-properties (car s)))
 				      contents))
 		    do (cl-return it)))))
-    (cl-loop for (halign valign width) in
+    (cl-loop for (halign valign width visibility) in
 	     (cl-loop for s in cookies
-		      collect (when (string-match "<?\\([lrc]\\)?\\([tmb]\\)?\\([0-9]+\\)?>?" s)
+		      collect (when (string-match "<?\\([lrc]\\)?\\([tmb]\\)?\\([0-9]+\\)?\\([.]\\)?>?" s)
 				(let* ((halign (match-string 1 s))
 				       (valign (match-string 2 s))
-				       (width (match-string 3 s)))
+				       (width (match-string 3 s))
+                                       (visibility (match-string 4 s)))
 				  (list (assoc-default (when halign (string-to-char halign))
 						       '((?l . left)
 							 (?c . center)
@@ -7985,11 +7986,15 @@ modifications to account for nested tables."
 						       '((?t . top)
 							 (?m . middle)
 							 (?b . bottom)))
-					(or (when width (string-to-number width)))))))
+					(or (when width (string-to-number width)))
+                                        (assoc-default (when visibility (string-to-char visibility))
+						       '((?. . collapse)
+							 (nil . visible)))))))
 	     collecting halign into haligns
 	     collecting valign into valigns
 	     collecting width into widths
-	     finally (return (list :haligns haligns :valigns valigns :widths widths)))))
+             collecting visibility into visibilities
+	     finally (return (list :haligns haligns :valigns valigns :widths widths :visibilities visibilities )))))
 
 (defun org-odt--table-cell-get-paragraph-style (table-cell info)
   "Get paragraph style for TABLE-CELL.
@@ -8501,7 +8506,8 @@ contextual information."
 	     (lambda (table info rel-width)
 	       (let* ((table-style (or custom-table-style "OrgTable"))
 		      (column-style (format "%sColumn" table-style))
-		      (widths (org-odt--table-cell-widths table info)))
+		      (widths (org-odt--table-cell-widths table info))
+                      (visibilities (plist-get (org-odt--table-col-cookies table info) :visibilities)))
                  (cond
                   ;; Non-ODS backend; may be ODT
                   ((not (eq org-export-current-backend 'ods))
@@ -8541,9 +8547,16 @@ contextual information."
                           (col-widths (mapcar
                                        (lambda (rel-col-width)
                                          (* scaling-factor rel-col-width))
-                                       rel-col-widths)))
+                                       rel-col-widths))
+                          (width-and-visibility
+                           (progn
+                             (unless (= (length widths)
+                                        (length visibilities))
+                               (error "Dimensions of widths and visibilities don't match; widths = `%S' visibilities = `%S'"
+                                      widths col-widths))  
+                             (seq-mapn #'list col-widths visibilities))))
                      (mapconcat
-		      (lambda (col-width)
+		      (pcase-lambda (`(,col-width ,visibility))
 		        (let ((derived-column-style (org-odt--name-object info 'table-column column-style)))
 		          (plist-put info :odt-automatic-styles
 				     (concat (plist-get info :odt-automatic-styles)
@@ -8556,9 +8569,9 @@ contextual information."
                                                 (style:table-column-properties
 	                                         (;; (fo:break-before . "auto")
 		                                  (style:column-width . ,(format "%.2fcm" col-width))))))))
-		          (format "\n<table:table-column table:style-name=\"%s\"/>"
-			          derived-column-style)))
-		      col-widths "\n")))))))
+		          (format "\n<table:table-column table:style-name=\"%s\" table:visibility=\"%s\"/>"
+			          derived-column-style visibility)))
+		      width-and-visibility "\n")))))))
             (props (org-odt--read-attribute table))
 	    (rel-width (let ((value (plist-get props :rel-width)))
 			 (if (numberp value) value 96)))
