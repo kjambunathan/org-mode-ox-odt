@@ -480,7 +480,9 @@
 (defvar org-ods-calc-f->ods-f-alist
   '(("$#" . "COLUMN()")
     ("@#" . "ROW()")
+    ("vmax" . "MAX")
     ("vmean" . "AVG")
+    ("vmin" . "MIN")
     ("vsum" . "SUM")))
 
 (defun org-ods-tokenize-tblfms (tblfms)
