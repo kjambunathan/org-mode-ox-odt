@@ -8548,12 +8548,14 @@ contextual information."
                                        (lambda (rel-col-width)
                                          (* scaling-factor rel-col-width))
                                        rel-col-widths))
+                          (visibilities (or visibilities
+                                            (make-list (cdr (org-odt-table-dimensions table info)) 'visible)))
                           (width-and-visibility
                            (progn
-                             (unless (= (length widths)
+                             (unless (= (length col-widths)
                                         (length visibilities))
-                               (error "Dimensions of widths and visibilities don't match; widths = `%S' visibilities = `%S'"
-                                      widths col-widths))  
+                               (error "Dimensions of col-widths and visibilities don't match; widths = `%S' visibilities = `%S'"
+                                      col-widths visibilities))  
                              (seq-mapn #'list col-widths visibilities))))
                      (mapconcat
 		      (pcase-lambda (`(,col-width ,visibility))
