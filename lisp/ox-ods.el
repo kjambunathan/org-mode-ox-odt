@@ -320,16 +320,57 @@
 
 ;;; Numeric Cell address -> ODS style address
 
-(defun org-ods-encode-digit (digit)
-  ;; digit is 1-based
-  (let ((digit (cond
-		((stringp digit)
-		 (string-to-number digit))
-		((numberp digit)
-		 digit))))
-    (when (or (> digit 26) (< digit 1))
-      (error "Invalid digit %s" digit))
-    (format "%c" (+ ?A (1- digit)))))
+(defconst org-ods-colnames
+  (let* ((cartesian-product
+	  (lambda (list-of-lists)
+	    (seq-reduce (lambda (A B)
+			  (cond
+			   ((null A)
+			    (seq-map
+			     (lambda (it)
+			       (list it))
+			     B))
+			   (t (seq-mapcat
+			       (lambda (a)
+				 (seq-map (lambda (b)
+					    (append a (list b)))
+					  B))
+			       A))))
+			list-of-lists nil)))
+	 (n 2))
+    (thread-last n
+		 (number-sequence 1)
+		 (seq-map
+		  (lambda (it)
+		    (thread-last '(?A ?Z)
+				 (apply #'number-sequence)
+				 (seq-map
+				  (lambda (it)
+				    (format "%c" it)))
+				 (make-list it)
+				 (funcall cartesian-product)
+				 (seq-map
+				  (lambda (it)
+				    (string-join it ""))))))
+		 (apply #'append)
+		 (funcall (-flip #'seq-into) 'vector))))
+
+(defconst org-ods-max-columns
+  (length org-ods-colnames))
+
+(defun org-ods-encode-digit (n)
+  ;; n is 1-based
+  (let ((n (cond
+	    ((stringp n)
+	     (string-to-number n))
+	    ((numberp n)
+	     n))))
+    (cl-assert (> n 0))
+    (when (or (> n org-ods-max-columns))
+      (error (format (concat "Refusing to encode column number `%s'.  "
+			     "ODS exporter can handle column numbers only up to `%s'")
+		     n org-ods-max-columns)))
+    (aref org-ods-colnames (- n 1))))
 
 (defun org-ods-convert-n-to-base-26 (n)
   (let* ((base 26)
