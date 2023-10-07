@@ -3806,6 +3806,7 @@ holding export options."
         (re-search-forward end-tag nil nil))
       (goto-char (match-beginning 0))
 
+      ;; Non-ODS backend
       (unless (eq org-export-current-backend 'ods)
         ;; Preamble - Title, Author, Date etc.
         (insert "\n<!-- BEGIN: OFFICE:TEXT/METADATA -->\n")
@@ -3878,9 +3879,17 @@ holding export options."
 	  (when depth (insert (or (org-odt-toc depth info) "")))))
       ;; Contents.
       (insert "\n<!-- BEGIN: OFFICE:TEXT/CONTENTS -->\n")
-      (insert contents)
+      (insert
+       (pcase org-export-current-backend
+         ;; Case 1: ODS export.  Emit only the tables.  All other
+         ;; non-table contents is built as with ODT exporter, but are
+         ;; discarded.  This "build-and-discard" is inefficient but live
+         ;; with it.
+         (`ods (or (plist-get info :ods-tables) ""))
+         ;; Case 2: Non-ODS export.
+         (_ contents)))
       (insert "\n<!-- END: OFFICE:TEXT/CONTENTS -->\n")
-      
+
       ;; Prettify buffer contents, if needed.
       (org-odt-prettify-xml-buffer (plist-get info :odt-prettify-xml))
       ;; Cleanup, when export is body-only.
@@ -8497,7 +8506,9 @@ contextual information."
 	 "  Stripping the table from export."))))
     ;; Case 2: Native Org tables.
     (otherwise
-     (let* ((captions-plist (org-odt-format-label table info 'definition))
+     (let* ((captions-plist (pcase org-export-current-backend
+                              (`ods nil) ; ODS tables have no caption
+                              (_ (org-odt-format-label table info 'definition))))
 	    (caption (plist-get captions-plist :caption))
             (short-caption (plist-get captions-plist :short-caption))
 	    (caption-position (plist-get captions-plist :caption-position))
@@ -8646,8 +8657,21 @@ contextual information."
 						      (otherwise
 						       "")))))))
 		      style-name)
-		    (concat (when short-caption
-			      (format " table:name=\"%s\"" short-caption))))
+		    (concat (let* ((table-name
+                                    (pcase org-export-current-backend
+                                      ;; Case 1: ODS export.  The `table:name' attribute specifies
+                                      ;; the sheet name.  It must be the same as the #+NAME: tblname
+                                      ;; of the table.  This ensures that `remote(tblname, )' on the
+                                      ;; TBLFM side gets directly mapped to .  If there is no sheet
+                                      ;; name, generate a name like "SheetN" where N is a natural
+                                      ;; number.
+                                      (`ods (or (org-element-property :name table)
+                                                (org-odt--name-object info 'sheet)))
+                                      ;; Case 2: Non-ODS export.  Use the short caption as table
+                                      ;; name.  
+                                      (_ short-caption))))
+                              (when (org-string-nw-p table-name)
+                                (format " table:name=\"%s\"" table-name)))))
 		   ;; column specification.
 		   (funcall table-column-specs table info rel-width)
 		   ;; actual contents.

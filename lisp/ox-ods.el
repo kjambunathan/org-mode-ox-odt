@@ -1303,8 +1303,8 @@ from `org-odt-convert-processes'."
 (defun org-ods--translate-tblfms-to-ods-formulae (data _backend info)
   (org-element-map data 'table
     (lambda (table)
-      (plist-put (cadr table) :name nil)
-      (plist-put (cadr table) :caption nil)
+      ;; (plist-put (cadr table) :name nil)
+      ;; (plist-put (cadr table) :caption nil)
       (when-let* ((debug-buf (get-buffer "*Org Ods Debug*")))
 	(with-current-buffer debug-buf
 	  (erase-buffer)))
@@ -1325,6 +1325,16 @@ from `org-odt-convert-processes'."
   data)
 
 ;;;; Transcoder
+
+(defun org-ods-table (table contents info)  
+  "Return body of document string after ODT conversion.
+CONTENTS is the transcoded contents string.  INFO is a plist
+holding export options."
+  (let* ((table-contents (org-odt-table table contents info)))
+    (prog1 table-contents
+      (plist-put info :ods-tables
+		 (concat (plist-get info :ods-tables)
+			 table-contents)))))
 
 (defvar org-ods-data-types
   '(formula date float))
@@ -1388,7 +1398,7 @@ from `org-odt-convert-processes'."
 
 ;;;###autoload
 (defun org-ods-export-to-ods
-    (&optional async _subtreep _visible-only _body-only ext-plist)
+    (&optional async subtreep visible-only body-only ext-plist)
   "Export table at point to a a OpenDocument Spreadsheet file.
 
 A non-nil optional argument ASYNC means the process should happen
@@ -1405,46 +1415,32 @@ arguments--are ignored.
 The function returns a file name in any one of the BACKEND
 format, `org-ods-preferred-output-format'."
   (interactive)
-  (pcase-let* ((`(,table-el ,_preamble ,_postamble) (org-ods-table-at-point 'full-data)))
-    (org-with-wide-buffer
-     (narrow-to-region (org-element-property :begin table-el)
-		       (org-element-property :end table-el))
-     (let* ((backend 'ods)
-	    (visible-only 'visible-only)
-	    (body-only (not 'body-only))
-	    (subtreep (not 'subtreep))
-	    (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
-	    (org-ods-cell-mapper nil)
-	    (org-odt-convert-process org-ods-convert-process)
-	    (ext-plist (org-combine-plists
-			(list :uniquifier
-			      (when-let* ((uniquifier
-					   (or (org-element-property :name table-el)
-					       (org-export-data-with-backend
-						(org-export-get-caption table-el) 'plain-text nil))))
-				(format "#%s" uniquifier)))
-			ext-plist)))
-       (org-odt-export-to-odt-backend backend async subtreep
-				      visible-only body-only ext-plist)))))
+  (let* ((backend 'ods)
+         (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
+         (org-ods-cell-mapper nil)
+         (org-odt-convert-process org-ods-convert-process))
+    (org-odt-export-to-odt-backend backend async subtreep
+                                   visible-only body-only ext-plist)))
 
 ;;;; Define Back-End
 
 (org-export-define-derived-backend 'ods 'odt
+  :translate-alist
+  '((table . org-ods-table))
   :menu-entry
   '(?o "Export to ODT"
        ((?s "As ODS file" org-ods-export-to-ods)
-	(?S "As ODS file and open"
-	    (lambda (a s v b)
-	      (if a (org-ods-export-to-ods t s v b)
-		(org-open-file (org-ods-export-to-ods a s v b) 'system))))
-	;; (?x "As XML buffer" org-odt-export-as-odt)
-	))
+        (?S "As ODS file and open"
+            (lambda (a s v b)
+              (if a (org-ods-export-to-ods t s v b)
+                (org-open-file (org-ods-export-to-ods a s v b) 'system))))
+        ;; (?x "As XML buffer" org-odt-export-as-odt)
+        ))
   :options-alist
   '((:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
     (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil org-ods-automatic-styles newline)
     (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file))
-  :translate-alist '()
   :filters-alist '((:filter-parse-tree
-		    . (org-ods--translate-tblfms-to-ods-formulae))))
+                    . (org-ods--translate-tblfms-to-ods-formulae))))
 
 (provide 'ox-ods)
