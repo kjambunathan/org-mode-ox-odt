@@ -40,6 +40,18 @@
 (require 'org-compat)
 (require 'odt)
 
+;;; Misc. Helpers
+
+(pcase-defmacro org-odt-map (&rest args)
+  `(and (pred listp)
+        ,@(mapcar (lambda (elt)
+                    `(app (pcase--flip plist-get ',elt)
+                            ,(if (keywordp elt)
+                                 (intern (substring (symbol-name elt) 1))
+                               elt)))
+                  args)))
+
+
 ;;; Aliases
 
 (defalias 'org-odt--lisp-to-xml 'odt-dom-to-xml-string)
@@ -1433,7 +1445,7 @@ interpreted as below:
 
 (defcustom org-odt-convert-processes
   '(("LibreOffice"
-     "%l soffice --headless --convert-to %f%x --outdir %d %i")
+     "%l soffice --headless --convert-to %f --outdir %d %i")
     ("unoconv"
      "%l unoconv -f %f -o %d %i")
     ("Gnumeric"
@@ -1484,7 +1496,10 @@ from `org-odt-convert-processes'."
   '(("Text"
      ("odt" "ott" "doc" "rtf" "docx" "fodt")
      (("pdf" "pdf") ("odt" "odt") ("rtf" "rtf") ("ott" "ott")
-      ("doc" "doc" ":\"MS Word 97\"") ("docx" "docx") ("html" "html")
+      ("doc"
+       :lo-export-filter-options ":\"MS Word 97\""
+       :out-file-extension "doc")
+      ("docx" "docx") ("html" "html")
       ("txt" "txt" ":\"Text (encoded)\"")
       ("fodt" "fodt")
       ;; Export to image file; converts only the first page of the document
@@ -1495,7 +1510,17 @@ from `org-odt-convert-processes'."
     ("Spreadsheet"
      ("ods" "ots" "xls" "csv" "xlsx")
      (("pdf" "pdf") ("ots" "ots") ("html" "html") ("csv" "csv") ("ods" "ods")
-      ("xls" "xls") ("xlsx" "xlsx")))
+      ("xls" "xls") ("xlsx" "xlsx")
+      ;; `formula.tsv' and `tsv' entries below export only the first
+      ;; sheet of spreadsheet file.  To export all the sheets, use
+      ;; `org-ods-import-spreadsheet-file' which uses the Basic Macro
+      ;; `ODSDoExportToTSV' in `OrgModeUtilities.bas'.
+      ("formula.tsv"                    ; Export to a TSV file that contains ODS Formula
+       :lo-export-filter-options ":\"Text - txt - csv (StarCalc)\":9,34,76,1,,0,false,true,false,true,false,0,true,false"
+       :out-file-extension "formula.tsv")
+      ("tsv"                            ; Export to a TSV file that contains only data and NO formula
+       :lo-export-filter-options ":\"Text - txt - csv (StarCalc)\":9,34,76,1,,0,false,true,false,false,false,0,true,false"
+       :out-file-extension "tsv")))
     ("Presentation"
      ("odp" "otp" "ppt" "pptx")
      (("pdf" "pdf") ("swf" "swf") ("odp" "odp") ("otp" "otp") ("ppt" "ppt")
@@ -10233,41 +10258,41 @@ function to create page headers:
 (defun org-odt-do-convert (in-file out-fmt &optional open)
   "Workhorse routine for `org-odt-convert'."
   (require 'browse-url)
-  (let* ((in-file (expand-file-name (or in-file buffer-file-name)))
-	 (_dummy (or (file-readable-p in-file)
-		     (error "Cannot read %s" in-file)))
-	 (in-fmt (file-name-extension in-file))
-	 (out-fmt (or out-fmt (error "Output format unspecified")))
-	 (how (or (org-odt-reachable-p in-fmt out-fmt)
-		  (error "Don't know how to convert file `%s' from type `%s' to type `%s'"
-			 (file-name-nondirectory in-file) in-fmt out-fmt)))
-	 (convert-process (car how))
-	 (out-file (concat (file-name-sans-extension in-file) "."
-			   (nth 1 (or (cdr how) out-fmt))))
-	 (extra-options (or (nth 2 (cdr how)) ""))
-	 (out-dir (file-name-directory in-file))
-	 (cmd (format-spec convert-process
-			   `(;; When a process is executed with
-                             ;; `shell-command', and within
-                             ;; `with-environment-variables' does it
-                             ;; inherit the locale specific environment
-                             ;; variables from the new environement?  A
-                             ;; little experimentation suggests that the
-                             ;; answer is "Yes". If that that case, this
-                             ;; setting is merely gives a visual
-                             ;; assurance to the user about what is
-                             ;; happening.  If "No", it really does the
-                             ;; needed work.  In either case, having it
-                             ;; is what the user wants.
-                             (?l . ,(format "LANG=%s" (getenv "LANG")))
-                             (?i . ,(shell-quote-argument in-file))
-			     (?I . ,(browse-url-file-url in-file))
-			     (?f . ,out-fmt)
-			     (?o . ,(shell-quote-argument out-file))
-			     (?O . ,(browse-url-file-url out-file))
-			     (?d . ,(shell-quote-argument out-dir))
-			     (?D . ,(browse-url-file-url out-dir))
-			     (?x . ,extra-options)))))
+  (pcase-let* ((in-file (expand-file-name (or in-file buffer-file-name)))
+	       (_dummy (or (file-readable-p in-file)
+			   (error "Cannot read %s" in-file)))
+	       (in-fmt (file-name-extension in-file))
+	       (out-fmt (or out-fmt (error "Output format unspecified")))
+	       (how (or (org-odt-reachable-p in-fmt out-fmt)
+			(error "Don't know how to convert file `%s' from type `%s' to type `%s'"
+			       (file-name-nondirectory in-file) in-fmt out-fmt)))
+	       (`(,convert-process . (,_out-file-format . ,options-plist)) how)
+	       ((org-odt-map :lo-export-filter-options :out-file-extension) options-plist)
+	       (out-file (concat (file-name-sans-extension in-file) "."
+				 (or out-file-extension out-fmt)))
+	       (out-dir (file-name-directory in-file))
+	       (cmd (format-spec convert-process
+				 `(;; When a process is executed with
+				   ;; `shell-command', and within
+				   ;; `with-environment-variables' does it
+				   ;; inherit the locale specific environment
+				   ;; variables from the new environement?  A
+				   ;; little experimentation suggests that the
+				   ;; answer is "Yes". If that that case, this
+				   ;; setting is merely gives a visual
+				   ;; assurance to the user about what is
+				   ;; happening.  If "No", it really does the
+				   ;; needed work.  In either case, having it
+				   ;; is what the user wants.
+				   (?l . ,(format "LANG=%s" (getenv "LANG")))
+				   (?i . ,(shell-quote-argument in-file))
+				   (?I . ,(browse-url-file-url in-file))
+				   (?f . ,(concat (or out-file-extension out-fmt)
+                                                  lo-export-filter-options))
+				   (?o . ,(shell-quote-argument out-file))
+				   (?O . ,(browse-url-file-url out-file))
+				   (?d . ,(shell-quote-argument out-dir))
+				   (?D . ,(browse-url-file-url out-dir))))))
     (when (file-exists-p out-file)
       (delete-file out-file))
     (message "Executing %s" cmd)

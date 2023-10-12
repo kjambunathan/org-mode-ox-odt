@@ -1092,6 +1092,66 @@
       (message "Opening %s..." out-file)
       (org-open-file out-file 'system))))
 
+;;;###autoload
+(defun org-ods-import-spreadsheet-file (&optional spreadsheet-file file-format)
+  (interactive
+   (list (thread-last (read-file-name "ODS-like filename: " nil nil
+				      t nil
+				      (lambda (file-name)
+					(thread-last "Spreadsheet"
+						     (map-elt org-odt-convert-capabilities)
+						     car
+						     (pcase--flip seq-difference '("csv"))
+						     ;; ("ods" "ots" "xls" "xlsx")
+						     (member (file-name-extension file-name)))))
+		      expand-file-name)
+	 (let* ((choices '(("Data only" . data-only)
+			   ("Data and Spreadsheet Formula" . data+formula)))
+		(choice (completing-read "Options for Importing: " choices nil t)))
+	   (map-elt choices choice))))
+  (let* ((out-file-extension (format (pcase file-format
+				       (`data-only ".tsv")
+				       (`data+formula ".formula.tsv"))))
+	 (org-odt-transform-processes
+	  `(("Convert ODS file to TSV file" "libreofficedev24.2" "--norestore" "--invisible" "--headless"
+	     ,(format "macro:///OrgMode.Utilities.%s(%%I)"
+		      (pcase file-format
+			(`data-only "ODSExportToTSV")
+			(`data+formula "ODSExportToFormulaTSV")))))))
+    (org-odt-transform spreadsheet-file)
+    (thread-last spreadsheet-file
+		 file-name-directory
+		 (funcall (lambda (dir)
+			    (directory-files dir t
+					     ;; Name of the exported file =
+					     ;;     Name of the ODS file + "--"
+					     ;;     + Name of the Sheet + ".tsv"
+					     (rx-to-string `(and ,(file-name-nondirectory spreadsheet-file)
+								 "--" (zero-or-more any)
+								 ,out-file-extension
+								 eos)))))
+		 (pcase--flip sort 'string>)
+		 (seq-do
+		  (lambda (it)
+		    (when-let* (((file-readable-p it))
+				((string-match (rx-to-string `(and bos
+								   ,spreadsheet-file "--"
+								   (group-n 1 (zero-or-more any))
+								   ,out-file-extension
+								   eos))
+					       it))
+				(sheet-name (match-string 1 it)))
+		      ;; When the command is invoked on an `org-mode'
+		      ;; buffer, import the TSV file at point.  Set
+		      ;; `+NAME: ' attribute of the imported table to
+		      ;; the source sheet name.
+		      (when (derived-mode-p 'org-mode)
+			(org-table-import it '(16))
+			(unless (eq 'table (org-element-type (org-element-context)))
+			  (goto-char (org-table-begin)))
+			(save-excursion
+			  (insert "\n\n" (format "#+name: %s" sheet-name) "\n")))))))))
+
 (defvar org-ods-cell-mapper
   (defun org-ods-replace-org-ts-with-locale-ts-in-string (string)
     (message "LANGUAGE is %S" current-locale-environment)
@@ -1444,3 +1504,7 @@ format, `org-ods-preferred-output-format'."
                     . (org-ods--translate-tblfms-to-ods-formulae))))
 
 (provide 'ox-ods)
+
+;; Local Variables:
+;; eval: (auto-fill-mode -1)
+;; End:
