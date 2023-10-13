@@ -261,40 +261,42 @@
                        and collecting table-row into data-rows
                    end
                end
-               finally return (list
-                               :special-rows special-rows
-                               :colname-row colname-row
-                               :field-name-above-row field-name-above-row
-                               :field-name-below-row field-name-below-row
-                               :param-row param-row
-                               :data-rows data-rows
-                               :rowgroups rowgroups
-                               :data-rowgroups (mapcar #'cdr rowgroups)
-                               :rgn->r/org rgn->r/org
-                               :rgn->rg rgn->rg
-                               :cell-address-adjust (if (org-export-table-has-special-column-p table)
-                                                        '(0 . -1)
-                                                      '(0 . 0))
-                               :has-special-column (org-export-table-has-special-column-p table)
-                               :add-on-table (append (list (nth 0 table)
-                                                           (nth 1 table))
-                                                     (append
-                                                      ;; special-rows
-                                                      colname-row
-                                                      field-name-above-row
-                                                      field-name-below-row
-                                                      param-row))
-                               :add-on-table-sans-special-markers
-                               (append (list (nth 0 table)
-                                             (nth 1 table))
-                                       (append
-                                        (cl-loop for (type . (props . contents)) in special-rows
-                                                 collect (append (list type props) (cdr contents)))))
-
-                               :nonhrules nonhrules
-                               :dimensions (cons r/org
-                                                 (length (org-element-contents (car nonhrules))))
-                               :table table)))
+               finally return
+               (let* ((tinfo (list
+			      :special-rows special-rows
+			      :colname-row colname-row
+			      :field-name-above-row field-name-above-row
+			      :field-name-below-row field-name-below-row
+			      :param-row param-row
+			      :data-rows data-rows
+			      :rowgroups rowgroups
+			      :data-rowgroups (mapcar #'cdr rowgroups)
+			      :rgn->r/org rgn->r/org
+			      :rgn->rg rgn->rg
+			      :cell-address-adjust (if (org-export-table-has-special-column-p table)
+						       '(0 . -1)
+						     '(0 . 0))
+			      :has-special-column (org-export-table-has-special-column-p table)
+			      :add-on-table (append (list (nth 0 table)
+							  (nth 1 table))
+						    (append
+						     ;; special-rows
+						     colname-row
+						     field-name-above-row
+						     field-name-below-row
+						     param-row))
+			      :add-on-table-sans-special-markers
+			      (append (list (nth 0 table)
+					    (nth 1 table))
+				      (append
+				       (cl-loop for (type . (props . contents)) in special-rows
+						collect (append (list type props) (cdr contents)))))
+			      :nonhrules nonhrules
+			      :dimensions (cons r/org
+						(length (org-element-contents (car nonhrules))))
+			      :table table)))
+		 (prog1 tinfo
+		   (plist-put (cadr table) :tinfo tinfo)))))
 
 ;;; Cell Address
 
