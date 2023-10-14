@@ -786,8 +786,24 @@
 	  (plist-put field :row-offset nil)
 	  (plist-put field :row-num (- base-r offset))))
        (`(hline ,n)
-	(let ((base-r (let ((r (assoc-default n (plist-get tinfo :rgn->r/org))))
-			(if secondp (1- r) r)))
+	(let ((base-r
+               ;; When hline is the first in the field range, then
+               ;; look for the first row in its rowgroup.
+               ;;
+               ;; When hline is the second in the field range, then
+               ;; look for the last row in previous rowgroup.
+	       (let* ((this-rgn n)
+                      (previous-rgn (- n 1))
+                      (which-rgn (if secondp  previous-rgn this-rgn))
+		      (~r/orgs
+		       (thread-last (plist-get tinfo :rgn->r/org)
+				    (seq-keep
+				     (pcase-lambda (`(,~rgn . ,~r/org))
+				       (when (= ~rgn which-rgn)
+					 ~r/org))))
+		       ;; (assoc-default n (plist-get tinfo :rgn->r/org))
+		       ))
+		 (if secondp (car (last ~r/orgs)) (car ~r/orgs))))
 	      (offset (or (plist-get field :row-offset) 0)))
 	  (plist-put field :row-offset nil)
 	  (plist-put field :row-num (+ base-r offset)))))
