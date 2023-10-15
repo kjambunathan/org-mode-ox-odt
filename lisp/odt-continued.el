@@ -25,9 +25,9 @@
 
 ;;; Code:
 
-;; (require 'rnc-mode)
 (require 'help-fns)
 (require 'ox-odt)
+(require 'rnc-mode)
 
 ;;; DOM
 

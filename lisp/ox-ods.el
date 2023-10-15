@@ -28,6 +28,7 @@
 
 (require 'rx)
 (require 'ox-odt)
+(require 'peg)
 
 (defvar org-ods-debug nil)
 
@@ -230,27 +231,18 @@
 	     (`:dimensions (list :dimensions v))
 	     (`:has-special-column (list :has-special-column v))
 	     (`:cell-address-adjust (list :cell-address-adjust v))
-	     ;; (`:rgn->rg (list :rgn->rg v))
 	     (`:rgn->rg (list :rgn->rg
 			      (thread-last v
 					   (seq-map
 					    (pcase-lambda (`(,n . ,row-groups))
 					      (cons n (org-ods-table-row-elements-to-lisp row-groups)))))))
 	     (`:rgn->r/org (list :rgn->r/org v))
-	     ;; (`:rgn->r/org (list :rgn->r/org
-	     ;; 		     (seq-filter
-	     ;; 		      (pcase-lambda (`(,n ,table-row))
-	     ;; 			(org-ods-table-row-element-to-lisp table-row)))
-	     ;; 		     v))
-	     ;; (`:data-rows (list :data-rows v))
 	     (`:data-rows (list :data-rows (org-ods-table-row-elements-to-lisp (plist-get tinfo :data-rows))))
-	     ;; (`:data-rowgroups (list :data-rowgroups v))
 	     (`:data-rowgroups (list :data-rowgroups
 				     (thread-last v
 						  (seq-map
 						   (lambda (it)
 						     (org-ods-table-row-elements-to-lisp it))))))
-	     ;; (`:rowgroups (list :rowgroups v))
 	     (`:rowgroups (list :rowgroups
 				(seq-map (lambda (it) (org-ods-table-row-elements-to-lisp it)) (plist-get tinfo :rowgroups))))
 	     (`:special-rows (list :special-rows v))
@@ -258,7 +250,6 @@
 	     (`:colname-row (list :colname-row v))
 	     (`:field-name-above-row (list :field-name-above-row v))
 	     (`:field-name-below-row (list :field-name-below-row v))
-	     ;; (`:nonhrules (list :nonhrules v))
 	     (`:nonhrules (list :nonhrules
 				(thread-last v
 					     (seq-map #'org-ods-table-row-element-to-lisp))))
@@ -802,72 +793,87 @@
 
 ;;; Field and Field Ranges
 
-(defun org-ods-parse-field (field)
-  (rx-let ((ABS-N (one-or-more digit))
-	   (SIGN (any "-+"))
-	   (REL-N (and SIGN ABS-N))
-	   (FIELD
-	    (and (group-n 1
-		   (optional
-		    (and "@" (or (group-n 2 (group-n 3 REL-N))
-				 (group-n 4 (group-n 5 (one-or-more "I")) (optional (group-n 21 REL-N)))
-				 (group-n 24 (group-n 25 (and (group-n 26 SIGN) (one-or-more "I")))
-					  (optional (group-n 27 REL-N)))
-				 (group-n 6 ABS-N)
-				 (group-n 7 (one-or-more (or (group-n 8 "<") (group-n 9 ">"))))))))
-		 (group-n 11
-		   (optional (and "$" (or (group-n 12 (group-n 13 REL-N))
-					  (group-n 16 ABS-N)
-					  (group-n 17 (one-or-more (or (group-n 18 "<") (group-n 19 ">")))))))))))
-    (let* ((n->props
-	    '(
-	      (1 :row-full identity)
-	      (2 :row-num (lambda (x) 'self))
-	      (3 :row-offset string-to-number)
-	      ;;
-	      (5 :row-num (lambda (x) (list 'hline (length x))))
-	      (21 :row-offset string-to-number)
-	      ;;
-	      (26 :row-num (lambda (x) 'self))
-	      (25 :row-offset-hline (lambda (x)
-				      (list 'hline (read
-						    (let* ((i (string-match "I" x)))
-						      (format "%s%s"
-							      (substring x 0 i)
-							      (length (substring x i))))))))
-	      (27 :row-offset string-to-number)
-	      ;;
-	      (6 :row-num string-to-number)
-	      ;;
-	      (7 :row-offset (lambda (x) (1- (length x))))
-	      (8 :row-num (lambda (x) 'first))
-	      (9 :row-num (lambda (x) 'last))
-	      ;;
-	      (11 :col-full identity)
-	      ;;
-	      (12 :col-num (lambda (x) 'self))
-	      (13 :col-offset string-to-number)
-	      ;;
-	      (16 :col-num string-to-number)
-	      ;;
-	      (17 :col-offset (lambda (x) (1- (length x))))
-	      (18 :col-num (lambda (x) 'first))
-	      (19 :col-num (lambda (x) 'last)))))
-      (when (string-match (rx FIELD) field)
-	(cl-loop for (n prop fn) in n->props
-		 for m = (match-string n field)
-		 when (org-string-nw-p m)
-		 append (list prop (funcall (or fn #'identity) m)))))))
-
-(defun org-ods-parse-field-range (field-range)
-  (let* ((sep-regexp (rx "..")))
-    (cond
-     ((string-match-p sep-regexp field-range)
-      (pcase-let* ((`(,first ,second) (split-string field-range sep-regexp t)))
-	(cons (org-ods-parse-field first)
-	      (org-ods-parse-field second))))
-     (t
-      (cons (org-ods-parse-field field-range) nil)))))
+(defun org-ods-parse-field-range (string)
+  (with-temp-buffer
+    (save-excursion
+      (insert string))
+    (with-peg-rules
+	(
+	 (ABS-N (substring (+ [digit]))
+		`(it -- (string-to-number it)))
+	 (SIGN (substring (or "-" "+"))
+	       `(it -- (string-to-number (concat it "1"))))
+	 (REL-N (and SIGN ABS-N
+		     `(sign n -- (* sign n))))
+	 (OPTIONAL-REL-N (or (and REL-N
+				  `(it -- it))
+			     (and (substring "")
+				  `(_it -- nil))))
+	 (Is (substring (+ "I"))
+	     `(it -- (length it)))
+	 (LEFT-ARROWS (substring (+ "<")))
+	 (RIGHT-ARROWS (substring (+ ">")))
+	 (ROW-PART (and "@"
+			(or
+			 (and REL-N
+			      `(it -- (list :row-num 'self :row-offset it)))
+			 (and ABS-N
+			      `(it
+				-- (list :row-num it)))
+			 (and SIGN Is OPTIONAL-REL-N
+			      `(sign num-is rel-n-maybe -- (org-combine-plists
+							    (list :row-num 'self
+								  :row-offset-hline
+								  (list 'hline (* sign num-is)))
+							    (when rel-n-maybe
+							      (list :row-offset rel-n-maybe)))))
+			 (and Is OPTIONAL-REL-N
+			      `(num-is rel-n
+				       -- (org-combine-plists
+					   (list :row-num (list 'hline num-is))
+					   (when rel-n
+					     (list :row-offset rel-n)))))
+			 (and LEFT-ARROWS
+			      `(it -- (list :row-num 'first
+					    :row-offset (1- (length it)))))
+			 (and RIGHT-ARROWS
+			      `(it -- (list :row-num 'last
+					    :row-offset (1- (length it))))))))
+	 (COL-PART
+	  (and "$" (or (and REL-N
+			    `(it -- (list :col-num 'self :col-offset it)))
+		       (and ABS-N
+			    `(it
+			      -- (list :col-num it)))
+		       (and LEFT-ARROWS
+			    `(it -- (list :col-num 'first
+					  :col-offset (1- (length it)))))
+		       (and RIGHT-ARROWS
+			    `(it -- (list :col-num 'last
+					  :col-offset (1- (length it))))))))
+	 (OPTIONAL-ROW-PART (or (and ROW-PART
+				     `(it -- it))
+				(and (substring "")
+				     `(_it -- nil))))
+	 (OPTIONAL-COL-PART (or (and COL-PART
+				     `(it -- it))
+				(and (substring "")
+				     `(_it -- nil))))
+	 (FIELD (and OPTIONAL-ROW-PART OPTIONAL-COL-PART
+	             `(r-part col-part -- (org-combine-plists
+				           r-part col-part))))
+	 (START-FIELD FIELD)
+	 (END-FIELD FIELD)
+	 (OPTIONAL-END-FIELD
+	  (and (or (and ".." END-FIELD)
+		   (and (substring "")
+		        `(_it -- nil)))))
+	 (FIELD-RANGE (and START-FIELD OPTIONAL-END-FIELD eob
+			   `(start end -- (cons start end)))))
+      (condition-case err
+	  (car (peg-parse FIELD-RANGE))
+	(error
+         (error "org-ods-parse-field-range: `%s' is malformed => (%S)" string err))))))
 
 (defvar org-ods--test-refs
   '(
@@ -887,7 +893,25 @@
     "@I..@II" ;; between first and second hline, short for "@I..@II"
     ))
 
-;; (mapcar #'org-ods-parse-field-range org-ods--test-refs)
+(defvar org-ods--test-refs-parsed
+  ;; (thread-last org-ods--test-refs
+  ;;              (seq-map
+  ;;       	(lambda (it)
+  ;;       	  (cons it (org-ods-parse-field-range it)))))
+  '(("@2$3" (:row-num 2 :col-num 3))
+    ("$5" (:col-num 5))
+    ("@2" (:row-num 2))
+    ("@-1$-3" (:row-num self :row-offset -1 :col-num self :col-offset -3))
+    ("@-I$2" (:row-num self :row-offset-hline (hline -1) :col-num 2))
+    ("@>$5" (:row-num last :row-offset 0 :col-num 5))
+    ("$1..$3" (:col-num 1) :col-num 3)
+    ("$<<<..$>>" (:col-num first :col-offset 2) :col-num last :col-offset
+     1)
+    ("@2$1..@4$3" (:row-num 2 :col-num 1) :row-num 4 :col-num 3)
+    ("@-1$-2..@-1"
+     (:row-num self :row-offset -1 :col-num self :col-offset -2) :row-num
+     self :row-offset -1)
+    ("@I..@II" (:row-num (hline 1)) :row-num (hline 2))))
 
 (defun org-ods-derelativize-field (tinfo field &optional secondp)
   ;; Modifies field by side-effect.  Also returns it.

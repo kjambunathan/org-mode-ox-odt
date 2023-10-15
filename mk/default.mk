@@ -134,7 +134,11 @@ MAKE_LOCAL_MK = $(BATCHO) \
 
 # Emacs must be started in lisp directory
 BATCHL	= $(BATCH) \
-	  --eval '(add-to-list '"'"'load-path ".")'
+	  --eval '(add-to-list '"'"'load-path ".")' \
+	  --eval '(when (getenv "ELPA_DIR_FOR_ODT") (add-to-list '"'"'load-path (concat (file-name-as-directory (getenv "ELPA_DIR_FOR_ODT")) "peg")))' \
+	  --eval '(condition-case err (require '"'"'peg) (error (error "\n\nSet env variable ELPA_DIR_FOR_ODT, and compile again\n%s\n\n" (error-message-string err))))' \
+	  --eval '(when (getenv "ELPA_DIR_FOR_ODT") (add-to-list '"'"'load-path (concat (file-name-as-directory (getenv "ELPA_DIR_FOR_ODT")) "rnc-mode")))' \
+	  --eval '(condition-case err (require '"'"'rnc-mode) (error (error "\n\nSet env variable ELPA_DIR_FOR_ODT, and compile again\n%s\n\n" (error-message-string err))))' 
 
 # How to generate org-loaddefs.el
 MAKE_ORG_INSTALL = $(BATCHL) \
