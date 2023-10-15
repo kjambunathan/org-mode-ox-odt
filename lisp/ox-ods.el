@@ -461,7 +461,7 @@
 				  (lambda (it)
 				    (string-join it ""))))))
 		 (apply #'append)
-		 (funcall (-flip #'seq-into) 'vector))))
+                 (pcase--flip seq-into 'vector))))
 
 (defconst org-ods-max-columns
   (length org-ods-colnames))
