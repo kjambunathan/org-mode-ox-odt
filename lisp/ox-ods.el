@@ -45,9 +45,12 @@
    (org-element-interpret-data
     (org-element-contents table-cell))))
 
+(defvar org-ods-print-hrule nil)
+
 (defun org-ods-table-row-element-to-lisp (table-row)
-  (org-element-map table-row 'table-cell
-    #'org-ods-table-cell-element-to-lisp))
+  (if (and org-ods-print-hrule (org-ods-table-row-is-rule-p table-row)) 'hrule
+    (org-element-map table-row 'table-cell
+      #'org-ods-table-cell-element-to-lisp)))
 
 (defun org-ods-table-row-elements-to-lisp (table-rows)
   (mapcar #'org-ods-table-row-element-to-lisp table-rows))
@@ -173,6 +176,108 @@
        table-row))
    (org-export-get-next-element table-row nil t)))
 
+(defun org-ods-glimpse-table (&optional table-el-or-tinfo quickp)
+  (when-let* ((tinfo1 (let* ((table-el))
+			(cond
+			 ;; Input is null
+			 ((null table-el-or-tinfo)
+			  ;; Get the table at point
+			  (setq table-el (car (org-ods-table-at-point 'full-data)))
+			  ;; Convert it in to tinfo
+			  (when table-el
+			    (org-ods-table->table-info table-el)))
+			 ;; Input is table element;
+			 ((eq 'table (org-element-type table-el-or-tinfo))
+			  ;; Convert it into tinfo
+			  (org-ods-table->table-info table-el-or-tinfo))
+			 ;; Input is tinfo
+			 (t
+			  table-el-or-tinfo))))
+	      (tinfo (append (list :pretty-table (plist-get tinfo1 :table)) tinfo1))
+	      (org-ods-print-hrule t))
+    (thread-last
+      '(:pretty-table
+	:dimensions
+	:has-special-column
+	:cell-address-adjust
+	;; Row
+	:rgn->rg
+	:rgn->r/org
+	:data-rows
+	:data-rowgroups
+	:rowgroups
+	:special-rows
+	;; Other Row
+	:param-row
+	:colname-row
+	;; Field Names
+	:field-name-above-row
+	:field-name-below-row
+	:nonhrules
+	:add-on-table
+	:add-on-table-sans-special-markers
+	:table)
+      ;; tinfo
+      (seq-map
+       (lambda (k)
+	 (let ((v (map-elt tinfo k)))
+	   (pcase k
+	     (`:pretty-table (list :pretty-table
+				   (let* ((pp-table
+					   (lambda (table)
+					     (concat "\n" (org-element-interpret-data table)))))
+				     (funcall pp-table v))))
+	     (`:dimensions (list :dimensions v))
+	     (`:has-special-column (list :has-special-column v))
+	     (`:cell-address-adjust (list :cell-address-adjust v))
+	     ;; (`:rgn->rg (list :rgn->rg v))
+	     (`:rgn->rg (list :rgn->rg
+			      (thread-last v
+					   (seq-map
+					    (pcase-lambda (`(,n . ,row-groups))
+					      (cons n (org-ods-table-row-elements-to-lisp row-groups)))))))
+	     (`:rgn->r/org (list :rgn->r/org v))
+	     ;; (`:rgn->r/org (list :rgn->r/org
+	     ;; 		     (seq-filter
+	     ;; 		      (pcase-lambda (`(,n ,table-row))
+	     ;; 			(org-ods-table-row-element-to-lisp table-row)))
+	     ;; 		     v))
+	     ;; (`:data-rows (list :data-rows v))
+	     (`:data-rows (list :data-rows (org-ods-table-row-elements-to-lisp (plist-get tinfo :data-rows))))
+	     ;; (`:data-rowgroups (list :data-rowgroups v))
+	     (`:data-rowgroups (list :data-rowgroups
+				     (thread-last v
+						  (seq-map
+						   (lambda (it)
+						     (org-ods-table-row-elements-to-lisp it))))))
+	     ;; (`:rowgroups (list :rowgroups v))
+	     (`:rowgroups (list :rowgroups
+				(seq-map (lambda (it) (org-ods-table-row-elements-to-lisp it)) (plist-get tinfo :rowgroups))))
+	     (`:special-rows (list :special-rows v))
+	     (`:param-row (list :param-row v))
+	     (`:colname-row (list :colname-row v))
+	     (`:field-name-above-row (list :field-name-above-row v))
+	     (`:field-name-below-row (list :field-name-below-row v))
+	     ;; (`:nonhrules (list :nonhrules v))
+	     (`:nonhrules (list :nonhrules
+				(thread-last v
+					     (seq-map #'org-ods-table-row-element-to-lisp))))
+	     (`:add-on-table (list :add-on-table
+				   (pcase-let* ((`(,_a . (,_b . ,rest)) v))
+				     (thread-last rest
+						  (seq-map
+						   (lambda (it)
+						     (org-ods-table-row-elements-to-lisp it)))))))
+	     (`:add-on-table-sans-special-markers
+	      (list :add-on-table-sans-special-markers
+		    (pcase-let* ((`(,_a . (,_b . ,rest)) v))
+		      (thread-last rest
+				   (seq-map
+				    (lambda (it)
+				      (org-ods-table-row-elements-to-lisp it)))))))
+	     (`:table (list :table (if quickp 'elided v)))))))
+      (seq-filter #'identity))))
+
 ;;; Prune Table
 
 ;; Named Columns, Fields, and Parameters
@@ -198,6 +303,7 @@
 ;;
 
 (defun org-ods-table->table-info (table)
+  (org-ods-message (list 'org-ods-table->table-info))
   ;; Not yet
   (cl-loop with predicate = #'org-ods-table-row-is-data-row-p
 	   ;; with rowgroup-number = -1
@@ -482,6 +588,7 @@
 								 (cdr defined-at)))))))
 
 (defun org-ods-special-cell-address/org->value (tinfo)
+  (org-ods-message (list 'org-ods-special-cell-address/org->value))
   (cl-loop for (_name . rest) in (org-ods-do-name->value tinfo)
 	   collect (cons (plist-get rest :defined-at)
 			 (plist-get rest :value@defined-at))))
@@ -574,13 +681,18 @@
 							  collect (cons name (org-ods-parse-field-range field-range))))))))))
 
 (defun org-ods->derelativize-field-range (tinfo field-range)
+  ;; (org-ods-message (list 'org-ods->derelativize-field-range
+  ;;       		 :field-range field-range
+  ;;       		 ;; :tinfo
+  ;;       		 ;; (org-ods-glimpse-table tinfo t)
+  ;;       		 ))
   (pcase-let ((`(,first . ,second) field-range))
     (cons (org-ods-derelativize-field tinfo first)
 	  (org-ods-derelativize-field tinfo second 'secondp))))
 
 (defun org-tblfm->cell-and-ods-formula (tinfo tblfm)
   (org-ods-message (list 'org-tblfm->cell-and-ods-formula
-			 :table (plist-get tinfo :table)
+			 :table (org-ods-glimpse-table (plist-get tinfo :table))
 			 :tblfm tblfm))
   (let* ((lhs-parsed (plist-get tblfm :lhs-parsed))
 	 (rhs-terms-parsed (plist-get tblfm :rhs-terms-parsed))
@@ -623,6 +735,7 @@
     (nth (1- c) table-cells)))
 
 (defun org-ods-clear-special-rows (tinfo)
+  (org-ods-message (list 'org-ods-clear-special-rows))
   (cl-loop for table-row in (plist-get tinfo :special-rows)
 	   do (cl-loop for table-cell in (org-element-contents table-row)
 		       do (message "contents: %S" (org-ods-table-cell-element-to-lisp table-cell))
@@ -640,10 +753,16 @@
   (cl-assert (stringp value))
   (pcase-let* ((table-cell (org-ods-cell-address/org->table-cell tinfo cell-address/org)))
     (message "setting table-cell: %S" table-cell)
+    ;; (org-ods-message (list 'org-ods-cell-address/org->value
+    ;;                        :cell-address/org cell-address/org
+    ;;                        :value value
+    ;;                        :table-cell (substring-no-properties (org-element-interpret-data table-cell))))
     ;; (debug)
     (setcdr (cdr table-cell) (list value))))
 
 (defun org-ods-insert-ods-formula (tinfo)
+  ;; (org-ods-message (list 'org-ods-insert-ods-formula
+  ;;       		 :tinfo (org-ods-glimpse-table tinfo t)))
   ;; Modifies table by side-effects
   (cl-loop for tblfm in (org-ods-tokenize-tblfms (org-ods-table->tblfms tinfo))
 	   for final = (cons tblfm (org-tblfm->cell-and-ods-formula tinfo tblfm))
@@ -673,7 +792,7 @@
   (let* ((tinfo (org-ods-table->table-info table))
 	 (replacement-values (org-ods-special-cell-address/org->value tinfo)))
     (org-ods-message (list 'org-ods-table->ods-table
-			   :tinfo tinfo))
+			   :tinfo (org-ods-glimpse-table tinfo t)))
     (org-ods-insert-ods-formula tinfo)
     (org-ods-clear-special-rows tinfo)
     (cl-loop for (cell-address/org . value) in replacement-values
@@ -774,6 +893,17 @@
   ;; Modifies field by side-effect.  Also returns it.
   (pcase-let ((`(,rmin . ,cmin) '(1 . 1))
 	      (`(,rmax . ,cmax) (plist-get tinfo :dimensions)))
+    ;; (org-ods-message (list 'org-ods-derelativize-field-in
+    ;;     		   :field field
+    ;;     		   :secondp secondp
+    ;;     		   :mins (cons rmin cmin)
+    ;;     		   :maxs (cons rmax cmax)
+    ;;     		   :rgn->r/org (plist-get tinfo :rgn->r/org)
+    ;;     		   ;; :tinfo
+    ;;     		   ;; tinfo
+    ;;     		   ;; :tinfo
+    ;;     		   ;; (org-ods-glimpse-table-at-point tinfo)
+    ;;     		   ))
     (cons
      ;; Row part
      (pcase (plist-get field :row-num)
@@ -821,6 +951,8 @@
 	      (offset (or (plist-get field :col-offset) 0)))
 	  (plist-put field :col-offset nil)
 	  (plist-put field :col-num (- base-c offset)))))))
+  ;; (org-ods-message (list 'org-ods-derelativize-field-out
+  ;;       		 :field field))
   field)
 
 (defun org-ods-apply-field-spec-to-cell-address (cell-address field)
@@ -1388,14 +1520,23 @@ from `org-odt-convert-processes'."
 	  (erase-buffer)))
       (let* ((tinfo (org-ods-table->table-info table))
 	     (replacement-values (org-ods-special-cell-address/org->value tinfo)))
-	(org-ods-message (list 'org-ods-table->ods-table
-			       :tinfo tinfo))
+	(org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
+			       :tinfo (org-ods-glimpse-table tinfo t)
+			       :replacement-values replacement-values))
 	(org-ods-insert-ods-formula tinfo)
 	(org-ods-clear-special-rows tinfo)
 	(cl-loop for (cell-address/org . value) in replacement-values
 		 do (org-ods-cell-address/org->value tinfo cell-address/org value))
 	(org-ods-remove-special-column tinfo))
-      (org-ods-lisp-table-to-org-table (org-ods-table-element-to-lisp-table table)))
+      (let* ((pp-table
+	      (lambda (table)
+		(concat "\n" (org-element-interpret-data table)))))
+	(org-ods-message (list :org-table
+			       (funcall pp-table table)
+			       :mangled-table
+			       (funcall pp-table
+					(org-ods-lisp-table-to-org-table
+					 (org-ods-table-element-to-lisp-table table)))))))
     info nil nil t)
   (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
 			 :odt-automatic-styles (plist-get info :odt-automatic-styles)
@@ -1409,6 +1550,18 @@ from `org-odt-convert-processes'."
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
   (let* ((table-contents (org-odt-table table contents info)))
+    (message "\n\n%S" (if (org-element-property :name table)
+			    (list 'org-ods-table :name (format "Typesetting table with name `%s'"
+							       (org-element-property :name table)))
+			  (list 'org-ods-table
+				:signature
+				(let* ((table-row (org-element-map table 'table-row
+						    #'org-ods-table-row-is-data-row-p info t)))
+				  (format "Typesetting table with row %s"
+					  (or (when table-row
+						(substring-no-properties
+						 (org-element-interpret-data table-row)))
+					      ""))))))
     (prog1 table-contents
       (plist-put info :ods-tables
 		 (concat (plist-get info :ods-tables)
@@ -1420,7 +1573,7 @@ holding export options."
 (defun org-ods-table-cell (table-cell _contents info)
   (org-ods-message (list 'org-ods-table-cell
 			 :ods-formula (org-element-property :ods-formula table-cell)
-			 :el-contents (org-element-contents table-cell)
+			 :el-contents (substring-no-properties (org-element-interpret-data table-cell))
 			 :el-properties (cadr table-cell)))
   (let* ((to-number (lambda (s trim)
 		      (with-temp-buffer
@@ -1494,11 +1647,18 @@ The function returns a file name in any one of the BACKEND
 format, `org-ods-preferred-output-format'."
   (interactive)
   (let* ((backend 'ods)
-         (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
-         (org-ods-cell-mapper nil)
-         (org-odt-convert-process org-ods-convert-process))
-    (org-odt-export-to-odt-backend backend async subtreep
-                                   visible-only body-only ext-plist)))
+	 (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
+	 (org-ods-cell-mapper nil)
+	 (org-odt-convert-process org-ods-convert-process))
+    (prog1 (org-odt-export-to-odt-backend backend async subtreep
+					  visible-only body-only ext-plist)
+      (when-let ((debug-buffer (get-buffer org-ods-debug-buffer)))
+	(with-current-buffer debug-buffer
+	  (emacs-lisp-mode)
+	  (goto-char (point-min))
+	  (save-excursion
+	    (while (re-search-forward (rx "\\n") nil t)
+	      (replace-match "\n" t t))))))))
 
 ;;;; Define Back-End
 
