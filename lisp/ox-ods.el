@@ -35,11 +35,42 @@
 (defvar org-ods-debug-buffer
   "*Org Ods Debug*")
 
-(defun org-ods-message (lisp-object)
+(defun org-ods-message (lisp-object &optional heading level)
   (when org-ods-debug
     (with-current-buffer (get-buffer-create org-ods-debug-buffer)
       (goto-char (point-max))
-      (insert "\n" (pp-to-string lisp-object)))))
+      (when heading
+	(unless level
+	  (setq level 1))
+	(insert "\n"
+		(string-join (cons ";;" (make-list level ";"))) " " (upcase heading) "\n"))
+      (insert (or (unless heading "\n") "")
+	      (pp-to-string lisp-object)))))
+
+(defun org-ods-debug--op-on-element (op el)
+  (cl-flet ((org-ods-debug--object-signature (el)
+	      (pcase (org-element-type el)
+		(`table
+		 (cond
+		  ((org-element-property :name el)
+		   (format "NAME `%s'"
+			   (org-element-property :name el)))
+		  (t
+		   (let* ((table-row (org-element-map el 'table-row
+				       #'org-ods-table-row-is-data-row-p nil t)))
+		     (or (when table-row
+			   (format "ROW `%s'"
+				   (org-ods-debug--object-signature table-row)))
+			 "")))))
+		(_
+		 (format "`%s'"
+			 (org-trim
+			  (substring-no-properties
+			   (org-element-interpret-data el))))))))
+    (format "%s %s WITH SIGNATURE: %s"
+	    (upcase op)
+	    (org-element-type el)
+	    (org-ods-debug--object-signature el))))
 
 (defun org-ods-table-cell-element-to-lisp (table-cell)
   (substring-no-properties
@@ -226,7 +257,8 @@
 	     (`:pretty-table (list :pretty-table
 				   (let* ((pp-table
 					   (lambda (table)
-					     (concat "\n" (org-element-interpret-data table)))))
+					     (concat "\n" (substring-no-properties
+                                                           (org-element-interpret-data table))))))
 				     (funcall pp-table v))))
 	     (`:dimensions (list :dimensions v))
 	     (`:has-special-column (list :has-special-column v))
@@ -683,7 +715,7 @@
 
 (defun org-tblfm->cell-and-ods-formula (tinfo tblfm)
   (org-ods-message (list 'org-tblfm->cell-and-ods-formula
-			 :table (org-ods-glimpse-table (plist-get tinfo :table))
+			 :table (org-ods-glimpse-table (plist-get tinfo :table) 'quick)
 			 :tblfm tblfm))
   (let* ((lhs-parsed (plist-get tblfm :lhs-parsed))
 	 (rhs-terms-parsed (plist-get tblfm :rhs-terms-parsed))
@@ -1535,57 +1567,49 @@ from `org-odt-convert-processes'."
 ;;;; Filters
 
 (defun org-ods--translate-tblfms-to-ods-formulae (data _backend info)
-  (org-element-map data 'table
-    (lambda (table)
-      ;; (plist-put (cadr table) :name nil)
-      ;; (plist-put (cadr table) :caption nil)
-      (when-let* ((debug-buf (get-buffer "*Org Ods Debug*")))
-	(with-current-buffer debug-buf
-	  (erase-buffer)))
-      (let* ((tinfo (org-ods-table->table-info table))
-	     (replacement-values (org-ods-special-cell-address/org->value tinfo)))
-	(org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
-			       :tinfo (org-ods-glimpse-table tinfo t)
-			       :replacement-values replacement-values))
-	(org-ods-insert-ods-formula tinfo)
-	(org-ods-clear-special-rows tinfo)
-	(cl-loop for (cell-address/org . value) in replacement-values
-		 do (org-ods-cell-address/org->value tinfo cell-address/org value))
-	(org-ods-remove-special-column tinfo))
-      (let* ((pp-table
-	      (lambda (table)
-		(concat "\n" (org-element-interpret-data table)))))
-	(org-ods-message (list :org-table
-			       (funcall pp-table table)
-			       :mangled-table
-			       (funcall pp-table
-					(org-ods-lisp-table-to-org-table
-					 (org-ods-table-element-to-lisp-table table)))))))
-    info nil nil t)
+  (let ((pp-table
+	 (lambda (table)
+	   (concat "\n" (substring-no-properties
+			 (org-element-interpret-data table))))))
+    (org-element-map data 'table
+      (lambda (table)
+	(let* ((table-in (funcall pp-table table)))
+	  (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae)
+			   (org-ods-debug--op-on-element "TRANSLATING" table))
+	  (let* ((tinfo (org-ods-table->table-info table))
+		 (replacement-values (org-ods-special-cell-address/org->value tinfo)))
+	    (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
+				   :tinfo (org-ods-glimpse-table tinfo t)
+				   :replacement-values replacement-values))
+	    (org-ods-insert-ods-formula tinfo)
+	    (org-ods-clear-special-rows tinfo)
+	    (cl-loop for (cell-address/org . value) in replacement-values
+		     do (org-ods-cell-address/org->value tinfo cell-address/org value))
+	    (org-ods-remove-special-column tinfo))
+	  ;; Side-effects above has modified the table.  Log what the
+	  ;; table looks after translation.
+	  (let ((table-out (funcall pp-table
+				    (org-ods-lisp-table-to-org-table
+				     (org-ods-table-element-to-lisp-table table)))))
+	    (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
+				   :org-table table-in
+				   :translated-table table-out)))))
+      info nil nil t))
   (org-ods-message (list 'org-ods--translate-tblfms-to-ods-formulae
 			 :odt-automatic-styles (plist-get info :odt-automatic-styles)
-			 :data data))
+			 ;; :data data
+			 ))
   data)
 
 ;;;; Transcoder
 
-(defun org-ods-table (table contents info)  
+(defun org-ods-table (table contents info)
   "Return body of document string after ODT conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
 holding export options."
   (let* ((table-contents (org-odt-table table contents info)))
-    (message "\n\n%S" (if (org-element-property :name table)
-			    (list 'org-ods-table :name (format "Typesetting table with name `%s'"
-							       (org-element-property :name table)))
-			  (list 'org-ods-table
-				:signature
-				(let* ((table-row (org-element-map table 'table-row
-						    #'org-ods-table-row-is-data-row-p info t)))
-				  (format "Typesetting table with row %s"
-					  (or (when table-row
-						(substring-no-properties
-						 (org-element-interpret-data table-row)))
-					      ""))))))
+    (org-ods-message (list 'org-ods-table)
+		     (org-ods-debug--op-on-element "TRANSCODING" table))
     (prog1 table-contents
       (plist-put info :ods-tables
 		 (concat (plist-get info :ods-tables)
@@ -1595,10 +1619,12 @@ holding export options."
   '(formula date float))
 
 (defun org-ods-table-cell (table-cell _contents info)
-  (org-ods-message (list 'org-ods-table-cell
-			 :ods-formula (org-element-property :ods-formula table-cell)
-			 :el-contents (substring-no-properties (org-element-interpret-data table-cell))
-			 :el-properties (cadr table-cell)))
+  ;; (org-ods-message (list 'org-ods-table-cell
+  ;;       		 :ods-formula (org-element-property :ods-formula table-cell)
+  ;;       		 ;; :el-contents (substring-no-properties (org-element-interpret-data table-cell))
+  ;;       		 :el-properties ;; (cadr table-cell)
+  ;;       		 )
+  ;;       	   (org-ods-debug--op-on-element "TRANSCODING" table-cell))
   (let* ((to-number (lambda (s trim)
 		      (with-temp-buffer
 			(save-excursion
@@ -1674,8 +1700,15 @@ format, `org-ods-preferred-output-format'."
 	 (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
 	 (org-ods-cell-mapper nil)
 	 (org-odt-convert-process org-ods-convert-process))
-    (prog1 (org-odt-export-to-odt-backend backend async subtreep
-					  visible-only body-only ext-plist)
+    ;; Clear Debug Log
+    (when-let* ((debug-buf (get-buffer "*Org Ods Debug*")))
+      (with-current-buffer debug-buf
+	(erase-buffer)))
+    (prog1
+	;; Export
+	(org-odt-export-to-odt-backend backend async subtreep
+				       visible-only body-only ext-plist)
+      ;; Prettify Debug Log
       (when-let ((debug-buffer (get-buffer org-ods-debug-buffer)))
 	(with-current-buffer debug-buffer
 	  (emacs-lisp-mode)

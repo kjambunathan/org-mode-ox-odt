@@ -5,7 +5,8 @@
   (indent-tabs-mode . t)
   (tab-width . 8)
   (fill-column . 70)
-  (sentence-end-double-space . t))
+  (sentence-end-double-space . t)
+  (compile-command . "ELPA_DIR_FOR_ODT=~/src/nongnu-elpa/packages make"))
  (emacs-lisp-mode
   (indent-tabs-mode))
  (org-mode
