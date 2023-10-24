@@ -48,25 +48,25 @@
 	      (pp-to-string lisp-object)))))
 
 (defun org-ods-debug--op-on-element (op el)
-  (cl-flet ((org-ods-debug--object-signature (el)
-	      (pcase (org-element-type el)
-		(`table
-		 (cond
-		  ((org-element-property :name el)
-		   (format "NAME `%s'"
-			   (org-element-property :name el)))
-		  (t
-		   (let* ((table-row (org-element-map el 'table-row
-				       #'org-ods-table-row-is-data-row-p nil t)))
-		     (or (when table-row
-			   (format "ROW `%s'"
-				   (org-ods-debug--object-signature table-row)))
-			 "")))))
-		(_
-		 (format "`%s'"
-			 (org-trim
-			  (substring-no-properties
-			   (org-element-interpret-data el))))))))
+  (cl-labels ((org-ods-debug--object-signature (el)
+	        (pcase (org-element-type el)
+		  (`table
+		   (cond
+		    ((org-element-property :name el)
+		     (format "NAME `%s'"
+			     (org-element-property :name el)))
+		    (t
+		     (let* ((table-row (org-element-map el 'table-row
+				         #'org-ods-table-row-is-data-row-p nil t)))
+		       (or (when table-row
+			     (format "ROW `%s'"
+				     (org-ods-debug--object-signature table-row)))
+			   "")))))
+		  (_
+		   (format "`%s'"
+			   (org-trim
+			    (substring-no-properties
+			     (org-element-interpret-data el))))))))
     (format "%s %s WITH SIGNATURE: %s"
 	    (upcase op)
 	    (org-element-type el)
