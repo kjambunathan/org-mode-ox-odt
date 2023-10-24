@@ -39,10 +39,27 @@
 
 (defun odt-dom-to-xml-string (dom &optional depth prettify)
   (let* ((newline (if prettify "\n" ""))
+         (encode-attribute-value
+	  (lambda (text)
+	    (dolist (pair '(("&" . "&amp;")
+			    ("<" . "&lt;")
+			    (">" . "&gt;")
+			    ("'" . "&apos;")
+			    ("\"" . "&quot;")))
+	      (setq text (replace-regexp-in-string (car pair) (cdr pair) text t t)))
+	    text))
 	 (print-attributes
 	  (lambda (attributes)
-	    (mapconcat #'identity (cl-loop for (attribute . value) in attributes collect
-					   (format "%s=\"%s\"" attribute value))
+	    (mapconcat #'identity
+                       (cl-loop for (attribute . value) in attributes collect
+				(format "%s=\"%s\""
+                                        attribute
+                                        ;; (odt-xml-string-to-dom "<element attr=\"&amp;&lt;&gt;&quot;&apos;\"/>"
+                                        ;;                        'strip-comments)
+                                        ;;   => (element ((attr . "&<>\"'")))
+                                        ;;
+                                        ;; Encoding of attribute value, reverses the above process.
+                                        (funcall encode-attribute-value value)))
 		       " "))))
     (setq depth (or depth 0))
     (cond
@@ -282,4 +299,10 @@
 	     do (dom-append-child edited-node node))))
 
 (provide 'odt)
+
 ;;; odt.el ends here
+
+;; Local Variables:
+;; fill-column: 160
+;; eval: (menu-bar--toggle-truncate-long-lines)
+;; End:
