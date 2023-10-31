@@ -40,18 +40,6 @@
 (require 'org-compat)
 (require 'odt)
 
-;;; Misc. Helpers
-
-(pcase-defmacro org-odt-map (&rest args)
-  `(and (pred listp)
-        ,@(mapcar (lambda (elt)
-                    `(app (pcase--flip plist-get ',elt)
-                            ,(if (keywordp elt)
-                                 (intern (substring (symbol-name elt) 1))
-                               elt)))
-                  args)))
-
-
 ;;; Aliases
 
 (defalias 'org-odt--lisp-to-xml 'odt-dom-to-xml-string)
@@ -10267,7 +10255,7 @@ function to create page headers:
 			(error "Don't know how to convert file `%s' from type `%s' to type `%s'"
 			       (file-name-nondirectory in-file) in-fmt out-fmt)))
 	       (`(,convert-process . (,_out-file-format . ,options-plist)) how)
-	       ((org-odt-map :lo-export-filter-options :out-file-extension) options-plist)
+	       ((odt-map :lo-export-filter-options :out-file-extension) options-plist)
 	       (out-file (concat (file-name-sans-extension in-file) "."
 				 (or out-file-extension out-fmt)))
 	       (out-dir (file-name-directory in-file))

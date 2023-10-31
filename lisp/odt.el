@@ -27,6 +27,33 @@
 
 (require 'dom)
 
+;;;; Misc. Helpers
+
+(defun odt-map--make-pcase-bindings (args)
+  (thread-last args
+	       (seq-map
+		(lambda (it)
+		  (pcase it
+		    (`(,key ,var)
+		     `(app (map--pcase-map-elt ,key nil)
+			   ,var))
+		    (`(,key ,var ,default)
+		     `(app (map--pcase-map-elt ,key ,default)
+			   ,var))
+		    ((pred keywordp)
+		     (let ((var (intern (substring (symbol-name it) 1))))
+		       `(app (pcase--flip map-elt ,it) ,var)))
+		    ((pred symbolp)
+                     (let ((var it))
+                       `(app (pcase--flip map-elt ',it) ,var)))
+                    ((pred stringp)
+                     (let ((var (intern it)))
+                       `(app (pcase--flip map-elt ,it) ,var))))))))
+
+(pcase-defmacro odt-map (&rest args)
+  `(and (pred mapp)
+        ,@(odt-map--make-pcase-bindings args)))
+
 ;;;; XML String <-> DOM
 
 (defun odt-xml-string-to-dom (xml-string strip-comment-nodes-p)
