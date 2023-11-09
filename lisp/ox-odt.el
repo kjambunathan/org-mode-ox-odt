@@ -263,23 +263,25 @@ standard Emacs.")
   "\n<manifest:file-entry manifest:media-type=\"%s\" manifest:full-path=\"%s\"%s/>")
 
 (defconst org-odt-file-extensions-alist
-  '(("odt" "application/vnd.oasis.opendocument.text"                  "Text document")
-    ("ott" "application/vnd.oasis.opendocument.text-template"         "Text document used as template")
-    ("odg" "application/vnd.oasis.opendocument.graphics"              "Graphics document (Drawing)")
-    ("otg" "application/vnd.oasis.opendocument.graphics-template"     "Drawing document used as template")
-    ("odp" "application/vnd.oasis.opendocument.presentation"          "Presentation document")
-    ("otp" "application/vnd.oasis.opendocument.presentation-template" "Presentation document used as template")
-    ("ods" "application/vnd.oasis.opendocument.spreadsheet"           "Spreadsheet document")
-    ("ots" "application/vnd.oasis.opendocument.spreadsheet-template"  "Spreadsheet document used as template")
-    ("odc" "application/vnd.oasis.opendocument.chart"                 "Chart document")
-    ("otc" "application/vnd.oasis.opendocument.chart-template"        "Chart document used as template")
-    ("odi" "application/vnd.oasis.opendocument.image"                 "Image document")
-    ("oti" "application/vnd.oasis.opendocument.image-template"        "Image document used as template")
-    ("odf" "application/vnd.oasis.opendocument.formula"               "Formula document")
-    ("otf" "application/vnd.oasis.opendocument.formula-template"      "Formula document used as template")
-    ("odm" "application/vnd.oasis.opendocument.text-master"           "Global Text document.")
-    ("oth" "application/vnd.oasis.opendocument.text-web"              "Text document used as template for HTML documents")
-    ("odb" "application/vnd.oasis.opendocument.base"                  "Database front end document"))
+  '(
+    ("odt"  "application/vnd.oasis.opendocument.text"                   "Text document"                                      "writer")
+    ("ott"  "application/vnd.oasis.opendocument.text-template"          "Text document used as template"                     "writer")
+    ("odg"  "application/vnd.oasis.opendocument.graphics"               "Graphics document (Drawing)"                        "draw")
+    ("otg"  "application/vnd.oasis.opendocument.graphics-template"      "Drawing document used as template"                  "draw")
+    ("odp"  "application/vnd.oasis.opendocument.presentation"           "Presentation document"                              "impress")
+    ("otp"  "application/vnd.oasis.opendocument.presentation-template"  "Presentation document used as template"             "impress")
+    ("ods"  "application/vnd.oasis.opendocument.spreadsheet"            "Spreadsheet document"                               "calc")
+    ("ots"  "application/vnd.oasis.opendocument.spreadsheet-template"   "Spreadsheet document used as template"              "calc")
+    ("odc"  "application/vnd.oasis.opendocument.chart"                  "Chart document"                                     "calc")
+    ("otc"  "application/vnd.oasis.opendocument.chart-template"         "Chart document used as template"                    "calc")
+    ("odi"  "application/vnd.oasis.opendocument.image"                  "Image document"                                     "")
+    ("oti"  "application/vnd.oasis.opendocument.image-template"         "Image document used as template"                    "")
+    ("odf"  "application/vnd.oasis.opendocument.formula"                "Formula document"                                   "math")
+    ("otf"  "application/vnd.oasis.opendocument.formula-template"       "Formula document used as template"                  "math")
+    ("odm"  "application/vnd.oasis.opendocument.text-master"            "Global Text document."                              "writer")
+    ("oth"  "application/vnd.oasis.opendocument.text-web"               "Text document used as template for HTML documents"  "writer")
+    ("odb"  "application/vnd.oasis.opendocument.base"                   "Database front end document"                        "base")
+    )
   "Map a OpenDocument file extension, to it's mimetype and description.")
 
 (defconst org-odt-supported-file-types
@@ -1405,7 +1407,8 @@ can contain format specifiers.  These format specifiers are
 interpreted as below:
 
 %i input file name in full
-%I input file name as a URL."
+%I input file name as a URL.
+%X `org-odt-soffice-executable', the preferred LibreOffice executable"
   :group 'org-export-odt
   :type
   '(choice
@@ -1413,16 +1416,16 @@ interpreted as below:
     (repeat :tag "Transformers"
 	    (choice :tag "Transformer"
 		    (const :tag "Reload"
-			   ("Reload" "soffice" "--norestore" "--invisible" "--headless"
+			   ("Reload" "%X" "--norestore" "--invisible" "--headless"
 			    "macro:///OrgMode.Utilities.Reload(%I)"))
 		    (const :tag "Update All"
-			   ("Update All" "soffice" "--norestore" "--invisible" "--headless"
+			   ("Update All" "%X" "--norestore" "--invisible" "--headless"
 			    "macro:///OrgMode.Utilities.UpdateAll(%I)"))
 		    (const :tag "Update All and Break Links"
-			   ("Update All and Break Links" "soffice" "--norestore" "--invisible" "--headless"
+			   ("Update All and Break Links" "%X" "--norestore" "--invisible" "--headless"
 			    "macro:///OrgMode.Utilities.UpdateAll(%I, 1)"))
 		    (const :tag "Optimize Column Width of all Tables"
-			   ("Optimize Column Width of all Tables" "soffice" "--norestore" "--invisible" "--headless"
+			   ("Optimize Column Width of all Tables" "%X" "--norestore" "--invisible" "--headless"
 			    "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)"))
 		    (cons :tag "Other"
 			  (string :tag "Name")
@@ -1433,7 +1436,7 @@ interpreted as below:
 
 (defcustom org-odt-convert-processes
   '(("LibreOffice"
-     "%l soffice --headless --convert-to %f --outdir %d %i")
+     "%l %X --headless --convert-to %f --outdir %d %i")
     ("unoconv"
      "%l unoconv -f %f -o %d %i")
     ("Gnumeric"
@@ -2666,6 +2669,450 @@ available:
 		      ;; (symbol :tag "Honor short caption" short-caption)
 		      (const :tag "Short captions as object label" short-caption-as-label))
 	      (const :tag "Enable Transcluded tables" transclude-sole-footnote-references-in-a-table)))
+
+
+;;;; XDG Desktop Integration
+
+(eval-when-compile
+  (require 'xdg))
+
+(defun org-odt-run-shell-cmd (cmd)
+  "Run shell command CMD.
+
+CMD is passed-through to COMMAND argument of
+`shell-command-on-region'.
+
+Returns a list (EXIT-CODE OUTPUT-STRING ERROR-STRING)."
+  (pcase-let* ((`(,executable . ,_) cmd))
+    (unless (executable-find executable)
+      (error "Command `%s' not found" executable))
+    (pcase-let* ((cmd (string-join cmd " "))
+		 (error-buffer (generate-new-buffer (format "*%s-error*" cmd)))
+		 (output-buffer (generate-new-buffer (format "*%s-output*" cmd)))
+		 (exit-code (shell-command-on-region nil nil cmd output-buffer nil error-buffer))
+		 (output-string (prog1 (with-current-buffer output-buffer
+					 (buffer-substring-no-properties (point-min) (point-max)))
+				  (kill-buffer output-buffer)))
+		 (error-string (prog1 (with-current-buffer error-buffer
+					(buffer-substring-no-properties (point-min) (point-max)))
+				 (kill-buffer error-buffer))))
+      (list exit-code output-string error-string))))
+
+(defcustom org-odt-create-custom-desktop-file-p nil
+  "Force creation of custom XDG desktop file.
+
+If you are a frequent user of ODT and ODS exporters, customize
+`org-odt-soffice-executable' and set this option to t.
+
+See `org-odt-create-custom-desktop-file' for more details."
+  :type 'boolean
+  :group 'org-export-odt)
+
+(defvar org-odt-custom-desktop-file-options
+  `(
+    :soffice-executable-signature ,(rx (and "LibreOffice"))
+    :custom-desktop-file-exec-line ("%X" "--nologo" "--norestore" "%a" "%%u" "macro:///OrgMode.Utilities.Reload()")
+    :custom-desktop-file-name-template "my-emacs-ox-odt-libreoffice-%s.desktop"
+    )
+  "Control how LO-specific desktop files are identified and created.
+
+These options control the behaviour of `org-odt-create-custom-desktop-file' and `org-odt-get-desktop-files'.")
+
+(defun org-odt-collect-desktop-files (&optional odf-mime-type)
+  "Return info about *.desktop files that handle ODF-MIME-TYPE.
+
+On a GNU/Linux system, return a plist, that contains the
+following principal key:
+
+  - `:desktop-file' :: The full-path to a '*.desktop' file
+
+and the following derived keys:
+
+  - `:desktop-map' :: An alist, which is the parsed value of
+    `:desktop-file'.
+  - `:Exec' :: The value of `Exec' key in the desktop file
+  - `:cmd' :: The full-path of the executable
+
+  - `:soffice-p' :: A boolean, which says if the command above is
+        an soffice executable.  A command is assumed to be a
+        LibreOffice command, if its output includes the string
+        \"LibreOffice\", when invoked with \"--version\" command
+        line option.
+
+  - `:local-p' :: A boolean, which says if the desktop file is part of
+       users $HOME.
+
+On a non-GNU/Linux system, return nil.
+
+Note that the list of desktop files returned includes *all*
+applications that can handle ODF-MIME-TYPE.  For example, if you
+probe for apps that can handle
+`application/vnd.oasis.opendocument.text', you may see Calibre,
+the E-book application, in addition to LibreOffice."
+  (let* ((office-executable-p
+	  (lambda (cmd)
+	    (pcase-let* ((`(,exit-code ,output-string ,_error-string)
+			  (org-odt-run-shell-cmd (list cmd "--version"))))
+	      (when (member exit-code '(0))
+		(pcase-let* (((odt-map :soffice-executable-signature) org-odt-custom-desktop-file-options))
+		  (string-match-p soffice-executable-signature output-string))))))
+	 (_preferred-desktop-file
+	  (lambda (&optional mime-type)
+	    (pcase-let* ((`(,exit-code ,output-string ,_error-string)
+			  (org-odt-run-shell-cmd
+			   (list "xdg-mime" "query" "default"
+				 (or mime-type "application/vnd.oasis.opendocument.text")))))
+	      (when (member exit-code '(0))
+		(thread-first output-string
+			      (split-string "\n")
+			      car)))))
+	 (parse-desktop-file
+	  (lambda (filename group)
+	    (unless (featurep 'xdg)
+	      (require 'xdg))
+	    (cl-letf (((symbol-function 'xdg-desktop-read-group)
+		       (lambda ()
+			 "Return an alist of group of desktop entries in the current buffer."
+			 (let (map)
+			   (while (not (or (eobp) (looking-at xdg-desktop-group-regexp)))
+			     (skip-chars-forward "[:blank:]")
+			     (cond
+			      ((eolp))
+			      ((= (following-char) ?#))
+			      ((looking-at xdg-desktop-entry-regexp)
+			       (push (cons (match-string 1) (match-string 2)) map))
+			      ;; Filter localized strings
+			      ((looking-at (rx (group-n 1 (+ (in alnum "-"))) (* blank) "[")))
+			      (t (error "Malformed line: %s"
+					(buffer-substring (point) (line-end-position)))))
+			     (forward-line))
+			   (nreverse map)))))
+	      (xdg-desktop-read-file filename group)))))
+    (pcase system-type
+      (`gnu/linux
+       (thread-last (or odf-mime-type
+			"application/vnd.oasis.opendocument.text")
+		    xdg-mime-apps
+
+                    ;; At this point, the result may look like:
+                    ;; '(
+                    ;;   "/usr/share/applications/calibre-ebook-viewer.desktop"
+		    ;;   "/usr/share/applications/calibre-gui.desktop"
+		    ;;   "/usr/share/applications/libreoffice-writer.desktop"
+		    ;;   "/usr/share/applications/libreofficedev24.2-writer.desktop"
+		    ;;   "/usr/share/applications/libreofficedev7.6-writer.desktop"
+                    ;;   )
+                    ;;
+                    ;; In other words, there could be apps other than
+                    ;; LibreOffice that advertise that they can handle a
+                    ;; ODF mimetype.
+		    (seq-map
+		     (lambda (desktop-file)
+		       (pcase-let* ((desktop-map (progn
+						   (message "Processing `%s'" desktop-file)
+						   (funcall parse-desktop-file desktop-file nil)))
+				    ((odt-map "Exec") desktop-map)
+				    (cmd (thread-first Exec
+						       (split-string " ")
+						       car)))
+			 (list
+			  :desktop-file desktop-file
+			  :desktop-map desktop-map
+			  :Exec Exec
+			  :cmd cmd
+			  :soffice-p (funcall office-executable-p cmd)
+			  :local-p (string-prefix-p (xdg-data-home) desktop-file)))))
+		    (seq-filter
+		     (pcase-lambda ((odt-map :soffice-p :cmd))
+		       (when soffice-p cmd)))))
+      (_ nil))))
+
+(defun org-odt-create-custom-desktop-file (odf-mime-type)
+  "Create a custom desktop file for ODF-MIME-TYPE.
+
+The custom desktop file uses an `Exec' line, which invokes a
+LibreOffice Basic macro `OrgMode.Utilities.Reload()' on the
+opened file. See `org-odt-transform-processes'.
+
+This modifies the behaviour of how the user's desktop opens a
+file of type ODF-MIME-TYPE (think `xdg-open') in the following
+way:
+
+  It puts LibreOffice in `auto-revert-mode', so to speak.
+
+Let me explain.
+
+When you export an `Org' file to `OpenDocumentText', and open it
+with `xdg-open', say with `C-c C-e o O', *and* LibreOffice has a
+*prior version* of that OpenDocument file already open in its UI,
+
+  - With default `Exec' line--the `Exec' line that comes with
+    distribution-provided desktop files-- , the LibreOffice
+    merely switches to the frame displaying that file, and does
+    NOT \"revert\" (or \"reload\") the newly created version of
+    OpenDocument file from the disk.
+
+    In other words, the LibreOffice continues to display stale
+    version of the OpenDocument file.
+
+  - With the modified `Exec' line, LibreOffice not only switches
+    to the frame displaying that file and but also *re-loads*
+    that OpenDocument file from the disk.
+
+    In other words, you are forcing the LibreOffice to *always*
+    display the freshest version of your document on every
+    \"export + open\" operation.
+
+When called interactively, the following steps happen:
+
+  1. You are offered a choice of ODF-MIME-TYPEs, and prompted to pick
+     one.
+
+     The list of ODF-MIME-TYPEs is collected from
+     `org-odt-file-extensions-alist'.
+     
+  2. You are offered a choice of LibreOffice executables, and prompted
+     to pick one.
+
+     The list of LibreOffice executables are compiled from the `Exec'
+     line of *all* desktop files associated with ODF-MIME-TYPE.
+
+     See `org-odt-collect-desktop-files'.
+
+  3. Once a LibreOffice executable is chosen, the choicest desktop file
+     invoking that executable is identified, and is chosen as a template
+     for the custom desktop file.
+
+The custom desktop file is created in `applications' subdir of
+`xdg-data-home', and is a replica of a choicest desktop file
+identified above save for following change:
+
+The `Exec' line is set to:
+
+    EXECUTABLE --nologo --norestore APP %u macro:///OrgMode.Utilities.Reload()
+
+EXECUTABLE is the LibreOffice command-line executable referenced
+in `Exec' line of the desktop file used in the template.
+
+APP is the command-line switch used by LibreOffice to handle
+ODF-MIME-TYPE.  For example, it is `--writer' for OpenDocumentText
+files, and `--calc' for OpenDocument Spreadsheet files.
+
+When called non-interactively, the prompts are skipped, and the
+value of `org-odt-soffice-executable' is used to identify the
+desktop file which is then used as a template.
+
+This command works only on
+
+  - GNU/Linux
+  - and if `org-odt-create-custom-desktop-file-p' is t
+
+If you are a heavy user of ODT / ODS exporter, and have multiple
+versions of LibreOffice on your system, then it is recommended
+that you manually configure `org-odt-soffice-executable', and
+turn on `org-odt-create-desktop-file-p'.  This ensures that the
+executable that is used in `org-odt-convert' and
+`org-odt-transform' commands is *same as* the executable used to
+open (think, `xdg-open') the OpenDocument file on succesful
+export."
+  (interactive
+   (let* ((choice (completing-read "MIME Type: "
+				   (thread-last org-odt-file-extensions-alist
+						(seq-keep
+						 (pcase-lambda (`(,_ ,mimetype ,_ ,app))
+						   (when (org-string-nw-p app)
+						     mimetype))))
+				   nil t)))
+     (list choice)))
+  (message "Setting odf-mime-type: %S" odf-mime-type)
+  (cond
+   ;; Case 1: Non-GNU/Linux System
+   ((not (member system-type '(gnu/linux)))
+    (message "ox-odt: System type is `%s'; Ignoring request for creating desktop files"
+	     system-type))
+   ;; Case 2: GNU/Linux System, but `org-odt-create-custom-desktop-file-p' is OFF
+   ((not org-odt-create-custom-desktop-file-p)
+    (message "ox-odt: `org-odt-create-custom-desktop-file-p' is `%s'; Refusing to create custom desktop files"
+	     org-odt-create-custom-desktop-file-p))
+   ;; Case 3: GNU/Linux System, and `org-odt-create-custom-desktop-file-p' is ON.
+   (t
+    (pcase-let* ((desktop-entries
+		  (thread-last odf-mime-type
+			       org-odt-collect-desktop-files
+			       (seq-keep
+				(lambda (it)
+				  (pcase-let* (((odt-map :cmd :local-p) it))
+				    (unless local-p
+				      (cons (executable-find cmd) it)))))))
+		 (chosen-desktop-entry
+		  (cond
+		   ;; Case 1: When called interactively, offer a list of LO executables to choose
+		   ;; from.  Subsequently, pick a desktop file that is associated with user-picked
+		   ;; executable.
+		   ((called-interactively-p 'any)
+		    (thread-last desktop-entries
+				 (funcall (lambda (it)
+					    (let* ((choices it)
+						   (chosen (completing-read "Choose LO executable: "
+									    it nil t))
+						   (choice (map-elt choices chosen)))
+					      choice)))))
+		   ;; Case 2: When *not* called interactively pick a desktop file that is associated
+		   ;; with `org-odt-soffice-executable'
+		   (t
+		    (thread-last desktop-entries
+				 (pcase--flip map-elt org-odt-soffice-executable)
+				 (funcall (lambda (it)
+					    (unless it
+					      (message "ox-odt: No desktop file associated with `%s'"
+						       org-odt-soffice-executable))
+					    it))))))
+		 ((odt-map (:desktop-map chosen-desktop-map) (:cmd chosen-cmd) (:desktop-file chosen-desktop-file))
+                  chosen-desktop-entry)
+                 (chosen-app
+		  (thread-last org-odt-file-extensions-alist
+			       (seq-keep
+				(pcase-lambda (`(,_ ,mimetype ,_ ,app))
+				  (when (string= mimetype odf-mime-type)
+				    app)))
+                               car))
+                 ((odt-map :custom-desktop-file-name-template :custom-desktop-file-exec-line) org-odt-custom-desktop-file-options))
+      (when-let* ((chosen-desktop-entry)
+		  (modified-Exec-value
+                   (thread-last custom-desktop-file-exec-line
+                                (seq-map
+                                 (lambda (it)
+                                   (format-spec it `((?a . ,(or (when chosen-app (format "--%s" chosen-app)) ""))
+                                                     (?X . ,chosen-cmd)))))
+                                (pcase--flip string-join " ")))
+		  (modified-desktop-contents (progn chosen-desktop-map
+						    (map-put! chosen-desktop-map "Exec" modified-Exec-value)
+						    (thread-last chosen-desktop-map
+								 (map-apply (lambda (k v)
+									      (format "%s=%s" k v)))
+								 (cons "[Desktop Entry]")
+								 (pcase--flip string-join "\n"))))
+		  (target-desktop-file
+                   (expand-file-name (format custom-desktop-file-name-template
+				             (or chosen-app
+                                                 (thread-last odf-mime-type
+                                                              (pcase--flip split-string "\\.")
+                                                              last
+                                                              car)))
+				     (file-name-as-directory
+				      (expand-file-name "applications"
+							(xdg-data-home))))))
+	(cond
+	 ((called-interactively-p 'any)
+          (unless (file-exists-p target-desktop-file)
+            (message "Copying `%s' to `%s'" chosen-desktop-file target-desktop-file)
+            (copy-file chosen-desktop-file target-desktop-file))
+	  (with-current-buffer (find-file-noselect target-desktop-file)
+	    (erase-buffer)
+	    (pop-to-buffer (current-buffer))
+	    (save-excursion
+	      (insert modified-desktop-contents))
+	    (save-some-buffers nil
+			       (lambda ()
+				 (string= (buffer-file-name) target-desktop-file)))))
+	 (t
+	  (write-region modified-desktop-contents nil target-desktop-file)))
+	(message "Wrote `%s'" target-desktop-file)
+	(thread-last `(("xdg-mime" "default"
+			,(shell-quote-argument (file-name-nondirectory target-desktop-file))
+			,odf-mime-type)
+		       ("update-desktop-database" ,(expand-file-name "applications" (xdg-data-home)))
+		       ("xdg-mime" "query" "default" ,odf-mime-type))
+		     (seq-map (lambda (it) (string-join it " ")))
+		     (seq-do
+		      (lambda (cmd)
+			(message "Running `%s'" cmd)
+			(shell-command cmd)))))))))
+
+(defvar org-odt-default-soffice-executables
+  '((darwin . "soffice")
+    (windows-nt . "soffice")
+    (gnu/linux . "soffice"))
+  "Alist of `system-type' and LibreOffice executable.")
+
+(defun org-odt-soffice-executables ()
+  (or
+   ;; Case 1: Pick executables that are associated with LibreOffice
+   (thread-last "application/vnd.oasis.opendocument.text"
+	        org-odt-collect-desktop-files
+                (seq-map
+		 (pcase-lambda ((odt-map :cmd))
+		   (executable-find cmd)))
+                seq-uniq
+	        (seq-sort #'string<))
+   ;; Case 2: When there are no desktop files to be found, use a catch-all entry--usually some
+   ;; variation of `soffice'--speficied in `org-odt-default-soffice-executables'.
+   (list (executable-find (alist-get system-type
+                                     org-odt-default-soffice-executables)))))
+
+;;;; ODT Soffice Executable
+
+(defcustom org-odt-soffice-executable
+  (alist-get system-type org-odt-default-soffice-executables)
+  "The preferred LibreOffice executable.
+
+The default value is based on `system-type', and the
+corresponding entry in `org-odt-default-soffice-executables'.
+
+On GNU/Linux, when you configure this option manually, you are
+offered a list of LibreOffice exectuables as inferred from `Exec'
+key of *.desktop files that is associated with MIME type
+`application/vnd.oasis.opendocument.text'.  Once the LibreOffice
+executable is set, and if `org-odt-create-custom-desktop-file-p' is
+t, create a set of custom `.desktop' files for each of the MIME
+types listed in `org-odt-file-extensions-alist'. See command
+`org-odt-create-custom-desktop-file' for details.
+
+On GNU/Linux, when this option is first set as part of loading of
+this library, creation of the above .desktop files are skipped,
+irrespective of the value of `org-odt-create-desktop-file-p'.
+The assumption is that the custom `*.desktop' files are already
+there, perhaps created as part of prior customization of this
+variable.  If you are importing configuration from elsewhere, you
+can force the creation of custom `*.desktop' files by invoking
+command `org-odt-create-custom-desktop-file'."
+  :type '(choice :convert-widget
+		 (lambda (w)
+		   (apply 'widget-convert (widget-type w)
+			  (eval (car (widget-get w :args)))))
+		 `((const :tag "None" nil)
+                   (file :tag "File" nil)
+		   ,@(mapcar (lambda (c)
+			       `(file :tag ,c ,c))
+			     (append
+                              (when-let ((cmd (executable-find
+                                               (alist-get system-type
+                                                          org-odt-default-soffice-executables))))
+                                (list cmd))
+                              (org-odt-soffice-executables)))))
+  :group 'org-export-odt
+  :set (lambda (var value)
+	 (set-default var value)
+         (message "ox-odt: Soffice executable is `%s'"
+                  org-odt-soffice-executable)
+         (cond 
+          ((and load-file-name
+                (string= (file-name-base load-file-name) "ox-odt"))
+           (message "ox-odt: Refusing to create / overwrite custom desktop file during load.
+  To create custom desktop file, do M-x customize-variable RET org-odt-soffice-executable or
+  do M-x org-odt-create-custom-desktop-file"))
+          (t
+           (when-let (((not load-file-name))
+                      ;; (org-odt-create-custom-desktop-file)
+                      ;; ((memq system-type '(gnu/linux)))
+                      value)
+             (thread-last org-odt-file-extensions-alist
+	        	  (seq-keep
+	        	   (pcase-lambda (`(,_ ,mimetype ,_ ,app))
+	        	     (unless (string= app "")
+	        	       mimetype)))
+	        	  (seq-do #'org-odt-create-custom-desktop-file)))))))
+
 
 
 ;;; Internal functions
@@ -9996,15 +10443,16 @@ IN-FILE is an OpenDocument Text document, usually created as part
 of `org-odt-export-as-odf'."
   (require 'browse-url)
   (let* ((in-file (expand-file-name in-file)))
-    (cl-loop for (purpose cmd . args) in org-odt-transform-processes
+    (cl-loop for (purpose . cmd) in org-odt-transform-processes
 	     with err-string
 	     with exit-code do
-	     (setq cmd (cons cmd
-			     (mapcar (lambda (arg)
-				       (format-spec arg `((?i . ,in-file)
-							  (?I . ,(browse-url-file-url in-file)))))
-				     args)))
-
+	     (setq cmd
+                   (mapcar
+                    (lambda (it)
+                      (format-spec it `((?i . ,in-file)
+				        (?I . ,(browse-url-file-url in-file))
+                                        (?X . ,org-odt-soffice-executable))))
+                    cmd))
 	     (message "Applying Transformation: %s" purpose)
 	     (message "Running %s" (mapconcat #'identity cmd " "))
 	     (setq err-string
@@ -10280,7 +10728,8 @@ function to create page headers:
 				   (?o . ,(shell-quote-argument out-file))
 				   (?O . ,(browse-url-file-url out-file))
 				   (?d . ,(shell-quote-argument out-dir))
-				   (?D . ,(browse-url-file-url out-dir))))))
+				   (?D . ,(browse-url-file-url out-dir))
+                                   (?X . ,org-odt-soffice-executable)))))
     (when (file-exists-p out-file)
       (delete-file out-file))
     (message "Executing %s" cmd)
