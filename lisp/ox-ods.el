@@ -286,18 +286,14 @@
 				(thread-last v
 					     (seq-map #'org-ods-table-row-element-to-lisp))))
 	     (`:add-on-table (list :add-on-table
-				   (pcase-let* ((`(,_a . (,_b . ,rest)) v))
-				     (thread-last rest
-						  (seq-map
-						   (lambda (it)
-						     (org-ods-table-row-elements-to-lisp it)))))))
+                                   (thread-last v
+                                                org-element-contents
+                                                org-ods-table-row-elements-to-lisp)))
 	     (`:add-on-table-sans-special-markers
 	      (list :add-on-table-sans-special-markers
-		    (pcase-let* ((`(,_a . (,_b . ,rest)) v))
-		      (thread-last rest
-				   (seq-map
-				    (lambda (it)
-				      (org-ods-table-row-elements-to-lisp it)))))))
+                    (thread-last v
+                                 org-element-contents
+                                 org-ods-table-row-elements-to-lisp)))
 	     (`:table (list :table (if quickp 'elided v)))))))
       (seq-filter #'identity))))
 
