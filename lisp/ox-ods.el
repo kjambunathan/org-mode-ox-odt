@@ -821,94 +821,96 @@
 
 ;;; Field and Field Ranges
 
+(defun org-ods-do-parse-field-range ()
+  (with-peg-rules
+      (
+       (ABS-N (substring (+ [digit]))
+	      `(it -- (string-to-number it)))
+       (SIGN (substring (or "-" "+"))
+	     `(it -- (string-to-number (concat it "1"))))
+       (REL-N (and SIGN ABS-N
+		   `(sign n -- (* sign n))))
+       (OPTIONAL-REL-N (or (and REL-N
+				`(it -- it))
+			   (and (substring "")
+				`(_it -- nil))))
+       (Is (substring (+ "I"))
+	   `(it -- (length it)))
+       (LEFT-ARROWS (substring (+ "<")))
+       (RIGHT-ARROWS (substring (+ ">")))
+       (ROW-PART (and "@"
+		      (or
+		       (and REL-N
+			    `(it -- (list :row-num 'self :row-offset it)))
+		       (and ABS-N
+			    `(it
+			      -- (list :row-num it)))
+		       (and SIGN Is OPTIONAL-REL-N
+			    `(sign num-is rel-n-maybe -- (org-combine-plists
+							  (list :row-num 'self
+								:row-offset-hline
+								(list 'hline (* sign num-is)))
+							  (when rel-n-maybe
+							    (list :row-offset rel-n-maybe)))))
+		       (and Is OPTIONAL-REL-N
+			    `(num-is rel-n
+				     -- (org-combine-plists
+					 (list :row-num (list 'hline num-is))
+					 (when rel-n
+					   (list :row-offset rel-n)))))
+		       (and LEFT-ARROWS
+			    `(it -- (list :row-num 'first
+					  :row-offset (1- (length it)))))
+		       (and RIGHT-ARROWS
+			    `(it -- (list :row-num 'last
+					  :row-offset (1- (length it))))))))
+       (COL-PART
+	(and "$" (or (and REL-N
+			  `(it -- (list :col-num 'self :col-offset it)))
+		     (and ABS-N
+			  `(it
+			    -- (list :col-num it)))
+		     (and LEFT-ARROWS
+			  `(it -- (list :col-num 'first
+					:col-offset (1- (length it)))))
+		     (and RIGHT-ARROWS
+			  `(it -- (list :col-num 'last
+					:col-offset (1- (length it))))))))
+       (OPTIONAL-ROW-PART (or (and ROW-PART
+				   `(it -- it))
+			      (and (substring "")
+				   `(_it -- nil))))
+       (OPTIONAL-COL-PART (or (and COL-PART
+				   `(it -- it))
+			      (and (substring "")
+				   `(_it -- nil))))
+       (FIELD (or (and ROW-PART OPTIONAL-COL-PART
+		       `(r-part col-part -- (org-combine-plists
+					     r-part col-part)))
+		  (and COL-PART
+		       `(col-part -- col-part))))
+       (START-FIELD FIELD)
+       (END-FIELD FIELD)
+       (OPTIONAL-END-FIELD
+	(and (or (and ".." END-FIELD)
+		 (and (substring "")
+		      `(_it -- nil)))))
+       (FIELD-RANGE (and START-FIELD OPTIONAL-END-FIELD
+			 `(start end -- (cons start end))))
+       (FIELD-RANGE-STRICT (and bob FIELD-RANGE eob
+				`(it -- it))))
+    (condition-case err
+	(car (peg-parse FIELD-RANGE-STRICT))
+      (peg-search-failed
+       (error "org-ods-parse-field-range: `%s' does NOT parse as a FIELD or a FIELD-RANGE => (%S)"
+	      (buffer-substring-no-properties (point-min) (point-max))
+	      err)))))
+
 (defun org-ods-parse-field-range (string)
   (with-temp-buffer
     (save-excursion
       (insert string))
-    (with-peg-rules
-	(
-	 (ABS-N (substring (+ [digit]))
-		`(it -- (string-to-number it)))
-	 (SIGN (substring (or "-" "+"))
-	       `(it -- (string-to-number (concat it "1"))))
-	 (REL-N (and SIGN ABS-N
-		     `(sign n -- (* sign n))))
-	 (OPTIONAL-REL-N (or (and REL-N
-				  `(it -- it))
-			     (and (substring "")
-				  `(_it -- nil))))
-	 (Is (substring (+ "I"))
-	     `(it -- (length it)))
-	 (LEFT-ARROWS (substring (+ "<")))
-	 (RIGHT-ARROWS (substring (+ ">")))
-	 (ROW-PART (and "@"
-			(or
-			 (and REL-N
-			      `(it -- (list :row-num 'self :row-offset it)))
-			 (and ABS-N
-			      `(it
-				-- (list :row-num it)))
-			 (and SIGN Is OPTIONAL-REL-N
-			      `(sign num-is rel-n-maybe -- (org-combine-plists
-							    (list :row-num 'self
-								  :row-offset-hline
-								  (list 'hline (* sign num-is)))
-							    (when rel-n-maybe
-							      (list :row-offset rel-n-maybe)))))
-			 (and Is OPTIONAL-REL-N
-			      `(num-is rel-n
-				       -- (org-combine-plists
-					   (list :row-num (list 'hline num-is))
-					   (when rel-n
-					     (list :row-offset rel-n)))))
-			 (and LEFT-ARROWS
-			      `(it -- (list :row-num 'first
-					    :row-offset (1- (length it)))))
-			 (and RIGHT-ARROWS
-			      `(it -- (list :row-num 'last
-					    :row-offset (1- (length it))))))))
-	 (COL-PART
-	  (and "$" (or (and REL-N
-			    `(it -- (list :col-num 'self :col-offset it)))
-		       (and ABS-N
-			    `(it
-			      -- (list :col-num it)))
-		       (and LEFT-ARROWS
-			    `(it -- (list :col-num 'first
-					  :col-offset (1- (length it)))))
-		       (and RIGHT-ARROWS
-			    `(it -- (list :col-num 'last
-					  :col-offset (1- (length it))))))))
-	 (OPTIONAL-ROW-PART (or (and ROW-PART
-				     `(it -- it))
-				(and (substring "")
-				     `(_it -- nil))))
-	 (OPTIONAL-COL-PART (or (and COL-PART
-				     `(it -- it))
-				(and (substring "")
-				     `(_it -- nil))))
-	 (FIELD (or (and ROW-PART OPTIONAL-COL-PART
-	                 `(r-part col-part -- (org-combine-plists
-				               r-part col-part)))
-                    (and COL-PART
-	                 `(col-part -- col-part))))
-	 (START-FIELD FIELD)
-	 (END-FIELD FIELD)
-	 (OPTIONAL-END-FIELD
-	  (and (or (and ".." END-FIELD)
-		   (and (substring "")
-		        `(_it -- nil)))))
-	 (FIELD-RANGE (and START-FIELD OPTIONAL-END-FIELD
-			   `(start end -- (cons start end))))
-
-         (FIELD-RANGE-STRICT (and bob FIELD-RANGE eob
-			          `(it -- it))))
-      (condition-case err
-	  (car (peg-parse FIELD-RANGE-STRICT))
-	(peg-search-failed
-         (error "org-ods-parse-field-range: `%s' does NOT parse as a FIELD or a FIELD-RANGE => (%S)"
-                string
-                err))))))
+    (org-ods-do-parse-field-range)))
 
 (defvar org-ods--test-refs
   '(
