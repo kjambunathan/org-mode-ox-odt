@@ -887,21 +887,28 @@
 				     `(it -- it))
 				(and (substring "")
 				     `(_it -- nil))))
-	 (FIELD (and OPTIONAL-ROW-PART OPTIONAL-COL-PART
-	             `(r-part col-part -- (org-combine-plists
-				           r-part col-part))))
+	 (FIELD (or (and ROW-PART OPTIONAL-COL-PART
+	                 `(r-part col-part -- (org-combine-plists
+				               r-part col-part)))
+                    (and COL-PART
+	                 `(col-part -- col-part))))
 	 (START-FIELD FIELD)
 	 (END-FIELD FIELD)
 	 (OPTIONAL-END-FIELD
 	  (and (or (and ".." END-FIELD)
 		   (and (substring "")
 		        `(_it -- nil)))))
-	 (FIELD-RANGE (and START-FIELD OPTIONAL-END-FIELD eob
-			   `(start end -- (cons start end)))))
+	 (FIELD-RANGE (and START-FIELD OPTIONAL-END-FIELD
+			   `(start end -- (cons start end))))
+
+         (FIELD-RANGE-STRICT (and bob FIELD-RANGE eob
+			          `(it -- it))))
       (condition-case err
-	  (car (peg-parse FIELD-RANGE))
-	(error
-         (error "org-ods-parse-field-range: `%s' is malformed => (%S)" string err))))))
+	  (car (peg-parse FIELD-RANGE-STRICT))
+	(peg-search-failed
+         (error "org-ods-parse-field-range: `%s' does NOT parse as a FIELD or a FIELD-RANGE => (%S)"
+                string
+                err))))))
 
 (defvar org-ods--test-refs
   '(
