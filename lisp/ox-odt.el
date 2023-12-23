@@ -2682,7 +2682,8 @@ available:
 CMD is passed-through to COMMAND argument of
 `shell-command-on-region'.
 
-Returns a list (EXIT-CODE OUTPUT-STRING ERROR-STRING)."
+Return a list (EXIT-CODE OUTPUT-STRING ERROR-STRING), if CMD
+exists.  Otherwise, throw an error."
   (pcase-let* ((`(,executable . ,_) cmd))
     (unless (executable-find executable)
       (error "Command `%s' not found" executable))
@@ -2751,11 +2752,12 @@ probe for apps that can handle
 the E-book application, in addition to LibreOffice."
   (let* ((office-executable-p
 	  (lambda (cmd)
-	    (pcase-let* ((`(,exit-code ,output-string ,_error-string)
-			  (org-odt-run-shell-cmd (list cmd "--version"))))
-	      (when (member exit-code '(0))
-		(pcase-let* (((odt-map :soffice-executable-signature) org-odt-custom-desktop-file-options))
-		  (string-match-p soffice-executable-signature output-string))))))
+            (when (executable-find cmd)
+              (pcase-let* ((`(,exit-code ,output-string ,_error-string)
+			    (org-odt-run-shell-cmd (list cmd "--version"))))
+	        (when (member exit-code '(0))
+		  (pcase-let* (((odt-map :soffice-executable-signature) org-odt-custom-desktop-file-options))
+		    (string-match-p soffice-executable-signature output-string)))))))
 	 (_preferred-desktop-file
 	  (lambda (&optional mime-type)
 	    (pcase-let* ((`(,exit-code ,output-string ,_error-string)
@@ -2815,13 +2817,14 @@ the E-book application, in addition to LibreOffice."
 				    (cmd (thread-first Exec
 						       (split-string " ")
 						       car)))
-			 (list
-			  :desktop-file desktop-file
-			  :desktop-map desktop-map
-			  :Exec Exec
-			  :cmd cmd
-			  :soffice-p (funcall office-executable-p cmd)
-			  :local-p (string-prefix-p (xdg-data-home) desktop-file)))))
+                         (when (executable-find cmd)
+                           (list
+			    :desktop-file desktop-file
+			    :desktop-map desktop-map
+			    :Exec Exec
+			    :cmd cmd
+			    :soffice-p (funcall office-executable-p cmd)
+			    :local-p (string-prefix-p (xdg-data-home) desktop-file))))))
 		    (seq-filter
 		     (pcase-lambda ((odt-map :soffice-p :cmd))
 		       (when soffice-p cmd)))))
