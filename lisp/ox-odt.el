@@ -5090,7 +5090,7 @@ Define the following themes to avoid inconsistent theming of source blocks\n\n%S
     (when (file-exists-p target)
       (delete-file target))
     ;; Zip up the xml files.
-    (let ((coding-system-for-write 'no-conversion) exitcode err-string)
+    (let (exitcode err-string)
       (message "Create OpenDocument file `%s'..." target)
       ;; Switch temporarily to content.xml.  This way Zip
       ;; process will inherit `org-odt-zip-dir' as the current
