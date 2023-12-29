@@ -25,9 +25,17 @@
 
 ;;; Code:
 
+(require 'map)
 (require 'dom)
 
 ;;;; Misc. Helpers
+
+(defmacro pcase--flip-3ary (fun arg1 arg2 arg3)
+  ;; `pcase--flip-3ary' replaces `map--pcase-map-elt'.  Note that
+  ;; `map--pcase-map-elt' is only available on Emacs 30, the development
+  ;; branch, and not on Emacs 29.1, the current release branch.  This
+  ;; definition allows compiling against Emacs 29.
+  `(,fun ,arg3 ,arg1 ,arg2))
 
 (defun odt-map--make-pcase-bindings (args)
   (thread-last args
@@ -35,20 +43,20 @@
 		(lambda (it)
 		  (pcase it
 		    (`(,key ,var)
-		     `(app (map--pcase-map-elt ,key nil)
+		     `(app (pcase--flip-3ary map-elt ,key nil)
 			   ,var))
 		    (`(,key ,var ,default)
-		     `(app (map--pcase-map-elt ,key ,default)
+		     `(app (pcase--flip-3ary map-elt ,key ,default)
 			   ,var))
 		    ((pred keywordp)
 		     (let ((var (intern (substring (symbol-name it) 1))))
 		       `(app (pcase--flip map-elt ,it) ,var)))
 		    ((pred symbolp)
-                     (let ((var it))
-                       `(app (pcase--flip map-elt ',it) ,var)))
-                    ((pred stringp)
-                     (let ((var (intern it)))
-                       `(app (pcase--flip map-elt ,it) ,var))))))))
+		     (let ((var it))
+		       `(app (pcase--flip map-elt ',it) ,var)))
+		    ((pred stringp)
+		     (let ((var (intern it)))
+		       `(app (pcase--flip map-elt ,it) ,var))))))))
 
 (pcase-defmacro odt-map (&rest args)
   `(and (pred mapp)
