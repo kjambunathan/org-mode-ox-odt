@@ -30,8 +30,8 @@
 
 ;;;; Misc. Helpers
 
-(defmacro pcase--flip-3ary (fun arg1 arg2 arg3)
-  ;; `pcase--flip-3ary' replaces `map--pcase-map-elt'.  Note that
+(defmacro odt-pcase--flip-3ary (fun arg1 arg2 arg3)
+  ;; `odt-pcase--flip-3ary' replaces `map--pcase-map-elt'.  Note that
   ;; `map--pcase-map-elt' is only available on Emacs 30, the development
   ;; branch, and not on Emacs 29.1, the current release branch.  This
   ;; definition allows compiling against Emacs 29.
@@ -43,10 +43,10 @@
 		(lambda (it)
 		  (pcase it
 		    (`(,key ,var)
-		     `(app (pcase--flip-3ary map-elt ,key nil)
+		     `(app (odt-pcase--flip-3ary map-elt ,key nil)
 			   ,var))
 		    (`(,key ,var ,default)
-		     `(app (pcase--flip-3ary map-elt ,key ,default)
+		     `(app (odt-pcase--flip-3ary map-elt ,key ,default)
 			   ,var))
 		    ((pred keywordp)
 		     (let ((var (intern (substring (symbol-name it) 1))))
