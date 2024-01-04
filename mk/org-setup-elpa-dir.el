@@ -4,7 +4,7 @@
 
 ;; Author: Jambunathan K <kjambunathan@gmail.com>
 ;; Version:
-;; Homepage: https://github.com/kjambunathan/dotemacs
+;; Homepage: https://github.com/kjambunathan/org-mode-ox-odt
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
