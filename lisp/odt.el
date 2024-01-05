@@ -30,6 +30,15 @@
 
 ;;;; Misc. Helpers
 
+(defun odt-string-to-number (s trim)
+  (with-temp-buffer
+    (save-excursion
+      (insert (if trim (org-trim s) s)))
+    (when-let* ((x (read (current-buffer)))
+		((eobp))
+		((numberp x)))
+      x)))
+
 (defmacro odt-pcase--flip-3ary (fun arg1 arg2 arg3)
   ;; `odt-pcase--flip-3ary' replaces `map--pcase-map-elt'.  Note that
   ;; `map--pcase-map-elt' is only available on Emacs 30, the development

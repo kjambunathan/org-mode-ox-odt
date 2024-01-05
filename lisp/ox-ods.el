@@ -1630,17 +1630,7 @@ holding export options."
   ;;       		 :el-properties ;; (cadr table-cell)
   ;;       		 )
   ;;       	   (org-ods-debug--op-on-element "TRANSCODING" table-cell))
-  (let* ((to-number (lambda (s trim)
-		      (with-temp-buffer
-			(save-excursion
-			  (insert (if trim
-				      (org-trim s)
-				    s)))
-			(when-let* ((x (read (current-buffer)))
-				    ((eobp))
-				    ((numberp x)))
-			  x))))
-	 (el-contents (org-element-contents table-cell))
+  (let* ((el-contents (org-element-contents table-cell))
 	 (content (car el-contents))
 	 (rest (cdr el-contents)))
     (when (and (null rest) content)
@@ -1668,7 +1658,7 @@ holding export options."
 	        "")))
        ;; Float
        ((stringp content)
-	(when-let* ((number (funcall to-number content 'trim)))
+	(when-let* ((number (odt-string-to-number content 'trim)))
 	  (list :data-type 'float
 		:attributes
 		(format "office:value=\"%s\" office:value-type=\"float\""
