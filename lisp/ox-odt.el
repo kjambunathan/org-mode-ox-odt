@@ -906,6 +906,68 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 
 
 
+;;; Developer Options
+
+(defvar org-odt-debug nil)
+
+(defvar org-odt-debug-log-buffer nil)
+
+(defun org-odt-log-object (lisp-object &optional heading level)
+  (when org-odt-debug-log-buffer
+    (with-current-buffer org-odt-debug-log-buffer
+      (goto-char (point-max))
+      (when heading
+	(unless level
+	  (setq level 1))
+	(insert "\n"
+		(string-join (cons ";;" (make-list level ";"))) " " (upcase heading) "\n"))
+      (insert (or (unless heading "\n") "")
+	      (pp-to-string lisp-object)))))
+
+(defun org-odt-log-init (tag)
+  (cond
+   (org-odt-debug
+    (when-let* (
+		(buffer (get-buffer-create (format "Org %s Debug" tag)))
+		;; (buffer (generate-new-buffer (format "Org %s Debug" tag)))
+		)
+      (with-current-buffer buffer
+	(erase-buffer)
+	(current-buffer))))
+   (t
+    (prog1 (when-let* ((buffer (get-buffer (format "Org %s Debug" tag))))
+	     (kill-buffer buffer))))))
+
+(defun org-odt-pop-to-debug-log ()
+  (when-let ((debug-buffer org-odt-debug-log-buffer))
+    (with-current-buffer debug-buffer
+      (emacs-lisp-mode)
+      (goto-char (point-min))
+      (save-excursion
+	(while (re-search-forward (rx "\\n") nil t)
+	  (replace-match "\n" t t)))
+      (unless (= (point-min) (point-max))
+        (pop-to-buffer (current-buffer))))))
+
+(defmacro org-odt-with-debug-log (tag &rest body)
+  (declare (indent 1))
+  `(let ((org-odt-debug-log-buffer (org-odt-log-init ,tag)))
+     (prog1 (progn ,@body)
+       ;; Prettify Debug Log
+       (org-odt-pop-to-debug-log))))
+
+(defmacro org-odt-log-vars (tag &rest vars)
+  `(org-odt-log-object (list ,tag
+			     ,@(seq-mapcat
+			        (lambda (it)
+			          (cond
+			           ((keywordp it)
+			            (list it (intern (substring (symbol-name it) 1 -1))))
+			           ((symbolp it) (list (intern (format ":%s" (symbol-name it))) it))))
+			        vars))))
+
+
+
 ;;; User Configuration Variables
 
 (defgroup org-export-odt nil
@@ -10358,6 +10420,10 @@ formula file."
 
 ;;;; Export to OpenDocument Text
 
+(defmacro org-odt-export-as (backend &optional subtreep visible-only body-only ext-plist)
+  `(org-odt-with-debug-log ,backend
+     (org-export-as ,backend ,subtreep ,visible-only ,body-only ,ext-plist)))
+
 (defun org-odt-export-to-odt-backend
     (backend &optional async subtreep visible-only body-only ext-plist)
   "Export current buffer to BACKEND or a OpenDocument XML file.
@@ -10407,7 +10473,7 @@ format, `org-odt-preferred-output-format' or XML format."
 		`(lambda (outfile)
 		   (org-export-add-to-stack (expand-file-name outfile) ',backend))
 	      `(let* ((output
-		       (org-export-as
+		       (org-odt-export-as
 			',backend ,subtreep ,visible-only ,body-only
 			',ext-plist)))
 		 (if (not ,body-only)
@@ -10420,8 +10486,8 @@ format, `org-odt-preferred-output-format' or XML format."
 		     (org-kill-new output))
 		   ,outfile)
 		 ,outfile))
-	  (let ((output (org-export-as
-			 backend subtreep visible-only body-only ext-plist)))
+	  (let ((output (org-odt-export-as
+                         backend subtreep visible-only body-only ext-plist)))
 	    (if (not body-only)
 		output
 	      (with-temp-buffer
@@ -10698,8 +10764,8 @@ function to create page headers:
 	  (subtreep nil)
 	  (visible-only nil)
 	  (body-only t))
-      (let ((output (org-export-as backend subtreep visible-only body-only
-				   ext-plist)))
+      (let ((output (org-odt-export-as backend subtreep visible-only body-only
+				       ext-plist)))
 	(with-temp-buffer
 	  (insert output)
 	  (goto-char (point-min))

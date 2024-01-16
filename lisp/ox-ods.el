@@ -30,22 +30,7 @@
 (require 'ox-odt)
 (require 'peg)
 
-(defvar org-ods-debug nil)
-
-(defvar org-ods-debug-buffer
-  "*Org Ods Debug*")
-
-(defun org-ods-message (lisp-object &optional heading level)
-  (when org-ods-debug
-    (with-current-buffer (get-buffer-create org-ods-debug-buffer)
-      (goto-char (point-max))
-      (when heading
-	(unless level
-	  (setq level 1))
-	(insert "\n"
-		(string-join (cons ";;" (make-list level ";"))) " " (upcase heading) "\n"))
-      (insert (or (unless heading "\n") "")
-	      (pp-to-string lisp-object)))))
+(defalias 'org-ods-message 'org-odt-log-object)
 
 (defun org-ods-debug--op-on-element (op el)
   (cl-labels ((org-ods-debug--object-signature (el)
@@ -1439,7 +1424,8 @@
 
 ;;;###autoload
 (defun org-dblock-write:ods-table (args)
-  (apply #'org-ods-do-write-ods-table args))
+  (org-odt-with-debug-log "Ods Dblock"
+   (apply #'org-ods-do-write-ods-table args)))
 
 (cl-defun org-ods-do-write-ods-table (&key label &allow-other-keys)
   "Fetch table named LABEL, and run `org-ods-translate' on it."
@@ -1695,22 +1681,8 @@ format, `org-ods-preferred-output-format'."
 	 (org-ods-encode-cell-range-function 'org-ods-encode-cell-range-for-ods)
 	 (org-ods-cell-mapper nil)
 	 (org-odt-convert-process org-ods-convert-process))
-    ;; Clear Debug Log
-    (when-let* ((debug-buf (get-buffer "*Org Ods Debug*")))
-      (with-current-buffer debug-buf
-	(erase-buffer)))
-    (prog1
-	;; Export
-	(org-odt-export-to-odt-backend backend async subtreep
-				       visible-only body-only ext-plist)
-      ;; Prettify Debug Log
-      (when-let ((debug-buffer (get-buffer org-ods-debug-buffer)))
-	(with-current-buffer debug-buffer
-	  (emacs-lisp-mode)
-	  (goto-char (point-min))
-	  (save-excursion
-	    (while (re-search-forward (rx "\\n") nil t)
-	      (replace-match "\n" t t))))))))
+    (org-odt-export-to-odt-backend backend async subtreep
+				   visible-only body-only ext-plist)))
 
 ;;;; Define Back-End
 
