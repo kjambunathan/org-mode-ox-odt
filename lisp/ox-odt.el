@@ -285,8 +285,28 @@ standard Emacs.")
   "Map a OpenDocument file extension, to it's mimetype and description.")
 
 (defconst org-odt-supported-file-types
-  '("odt" "odf" "odm" "ods")
+  '("odt" "ods" "odm" "odf")
   "List of OpenDocument file extensions that this backend can generate.")
+
+(defconst org-odt-supported-backends
+  (mapcar #'intern org-odt-supported-file-types)
+  "List of OpenDocument backends supported by this exporter.")
+
+(defconst org-odt-backend-and-file-types
+  (let ((extn-and-mimetype
+         (thread-last org-odt-file-extensions-alist
+		      (seq-keep
+		       (pcase-lambda (`(,extn ,mime-type))
+		         (cons extn mime-type))))))
+    (thread-last org-odt-supported-backends
+	         (seq-map
+		  (lambda (backend)
+		    (let* ((extn (symbol-name backend))
+			   (mimetype (map-elt extn-and-mimetype extn))
+			   (mimetype-of-template-files (format "%s-template" mimetype))
+			   (extn-for-mimetype-template (car (rassoc mimetype-of-template-files extn-and-mimetype))))
+		      `(,backend ,extn ,@(when extn-for-mimetype-template
+					   `(,extn-for-mimetype-template)))))))))
 
 (defconst org-odt-page-break-style-format "
 <style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\" style:master-page-name=\"%s\">
@@ -11482,8 +11502,103 @@ This function is used for prettifying XML files when user option
     (nxml-mode)
     (indent-region (point-min) (point-max))))
 
+(defun org-odt-dom-from-a-styles-file (factory-styles-p)
+  (pcase-let* ((all-style-file-extensions
+                (apply #'append (map-values org-odt-backend-and-file-types)))
+               (style-file-extension-and-backend
+                (thread-last org-odt-backend-and-file-types
+                             (seq-mapcat (pcase-lambda (`(,backend . ,extns))
+                                           (thread-last extns (seq-map (lambda (it) (cons it backend))))))))
+               (xml-file-to-dom (lambda (xml-file)
+                                  (prog1 (ignore-errors
+                                           (odt-dom:file->dom xml-file 'strip-comment-nodes-p))
+                                    (message "File `%s' doesn't look like OpenDocument XML file"
+                                             xml-file))))
+               ;; (all-backends '(odt ods odm))
+               (backend-and-factory-style-files
+                (thread-last ;; all-backends
+                  '(odt ods odm)
+                  (seq-map
+                   (lambda (backend)
+                     (cons backend
+                           (mapcar (lambda (it)
+                                     (org-odt-get-backend-property backend it))
+                                   '(:styles-file :content-template-file)))))))
+               (_all-factory-styles-files (seq-mapcat #'cdr backend-and-factory-style-files)))
+    (cond
+     ;; Case 1: User wants to go with one of the default style files.
+     (factory-styles-p
+      (let* ((which-backend
+              (intern (completing-read "OpenDocument Backend: "
+                                       (mapcar #'symbol-name '(odt ods)))))
+             (styles-file (completing-read (format "[%s] Which Factory Styles file: " which-backend)
+                                           (alist-get which-backend backend-and-factory-style-files)
+                                           nil t nil nil)))
+        (list :od-file nil
+              :xml-file styles-file
+              :backend which-backend
+              :dom (funcall xml-file-to-dom styles-file))))
+     ;; Case 2: User wants to go with his own file, instead of one of
+     ;; the pre-packaged styles files.
+     (t
+      (let* (
+             (styles-file (read-file-name
+                           ;; Indicate allowable file extensions while prompting
+                           (thread-last all-style-file-extensions
+                                        (cons "xml")
+                                        (seq-map (lambda (it) (format ".%s" it)))
+                                        (pcase--flip string-join "|")
+                                        (format "OpenDocument file [%s]: "))
+                           nil ; dir
+                           nil ; default-file-name
+                           nil ; mustmatch
+                           nil ; initial
+                           ;; predicate
+                           (when nil
+                             (lambda (file-name)
+                               (or (let ((extn (file-name-extension file-name)))
+                                     (member extn (cons "xml" all-style-file-extensions)))
+                                   (file-directory-p file-name)) ))))
+             (styles-file-extension (file-name-extension styles-file)))
+        (cond
+         ;; Case 1: Input file is a OpenDocument file.  But we are
+         ;; looking for a component XML file. So, unzip the OpenDocument
+         ;; file prompt the user to pick one amont `content.xml' or
+         ;; `styles.xml' file.
+         ((member styles-file-extension all-style-file-extensions)
+          (let* ((zip-dir (file-name-as-directory (make-temp-file "odt-yank-styles-" t)))
+                 (zipfile styles-file)
+                 (members '("styles.xml" "content.xml"))
+                 (styles-file
+                  (progn
+                    (org-odt--zip-extract zipfile members zip-dir)
+                    (read-file-name (format "[%s] OD XML File name: "
+                                            (file-name-nondirectory zipfile))
+                                    zip-dir
+                                    (mapcar (lambda (m)
+                                              (expand-file-name m zip-dir))
+                                            members)
+                                    t nil nil))))
+            (list :od-file zipfile
+                  :xml-file styles-file
+                  :backend (map-elt style-file-extension-and-backend styles-file-extension)
+                  :dom (prog1 (funcall xml-file-to-dom styles-file)
+                         (delete-directory zip-dir t t)))))
+         ;; Case 2: Input file is an xml file.
+         ((string= "xml" styles-file-extension)
+          (list :od-file styles-file
+                :xml-file styles-file
+                :backend 'unknown
+                :dom (funcall xml-file-to-dom styles-file)))
+         ;; Case 3: Input file doesn't have one of the desired extensions.
+         (t
+          (message "File's extension `%s' is not one among '%S"
+                   (file-name-extension styles-file)
+                   `(,all-style-file-extensions "xml"))
+          nil)))))))
+
 ;;;###autoload
-(defun org-odt-yank-styles (&optional yank-method which-style xml-string)
+(defun org-odt-yank-styles (&optional yank-method which-backend which-style xml-string)
   "Yank `current-kill', (presumably) a ODT styles XML, at point.
 
 `current-kill' is assumed to be a XML string, most likely an XML
@@ -11506,46 +11621,70 @@ value of prefix argument.
 
      - no prefix arg :: Insert styles using in buffer keywords.
 
-       You will be prompted for up one of the following styles-related
-       keywords
+       You will be prompted for the following:
 
-       - #+odt_extra_styles:
-       - #+odt_extra_automatic_styles:
-       - #+odt_master_styles:
-       - #+odt_automatic_styles:
+       1. the OpenDocument backend in to which the style has to be
+          included and 
+
+       2. the target position where the style has to be spliced.
+
+          - extra_styles:
+          - extra_automatic_styles:
+          - master_styles:
+          - automatic_styles:
+
+       The OpenDocument style blob will be inserted with a
+       backend-specific keyword.  For example, if you chose the
+       target backend as ODT then you will insert the style blob
+       with one of the following style keywords.
+
+          #+odt_extra_styles: ....
+          #+odt_extra_automatic_styles: ...
+          #+odt_master_styles: ....
+          #+odt_automatic_styles: ...
+
+       If you chose the ODS backend, then you will insert the
+       style blob with one of the following style keywords
+       instead:
+
+          #+ods_extra_styles: ....
+          #+ods_extra_automatic_styles: ...
+          #+ods_master_styles: ....
+          #+ods_automatic_styles: ...
 
      - single prefix arg :: Insert styles using a `nxml-mode' src-block
 
-       You will be prompted for up one of the following styles-related
-       keywords
+       As in the no-prefix case, you will prompted for the target
+       backends and the target position in to which the style's
+       blob has to be spliced.
 
-       - extra_styles
-       - extra_automatic_styles
-       - master_styles
-       - automatic_styles
+       Depending on the backends you chose, an `nxml-mode' like
+       the one below will be inserted
 
-       Depending on your input, an `nxml-mode' like the one below will
-       be inserted
-
-           #+ATTR_ODT: :target \"extra_styles\"
+           #+ATTR_ODT: :target \"extra_styles\" :backends (odt)
            #+begin_src nxml
              ...
            #+end_src
 
-           #+ATTR_ODT: :target \"extra_automatic_styles\"
+           #+ATTR_ODT: :target \"extra_automatic_styles\" :backends (ods)
            #+begin_src nxml
              ...
            #+end_src
 
-           #+ATTR_ODT: :target \"master_styles\"
+           #+ATTR_ODT: :target \"master_styles\" :backends (any)
            #+begin_src nxml
              ...
            #+end_src
 
-           #+ATTR_ODT: :target \"automatic_styles\"
+           #+ATTR_ODT: :target \"automatic_styles\" :backends (odt ods)
            #+begin_src nxml
              ...
            #+end_src
+
+       The above example illustrates results with various values
+       of backends.  Multiple values for backends implies that
+       that the same blob can be routed to one or more or any
+       backend.
 
      - double prefix arg :: Insert prettified style without any style
        decorations.
@@ -11578,15 +11717,17 @@ YANK-METHOD, a symbol, can be one of
 
 WHICH-STYLE, a keyword, can be one of
 
-    - `:odt-extra-styles'
-    - `:odt-extra-automatic-styles'
-    - `:odt-master-styles'
-    - `:odt-automatic-styles'
+    - `:extra-styles'
+    - `:extra-automatic-styles'
+    - `:master-styles'
+    - `:automatic-styles'
 
 If you are yanking a style, rather than an arbitrary blob of XML,
 use the command `org-odt-insert-style-name-or-style-definition-from-file'."
   (interactive "P")
-  (let* ((yank-method-1
+  (let* ((all-backends '(odt ods))
+         (which-target which-style)
+         (yank-method-1
 	  (cond
 	   ;; In a non `org-mode' buffer, ignore the prefix argument
 	   ;; and insert style the prettified string devoid of any
@@ -11641,7 +11782,49 @@ use the command `org-odt-insert-style-name-or-style-definition-from-file'."
 	     (progn (skip-chars-backward "\n")
 		    (point))
 	     (point-max))
-	    (buffer-substring-no-properties (point-min) (point-max)))))
+	    (buffer-substring-no-properties (point-min) (point-max))))
+         (ensure-which-target
+	  (lambda (which-target &optional context)
+            (let* ((which-style-to-target '(
+				            (:extra-styles . "extra_styles")
+				            (:extra-automatic-styles . "extra_automatic_styles")
+				            (:master-styles . "master_styles")
+				            (:automatic-styles . "automatic_styles"))))
+              (or (alist-get which-target which-style-to-target)
+                  (completing-read (format "%sTarget: "
+                                           (or (when context (format "[%s] " context)) ""))
+                                   (map-values which-style-to-target))))))
+	 (ensure-which-backend
+	  (lambda (which-backend)
+	    (or (when (memq which-backend all-backends)
+                  which-backend)
+                (intern
+		 (completing-read "OD Backend: "
+				  (mapcar #'symbol-name all-backends))))))
+         (ensure-export-keyword
+	  (lambda (which-backend which-target)
+	    (let* ((which-backend (funcall ensure-which-backend which-backend))
+		   (which-target (funcall ensure-which-target which-target
+                                          (format "%s" which-backend))))
+              (format "#+%s_%s: " which-backend which-target))))
+	 (ensure-which-backends
+	  (lambda (which-backend &optional context)
+	    (cond
+	     ((memq which-backend all-backends)
+	      (list which-backend))
+	     (t
+              (thread-last
+		(completing-read-multiple (format "%sOne or more OD Backends: "
+                                                  (or (when context (format "[%s] " context)) ""))
+		                          (mapcar (lambda (backend)
+			                            (cons (symbol-name backend)
+				                          backend))
+                                                  `(,@all-backends any)))
+		(seq-map #'intern)
+		(funcall (lambda (backends)
+			   (or (when (seq-contains-p backends 'any)
+				 '(any))
+			       backends)))))))))
     (cl-case yank-method-1
       (simple
        (save-excursion (insert prettified-text)))
@@ -11663,18 +11846,7 @@ use the command `org-odt-insert-style-name-or-style-definition-from-file'."
 			  (point))
 	  (point))
 	 (string-rectangle start (line-beginning-position)
-			   (let* ((choices '(
-					     (:odt-extra-styles            . "#+odt_extra_styles: ")
-					     (:odt-extra-automatic-styles  . "#+odt_extra_automatic_styles: ")
-					     (:odt-master-styles           . "#+odt_master_styles: ")
-					     (:odt-automatic-styles        . "#+odt_automatic_styles: ")
-                                             )))
-			     (cond
-			      (which-style
-			       (alist-get which-style choices))
-			      (t
-			       (completing-read "Prefix: "
-						(mapcar #'cdr choices))))))
+			   (funcall ensure-export-keyword which-backend which-target))
 	 (goto-char (line-end-position))
 	 (insert "\n")))
       (use-nxml-src-block
@@ -11687,19 +11859,13 @@ use the command `org-odt-insert-style-name-or-style-definition-from-file'."
 	   (setq p (point-marker))
 	   (insert prettified-and-pruned-text)
 	   (insert "\n#+end_src\n\n"))
-	 (insert (format "\n#+ATTR_ODT: :target \"%s\"\n"
-			 (let* ((choices '(
-					   (:odt-extra-styles            . "extra_styles")
-					   (:odt-extra-automatic-styles  . "extra_automatic_styles")
-					   (:odt-master-styles           . "master_styles")
-					   (:odt-automatic-styles        . "automatic_styles")
-                                           )))
-			   (cond
-			    (which-style
-			     (alist-get which-style choices))
-			    (t
-			     (completing-read "Target: "
-					      (mapcar #'cdr choices)))))))
+	 (insert (format "\n#+ATTR_ODT: %s\n"
+                         (thread-last (list :target (setq which-target
+                                                          (funcall ensure-which-target which-target))
+					    :backends (funcall ensure-which-backends which-backend
+                                                               (format "%s" which-target)))
+				      (format "%S")
+				      (odt-pcase--flip-3ary substring 1 -1))))
 	 (goto-char p)))
       (t (user-error "This shouldn't happen")))))
 
@@ -11709,96 +11875,59 @@ use the command `org-odt-insert-style-name-or-style-definition-from-file'."
   "Insert a style name or the XML definition of a style from `OrgOdtStyles.xml'.
 
 With a single prefix argument prompt for the name of a XML / ODT
-/ OTT file, and insert the XML definition for the style.  See
-`org-odt-yank-styles'.
+/ OTT / ODS / OTS file etc, and insert the XML definition for the
+style.  See `org-odt-yank-styles'.
 
-With a double prefix argument prompt for the name of a XML / ODT
-/ OTT file, and insert the name---as opposed to the XML
-definition---of a defined style.  Use this feature, if you want
-to plug-in a style name in the `:style', `:page-style' property
-of an `#+ATTR_ODT: ...' line.
+With a double prefix argument, prompt for the name of a XML / ODT
+/ OTT / ODS / OTS file, and insert the name---as opposed to the
+XML definition---of a defined style.  Use this feature, if you
+want to plug-in a style name in the `:style', `:page-style'
+property of an `#+ATTR_ODT: ...' line.
 
 If you pick an XML file, ensure that it is a OpenDocument XML
 styles file, or a content file.
 
-If you pick an ODT / OTT file, you will be queried once again
-prompted to choose one among the `styles.xml' or `content.xml'
-contained within that ODT / OTT file.
-
-At the prompt, you can use the
-\\<minibuffer-local-map>\\[next-history-element] to pick one of
-the following XML files that come with this exporter
-
-    [ODT]
-
-      - OrgOdtStyles.xml
-      - OrgOdtContentTemplate.xml
-
-    [ODS]
-
-      - ods/styles.xml
-      - ods/content.xml
+If you pick an ODT / OTT / ODS / OTS etc file, you will be
+queried once again prompted to choose one among the `styles.xml'
+or `content.xml' contained within that ODT / OTT file.
 
 See `org-odt-styles-dir' and its subdirectories for the list of
 XML files that ship with this exporter.
 
 Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
   (interactive "P")
-  (let* ((insert-what (or (assoc-default query-for-file
-					 '((nil . style-definition)
-					   ((4) . style-definition)
-					   ((16) . style-name)
-					   (style-definition . style-definition)
-					   (style-name . style-name)))
-			  'style-definition))
-	 (factory-styles
-	  (cl-loop for backend in '(odt ods)
-		   appending (cl-loop for which-file in
-				      '(:styles-file :content-template-file)
-				      collect (org-odt-get-backend-property
-					       backend which-file))))
-	 (zip-dir nil)
-	 (styles-file
-	  (cond
-	   (query-for-file
-	    (let* ((styles-file (read-file-name "OD XML File name:" nil factory-styles
-						nil nil nil))
-		   (styles-file-type (file-name-extension styles-file)))
-	      (pcase styles-file-type
-		((or "odt" "ott")
-		 (setq zip-dir (file-name-as-directory (make-temp-file "odt-yank-styles-" t)))
-		 (let* ((zipfile styles-file)
-			(members '("styles.xml" "content.xml")))
-		   (org-odt--zip-extract zipfile members zip-dir)
-		   (read-file-name "OD XML File name:" zip-dir
-				   (mapcar (lambda (m)
-					     (expand-file-name m zip-dir))
-					   members)
-				   t nil nil)))
-		("xml"
-		 styles-file)
-		(_ (error "Styles file is invalid: %s" styles-file)))))
-	   (t (org-odt-get-backend-property 'odt :styles-file))))
-	 (dom (unwind-protect (odt-dom:file->dom styles-file 'strip-comment-nodes-p)
-		(when zip-dir
-		  (delete-directory zip-dir t nil))))
-	 (choices
-	  (progn
-	    (unless dom
-	      (user-error "File `%s' doesn't look like OpenDocument XML file" styles-file))
-	    (cl-loop with nodes = (odt-stylesdom:dom->style-nodes dom)
-		     for node in nodes
-		     for signature = (odt-stylesdom:style-signature node)
-		     for qualifier = (format "%-30s [%s] "
-					     (nth 0 signature)
-					     (or (nth 1 signature)
-						 (nth 2 signature)))
-		     collect (cons qualifier node))))
-	 (choice (progn
-		   (unless choices
-		     (user-error "No OD styles in file `%s'" styles-file))
-		   (completing-read "Style name: " choices)))
-	 (node (assoc-default choice choices)))
+  (pcase-let* ((insert-what (or (assoc-default query-for-file
+					       '((nil . style-definition)
+						 ((4) . style-definition)
+						 ((16) . style-name)
+						 (style-definition . style-definition)
+						 (style-name . style-name)))
+				'style-definition))
+	       ((map :dom :od-file :xml-file (:backend which-backend))
+                (org-odt-dom-from-a-styles-file (not query-for-file)))
+	       (choices
+		(progn
+		  (cl-loop with nodes = (odt-stylesdom:dom->style-nodes dom)
+			   for node in nodes
+			   for signature = (odt-stylesdom:style-signature node)
+			   for qualifier = (format "%-30s [%s] "
+						   (nth 0 signature)
+						   (or (nth 1 signature)
+						       (nth 2 signature)))
+			   collecting (cons qualifier node)
+                           into style-signatures
+                           finally return (or style-signatures
+                                              (user-error "No OD styles in file `%s'"
+                                                          (or od-file xml-file))))))
+	       (choice (completing-read (format "[%s %s] Style name: "
+                                                which-backend
+                                                (or (when od-file
+                                                      (format "%s::%s"
+                                                              (file-name-nondirectory od-file)
+                                                              (file-name-nondirectory xml-file)))
+                                                    (file-name-nondirectory xml-file)))
+                                        choices))
+	       (node (assoc-default choice choices)))
     (pcase insert-what
       (`style-definition
        (let* ((parent (dom-parent dom node))
@@ -11807,21 +11936,21 @@ Use `org-odt-yank-styles' if you want to yank arbitrary XML blob."
 				      (pcase (car dom)
 					(`office:document-styles
 					 '(
-					   (office:styles . :odt-extra-styles)
-					   (office:automatic-styles . :odt-extra-automatic-styles)
-					   (office:master-styles . :odt-master-styles)
-					   (office:automatic-styles . :odt-automatic-styles)))
+					   (office:styles            . :extra-styles)
+					   (office:automatic-styles  . :extra-automatic-styles)
+					   (office:master-styles     . :master-styles)
+					   (office:automatic-styles  . :automatic-styles)))
 					(`office:document-content
 					 '(
-					   (office:automatic-styles . :odt-automatic-styles)))
+					   (office:automatic-styles  . :automatic-styles)))
 					(`office:document
 					 '(
-					   (office:styles . :odt-extra-styles)
-					   (office:automatic-styles . :odt-extra-automatic-styles)
-					   (office:master-styles . :odt-master-styles)
-					   (office:automatic-styles . :odt-automatic-styles))))))
+					   (office:styles            . :extra-styles)
+					   (office:automatic-styles  . :extra-automatic-styles)
+					   (office:master-styles     . :master-styles)
+					   (office:automatic-styles  . :automatic-styles))))))
 	      (xml-string (odt-dom-to-xml-string node)))
-	 (org-odt-yank-styles 'use-nxml-src-block which-style xml-string)))
+	 (org-odt-yank-styles 'use-nxml-src-block which-backend which-style xml-string)))
       (`style-name
        (insert (format "\"%s\"" (odt-dom-property node 'style:name)))))))
 
