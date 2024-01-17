@@ -30,6 +30,14 @@
 
 ;;;; Misc. Helpers
 
+(defun odt-string-to-timestamp (s)
+  (with-temp-buffer
+    (save-excursion
+      (insert s))
+    (when-let* ((el (org-element-context))
+		((eq (org-element-type el) 'timestamp)))
+      el)))
+
 (defun odt-string-to-number (s trim)
   (with-temp-buffer
     (save-excursion

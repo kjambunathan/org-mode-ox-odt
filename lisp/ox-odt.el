@@ -935,8 +935,9 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 	(erase-buffer)
 	(current-buffer))))
    (t
-    (prog1 (when-let* ((buffer (get-buffer (format "Org %s Debug" tag))))
-	     (kill-buffer buffer))))))
+    (prog1 nil
+      (when-let* ((buffer (get-buffer (format "Org %s Debug" tag))))
+	(kill-buffer buffer))))))
 
 (defun org-odt-pop-to-debug-log ()
   (when-let ((debug-buffer org-odt-debug-log-buffer))
@@ -952,8 +953,7 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 (defmacro org-odt-with-debug-log (tag &rest body)
   (declare (indent 1))
   `(let ((org-odt-debug-log-buffer (org-odt-log-init ,tag)))
-     (prog1 (progn ,@body)
-       ;; Prettify Debug Log
+     (prog1 (progn ,@body) 
        (org-odt-pop-to-debug-log))))
 
 (defmacro org-odt-log-vars (tag &rest vars)
@@ -2345,12 +2345,14 @@ of `org-odt-global-macros'.")
 (defcustom org-odt-global-macros
   `(
     ("keyword-to-documentproperty" .
-     "(eval (if (org-export-derived-backend-p
-		org-export-current-backend 'odt)
-	       (format \"@@odt:%s@@\"
-		       (org-odt--use-custom-field
-			$1 (org-macro--find-keyword-value $1)))
-	     (org-macro--find-keyword-value $1)))")
+     ,(pp-to-string
+       '(eval (if (org-export-derived-backend-p
+		   org-export-current-backend 'odt)
+		  (pcase-let* ((keyword $1)
+			       (org-text (org-macro--find-keyword-value keyword)))
+		    (format "@@odt:%s@@"
+			    (org-odt-document-property keyword org-text 'use)))
+		org-text))))
     ,@(mapcar (lambda (e)
 		(pcase-let ((`(,name . ,value) e))
 		  (cons name (format "@@odt:%s@@" (org-odt--lisp-to-xml value)))))
@@ -2366,24 +2368,28 @@ appended to `org-export-global-macros' as part of
 Currently, following macros are defined:
 
  - `keyword-to-documentproperty' :: Usage
-   {{{keyword-to-documentproperty(NAME)}}}.  Generate a reference
-   to keyword NAME in content.xml.  In order for the reference to
-   be functional, the keyword NAME (and it's value) need to be
-   defined, and the keyword NAME has to be marked as exportable
-   by appearing as a value of `ODT_DOCUMENT_PROPERTIES' keyword.
-   In non-ODT backends this macro behaves like the standard
-   {{{keyword(NAME)}}}.
+   {{{keyword-to-documentproperty(DOCUMENT-KEYWORD)}}}.  Generate
+   a reference to keyword DOCUMENT-KEYWORD in content.xml.  In
+   order for the reference to be functional, the keyword
+   DOCUMENT-KEYWORD (and it's value) need to be defined, and the
+   keyword DOCUMENT-KEYWORD has to be marked as exportable by
+   appearing as a value of `ODT_DOCUMENT_PROPERTIES' keyword.  In
+   non-ODT backends this macro behaves like the standard
+   {{{keyword(DOCUMENT-KEYWORD)}}}.
 
    For example, to define and reference a document property
-   called `DOC-TITLE' with value \"Custom fields\", you can do
+   called `DOC-TITLE' with value \"Lorem Ipsum\", you can do
    the following:
 
 	#+ODT_DOCUMENT_PROPERTIES: DOC-TITLE 
-	#+DOC-TITLE: Custom fields
+	#+DOC-TITLE: Lorem Ipsum
 
 	#+MACRO: DocTitle {{{keyword-to-documentproperty(DOC-TITLE)}}}
 
 	The name of the document is {{{DocTitle}}}.
+
+   See `org-odt-document-property' for how a DOCUMENT-KEYWORD may
+   be specified and used.
 
 - Various OpenDocument-specific fields as given below :: Usage
 
@@ -4172,29 +4178,6 @@ significance.  All other values are ignored."
 (defun org-odt-create-manifest-file-entry (info &rest args)
   (plist-put info :odt-manifest-file-entries
 	     (cons args (plist-get info :odt-manifest-file-entries))))
-
-(defun org-odt--define-custom-field (key value)
-  "Install a user-define variable NAME with value VALUE in meta.xml.
-
-See entry titled `keyword-to-documentproperty' in
-`org-odt-global-macros' for more information."
-  (when (org-string-nw-p key)
-    (let ((value-type "string"))
-      (format "\n<meta:user-defined meta:value-type=\"%s\" meta:name=\"%s\" >%s</meta:user-defined>\n"
-	      value-type
-	      (org-odt--encode-plain-text key)
-	      (org-odt--encode-plain-text (or value ""))))))
-
-(defun org-odt--use-custom-field (name &optional value style)
-  "Reference a user-defined variable NAME.
-
-See entry titled `keyword-to-documentproperty' in
-`org-odt-global-macros' for more information."
-  (when (org-string-nw-p name)
-    (format "<text:user-defined %s text:name=\"%s\">%s</text:user-defined>"
-	    (if style (format "style:data-style-name=\"%s\"" style) "")
-	    (org-odt--encode-plain-text name)
-	    (org-odt--encode-plain-text value))))
 
 (defun org-odt-get-backend-property (backend property)
   (let* ((config (list
@@ -6014,6 +5997,231 @@ contextual information."
       (org-odt--format-alphabetical-index index-name info))
      (t (org-odt--format-user-defined-index index-name info)))))
 
+(defun org-odt-document-property (org-keyword org-value op)
+  "Do OP on an ORG-KEYWORD with ORG-VALUE.
+
+OP, a symbol, can be one of `define' or `use'.
+
+The return value, an XML string, is one of \"<meta:user-defined>
+...</meta:user-defined>\" suitable for insertion in to meta.xml
+or \"<text:user-defined>... </text:user-defined>\" suitable for
+insertion in to content.xml etc.
+
+The syntax for a DOCUMENT KEYWORD is as below
+
+    #+<DOCUMENT-KEYWORD>: <VALUE> :name <OD-NAME> :type <OD-TYPE>
+ 
+DOCUMENT-KEYWORD, is an Org keyword, whose value needs to be
+exported to an OpenDocument file.
+
+VALUE, a lisp value or an Org Timestamp, determines the value of
+the DOCUMENT-KEYWORD as gets carried over to the the OpenDocument
+file.  It also implicitly determines the OD-TYPE of the
+DOCUMENT-KEYWORD, when OD-TYPE is left unspecified.
+
+OD-NAME, a lisp string, specifies how the DOCUMENT-KEYWORD is
+named in the exported OpenDocument file.  When this property is
+unspecified, the DOCUMENT-KEYWORD itself is used as the name.
+
+OD-TYPE, a lisp symbol, specifies how the DOCUMENT-KEYWORD is
+typed in the exported OpenDocument file.  OD-TYPE can be one of
+
+    - string
+    - number
+    - boolean
+    - date
+
+When OD-TYPE is unspecified, the type is inferred from the VALUE.
+
+In its simplest form a DOCUMENT-KEYWORD may look like this
+
+    # Define the DOCUMENT-KEYWORDs that are meant as metadata
+
+    #+UBUNTU_RELEASE_NAME: \"Mantic Minotaur\"
+    #+UBUNTU_RELEASE_NUMBER: 23.10
+    #+UBUNTU_IS_EOL: nil
+    #+UBUNTU_RELEASE_DATE: \"<2023-10-12 Thu>\"
+
+    # Make the above DOCUMENT-KEYWORDs exportable as OpenDocument metadata
+
+    #+ODT_DOCUMENT_PROPERTIES: UBUNTU_RELEASE_NAME
+    #+ODT_DOCUMENT_PROPERTIES: UBUNTU_RELEASE_NUMBER
+    #+ODT_DOCUMENT_PROPERTIES: UBUNTU_IS_EOL
+    #+ODT_DOCUMENT_PROPERTIES: UBUNTU_RELEASE_DATE
+
+    # Define convenience MACROs to embed the above DOCUMENT-KEYWORDs in body text
+
+    #+MACRO: Ubuntu_Release_Name {{{keyword-to-documentproperty(UBUNTU_RELEASE_NAME)}}}
+    #+MACRO: Ubuntu_Release_Number {{{keyword-to-documentproperty(UBUNTU_RELEASE_NUMBER)}}}
+    #+MACRO: Ubuntu_Is_EOL {{{keyword-to-documentproperty(UBUNTU_IS_EOL)}}}
+    #+MACRO: Ubuntu_Release_Date {{{keyword-to-documentproperty(UBUNTU_RELEASE_DATE)}}}
+
+    # Use the above MACROs to embed the above DOCUMENT-KEYWORDs in body text
+
+         | In-buffer keyword       | Value                       | Type      |
+         |-------------------------+-----------------------------+-----------|
+         | ~UBUNTU_RELEASE_NAME~   | {{{Ubuntu_Release_Name}}}   | /Text/    |
+         | ~UBUNTU_RELEASE_NUMBER~ | {{{Ubuntu_Release_Number}}} | /Number/  |
+         | ~UBUNTU_IS_EOL~         | {{{Ubuntu_Is_EOL}}}         | /Boolean/ |
+         | ~UBUNTU_RELEASE_DATE~   | {{{Ubuntu_Release_Date}}}   | /Date/    |
+
+or in an elaborate form it may look this
+
+    # Define the DOCUMENT-KEYWORDs that are meant as metadata
+
+    #+DEBIAN_RELEASE_NAME: \"Bookworm\" :name \"Debian Release Name\"
+    #+DEBIAN_VERSION_NUMBER: 12 :name \"Debian Version Number\"
+    #+DEBIAN_IS_ALREADY_RELEASED: t :name \"Is Debian Version Already Released?\"
+    #+DEBIAN_RELEASE_DATE: \"<2023-06-10 Sat>\" :name \"Debian Release Date\" :type date
+
+    # Make the above DOCUMENT-KEYWORDs exportable as OpenDocument metadata
+
+    #+ODT_DOCUMENT_PROPERTIES: DEBIAN_RELEASE_NAME
+    #+ODT_DOCUMENT_PROPERTIES: DEBIAN_VERSION_NUMBER
+    #+ODT_DOCUMENT_PROPERTIES: DEBIAN_IS_ALREADY_RELEASED
+    #+ODT_DOCUMENT_PROPERTIES: DEBIAN_RELEASE_DATE
+
+    # Define convenience MACROs to embed the above DOCUMENT-KEYWORDs in body text
+
+    #+MACRO: Debian_Release_Name {{{keyword-to-documentproperty(DEBIAN_RELEASE_NAME)}}}
+    #+MACRO: Debian_Version_Number {{{keyword-to-documentproperty(DEBIAN_VERSION_NUMBER)}}}
+    #+MACRO: Debian_Is_Already_Released {{{keyword-to-documentproperty(DEBIAN_IS_ALREADY_RELEASED)}}}
+    #+MACRO: Debian_Release_Date {{{keyword-to-documentproperty(DEBIAN_RELEASE_DATE)}}}
+
+    # Use the above MACROs to embed the above DOCUMENT-KEYWORDs in body text
+
+        | In-buffer Keyword            | Value                            | Type      |
+        |------------------------------+----------------------------------+-----------|
+        | ~DEBIAN_RELEASE_NAME~        | {{{Debian_Release_Name}}}        | /Text/    |
+        | ~DEBIAN_VERSION_NUMBER~      | {{{Debian_Version_Number}}}      | /Number/  |
+        | ~DEBIAN_RELEASE_DATE~        | {{{Debian_Release_Date}}}        | /Date/    |
+        | ~DEBIAN_IS_ALREADY_RELEASED~ | {{{Debian_Is_Already_Released}}} | /Boolean/ |
+
+Note that the first set of examples, do not specify a OD-NAME or
+OD-TYPE, but the second set of examples fully specify those.
+
+Note that the DOCUMENT-KEYWORD is included as part of
+\"#+ODT_DOCUMENT_PROPERTIES: \" so that it gets exported as a
+metadata to the exported OpenDocument file.
+
+The \"#+MACRO: \" lines are a mere conveniences to
+reference/embed the DOCUMENT_KEYWORD's metadata in to text
+content.  This means that, \"#+MACRO: \" lines aren't a strict
+necessity, particularly if the DOCUMENT-KEYWORD's metadata is
+destined only for meta.xml and meant for consumption by
+documenting indexing software.
+
+Note that the `keyword-to-documentproperty' macro is already
+defined for you by the OpenDocument exporter.  See
+`org-odt-global-macros' for more information."
+  (pcase-let* ((org-keyword (upcase org-keyword))
+	       (parsed (with-temp-buffer
+			 (save-excursion
+			   (insert (format "(%s)" org-value)))
+			 (read (current-buffer))))
+	       (`(,in-buffer-value
+                  . ,(odt-map (:name in-buffer-name)
+                              (:type in-buffer-type)))
+                parsed)
+	       (odt-name (or in-buffer-name org-keyword))
+	       (odt-type (cond
+                          ;; Case 1: Keyword specifies a `:type'.
+			  (in-buffer-type
+			   (pcase in-buffer-type
+			     ((and (pred symbolp)
+				   (or `boolean `date `float `string
+                                       ;; `time
+				       ))
+			      in-buffer-type)
+                             (_ nil)))
+                          ;; Case 2: Keyword doesn't specify a `:type'.
+                          ;; Infer the value of `:type' based on the
+                          ;; lisp type of the value.
+			  (t
+			   (pcase in-buffer-value
+			     ((pred booleanp)
+			      'boolean)
+			     ((pred numberp)
+			      'float)
+			     ((pred stringp)
+                              ;; If the keyword's value is a string, see
+                              ;; if it parses to an Org timestamp.  If
+                              ;; yes, set the `:type' to `date'.
+                              ;; Otherwise, its just a regular `string.'
+			      (if (odt-string-to-timestamp in-buffer-value)
+				  'date
+				'string))
+			     (_ nil)))))
+               ;; Check if the value of the keyword is matches with its
+               ;; `:type'
+	       (odt-value (pcase odt-type
+			    (`boolean
+                             ;; Any value can be a `boolean'
+			     (if in-buffer-value "true" "false"))
+			    (`date
+                             ;; Only an Org timestamp can become a `date'
+                             (when-let* (((stringp in-buffer-value))
+					 (ts (odt-string-to-timestamp in-buffer-value)))
+			       ts))
+			    (`float
+                             ;; Only a string parseable as number or a
+                             ;; lispy number can be a `number'.
+			     (or (when (numberp in-buffer-value)
+				   (format "%s" in-buffer-value))
+				 (when-let* (((stringp in-buffer-value))
+					     (n (odt-string-to-number in-buffer-value 'trim)))
+				   in-buffer-value)))
+			    (`string
+                             ;; Any thing can be a `string'
+			     (format "%s" in-buffer-value))
+                            (_ nil))))
+    (unless odt-value
+      (error (format "KEYWORD `%s' (= %s) is poorly specified"
+                     org-keyword
+                     org-value)))
+    ;; Keyword's name, value and its type are validated, and
+    ;; standardized.  Go about defining or using the keyword.
+    (let ((name odt-name) (value odt-value) (type odt-type))
+      (cl-assert (memq type '(boolean date float time string)))
+      (pcase-exhaustive op
+        (`define
+         (setq value
+	       (pcase value
+	         ((and (pred consp)
+		       (app (org-element-type) 'timestamp))
+	          (org-odt--format-a-time-in-timestamp value 'iso (not 'end)))
+	         ((pred stringp)
+	          (org-odt--encode-plain-text value))
+	         (_ (error "org-odt-document-property: Shouldn't come here"))))
+         (when-let* (((org-string-nw-p name)) (value) (type))
+           (org-odt--lisp-to-xml
+            `(meta:user-defined
+              ((meta:name . ,(org-odt--encode-plain-text name))
+	       (meta:value-type . ,(format "%s" type)))
+              ,value))))        
+        (`use
+         (let ((data-style-name
+                (pcase type
+	          (`date
+	           "OrgDate")
+	          (_ nil))))
+           (when (org-string-nw-p name)
+             (setq value
+                   (pcase value
+	             ((and (pred consp)
+		           (app (org-element-type) 'timestamp))
+                      "")
+	             ((pred stringp)
+	              (org-odt--encode-plain-text value))
+	             (_ (error "org-odt-document-property: Shouldn't come here")))))
+           (when-let* (((org-string-nw-p name)) (type) (value))
+             (org-odt--lisp-to-xml
+              `(text:user-defined
+                ((text:name . ,(org-odt--encode-plain-text name))
+	         ,@(when data-style-name
+	             `((style:data-style-name . ,data-style-name))))
+                ,value)))))))))
+
 (defun org-odt-keyword (keyword _contents info)
   "Transcode a KEYWORD element from Org to ODT.
 CONTENTS is nil.  INFO is a plist holding contextual information."
@@ -6021,12 +6229,12 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 	(value (org-element-property :value keyword)))
     (cond
      ;; If KEYWORD is part of ODT_DOCUMENT_PROPERTIES add it's name
-     ;; and value in meta.xml.
+     ;; and value in meta.xml.  Otherwise, ignore it.
      ((member key (mapcar #'upcase (plist-get info :odt-document-properties)))
-      (plist-put info :odt-extra-meta (concat
-				       (plist-get info :odt-extra-meta)
-				       (org-odt--define-custom-field key value)))
-      nil)
+      (prog1 nil
+	(plist-put info :odt-extra-meta (concat
+					 (plist-get info :odt-extra-meta)
+					 (org-odt-document-property key value 'define)))))
      ((string= key "ODT") value)
      ((string= key "TOC")
       (let* ((value (downcase value))
