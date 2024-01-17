@@ -2539,7 +2539,8 @@ to make available an enhanced version of `htmlfontify' library."
     ("TableWithFirstRowandLastRow" "Custom"
      ((use-first-row-styles . t)
       (use-last-row-styles . t)))
-    ("GriddedTable" "Custom" nil))
+    ("GriddedTable" "Custom" nil)
+    ("NoGridTable" "NoBorder" nil))
   "Specify how Table Styles should be derived from a Table Template.
 This is a list where each element is of the
 form (TABLE-STYLE-NAME TABLE-TEMPLATE-NAME TABLE-CELL-OPTIONS).
@@ -4085,19 +4086,26 @@ significance.  All other values are ignored."
 
 (defun org-odt--table-cell-build-table-cell-styles-with-data-styles (table-cell-styles)
   (thread-last table-cell-styles
-	       (seq-map
-		(lambda (it)
-		  (odt-dom-property it 'style:name)))
-	       (seq-mapcat
-		(lambda (style-name)
-		  (cl-loop with data-types = '((date . ("OrgDate" "OrgDateAndTime")))
-			   for (_data-type . data-styles) in data-types
-			   append (cl-loop for data-style in data-styles
-					   collect `(style:style
-						     ((style:name . ,(format "%s%s" style-name data-style))
-						      (style:parent-style-name . ,style-name)
-						      (style:family . "table-cell")
-						      (style:data-style-name . ,data-style)))))))))
+               (seq-map
+                (lambda (it)
+                  (odt-dom-property it 'style:name)))
+               (seq-mapcat
+                (lambda (style-name)
+                  (thread-last '(
+                                 (float    . ())
+                                 (date     . ("OrgDate" "OrgDateAndTime"))
+                                 (formula  . ())
+                                 )
+                               (seq-mapcat
+                                (pcase-lambda (`(,_data-type . ,data-styles))
+                                  (thread-last data-styles
+                                               (seq-map
+                                                (lambda (data-style)
+                                                  `(style:style
+                                                    ((style:name . ,(format "%s%s" style-name data-style))
+                                                     (style:parent-style-name . ,style-name)
+                                                     (style:family . "table-cell")
+                                                     (style:data-style-name . ,data-style)))))))))))))
 
 (defun org-odt--table-cell-build-table-cell-styles (base-table-cell-style border-value)
   (let ((table-cell-styles (org-odt--table-cell-do-build-derived-table-cell-styles base-table-cell-style border-value)))
@@ -4288,6 +4296,18 @@ holding export options."
 		                    (fo:border-left . "0.002cm solid #000000")
 		                    (fo:border-right . "0.002cm solid #000000")
 		                    (fo:border-top . "0.002cm solid #000000")
+		                    (fo:padding . "0.097cm"))))
+		                 ,(not "0.002cm solid #000000"))
+                                ((style:style
+		                  ((style:name . "NoBorderTable%sCell")
+		                   (style:family . "table-cell"))
+		                  (style:table-cell-properties
+		                   (
+		                    (fo:background-color . "transparent")
+                                    (fo:border-bottom . "none")
+		                    (fo:border-left . "none")
+		                    (fo:border-right . "none")
+		                    (fo:border-top . "none")
 		                    (fo:padding . "0.097cm"))))
 		                 ,(not "0.002cm solid #000000")))
 	                      (seq-mapcat
@@ -4792,7 +4812,7 @@ holding export options."
 		           (org-odt-adjust-styles-for-locale (plist-get info :language))
 		           ;; Write extra styles.
 		           (mapconcat #'identity
-			              (cl-loop for p-style in '("OrgTable" "CustomTable")
+			              (cl-loop for p-style in '("OrgTable" "CustomTable" "NoBorderTable")
 				               collect (org-odt--table-cell-build-paragraph-styles p-style))
 			              "\n"))
 	                  "\n"))
@@ -9208,11 +9228,10 @@ channel."
 	  (t
 	   (format "\n<table:table-cell table:style-name=\"%s\" %s>\n%s\n</table:table-cell>"
 		   (concat style-name
-			   ;; In case of ODS backend, suffix data type to style name.
-			   (or (when-let* ((data-type (plist-get ods-plist :data-type)))
-                                 (if (symbolp data-type)
-                                     (capitalize (format "%s" data-type))
-                                   data-type))
+			   ;; In case of ODS backend, suffix style name with data style name.
+			   (or (pcase-let (((odt-map :data-style-name) ods-plist))
+                                 (when data-style-name
+                                   data-style-name))
 			       ""))
 		   (concat attributes " "
 			   ;; In case of ODS backend, add data type attributes.

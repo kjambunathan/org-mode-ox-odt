@@ -1624,6 +1624,7 @@ holding export options."
        ;; Formula
        ((stringp (org-element-property :ods-formula table-cell))
 	(list :data-type 'formula
+              :data-style-name nil
 	      :attributes
               (format "table:formula=\"of:%s\""
                       (org-element-property :ods-formula table-cell))
@@ -1635,8 +1636,11 @@ holding export options."
              (org-odt-timestamp-is-plain-p content))
 	(when (plist-get (plist-get info :odt-timestamp-options) :emit-date-as-date-object)
           (list :data-type (if (org-timestamp-has-time-p content)
-                               "OrgDateAndTime"
-                             "OrgDate")
+                               'date
+                             'date)
+                :data-style-name (if (org-timestamp-has-time-p content)
+                                     "OrgDateAndTime"
+                                   "OrgDate")
 	        :attributes
 	        (format "office:date-value=\"%s\" office:value-type=\"date\""
 		        (org-odt--format-a-time-in-timestamp content 'iso))
@@ -1646,6 +1650,7 @@ holding export options."
        ((stringp content)
 	(when-let* ((number (odt-string-to-number content 'trim)))
 	  (list :data-type 'float
+                :data-style-name nil
 		:attributes
 		(format "office:value=\"%s\" office:value-type=\"float\""
 			(number-to-string number))
