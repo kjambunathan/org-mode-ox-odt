@@ -1309,7 +1309,7 @@
 				       (`data-only ".tsv")
 				       (`data+formula ".formula.tsv"))))
 	 (org-odt-transform-processes
-	  `(("Convert ODS file to TSV file" "libreofficedev24.2" "--norestore" "--invisible" "--headless"
+	  `(("Convert ODS file to TSV file" "%X" "--norestore" "--invisible" "--headless"
 	     ,(format "macro:///OrgMode.Utilities.%s(%%I)"
 		      (pcase file-format
 			(`data-only "ODSExportToTSV")
