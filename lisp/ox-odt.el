@@ -292,7 +292,7 @@ standard Emacs.")
   (mapcar #'intern org-odt-supported-file-types)
   "List of OpenDocument backends supported by this exporter.")
 
-(defconst org-odt-backend-and-file-types
+(defconst org-odt-backend-and-styles-file-extensions
   (let ((extn-and-mimetype
          (thread-last org-odt-file-extensions-alist
 		      (seq-keep
@@ -307,6 +307,16 @@ standard Emacs.")
 			   (extn-for-mimetype-template (car (rassoc mimetype-of-template-files extn-and-mimetype))))
 		      `(,backend ,extn ,@(when extn-for-mimetype-template
 					   `(,extn-for-mimetype-template)))))))))
+
+(defconst org-odt-all-styles-file-extensions
+  (apply #'append (map-values org-odt-backend-and-styles-file-extensions)))
+
+(defconst org-odt-styles-file-extension-and-backend
+  (thread-last org-odt-backend-and-styles-file-extensions
+               (seq-mapcat (pcase-lambda (`(,backend . ,extns))
+                             (thread-last extns
+                                          (seq-map (lambda (it)
+                                                     (cons it backend))))))))
 
 (defconst org-odt-page-break-style-format "
 <style:style style:name=\"%s\" style:family=\"paragraph\" style:parent-style-name=\"%s\" style:master-page-name=\"%s\">
@@ -11522,13 +11532,7 @@ This function is used for prettifying XML files when user option
     (indent-region (point-min) (point-max))))
 
 (defun org-odt-dom-from-a-styles-file (factory-styles-p)
-  (pcase-let* ((all-style-file-extensions
-                (apply #'append (map-values org-odt-backend-and-file-types)))
-               (style-file-extension-and-backend
-                (thread-last org-odt-backend-and-file-types
-                             (seq-mapcat (pcase-lambda (`(,backend . ,extns))
-                                           (thread-last extns (seq-map (lambda (it) (cons it backend))))))))
-               (xml-file-to-dom (lambda (xml-file)
+  (pcase-let* ((xml-file-to-dom (lambda (xml-file)
                                   (prog1 (ignore-errors
                                            (odt-dom:file->dom xml-file 'strip-comment-nodes-p))
                                     (message "File `%s' doesn't look like OpenDocument XML file"
@@ -11563,7 +11567,7 @@ This function is used for prettifying XML files when user option
       (let* (
              (styles-file (read-file-name
                            ;; Indicate allowable file extensions while prompting
-                           (thread-last all-style-file-extensions
+                           (thread-last org-odt-all-styles-file-extensions
                                         (cons "xml")
                                         (seq-map (lambda (it) (format ".%s" it)))
                                         (pcase--flip string-join "|")
@@ -11576,7 +11580,7 @@ This function is used for prettifying XML files when user option
                            (when nil
                              (lambda (file-name)
                                (or (let ((extn (file-name-extension file-name)))
-                                     (member extn (cons "xml" all-style-file-extensions)))
+                                     (member extn (cons "xml" org-odt-all-styles-file-extensions)))
                                    (file-directory-p file-name)) ))))
              (styles-file-extension (file-name-extension styles-file)))
         (cond
@@ -11584,7 +11588,7 @@ This function is used for prettifying XML files when user option
          ;; looking for a component XML file. So, unzip the OpenDocument
          ;; file prompt the user to pick one amont `content.xml' or
          ;; `styles.xml' file.
-         ((member styles-file-extension all-style-file-extensions)
+         ((member styles-file-extension org-odt-all-styles-file-extensions)
           (let* ((zip-dir (file-name-as-directory (make-temp-file "odt-yank-styles-" t)))
                  (zipfile styles-file)
                  (members '("styles.xml" "content.xml"))
@@ -11600,7 +11604,7 @@ This function is used for prettifying XML files when user option
                                     t nil nil))))
             (list :od-file zipfile
                   :xml-file styles-file
-                  :backend (map-elt style-file-extension-and-backend styles-file-extension)
+                  :backend (map-elt org-odt-styles-file-extension-and-backend styles-file-extension)
                   :dom (prog1 (funcall xml-file-to-dom styles-file)
                          (delete-directory zip-dir t t)))))
          ;; Case 2: Input file is an xml file.
@@ -11613,7 +11617,7 @@ This function is used for prettifying XML files when user option
          (t
           (message "File's extension `%s' is not one among '%S"
                    (file-name-extension styles-file)
-                   `(,all-style-file-extensions "xml"))
+                   `(,org-odt-all-styles-file-extensions "xml"))
           nil)))))))
 
 ;;;###autoload
