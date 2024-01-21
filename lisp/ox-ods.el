@@ -1454,14 +1454,14 @@ under `org-odt-styles-dir' is used."
   :group 'org-export-ods)
 
 (defcustom org-ods-styles-file nil
-  "Default styles file for use with ODT export.
+  "Default styles file for use with ODS export.
 
 Valid values are one of:
-1. nil
-2. path to a styles.xml file
-3. path to a *.odt or a *.ott file
-4. list of the form (ODT-OR-OTT-FILE (FILE-MEMBER-1 FILE-MEMBER-2
-...))
+
+    1. nil
+    2. path to a styles.xml file
+    3. path to a *.ods or a *.ots file
+    4. list of the form (ODS-OR-OTS-FILE (FILE-MEMBER-1 FILE-MEMBER-2 ...))
 
 In case of option 1, an in-built styles.xml is used. See
 `org-odt-styles-dir' for more information.
@@ -1469,9 +1469,9 @@ In case of option 1, an in-built styles.xml is used. See
 In case of option 3, the specified file is unzipped and the
 styles.xml embedded therein is used.
 
-In case of option 4, the specified ODT-OR-OTT-FILE is unzipped
+In case of option 4, the specified ODS-OR-OTS-FILE is unzipped
 and FILE-MEMBER-1, FILE-MEMBER-2 etc are copied in to the
-generated odt file.  Use relative path for specifying the
+generated ods file.  Use relative path for specifying the
 FILE-MEMBERS.  styles.xml must be specified as one of the
 FILE-MEMBERS.
 
@@ -1480,22 +1480,88 @@ achieving the desired formatting.  Use option 4, if the styles.xml
 references additional files like header and footer images for
 achieving the desired formatting.
 
-Use \"#+ODT_STYLES_FILE: ...\" directive to set this variable on
+Use \"#+ODS_STYLES_FILE: ...\" directive to set this variable on
 a per-file basis.  For example,
 
-#+ODT_STYLES_FILE: \"/path/to/styles.xml\" or
-#+ODT_STYLES_FILE: (\"/path/to/file.ott\" (\"styles.xml\" \"image/hdr.png\"))."
+#+ODS_STYLES_FILE: \"/path/to/styles.xml\" or
+#+ODS_STYLES_FILE: (\"/path/to/file.ots\" (\"styles.xml\" \"image/hdr.png\"))
+
+"
   :group 'org-export-ods
   :type
   '(choice
     (const :tag "Factory settings" nil)
     (file :must-match t :tag "styles.xml")
-    (file :must-match t :tag "ODT or OTT file")
-    (list :tag "ODT or OTT file + Members"
+    (file :must-match t :tag "ODS or OTS file")
+    (list :tag "ODS or OTS file + Members"
 	  (file :must-match t :tag "ODF Text or Text Template file")
 	  (cons :tag "Members"
 		(file :tag "	Member" "styles.xml")
 		(repeat (file :tag "Member"))))))
+
+(defcustom org-ods-extra-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODS_EXTRA_STYLES: ...
+
+       and
+
+    #+ATTR_ODS: :target \"extra_styles\" :backends (ods)
+    #+begin_src nxml
+    ...
+    #+end_src
+."
+  :group 'org-export-ods
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
+
+(defcustom org-ods-master-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODS_MASTER_STYLES: ...
+
+       and
+
+    #+ATTR_ODS: :target \"master_styles\" :backends (ods)
+    #+begin_src nxml
+    ...
+    #+end_src
+
+The styles defined here are master page styles.
+"
+  :group 'org-export-ods
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
+
+(defcustom org-ods-extra-automatic-styles nil
+  "Extra styles, an XML string.
+The styles specified here are prepended to in-buffer styles
+specified with the following keywords
+
+    #+ODS_EXTRA_AUTOMATIC_STYLES: ...
+
+       and
+
+    #+ATTR_ODS: :target \"extra_automatic_styles\" :backends (ods)
+    #+begin_src nxml
+    ...
+    #+end_src
+
+The styles defined here are page layout styles.
+"
+  :group 'org-export-ods
+  :type
+  '(choice
+    (const :tag "None" nil)
+    (string :tag "XML string")))
 
 (defcustom org-ods-automatic-styles nil
   "Extra styles, an XML string.
@@ -1691,7 +1757,7 @@ format, `org-ods-preferred-output-format'."
 
 ;;;; Define Back-End
 
-(org-export-define-derived-backend 'ods 'odt
+(org-export-define-derived-backend 'ods 'opendocument
   :translate-alist
   '((table . org-ods-table))
   :menu-entry
@@ -1704,9 +1770,20 @@ format, `org-ods-preferred-output-format'."
         ;; (?x "As XML buffer" org-odt-export-as-odt)
         ))
   :options-alist
-  '((:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
+  '(
+    ;; ODS-specific keywords
+    ;; Keywords that affect styles.xml
+    (:odt-preferred-output-format "ODS_PREFERRED_OUTPUT_FORMAT" nil org-ods-preferred-output-format t)
+    (:odt-styles-file "ODS_STYLES_FILE" nil org-ods-styles-file t)
+    (:odt-extra-images "ODS_EXTRA_IMAGES" nil nil split)
+    (:odt-extra-styles "ODS_EXTRA_STYLES" nil org-ods-extra-styles newline)
+    (:odt-auto-generated-extra-styles nil nil nil nil)
+    (:odt-extra-automatic-styles "ODS_EXTRA_AUTOMATIC_STYLES" nil org-ods-extra-automatic-styles newline)
+    (:odt-master-styles "ODS_MASTER_STYLES" nil org-ods-master-styles newline)
+    ;; Keywords that affect content.xml
+    (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file)
     (:odt-automatic-styles "ODS_AUTOMATIC_STYLES" nil org-ods-automatic-styles newline)
-    (:odt-content-template-file "ODS_CONTENT_TEMPLATE_FILE" nil org-ods-content-template-file))
+    )
   :filters-alist '((:filter-parse-tree
                     . (org-ods--translate-tblfms-to-ods-formulae))))
 

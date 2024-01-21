@@ -47,7 +47,7 @@
 
 ;;; Define Back-End
 
-(org-export-define-backend 'odt
+(org-export-define-backend 'opendocument
   '((bold . org-odt-bold)
     (center-block . org-odt-center-block)
     (clock . org-odt-clock)
@@ -105,14 +105,6 @@
 		       org-odt--translate-description-lists ; Dummy symbol
 		       org-odt--translate-list-tables
 		       org-odt--transclude-sole-footnote-references-in-a-table)))
-  :menu-entry
-  '(?o "Export to ODT"
-       ((?o "As ODT file" org-odt-export-to-odt)
-	(?O "As ODT file and open"
-	    (lambda (a s v b)
-	      (if a (org-odt-export-to-odt t s v b)
-		(org-open-file (org-odt-export-to-odt a s v b) 'system))))
-	(?x "As XML buffer" org-odt-export-as-odt)))
   :options-alist
   '((:description "DESCRIPTION" nil nil parse)
     (:keywords "KEYWORDS" nil nil parse)
@@ -120,18 +112,6 @@
     ;; Redefine regular option.
     (:with-latex nil "tex" org-odt-with-latex)
     (:odt-math-syntax "ODT_MATH_SYNTAX" nil org-odt-math-syntax t)
-    ;; ODT-specific keywords
-    ;; Keywords that affect styles.xml
-    (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
-    (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
-    (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
-    (:odt-extra-styles "ODT_EXTRA_STYLES" nil org-odt-extra-styles newline)
-    (:odt-auto-generated-extra-styles nil nil nil nil)
-    (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil org-odt-extra-automatic-styles newline)
-    (:odt-master-styles "ODT_MASTER_STYLES" nil org-odt-master-styles newline)
-    ;; Keywords that affect content.xml
-    (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
-    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)
     (:odt-display-outline-level "ODT_DISPLAY_OUTLINE_LEVEL" nil (number-to-string org-odt-display-outline-level))
     (:odt-app "ODT_APP" nil nil t)
     ;; Keywords that affect meta.xml
@@ -182,6 +162,30 @@
     ;; See `header' and `footer' special blocks in
     ;; `org-odt-special-block'.
     (:odt-page-style-alist nil nil nil)))
+
+(org-export-define-derived-backend 'odt 'opendocument
+  :menu-entry
+  '(?o "Export to ODT"
+       ((?o "As ODT file" org-odt-export-to-odt)
+	(?O "As ODT file and open"
+	    (lambda (a s v b)
+	      (if a (org-odt-export-to-odt t s v b)
+		(org-open-file (org-odt-export-to-odt a s v b) 'system))))
+	(?x "As XML buffer" org-odt-export-as-odt)))
+  :options-alist
+  '(
+    ;; ODT-specific keywords
+    ;; Keywords that affect styles.xml
+    (:odt-preferred-output-format "ODT_PREFERRED_OUTPUT_FORMAT" nil org-odt-preferred-output-format t)
+    (:odt-styles-file "ODT_STYLES_FILE" nil org-odt-styles-file t)
+    (:odt-extra-images "ODT_EXTRA_IMAGES" nil nil split)
+    (:odt-extra-styles "ODT_EXTRA_STYLES" nil org-odt-extra-styles newline)
+    (:odt-auto-generated-extra-styles nil nil nil nil)
+    (:odt-extra-automatic-styles "ODT_EXTRA_AUTOMATIC_STYLES" nil org-odt-extra-automatic-styles newline)
+    (:odt-master-styles "ODT_MASTER_STYLES" nil org-odt-master-styles newline)
+    ;; Keywords that affect content.xml
+    (:odt-content-template-file "ODT_CONTENT_TEMPLATE_FILE" nil org-odt-content-template-file)
+    (:odt-automatic-styles "ODT_AUTOMATIC_STYLES" nil nil newline)))
 
 
 ;;; Dependencies
@@ -983,8 +987,12 @@ https://raw.githubusercontent.com/LibreOffice/core/master/i18nlangtag/source/iso
 (defmacro org-odt-with-debug-log (tag &rest body)
   (declare (indent 1))
   `(let ((org-odt-debug-log-buffer (org-odt-log-init ,tag)))
-     (prog1 (progn ,@body) 
-       (org-odt-pop-to-debug-log))))
+     (condition-case-unless-debug err
+         (prog1 (progn ,@body)
+           (org-odt-pop-to-debug-log)) 
+       (error
+        (org-odt-pop-to-debug-log)
+        (signal (car err) (cdr err))))))
 
 (defmacro org-odt-log-vars (tag &rest vars)
   `(org-odt-log-object (list ,tag
@@ -4693,11 +4701,13 @@ holding export options."
 
     ;; Check the type of styles file.
     (pcase styles-file-type
-      ;; If it is of type `odt' or `ott' (i.e., a zip file), then the
-      ;; styles.xml within the zip file becomes the styles.xml of the
-      ;; target file.  Extra images, if any, also comes from within
-      ;; this zip file.
-      ((or "odt" "ott")
+      ;; If it is of type `odt', `ott', `ods', `ots' etc (i.e., a zip
+      ;; file), then the styles.xml within the zip file becomes the
+      ;; styles.xml of the target file.  Extra images, if any, also
+      ;; comes from within this zip file.
+      ((pred (lambda (extn)
+               (eq org-export-current-backend
+                   (map-elt org-odt-styles-file-extension-and-backend extn))))
        (let ((archive styles-file)
 	     (members (cons "styles.xml" extra-images)))
 	 (org-odt--zip-extract archive members (plist-get info :odt-zip-dir))
@@ -4727,8 +4737,11 @@ holding export options."
 			     (expand-file-name path input-dir)))
 		(target-path (file-relative-name path input-dir)))
 	   (org-odt--copy-image-file info full-path target-path))))
-      (_ (error "Styles file is invalid: %s" styles-file)))
-
+      (_ (error "Styles file `%s' is incompatible with export backend `%s'.
+Expecting Styles file with any of the following extensions %S"
+                (file-name-nondirectory styles-file)
+                org-export-current-backend
+                (cons "xml" (map-elt org-odt-backend-and-styles-file-extensions org-export-current-backend)))))
     ;; The ODT exporter the styles are arranged in 3-tiers, and a
     ;; style name may be introduced at any of the tiers.
     ;;
@@ -8438,43 +8451,146 @@ contextual information.
 
 The following `nxml-mode' src blocks are treated specially.
 
-    #+ATTR_ODT: :target \"extra_styles\"
+    #+ATTR_ODT: :target \"extra_styles\" :backends (BACKEND-LIST) 
     #+begin_src nxml
       ...
     #+end_src
 
-    #+ATTR_ODT: :target \"extra_automatic_styles\"
+    #+ATTR_ODT: :target \"extra_automatic_styles\" :backends (BACKEND-LIST)
     #+begin_src nxml
       ...
     #+end_src
 
-    #+ATTR_ODT: :target \"master_styles\"
+    #+ATTR_ODT: :target \"master_styles\" :backends (BACKEND-LIST)
     #+begin_src nxml
       ...
     #+end_src
 
-    #+ATTR_ODT: :target \"automatic_styles\"
+    #+ATTR_ODT: :target \"automatic_styles\" :backends (BACKEND-LIST)
     #+begin_src nxml
       ...
     #+end_src
 
-The content of these blocks are assumed to specify user-specified
-styles.  You can use these `nxml-mode' blocks as convenient
-alternative to specifying user styles using the following style
-keywords
+BACKEND-LIST is a space-separated list of symbols, and a symbol
+can be one or more of the following
+    - any
+    - none
+    - odt
+    - ods
+
+An `nxml' block with `none' as one of it's `:backends' property
+is ignored.
+
+An `nxml' block with `any' as one of it's `:backends' property is
+is included in *all* OpenDocument backends.
+
+An `nxml' block with say `odt' as the *sole* element in its
+`:backends' property is included *only* if the
+`org-export-current-backend' is `odt'.
+
+The content of these `nxml' blocks are assumed to specify
+user-specified OpenDocument styles.  You can use above nmxl
+blocks to specify custom styles, instead of using the following
+associated keywords.
 
        - #+odt_extra_styles:
        - #+odt_extra_automatic_styles:
        - #+odt_master_styles:
        - #+odt_automatic_styles:
 
+or
+
+       - #+ods_extra_styles:
+       - #+ods_extra_automatic_styles:
+       - #+ods_master_styles:
+       - #+ods_automatic_styles:
+
+etc.
+
+For example, an `nxml' style like this
+
+    #+ATTR_ODT: :target \"extra_styles\" :backends (odt)
+    #+begin_src nxml
+    <style:style style:name=\"Text_20_body\"
+                 style:parent-style-name=\"Standard\"
+                 style:display-name=\"Text body\"
+                 style:family=\"paragraph\"
+                 style:class=\"text\">
+      <style:paragraph-properties fo:margin-bottom=\"0.212cm\"
+                                  fo:margin-top=\"0cm\" />
+      <style:text-properties style:font-name-complex=\"Lohit Tamil\"
+                             fo:color=\"#fc5c00\"
+                             fo:font-size=\"14pt\"
+                             style:country-complex=\"IN\"
+                             style:font-family-complex=\"'Lohit Tamil'\"
+                             style:font-pitch-complex=\"variable\"
+                             style:font-size-complex=\"14pt\"
+                             style:font-style-name-complex=\"Regular\"
+                             style:language-complex=\"ta\" />
+    </style:style>
+    #+end_src
+
+is equivalent to the following style declaration
+
+    #+odt_extra_styles: <style:style style:name=\"Text_20_body\"
+    #+odt_extra_styles:              style:parent-style-name=\"Standard\"
+    #+odt_extra_styles:              style:display-name=\"Text body\"
+    #+odt_extra_styles:              style:family=\"paragraph\"
+    #+odt_extra_styles:              style:class=\"text\">
+    #+odt_extra_styles:   <style:paragraph-properties fo:margin-bottom=\"0.212cm\"
+    #+odt_extra_styles:                               fo:margin-top=\"0cm\" />
+    #+odt_extra_styles:   <style:text-properties style:font-name-complex=\"Lohit Tamil\"
+    #+odt_extra_styles: 			 fo:color=\"#fc5c00\"
+    #+odt_extra_styles: 			 fo:font-size=\"14pt\"
+    #+odt_extra_styles: 			 style:country-complex=\"IN\"
+    #+odt_extra_styles: 			 style:font-family-complex=\"'Lohit Tamil'\"
+    #+odt_extra_styles: 			 style:font-pitch-complex=\"variable\"
+    #+odt_extra_styles: 			 style:font-size-complex=\"14pt\"
+    #+odt_extra_styles: 			 style:font-style-name-complex=\"Regular\"
+    #+odt_extra_styles: 			 style:language-complex=\"ta\" />
+    #+odt_extra_styles: </style:style>
+
+... and the `nxml' style block you see below
+
+    #+ATTR_ODT: :target \"extra_styles\" :backends (ods)
+    #+begin_src nxml
+    <style:style style:name=\"Default\"
+                 style:family=\"table-cell\">
+      <style:text-properties style:font-name-complex=\"Lohit Tamil\"
+                             fo:color=\"#fc5c00\"
+                             fo:font-size=\"14pt\"
+                             style:country-complex=\"IN\"
+                             style:font-family-complex=\"'Lohit Tamil'\"
+                             style:font-pitch-complex=\"variable\"
+                             style:font-size-complex=\"14pt\"
+                             style:font-style-name-complex=\"Regular\"
+                             style:language-complex=\"ta\" />
+    </style:style>
+    #+end_src
+
+is equivalent to the following style declaration
+
+    #+ods_extra_styles: <style:style style:name=\"Default\"
+    #+ods_extra_styles:              style:family=\"table-cell\">
+    #+ods_extra_styles:   <style:text-properties style:font-name-complex=\"Lohit Tamil\"
+    #+ods_extra_styles: 			 fo:color=\"#fc5c00\"
+    #+ods_extra_styles: 			 fo:font-size=\"14pt\"
+    #+ods_extra_styles: 			 style:country-complex=\"IN\"
+    #+ods_extra_styles: 			 style:font-family-complex=\"'Lohit Tamil'\"
+    #+ods_extra_styles: 			 style:font-pitch-complex=\"variable\"
+    #+ods_extra_styles: 			 style:font-size-complex=\"14pt\"
+    #+ods_extra_styles: 			 style:font-style-name-complex=\"Regular\"
+    #+ods_extra_styles: 			 style:language-complex=\"ta\" />
+    #+ods_extra_styles: </style:style>
+
 Use of `nxml-mode' blocks for specifying custom styles has many
 advantages compared to specifying styles using inbuffer keywords.
-They XML styles are syntx highlighted, easy to comprehend and
-edit.  More importantly you can exploit full set of babel
-features to build source blocks brick-by-brick.  For example, the
-Org snippet below uses noweb expansion to modify the default page
-header
+The XML styles, as they are enclosed in an Org `src_block', get
+syntax highlighted.  Thereby they are easy to comprehend and
+edit, unlike their keyword counterparts.  More importantly you
+can exploit full set of babel features to build source blocks
+brick-by-brick.  For example, the Org snippet below uses noweb
+expansion to modify the default page header
 
     #+NAME: header
     #+begin_src nxml :exports none
@@ -8506,27 +8622,55 @@ header
 
     #+ATTR_ODT: :page-break t
     Third page.
-
 .          
 "
   (let* ((lang (org-element-property :language src-block))
-	 (style-key
-	  (when (string= (downcase lang) "nxml")
-	    (let ((style-spec-p
-		   (car (member
-			 (org-odt--read-attribute src-block :target)
-			 '("extra_styles"
-			   "extra_automatic_styles"
-			   "master_styles"
-			   "automatic_styles")))))
-	      (when style-spec-p
-		(intern (format ":odt-%s" (replace-regexp-in-string "_" "-" style-spec-p t t))))))))
+	 (style-destination (and (string= (downcase lang) "nxml")
+                                 (map-elt '(("extra_styles" . :odt-extra-styles)
+                                            ("extra_automatic_styles" . :odt-extra-automatic-styles)
+                                            ("master_styles" . :odt-master-styles)
+                                            ("automatic_styles" . :odt-automatic-styles))
+                                          (org-odt--read-attribute src-block :target)))))
     (cond
-     (style-key
-      (plist-put info style-key
-		 (concat (plist-get info style-key)
-			 (org-element-property :value src-block)))
-      "")
+     ;; Case 1: An `nxml' block that specifies one of the above
+     ;; `:target' keywords is destined *NOT* for body text, but
+     ;; specifies OpenDocument styles.  Treat these XML OpenDocument
+     ;; style blocks specially.
+     (style-destination                 ; XML Style blocks are never of body text
+      (prog1 ""
+        (let* ((target-backends (org-odt--read-attribute src-block :backends))
+	       (splice-style-p
+	        (cond
+	         ;; Case 1: The `:backends' includes `none'.
+                 ;; Ignore the style.
+	         ((memq 'none target-backends)
+                  nil)
+	         ;; Case 2: The `:backends' includes `any'.
+	         ;; Allow the style.
+	         ((memq 'any target-backends)
+                  t)
+	         ;; Case 3: No `:backends' specified.
+                 ;; Prohibit such scenario, and insist that the user specify `:backends'.
+	         ((and t (null target-backends))
+		  (error "Found an NXML style block that has *NO* `:backends' property.  Amend the spec as below\n#+ATTR_ODT: %s %s"
+		         (car (org-element-property :attr_odt src-block))
+		         (substring (format "%S" (list :backends `'(,org-export-current-backend)))
+				    1 -1)))
+	         ;; Case 4: No `:backends' specified.
+                 ;; Allow the style only if the current backend is `odt'.
+	         ((and (null target-backends))
+		  (eq 'odt org-export-current-backend))
+	         ;; Case 5: The current backend is a part of `:backends'.
+	         ;; Allow the style.
+	         ((memq org-export-current-backend target-backends) t)
+	         ;; Case 6: Ignore the XML style block.
+	         (t nil))))
+	  (when splice-style-p
+            ;; Case 1: The XML style block should be included.  Append it
+	    ;; to its target.
+            (plist-put info style-destination
+		       (concat (plist-get info style-destination)
+			       (org-element-property :value src-block)))))))
      (t
       (let* ((_lang (org-element-property :language src-block))
 	     (captions-plist (org-odt-format-label src-block info 'definition))
