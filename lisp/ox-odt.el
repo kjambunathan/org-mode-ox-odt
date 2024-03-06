@@ -3490,7 +3490,20 @@ LANGUAGE keyword."
      ((style:name . ,style)
       (style:family . "graphic"))
      (style:graphic-properties
-      ((draw:auto-grow-height . "false")
+      (
+       ;; If height is un-specified, auto-grow height.
+       ,@(cond
+          (height
+           `((draw:auto-grow-height . "false")))
+          (t
+           `((draw:auto-grow-height . "true"))))
+       ;; If width is un-specified, auto-grow-width.
+       ;; NOTE: Auto-grow width doesn't give expected results in LO 7.6.4.1
+       ,@(cond
+          (width
+           `((draw:auto-grow-width . "false")))
+          (t
+           `((draw:auto-grow-width . "true"))))
        (svg:stroke-color . "#000000")
        (svg:stroke-width . "0cm")
        (draw:fill-color . "#ffffff")
@@ -3502,8 +3515,12 @@ LANGUAGE keyword."
 	     (draw:fill-image-width . "100%")))
        (draw:textarea-horizontal-align . "justify")
        (draw:textarea-vertical-align . "middle")
-       (fo:min-height . ,(format "%scm" (or width 1)))
-       (fo:min-width . ,(format "%scm" (or height 1)))
+       (fo:min-height . ,(format "%scm" (or width 0)))
+       (fo:min-width . ,(format "%scm" (or height 0)))
+       (fo:padding-top . "0cm")
+       (fo:padding-bottom . "0cm")
+       (fo:padding-left . "0cm")
+       (fo:padding-right . "0cm")
        (style:horizontal-pos . "from-left")
        (style:horizontal-rel . "paragraph")
        (style:number-wrapped-paragraphs . "no-limit")
