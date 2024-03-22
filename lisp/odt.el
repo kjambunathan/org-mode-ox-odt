@@ -25,6 +25,12 @@
 
 ;;; Code:
 
+(eval-when-compile
+  ;; Pull in definition of `thread-last'
+  (require 'subr-x)
+  ;; (require 'pcase)
+  )
+
 (require 'map)
 (require 'dom)
 
