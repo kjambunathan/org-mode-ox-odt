@@ -26,12 +26,21 @@
 ;;; Code:
 
 (eval-when-compile
-  ;; Pull in definition of `thread-last'
-  (require 'subr-x)
-  ;; (require 'pcase)
-  )
+  ;; Pull in definition of `thread-last', `thread-first' etc.
+  (require 'subr-x))
 
+(require 'pcase)
+(require 'seq)
 (require 'map)
+
+(require 'org-compat)
+
+(if (fboundp 'seq-keep)
+    (defalias 'odt-seq-keep #'seq-keep)
+  (defun odt-seq-keep (function sequence)
+    "Apply FUNCTION to SEQUENCE and return the list of all the non-nil results."
+    (delq nil (seq-map function sequence))))
+
 (require 'dom)
 
 ;;;; Misc. Helpers

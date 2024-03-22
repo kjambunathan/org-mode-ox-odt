@@ -975,7 +975,7 @@
                       (which-rgn (if secondp  previous-rgn this-rgn))
 		      (~r/orgs
 		       (thread-last (plist-get tinfo :rgn->r/org)
-				    (seq-keep
+				    (odt-seq-keep
 				     (pcase-lambda (`(,~rgn . ,~r/org))
 				       (when (= ~rgn which-rgn)
 					 ~r/org))))

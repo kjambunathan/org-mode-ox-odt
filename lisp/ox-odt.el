@@ -37,7 +37,6 @@
 (require 'xml)
 (require 'ox)
 (require 'ox-ascii)
-(require 'org-compat)
 (require 'odt)
 
 ;;; Aliases
@@ -299,7 +298,7 @@ standard Emacs.")
 (defconst org-odt-backend-and-styles-file-extensions
   (let ((extn-and-mimetype
          (thread-last org-odt-file-extensions-alist
-		      (seq-keep
+		      (odt-seq-keep
 		       (pcase-lambda (`(,extn ,mime-type))
 		         (cons extn mime-type))))))
     (thread-last org-odt-supported-backends
@@ -3028,7 +3027,7 @@ export."
   (interactive
    (let* ((choice (completing-read "MIME Type: "
 				   (thread-last org-odt-file-extensions-alist
-						(seq-keep
+						(odt-seq-keep
 						 (pcase-lambda (`(,_ ,mimetype ,_ ,app))
 						   (when (org-string-nw-p app)
 						     mimetype))))
@@ -3049,7 +3048,7 @@ export."
     (pcase-let* ((desktop-entries
 		  (thread-last odf-mime-type
 			       org-odt-collect-desktop-files
-			       (seq-keep
+			       (odt-seq-keep
 				(lambda (it)
 				  (pcase-let* (((odt-map :cmd :local-p) it))
 				    (unless local-p
@@ -3081,7 +3080,7 @@ export."
                   chosen-desktop-entry)
                  (chosen-app
 		  (thread-last org-odt-file-extensions-alist
-			       (seq-keep
+			       (odt-seq-keep
 				(pcase-lambda (`(,_ ,mimetype ,_ ,app))
 				  (when (string= mimetype odf-mime-type)
 				    app)))
@@ -3217,7 +3216,7 @@ command `org-odt-create-custom-desktop-file'."
                       ;; ((memq system-type '(gnu/linux)))
                       value)
              (thread-last org-odt-file-extensions-alist
-	        	  (seq-keep
+	        	  (odt-seq-keep
 	        	   (pcase-lambda (`(,_ ,mimetype ,_ ,app))
 	        	     (unless (string= app "")
 	        	       mimetype)))
