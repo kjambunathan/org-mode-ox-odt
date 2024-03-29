@@ -1,6 +1,6 @@
 ;;; ob-gnuplot.el --- Babel Functions for Gnuplot    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2009-2024 Free Software Foundation, Inc.
 
 ;; Author: Eric Schulte
 ;; Maintainer: Ihor Radchenko <yantar92@gmail.com>
@@ -186,7 +186,7 @@ code."
       ;; value of the variable
       (mapc (lambda (pair)
 	      (setq body (replace-regexp-in-string
-			  (format "\\$%s" (car pair)) (cdr pair) body)))
+			  (format "\\$%s" (car pair)) (cdr pair) body t t)))
 	    vars)
       (when prologue (funcall add-to-body prologue))
       (when epilogue (setq body (concat body "\n" epilogue)))

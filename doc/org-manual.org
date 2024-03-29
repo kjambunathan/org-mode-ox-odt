@@ -4606,7 +4606,7 @@ checked.
 #+cindex: statistics, for checkboxes
 #+cindex: checkbox statistics
 #+cindex: @samp{COOKIE_DATA}, property
-#+vindex: org-hierarchical-checkbox-statistics
+#+vindex: org-checkbox-hierarchical-statistics
 The =[2/4]= and =[1/3]= in the first and second line are cookies
 indicating how many checkboxes present in this entry have been checked
 off, and the total number of checkboxes present.  This can give you an
@@ -4614,7 +4614,7 @@ idea on how many checkboxes remain, even without opening a folded
 entry.  The cookies can be placed into a headline or into (the first
 line of) a plain list item.  Each cookie covers checkboxes of direct
 children structurally below the headline/item on which the cookie
-appears[fn:: Set the variable ~org-hierarchical-checkbox-statistics~
+appears[fn:: Set the variable ~org-checkbox-hierarchical-statistics~
 if you want such cookies to count all checkboxes below the cookie, not
 just those belonging to direct children.].  You have to insert the
 cookie yourself by typing either =[/]= or =[%]=.  With =[/]= you get
@@ -11369,9 +11369,12 @@ to determine the starting line number.
 
 In literal examples, Org interprets strings like =(ref:name)= as
 labels, and use them as targets for special hyperlinks like
-=[[(name)]]=---i.e., the reference name enclosed in single parenthesis.
-In HTML, hovering the mouse over such a link remote-highlights the
-corresponding code line, which is kind of cool.
+=[[(name)]]=---i.e., the reference name enclosed in single
+parentheses.  In HTML, hovering the mouse over such a link
+remote-highlights the corresponding code line[fn:: This requires some
+Javascript which is /not/ automatically included in the HTML output:
+you have to customize the variable =org-html-head-include-scripts= to
+~t~ to have it included (it is ~nil~ by default).], which is kind of cool.
 
 You can also add a =-r= switch which /removes/ the labels from the
 source code[fn:: Adding =-k= to =-n -r= /keeps/ the labels in the
@@ -12218,7 +12221,7 @@ Inclusions may specify a file-link to extract an object matched by
 ranges for =:lines= keyword are relative to the requested element.
 Therefore,
 
-: #+INCLUDE: "./paper.org::*conclusion" :lines 1-20
+: #+INCLUDE: "./paper.org::*conclusion" :lines "1-20"
 
 #+texinfo: @noindent
 includes the first 20 lines of the headline named =conclusion=.
@@ -16712,6 +16715,7 @@ to HTML, the following links all point to a dedicated anchor in
 :END:
 #+cindex: sitemap, of published pages
 
+#+vindex: org-publish-project-alist
 The following properties may be used to control publishing of
 a map of files for a given project.
 
@@ -16728,6 +16732,12 @@ a map of files for a given project.
 - ~:sitemap-title~ ::
 
   Title of sitemap page.  Defaults to name of file.
+
+- ~:sitemap-style~ ::
+
+    Can be ~list~ (site-map is just an itemized list of the titles of
+    the files involved) or ~tree~ (the directory structure of the
+    source files is reflected in the site-map).  Defaults to ~tree~.
 
 - ~:sitemap-format-entry~ ::
 
@@ -16773,21 +16783,6 @@ a map of files for a given project.
 - ~:sitemap-ignore-case~ ::
 
   Should sorting be case-sensitive?  Default ~nil~.
-
-- ~:sitemap-file-entry-format~ ::
-
-  With this option one can tell how a sitemap's entry is formatted in
-  the sitemap.  This is a format string with some escape sequences:
-  ~%t~ stands for the title of the file, ~%a~ stands for the author of
-  the file and ~%d~ stands for the date of the file.  The date is
-  retrieved with the ~org-publish-find-date~ function and formatted
-  with ~org-publish-sitemap-date-format~.  Default ~%t~.
-
-- ~:sitemap-date-format~ ::
-
-  Format string for the ~format-time-string~ function that tells how
-  a sitemap entry's date is to be formatted.  This property bypasses
-  ~org-publish-sitemap-date-format~ which defaults to ~%Y-%m-%d~.
 
 *** Generating an index
 :PROPERTIES:
@@ -22315,7 +22310,7 @@ that are mentioned in the manual.  For a more complete list, use
 
 This manual is for Org version {{{version}}}.
 
-Copyright \copy 2004--2023 Free Software Foundation, Inc.
+Copyright \copy 2004--2024 Free Software Foundation, Inc.
 
 #+begin_quote
 Permission is granted to copy, distribute and/or modify this document

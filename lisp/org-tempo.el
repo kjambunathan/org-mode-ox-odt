@@ -1,6 +1,6 @@
 ;;; org-tempo.el --- Template expansion for Org structures -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2017-2024 Free Software Foundation, Inc.
 ;;
 ;; Author: Rasmus Pank Roulund <emacs at pank dot eu>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -24,7 +24,7 @@
 ;;; Commentary:
 ;;
 ;; Org Tempo reimplements completions of structure template before
-;; point like `org-try-structure-completion' in Org v9.1 and earlier.
+;; point in Org v9.1 and earlier.
 ;; For example, strings like "<e" at the beginning of the line will be
 ;; expanded to an example block.
 ;;

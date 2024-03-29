@@ -1,7 +1,7 @@
 ;;; org.el --- Outline-based notes management and organizer -*- lexical-binding: t; -*-
 
 ;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2024 Free Software Foundation, Inc.
 ;;
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Maintainer: Bastien Guerry <bzg@gnu.org>
@@ -9,7 +9,7 @@
 ;; URL: https://orgmode.org
 ;; Package-Requires: ((emacs "26.1"))
 
-;; Version: 9.6.14
+;; Version: 9.6.24
 
 ;; This file is part of GNU Emacs.
 ;;
@@ -101,10 +101,6 @@
 (require 'org-fold)
 
 (require 'org-cycle)
-(defvaralias 'org-hide-block-startup 'org-cycle-hide-block-startup)
-(defvaralias 'org-hide-drawer-startup 'org-cycle-hide-drawer-startup)
-(defvaralias 'org-pre-cycle-hook 'org-cycle-pre-hook)
-(defvaralias 'org-tab-first-hook 'org-cycle-tab-first-hook)
 (defalias 'org-global-cycle #'org-cycle-global)
 (defalias 'org-overview #'org-cycle-overview)
 (defalias 'org-content #'org-cycle-content)
@@ -1139,6 +1135,26 @@ the following lines anywhere in the buffer:
   :version "24.4"
   :package-version '(Org . "8.0")
   :type 'boolean)
+
+(unless (boundp 'untrusted-content)
+  (defvar untrusted-content nil))
+(defvar untrusted-content) ; defined in files.el since Emacs 29.3
+(defvar org--latex-preview-when-risky nil
+  "If non-nil, enable LaTeX preview in Org buffers from unsafe source.
+
+Some specially designed LaTeX code may generate huge pdf or log files
+that may exhaust disk space.
+
+This variable controls how to handle LaTeX preview when rendering LaTeX
+fragments that originate from incoming email messages.  It has no effect
+when Org mode is unable to determine the origin of the Org buffer.
+
+An Org buffer is considered to be from unsafe source when the
+variable `untrusted-content' has a non-nil value in the buffer.
+
+If this variable is non-nil, LaTeX previews are rendered unconditionally.
+
+This variable may be renamed or changed in the future.")
 
 (defcustom org-insert-mode-line-in-empty-file nil
   "Non-nil means insert the first line setting Org mode in empty files.
@@ -4558,12 +4574,16 @@ from file or URL, and return nil.
 If NOCACHE is non-nil, do a fresh fetch of FILE even if cached version
 is available.  This option applies only if FILE is a URL."
   (let* ((is-url (org-url-p file))
+         (is-remote (condition-case nil
+                        (file-remote-p file)
+                      ;; In case of error, be safe.
+                      (t t)))
          (cache (and is-url
                      (not nocache)
                      (gethash file org--file-cache))))
     (cond
      (cache)
-     (is-url
+     ((or is-url is-remote)
       (if (org--should-fetch-remote-resource-p file)
           (condition-case error
               (with-current-buffer (url-retrieve-synchronously file)
@@ -4649,9 +4669,9 @@ returns non-nil if any of them match."
                      (propertize domain 'face '(:inherit org-link :weight normal))
                      ") as safe.\n ")
                   "")
-                (propertize "f" 'face 'success)
                 (if current-file
                     (concat
+                     (propertize "f" 'face 'success)
                      " to download this resource, and permanently mark all resources in "
                      (propertize current-file 'face 'underline)
                      " as safe.\n ")
@@ -4685,7 +4705,7 @@ returns non-nil if any of them match."
                               (if (and (= char ?f) current-file)
                                   (concat "file://" current-file) uri))
                              "\\'")))))
-          (prog1 (memq char '(?y ?n ?! ?d ?\s ?f))
+          (prog1 (memq char '(?y ?! ?d ?\s ?f))
             (quit-window t)))))))
 
 (defun org-extract-log-state-settings (x)
@@ -5524,7 +5544,9 @@ by a #."
 
 (defun org-fontify-extend-region (beg end _old-len)
   (let ((end (if (progn (goto-char end) (looking-at-p "^[*#]"))
-                 (1+ end) end))
+                 (min (point-max) (1+ end))
+               ;; See `font-lock-extend-jit-lock-region-after-change' and bug#68849.
+               (min (point-max) (1+ end))))
         (begin-re "\\(\\\\\\[\\|\\(#\\+begin_\\|\\\\begin{\\)\\S-+\\)")
 	(end-re "\\(\\\\\\]\\|\\(#\\+end_\\|\\\\end{\\)\\S-+\\)")
 	(extend
@@ -8778,7 +8800,7 @@ TYPE is the dynamic block type, as a string."
 (defun org-dynamic-block-define (type func)
   "Define dynamic block TYPE with FUNC.
 TYPE is a string.  FUNC is the function creating the dynamic
-block of such type."
+block of such type.  FUNC must be able to accept zero arguments."
   (pcase (assoc type org-dynamic-block-alist)
     (`nil (push (cons type func) org-dynamic-block-alist))
     (def (setcdr def func))))
@@ -8794,7 +8816,7 @@ is non-nil, call the dynamic block function interactively."
   (pcase (org-dynamic-block-function type)
     (`nil (error "No such dynamic block: %S" type))
     ((and f (pred functionp))
-     (if interactive-p (call-interactively f) (funcall f)))
+     (if (and interactive-p (commandp f)) (call-interactively f) (funcall f)))
     (_ (error "Invalid function for dynamic block %S" type))))
 
 (defun org-dblock-update (&optional arg)
@@ -9335,7 +9357,7 @@ When called through ELisp, arg is also interpreted in the following way:
               (unless (org-invisible-p (line-beginning-position))
                 (org-fold-region (line-beginning-position)
                                  (line-end-position)
-                                 nil)))
+                                 nil 'outline)))
 	    (cond ((and org-state (equal this org-state))
 		   (message "TODO state was already %s" (org-trim next)))
 		  ((not (pos-visible-in-window-p hl-pos))
@@ -12285,7 +12307,7 @@ a *different* entry, you cannot use these techniques."
                 ;; agenda cache for non-file buffers.
                 (when buffer-file-name
 		  (org-agenda-prepare-buffers
-		   (and buffer-file-name (list buffer-file-name))))
+		   (and buffer-file-name (list (current-buffer)))))
 		(setq res
 		      (org-scan-tags
 		       func matcher org--matcher-tags-todo-only start-level)))
@@ -15695,6 +15717,7 @@ fragments in the buffer."
   (interactive "P")
   (cond
    ((not (display-graphic-p)) nil)
+   ((and untrusted-content (not org--latex-preview-when-risky)) nil)
    ;; Clear whole buffer.
    ((equal arg '(64))
     (org-clear-latex-preview (point-min) (point-max))
@@ -20443,7 +20466,7 @@ make a significant difference in outlines with very many siblings."
                    (<= (point-min) (org-element-property :begin parent)))
               (progn
                 (goto-char (org-element-property :begin parent))
-                (org-element-property :level parent))
+                (save-excursion (skip-chars-forward "*")))
             (when (and current-heading
                        (<= (point-min) (org-element-property :begin current-heading)))
               (goto-char (org-element-property :begin current-heading))

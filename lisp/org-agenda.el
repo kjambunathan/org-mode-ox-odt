@@ -1,6 +1,6 @@
 ;;; org-agenda.el --- Dynamic task and appointment lists for Org  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2024 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -10543,7 +10543,8 @@ ARG is passed through to `org-deadline'."
   (unless (marker-buffer org-clock-marker)
     (user-error "No running clock"))
   (org-with-remote-undo (marker-buffer org-clock-marker)
-    (org-clock-cancel)))
+    (org-clock-cancel))
+  (org-agenda-unmark-clocking-task))
 
 (defun org-agenda-clock-goto ()
   "Jump to the currently clocked in task within the agenda.

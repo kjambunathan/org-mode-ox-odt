@@ -1,6 +1,6 @@
 ;;; ox-html.el --- HTML Back-End for Org Export Engine -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2011-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2011-2024 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;;      Jambunathan K <kjambunathan at gmail dot com>
@@ -266,7 +266,7 @@ property on the headline itself.")
   :type 'string)
 
 (defcustom org-html-style-default
-  "<style>
+  "<style type=\"text/css\">
   #content { max-width: 60em; margin: auto; }
   .title  { text-align: center;
              margin-bottom: .2em; }

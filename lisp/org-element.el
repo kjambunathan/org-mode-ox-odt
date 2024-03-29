@@ -1,6 +1,6 @@
 ;;; org-element.el --- Parser for Org Syntax         -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2024 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Goaziou <n.goaziou at gmail dot com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -6556,7 +6556,7 @@ the expected result."
                    (error "org-element: Parsing aborted by user.  Cache has been cleared.
 If you observe Emacs hangs frequently, please report this to Org mode mailing list (M-x org-submit-bug-report)."))
                  (message (substitute-command-keys
-                           "`org-element--parse-buffer': Suppressed `\\[keyboard-quit]'.  Press `\\[keyboard-quit]' %d more times to force interruption.")
+                           "`org-element--parse-to': Suppressed `\\[keyboard-quit]'.  Press `\\[keyboard-quit]' %d more times to force interruption.")
                           (- org-element--cache-interrupt-C-g-max-count
                              org-element--cache-interrupt-C-g-count)))
 	       (unless element

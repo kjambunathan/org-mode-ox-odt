@@ -1,6 +1,6 @@
 ;;; org-compat.el --- Compatibility Code for Older Emacsen -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2004-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2004-2024 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <carsten.dominik@gmail.com>
 ;; Keywords: outlines, hypermedia, calendar, wp
@@ -664,7 +664,7 @@ You could use brackets to delimit on what part the link will be.
 
 %t is the title.
 %a is the author.
-%d is the date formatted using `org-publish-sitemap-date-format'."
+%d is the date."
   :group 'org-export-publish
   :type 'string)
 (make-obsolete-variable
