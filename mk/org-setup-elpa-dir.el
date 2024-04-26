@@ -146,18 +146,15 @@
 
 ;; Libraries that the OpenDocument Exporter relies on
 (defvar odt-libs
-  '(peg rnc-mode))
+  '(peg rnc-mode citeproc))
 
 ;; Configure the ELPA dir where `peg', `rnc-mode' can be found
 (when (getenv "USER_ELPA_DIR")
   (setq package-user-dir (file-name-as-directory (getenv "USER_ELPA_DIR"))))
 
 ;; Put `peg', `rnc-mode' etc in the `load-path'
-(setq package-load-list '(
-                          (peg t)
-                          (rnc-mode t)
-                          ))
-(package-initialize)
+(package-initialize 'no-activate)
+(mapc #'package-activate '(peg rnc-mode citeproc))
 
 ;; Load the above libraries
 (dolist (l odt-libs)

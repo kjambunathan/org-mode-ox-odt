@@ -164,6 +164,13 @@
       </style:section-properties>
     </style:style>
 
+    <!-- Section style for Bibliography -->    
+    <style:style style:name="OrgCSLBibBody" style:family="section">
+      <style:section-properties style:editable="true">
+	<style:columns fo:column-count="1" fo:column-gap="0cm"/>
+      </style:section-properties>
+    </style:style>
+    
     <!-- Table styles -->
     <style:style style:name="OrgTable" style:family="table">
       <style:table-properties style:rel-width="96%" fo:margin-top="0cm" fo:margin-bottom="0.20cm" table:align="center"/>

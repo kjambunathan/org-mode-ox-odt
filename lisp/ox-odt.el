@@ -96,7 +96,6 @@
     (underline . org-odt-underline)
     (verbatim . org-odt-verbatim)
     (verse-block . org-odt-verse-block)
-    ;; (citation . org-odt-citation)
     )
   :filters-alist '((:filter-parse-tree
 		    . (org-odt--translate-clickable-images
@@ -5525,19 +5524,222 @@ CONTENTS is nil.  INFO is a plist holding contextual information."
 				 (endnote :odt-endnote-braces))))))))
 
 
-;;;; Citation Reference
+;;;; Citation and Bibliography
 
-(defun org-odt-citation (citation _contents _info)
-  "Transcode a CITATION element from Org to ODT.
-CONTENTS is nil.  INFO is a plist holding contextual information."
-  ;; Just interpret the citation object.
-  ;; Citation processors (like ox-jabref.el) may handle citation
-  ;; by registering their own transcoders.
+(defcustom org-odt-citeproc-backend 'odtng
+  "Citeproc format for ODT export.
+
+The default value, `odtng', is deliberately chosen to be different from
+`org-odt', a symbol that is _likely_ to be used for vanilla ODT
+exporter.  See `citeproc-fmt--formatters-alist'.
+
+When nil, use whatever format is chosen by
+`org-cite-csl--output-format'.  When using org-9.6.24, the Citeproc
+format for ODT export is `org'."
+  :type '(choice
+	  (const :tag  "None" nil)
+	  (const :tag  "odtng" odtng))
+  :group 'org-export-odt)
+
+;;;;; Intercept `oc-csl', the csl citation processor for Org
+
+(require 'oc-csl)
+
+;;;;;; Intercept `org-cite-csl--output-format':
+
+(when org-odt-citeproc-backend
+  (advice-add 'org-cite-csl--output-format :around
+              (defun org-cite-csl--output-format--around (orig-fun &rest orig-args)
+                (pcase-let* ((`(,info) orig-args))
+                  (let ((backend (plist-get info :back-end)))
+                    (cond
+                     ((org-export-derived-backend-p backend 'odt)
+                      ;; `odtng' is the Citeproc backend for ODT export
+                      org-odt-citeproc-backend)
+                     (t (apply orig-fun orig-args))))))))
+
+;; (advice-remove 'org-cite-csl--output-format 'org-cite-csl--output-format--around)
+
+;;;;;; Intercept `org-cite-csl-render-bibliography'
+
+(when org-odt-citeproc-backend
+  (advice-add 'org-cite-csl-render-bibliography :around
+            (defun org-cite-csl-render-bibliography--around
+                (orig-fun &rest orig-args)
+              (pcase-let*
+                  ((`(,_keys ,_files ,_style ,props ,_backend ,info) orig-args))
+                (cond
+                 ((eq org-odt-citeproc-backend (org-cite-csl--output-format info))
+                  (pcase-let* ((`(,outputs ,_parameters) (org-cite-csl--rendered-bibliographies info))
+                               (output (cdr (assoc props outputs))))
+                    output))
+                 (t (apply orig-fun orig-args)))))))
+
+;; (advice-remove 'org-cite-csl-render-bibliography 'org-cite-csl-render-bibliography--around)
+
+;;;;; Citeproc Backend
+
+(require 'citeproc-formatters nil t)
+
+;;;;;; Citeproc Rich-Text Formatter
+
+(defvar org-odt-citeproc-fmt--alist
+  `(
+    (bib-item-no                . org-odt-citeproc-bib-item-no)
+    (cited-item-no              . org-odt-citeproc-cited-item-no)
+    (display-block              . org-odt-citeproc-display-block)
+    (display-indent             . org-odt-citeproc-display-indent)
+    (display-left-margin        . org-odt-citeproc-display-left-margin)
+    (display-right-inline       . org-odt-citeproc-display-right-inline)
+    (font-style-italic          . org-odt-citeproc-font-style-italic)
+    (font-style-oblique         . org-odt-citeproc-font-style-oblique)
+    (font-variant-small-caps    . org-odt-citeproc-font-variant-small-caps)
+    (font-weight-bold           . org-odt-citeproc-font-weight-bold)
+    (href                       . org-odt-citeproc-href)
+    (text-decoration-underline  . org-odt-citeproc-text-decoration-underline)
+    (unformatted                . org-odt-citeproc-unformatted)
+    (vertical-align-sub         . org-odt-citeproc-vertical-align-sub)
+    (vertical-align-sup         . org-odt-citeproc-vertical-align-sup))
+  )
+
+(defun org-odt-citeproc-bib-item-no (contents n)
+  (org-odt-log-vars 'org-odt-citeproc-bib-item-no contents n)
+
+  (let* ((id (format "citeproc_bib_item_%s" n)))
+    (format "%s%s"
+            (org-odt--target nil id)
+            (format "<text:span text:style-name=\"%s\">%s</text:span>"
+                    "OrgCSLBibItemNo"
+                    contents))))
+
+(defun org-odt-citeproc-cited-item-no (contents n)
+  (org-odt-log-vars 'org-odt-citeproc-cited-item-no contents n)
+
+  (let* ((id (format "citeproc_bib_item_%s" n)))
+    (org-odt--lisp-to-xml
+     `(text:a
+       ((xlink:type . "simple")
+        (xlink:href . ,(format "#%s" id)))
+       ,(format "<text:span text:style-name=\"%s\">%s</text:span>"
+                "OrgCSLCitedItemNo" contents)))))
+
+(defun org-odt-citeproc-display-block (contents)
+  (org-odt-log-vars 'org-odt-citeproc-display-block contents)
+
+  (concat "<text:line-break/>"
+          (format "<text:span text:style-name=\"%s\">%s</text:span>"
+                  "OrgCSLDisplayBlock" contents)
+          "<text:line-break/>"))
+
+(defun org-odt-citeproc-display-indent (contents)
+  (org-odt-log-vars 'org-odt-citeproc-display-indent contents)
+
+  (concat "<text:tab/>"
+          (format "<text:span text:style-name=\"%s\">%s</text:span>"
+                  "OrgCSLDisplayIndent" contents)
+          "<text:line-break/>"))
+
+(defun org-odt-citeproc-display-left-margin (contents)
+  (org-odt-log-vars 'org-odt-citeproc-display-left-margin contents)
+
   (format "<text:span text:style-name=\"%s\">%s</text:span>"
-	  "OrgCode" (org-odt--encode-plain-text
-		     (org-element-interpret-data
-		      (or (org-element-property :replaces citation)
-			  citation)))))
+          "OrgCSLDisplayLeftMargin"
+          contents))
+
+(defun org-odt-citeproc-display-right-inline (contents)
+  (org-odt-log-vars 'org-odt-citeproc-display-right-inline contents)
+
+  (concat
+   "<text:tab/>"
+   (format "<text:span text:style-name=\"%s\">%s</text:span>"
+           "OrgCSLDisplayRightInline" contents)))
+
+(defun org-odt-citeproc-font-style-italic (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLFontStyleItalic" contents))
+
+(defun org-odt-citeproc-font-style-oblique (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLFontStyleOblique" contents))
+
+(defun org-odt-citeproc-font-variant-small-caps (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLFontVariantSmallCaps" contents))
+
+(defun org-odt-citeproc-font-weight-bold (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLFontWeightBold" contents))
+
+(defun org-odt-citeproc-href (contents path)
+  (org-odt--lisp-to-xml
+   `(text:a ((xlink:type . "simple")
+             (xlink:href . ,path))
+            ,contents)))
+
+(defun org-odt-citeproc-text-decoration-underline (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLTextDecorationUnderline" contents))
+
+(defun org-odt-citeproc-unformatted (contents)
+  (org-odt-log-vars 'org-odt-citeproc-unformatted contents)
+
+  (citeproc-fmt--xml-escape contents))
+
+(defun org-odt-citeproc-vertical-align-sub (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLVerticalAlignSub" contents))
+
+(defun org-odt-citeproc-vertical-align-sup (contents)
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCSLVerticalAlignSup" contents))
+
+;;;;;; Citeproc Bibliography Renderer
+
+(defun org-odt-citeproc-fmt--bib-formatter (bib-items bib-format)
+  (let* ((prop-normalized (thread-last bib-format
+                                       (seq-sort (lambda (a b)
+                                                   (string< (car a)
+                                                            (car b))))))
+         (prop-truncated (thread-last prop-normalized
+                                      (seq-filter
+                                       (pcase-lambda (`(,k . ,_v))
+                                         (not (memq k '(entry-spacing line-spacing max-offset)))))))
+         (prop-and-styles
+          '(
+            ;; AMA - American Medical Association
+            (((hanging-indent  . nil)  (second-field-align  . flush))  .  "OrgCSLEntrySecondFieldAlignIsFlush")
+            ;; Chicago Manual Of Style
+            (((hanging-indent  . t)    (second-field-align  . nil))    .  "OrgCSLEntryWithHangingIndent")
+            ;; AAA - American Anthropological Association
+            (((hanging-indent  . nil)  (second-field-align  . nil))    .  "OrgCSLEntryDefault")
+            )
+          )
+         (style-name (or (map-elt prop-and-styles prop-truncated)
+                         "OrgCSLEntryDefault")))
+    (org-odt-log-vars 'org-odt-citeproc-fmt--bib-formatter prop-normalized prop-truncated style-name)
+
+    (thread-last bib-items
+                 (seq-map
+                  (lambda (bib-item)
+                    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+                            style-name
+                            bib-item)))
+                 (pcase--flip string-join "\n")
+                 (format "<text:section text:style-name=\"%s\" text:name=\"%s\">%s</text:section>"
+                         "OrgCSLBibBody"
+                         "Bibliography"))))
+
+;;;;;; Register with Citeproc
+
+(with-eval-after-load 'citeproc
+  (when org-odt-citeproc-backend
+    (require 'citeproc-formatters)
+    (add-to-list 'citeproc-fmt--formatters-alist
+                 `(,org-odt-citeproc-backend
+               . ,(citeproc-formatter-create
+                   :rt (citeproc-formatter-fun-create org-odt-citeproc-fmt--alist)
+                   :bib #'org-odt-citeproc-fmt--bib-formatter)))))
+
 
 ;;;; Headline
 

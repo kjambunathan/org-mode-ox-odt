@@ -286,7 +286,7 @@
 
   <style:style style:name="OrgVerse" style:family="paragraph" style:parent-style-name="Preformatted_20_Text">
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0.21cm" fo:background-color="transparent" fo:padding="0cm" fo:border="none" style:shadow="none"/>
-  </style:style>  
+  </style:style>
 
   <style:style style:name="OrgClock" style:family="paragraph" style:parent-style-name="Text_20_body">
    <style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm"/>
@@ -1233,6 +1233,54 @@
    <table:odd-columns table:style-name="Simple_20_Grid_20_Rows.8"/>
    <table:background table:style-name="Simple_20_Grid_20_Rows.10"/>
   </table:table-template>
+
+  <!-- Citation Styles -->
+
+  <style:style style:name="Standard" style:family="text"/>
+  <style:style style:name="OrgCSLBibItemNo" style:family="text" style:parent-style-name="Standard"/>
+  <style:style style:name="OrgCSLCitedItemNo" style:family="text" style:parent-style-name="Standard"/>
+
+  <style:style style:name="OrgCSLFontStyleItalic" style:family="text" style:parent-style-name="Emphasis"/>
+  <style:style style:name="OrgCSLFontStyleOblique" style:family="text" style:parent-style-name="Emphasis"/>
+
+  <style:style style:name="OrgCSLFontVariantSmallCaps" style:family="text" style:parent-style-name="OrgSmallCaps"/>
+
+  <style:style style:name="OrgCSLFontWeightBold" style:family="text" style:parent-style-name="Bold"/>
+
+  <style:style style:name="OrgCSLTextDecorationUnderline" style:family="text" style:parent-style-name="Underline"/>
+
+  <style:style style:name="OrgCSLVerticalAlignSub" style:family="text" style:parent-style-name="OrgSuperscript"/>
+  <style:style style:name="OrgCSLVerticalAlignSup" style:family="text" style:parent-style-name="OrgSuperscript"/>
+
+  <!-- AMA - American Medical Association -->
+  <!-- (hanging-indent           . nil) -->
+  <!-- (second-field-align       . flush) -->
+  <style:style style:name="OrgCSLEntrySecondFieldAlignIsFlush" style:display-name="OrgCSLEntrySecondFieldAlignIsFlush" style:family="paragraph" style:parent-style-name="Index" style:class="index">
+   <style:paragraph-properties fo:margin-left="0.466cm" fo:margin-top="0cm" fo:margin-bottom="0.423cm" style:line-height-at-least="0.423cm" fo:text-indent="-0.466cm" style:auto-text-indent="false">
+    <style:tab-stops>
+     <style:tab-stop style:position="0.466cm"/>
+    </style:tab-stops>
+   </style:paragraph-properties>
+  </style:style>
+
+  <!-- Chicago Manual of Style (author-date) -->
+  <!-- (hanging-indent           . t) -->
+  <!-- (second-field-align       . nil) -->
+  <style:style style:name="OrgCSLEntryWithHangingIndent" style:display-name="OrgCSLEntryWithHangingIndent" style:family="paragraph" style:parent-style-name="Index" style:class="index">
+   <style:paragraph-properties fo:margin-left="1.27cm" fo:margin-top="0cm" fo:margin-bottom="0cm" style:line-height-at-least="0.423cm" fo:text-indent="-1.27cm" style:auto-text-indent="false">
+    <style:tab-stops/>
+   </style:paragraph-properties>
+  </style:style>
+
+  <!-- AAA - American Anthropological Association -->
+  <!-- (hanging-indent		 . nil) -->
+  <!-- (second-field-align	 . nil) -->
+  <style:style style:name="OrgCSLEntryDefault" style:display-name="OrgCSLEntryDefault" style:family="paragraph" style:parent-style-name="Index" style:class="index">
+   <style:paragraph-properties fo:margin-left="0cm" fo:margin-top="0cm" fo:margin-bottom="0cm" style:line-height-at-least="0.423cm" fo:text-indent="0cm" style:auto-text-indent="false">
+    <style:tab-stops/>
+   </style:paragraph-properties>
+  </style:style>
+
 </office:styles>
  <office:automatic-styles>
   <style:style style:name="OrgFooter" style:family="paragraph" style:parent-style-name="Footer">
