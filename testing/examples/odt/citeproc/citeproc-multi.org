@@ -1,0 +1,141 @@
+#+ODT_PREFERRED_OUTPUT_FORMAT: pdf
+
+#+BIBLIOGRAPHY: /home/kjambunathan/src1/org-mode-ox-odt/master/testing/examples/odt/novices.bib
+#+BIBLIOGRAPHY: /home/kjambunathan/src1/org-mode-ox-odt/master/testing/examples/odt/biblatex-examples/biblatex-examples.bib
+
+* COMMENT Chicago Manual of Style (Author-Date)
+:PROPERTIES:
+:EXPORT_FILE_NAME: citeproc-odt-chicago-author-date
+:END:
+
+#+CITE_EXPORT: csl ../chicago-author-date.csl
+
+#+INCLUDE: citeproc-contents.org
+
+*Bibliography*
+
+#+PRINT_BIBLIOGRAPHY:
+
+** COMMENT Comments on CSL spec for Chicago Manual of Style
+
+Does NOT use any of
+
+- display-block
+- display-indent
+- display-left-margin
+- display-right-inline
+
+#+begin_src emacs-lisp
+(org-odt-citeproc-fmt--bib-formatter :prop-normalized
+				     ((entry-spacing . 0)
+				      (hanging-indent . t)
+				      (line-spacing . 1)
+				      (max-offset . 0)
+				      (second-field-align))
+				     :prop-truncated
+				     ((hanging-indent . t)
+				      (second-field-align))
+				     :style-name
+				     "OrgCSLEntryWithHangingIndent")
+#+end_src
+
+* COMMENT American Medical Assocation
+:PROPERTIES:
+:EXPORT_FILE_NAME: citeproc-odt-american-medical-association
+:END:
+
+#+CITE_EXPORT: csl ../american-medical-association.csl
+
+#+INCLUDE: citeproc-contents.org
+
+*Bibliography*
+
+#+PRINT_BIBLIOGRAPHY:
+
+** COMMENT Comments on CSL spec for American Medical Assocation
+
+Uses only
+
+- display-left-margin
+- display-right-inline
+
+#+begin_src emacs-lisp
+(org-odt-citeproc-fmt--bib-formatter :prop-normalized
+				     ((entry-spacing . 1)
+				      (hanging-indent)
+				      (line-spacing . 1)
+				      (max-offset . 3)
+				      (second-field-align . flush))
+				     :prop-truncated
+				     ((hanging-indent)
+				      (second-field-align . flush))
+				     :style-name
+				     "OrgCSLEntrySecondFieldAlignIsFlush")
+#+end_src
+
+* COMMENT American Anthropological Association
+:PROPERTIES:
+:EXPORT_FILE_NAME: citeproc-odt-american-anthropological-association
+:END:
+
+#+CITE_EXPORT: csl ../american-anthropological-association.csl
+
+#+INCLUDE: citeproc-contents.org
+
+*Bibliography*
+
+#+PRINT_BIBLIOGRAPHY:
+
+** COMMENT Comments on CSL spec for American Anthropological Association
+
+Uses only
+
+- display-block
+- display-left-margin
+- display-right-inline
+
+#+begin_src emacs-lisp
+(org-odt-citeproc-fmt--bib-formatter :prop-normalized
+				     ((entry-spacing . 0)
+				      (hanging-indent)
+				      (line-spacing . 1)
+				      (max-offset . 0)
+				      (second-field-align))
+				     :prop-truncated
+				     ((hanging-indent)
+				      (second-field-align))
+				     :style-name "OrgCSLEntryDefault")
+#+end_src
+
+* COMMENT Bio-Archaeology International
+:PROPERTIES:
+:EXPORT_FILE_NAME: citeproc-odt-bioarchaeology-international
+:END:
+
+#+CITE_EXPORT: csl ../bioarchaeology-international.csl
+
+#+INCLUDE: citeproc-contents.org
+
+*Bibliography*
+
+#+PRINT_BIBLIOGRAPHY:
+
+** COMMENT Comments on CSL spec for Bio-Archaeology International
+
+Uses only
+
+- display-left-margin
+- display-indent
+
+#+begin_src emacs-lisp
+(org-odt-citeproc-fmt--bib-formatter :prop-normalized
+				     ((entry-spacing . 0)
+				      (hanging-indent)
+				      (line-spacing . 1)
+				      (max-offset . 0)
+				      (second-field-align))
+				     :prop-truncated
+				     ((hanging-indent)
+				      (second-field-align))
+				     :style-name "OrgCSLEntryDefault")
+#+end_src
