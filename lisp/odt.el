@@ -104,6 +104,13 @@
 	(xml-remove-comments (point-min) (point-max)))
       (libxml-parse-xml-region (point-min) (point-max)))))
 
+(defun odt-xml-strings-to-dom (xml-string strip-comment-nodes-p)
+  (or (odt-xml-string-to-dom xml-string strip-comment-nodes-p)
+      (odt-dom-contents
+       (odt-xml-string-to-dom
+        (format "<dummy>%s</dummy>" xml-string)
+        strip-comment-nodes-p))))
+
 (defun odt-dom-to-xml-string (dom &optional depth prettify)
   (let* ((newline (if prettify "\n" ""))
          (encode-attribute-value
