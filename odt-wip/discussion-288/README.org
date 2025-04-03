@@ -1,0 +1,103 @@
+- STEP-1 :: Perform an X-Ray on a 3rd-Party ~styles.xml~, and see what
+  "next style" a paragraph-styles uses.
+
+  - ~M-x load-file odt-d288-1.el~
+  - ~C-x C-f next-style-sample.org~
+  - ~M-x pp-eval-expression RET (keiser-odt-d288/gather-styles-and-next-styles-from-styles.xml)~
+
+  This will produce the following output:
+
+  #+begin_src emacs-lisp
+   ("First_20_line_20_indent"      . "First_20_line_20_indent")
+   ("Heading"                      . "Text_20_body")
+   ("Heading_20_1"                 . "Text_20_body")
+   ("Heading_20_10"                . "Text_20_body")
+   ("Heading_20_2"                 . "Text_20_body")
+   ("Heading_20_3"                 . "Text_20_body")
+   ("Heading_20_4"                 . "Text_20_body")
+   ("Heading_20_5"                 . "Text_20_body")
+   ("Heading_20_6"                 . "Text_20_body")
+   ("Heading_20_7"                 . "Text_20_body")
+   ("Heading_20_8"                 . "Text_20_body")
+   ("Heading_20_9"                 . "Text_20_body")
+   ("Horizontal_20_Line"           . "Text_20_body")
+   ("OrgInlineTaskHeading"         . "Text_20_body")
+   ("Quotations"                   . "Text_20_body")
+   ("Subtitle"                     . "Text_20_body")
+   ("Text_20_body"                 . "First_20_line_20_indent")
+   ("Text_20_body_20_bold"         . "Text_20_body")
+   ("Title"                        . "Subtitle")
+   )
+  #+end_src
+
+- STEP-2 :: Use the user-provided ~styles.xml~, to create a custom
+  ~styles-001---fancy-paragraphs.xml~), which assigns a foreground
+  color to some paragraphs as below:
+
+  | ODT style               | Modification                 |
+  |-------------------------+------------------------------|
+  | Text_20_body            | No Color                     |
+  | First_20_line_20_indent | "Red"                        |
+  | Quotations              | Add a "Blue"-ish left border |
+
+  - ~M-x load-file RET odt-d288-1.el~
+  - ~C-x C-f next-style-sample.org~  
+  - ~M-x keiser-odt-d288/colorize-QUOTATIONS-and-FIRST-LINE-INDENT~
+
+     The above command will create a ~styles-001---fancy-paragraphs.xml~
+
+  - Do ~M-x ediff-files RET styles.xml RET
+    styles-001---fancy-paragraphs~ to investigate what changes have
+    been made to the styles file.
+
+  Now,
+
+  - ~C-x C-f ~next-style-sample.org~ and use the following export
+    settings.
+
+    /(Note that the oriignal ~styles.xml~ is rendered inactive, and
+    the new ~styles-001---fancy-paragraphs.xml~ is put to work
+    instead.)/
+
+    #+begin_example
+    # #+ODT_STYLES_FILE: ./styles.xml
+
+    #+ODT_STYLES_FILE: ./styles-001---fancy-paragraphs.xml
+    #+end_example
+
+- STEP-3 :: 
+
+  - STEP-3.1 :: Modify ~EXPORT_FILE_NAME~
+ 
+    - ~C-x C-f next-style-sample.org~
+
+      Add the following line to it
+
+      #+begin_example
+      #+EXPORT_FILE_NAME: d288-next-style-sample
+      #+end_example
+
+  - STEP-3.2 :: Load custom code ~odt-d288.el~ and export
+    ~next-style-sample.org~ to ~odt~
+     
+    - ~M-x load-file RET odt-d288.el~
+    - ~C-x C-f next-style-sample.org~
+    - ~C-c C-e o O~
+
+       This will create a ODT file called
+      ~d288-next-style-sample.odt~.  This ODT file will
+
+       - have "Double" Line-spacing
+
+       - use "First Line Indent" as the "default" paragraph style
+
+       - and use a paragraph style that is dependent on the preceding
+         context.
+
+       IOW, a paragraph, by default, will use a paragraph style
+      specified in ~style:next-style-name~ for the "preceding"
+      paragraph.
+
+      Look at the ~*Messages*~ buffer, to track in what order the
+      functions are called.  See also the ~Commentary~ in ~odt-288.el~
+      and ~oddt-288-1.el~.

@@ -1,0 +1,26 @@
+#+ODT_STYLES_FILE: ./styles.xml
+
+* Headline
+[No indent] Based on the style definitions, first line after a headline should be flush left. (Text body) This will be the same in both cases.
+
+[Indent] Paragraphs following the first should be indented (First line indent). This will not work in your current master branch.
+
+[Indent] This should also be indented (First line indent). This also will not work.
+
+#+begin_quote
+[Special indent] Special paragraphs should maintain their special formatting/style. This will be the same in both cases.
+#+end_quote
+
+[No indent] Like most text following quotations, this is just continuing the paragraph. I have set the default next-style to "Text body" so there is no indent by default. This will be the same in both cases.
+
+[Indent] But this text should be indented, because it is following "Text body", which has a "First line indent" next-style. It will not work as desired in your master.
+
+#+begin_quote
+[Special indent] 
+
+Here is another quote. This will work correctly in both cases.
+#+end_quote 
+#+attr_odt: :style "First_20_line_20_indent"
+[Indent] This text is a new paragraph, so I have to override the default. This will work correctly in both cases.
+
+[Indent] This will be indented in my fork, not in yours.
