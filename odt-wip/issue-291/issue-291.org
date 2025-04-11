@@ -1,0 +1,22 @@
+#+NAME: error-because-cookie-NOT-at-the-end
+| Item         | Weight (kg) |
+|--------------+-------------|
+| <l>          | <r>         |
+| Bowling ball |          15 |
+| Mango        |         0.5 |
+| Motorcycle   |         300 |
+|--------------+-------------|
+| Total        |       315.5 |
+#+TBLFM: @6$2=vsum(@I..@II)
+
+#+NAME: ALL-OK-because-cookie-at-the-end
+| Item         | Weight (kg) |
+|--------------+-------------|
+| Bowling ball |          15 |
+| Mango        |         0.5 |
+| Motorcycle   |         300 |
+|--------------+-------------|
+| Total        |       315.5 |
+| <l>          |         <r> |
+#+TBLFM: @>>$2=vsum(@I..@II)
+
