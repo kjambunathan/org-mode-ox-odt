@@ -79,6 +79,15 @@ TODO
 *#
 .#*
 
+# .. image files are mostly screenshots
+
+# JPEG
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.png
+
 #
 # Local variables:
 # End:
