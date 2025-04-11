@@ -1,0 +1,25 @@
+With `ODS` export, the /last/ column header (= header of the /numeric/
+column in table below) gets aligned to the ~left~, but the /numeric
+cells/ themselves are aligned to the ~right~.  The result is UGLY.
+
+It is understandable that the header gets aligned to the right--it
+contains ~text~.  It is understandable that the numeric data in the
+cells are aligned to the left--it contains numbers.  When considering
+each cell in isolation, this stylistic choice by the ODS exporter is
+OK.  But when they /textual header/ and /numeric data/ all appear in a
+single column the result is UGLY.
+
+To force a ~right~ alignment for the entire last column, I used the
+~:col-cookies~ line as below, but the results are unsatisfactory.  I
+consider this a bug.
+
+_*NOTE*_: Even without the ~ATTR_ODT~ line, the default export to
+~ODT~ is satisfactory.
+
+#+ATTR_ODT: :col-cookies "| <r> | <l> | <r> |"
+#+ATTR_ODT: :rel-width 80
+|       Date | Action                  | Satisfaction Level |
+|------------+-------------------------+--------------------|
+| 2025-03-02 | Performed various tasks |                  1 |
+| 2025-03-03 | Baked bread             |                  2 |
+| 2025-03-04 | Repaired electric motor |                  3 |
