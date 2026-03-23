@@ -642,7 +642,7 @@
   '(("$#" . "COLUMN()")
     ("@#" . "ROW()")
     ("vmax" . "MAX")
-    ("vmean" . "AVG")
+    ("vmean" . "AVERAGE")
     ("vmin" . "MIN")
     ("vsum" . "SUM")))
 
