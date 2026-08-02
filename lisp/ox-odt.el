@@ -11557,12 +11557,20 @@ function to create page headers:
 				   (?O . ,(browse-url-file-url out-file))
 				   (?d . ,(shell-quote-argument out-dir))
 				   (?D . ,(browse-url-file-url out-dir))
-                                   (?X . ,org-odt-soffice-executable)))))
-    (when (file-exists-p out-file)
-      (delete-file out-file))
-    (message "Executing %s" cmd)
-    (let ((cmd-output (shell-command-to-string cmd)))
-      (message "%s" cmd-output))
+				   (?X . ,org-odt-soffice-executable)))))
+    (cond
+     ;; Check if `#+ODT_PREFERRED_OUTPUT_FORMAT: odt'
+     ((string= in-fmt out-fmt)
+      ;; Nothing to do
+      )
+     (t
+      ;; Run the convert command
+      (when (file-exists-p out-file)
+	(delete-file out-file))
+      (message "Executing %s" cmd)
+      (let ((cmd-output (shell-command-to-string cmd)))
+	(message "%s" cmd-output))))
+
     (cond
      ((file-exists-p out-file)
       (message "Exported to %s" out-file)
