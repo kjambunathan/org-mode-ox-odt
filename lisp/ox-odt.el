@@ -1976,6 +1976,18 @@ The function result will be used as headline text."
   :package-version '(Org . "8.3")
   :type 'function)
 
+(defcustom org-odt-unnumbered-heading-appears-in-toc-p nil
+  "Whether to include unnumbered headings in the table of contents.
+
+Define behaviour when the `:UNNUMBERED:' property of a heading is `t'.
+
+When the the `:UNNUMBERED:' property of a heading is absent, or if it is
+\"notoc\" or \"toc\", the behaviour of its inclusion in TOC is
+unambiguous."
+  :group 'org-export-odt
+  :type 'boolean
+  :safe #'booleanp)
+
 
 ;;;; Inlinetasks
 
@@ -3725,8 +3737,10 @@ LANGUAGE keyword."
 		   (org-odt--lisp-to-xml
 		    `(text:index-source-styles
 		      ((text:outline-level . ,(format "%d" level)))
-		      (text:index-source-style
-		       ((text:style-name . ,(format "Heading_20_%d" depth))))))))
+                      ,@(cl-loop for h in (list (format "Heading_20_%d" depth)
+                                                (format "Heading_20_%d_unnumbered" depth))
+                                 collect `(text:index-source-style
+		                           ((text:style-name . ,h))))))))
        (text:index-body nil
 			(text:index-title
 			 ((text:style-name . ,style)
@@ -5924,16 +5938,59 @@ holding contextual information."
 				       (prefix-i (and i (org-odt--read-attribute i :style-prefix)))
 				       (suffix-i (and i (org-odt--read-attribute i :style-suffix))))
 				  (cond
-				   ((stringp style) style)
-				   ((stringp prefix)
-				    (concat prefix (number-to-string level) suffix))
-				   ((stringp suffix)
-				    (concat "Heading_20_" (number-to-string level) suffix))
-				   ((stringp prefix-i)
-				    (concat prefix-i (number-to-string level) suffix-i))
-				   ((stringp suffix-i)
-				    (concat "Heading_20_" (number-to-string level) suffix-i))
-				   (t (concat "Heading_20_" (number-to-string level)))))))
+                                   ;; Case 0:
+                                   ;;
+                                   ;;   When any of the above ODT-specific attributes are specified, the style name used
+                                   ;;   for <text:h>.../<text:h> is entirely driven by these values.  Specifically, the
+                                   ;;   `:UNNUMBERED:' property of the heading is never consulted and has no bearing on
+                                   ;;   the output.
+				   ((or style prefix suffix prefix-i suffix-i)
+				    (cond
+				     ((stringp style) style)
+				     ((stringp prefix)
+				      (concat prefix (number-to-string level) suffix))
+				     ((stringp suffix)
+				      (concat "Heading_20_" (number-to-string level) suffix))
+				     ((stringp prefix-i)
+				      (concat prefix-i (number-to-string level) suffix-i))
+				     ((stringp suffix-i)
+				      (concat "Heading_20_" (number-to-string level) suffix-i))
+				     (t (concat "Heading_20_" (number-to-string level)))))
+                                   ;; Case 1:
+                                   ;;
+                                   ;;   When none of the above ODT-specific attributes are specified;, the style name
+                                   ;;   used for <text:h>.../<text:h> is determined entirely by `:UNNUMBERED:' property
+                                   ;;   of the heading and the value of `org-odt-unnumbered-heading-appears-in-toc-p'.
+				   (t
+				    (pcase (org-export-get-node-property :UNNUMBERED h t)
+				      ;; Headline is regular
+				      (`nil
+				       (concat "Heading_20_" (number-to-string level)))
+				      ;; Case 1: Headline is unnumbered
+
+				      ("toc"
+                                       ;; - Case 1.1: Headline is unnumbered and the unnumbered headline appears in TOC
+				       (concat "Heading_20_" (number-to-string level) "_unnumbered"))
+
+				      ("notoc"
+                                       ;; - Case 1.2: Headline is unnumbered and the unnumbered headline does NOT appear
+                                       ;;     in TOC
+				       (concat "Heading_20_" (number-to-string level) "_unnumbered_notoc"))
+
+                                      (_
+                                       ;; - Case 1.3: Headline is unnumbered and the unnumbered headline does not
+                                       ;;     explicitly say if it should be included in TOC or not;
+                                       ;;
+                                       ;;     Go with what `org-odt-unnumbered-heading-appears-in-toc-p' says.
+
+				       (cond
+					(org-odt-unnumbered-heading-appears-in-toc-p
+                                         ;; - Case 1.3.1: Headline is unnumbered and the unnumbered headline appears in TOC
+					 (concat "Heading_20_" (number-to-string level) "_unnumbered"))
+					(t
+                                         ;; - Case 1.3.2: Headline is unnumbered and the unnumbered headline does NOT
+                                         ;;     appear in TOC
+					 (concat "Heading_20_" (number-to-string level) "_unnumbered_notoc"))))))))))
 		    (format
 		     "\n<text:h text:style-name=\"%s\" text:outline-level=\"%s\">%s</text:h>"
 		     (org-odt--get-derived-paragraph-style h info style) level hc))))
