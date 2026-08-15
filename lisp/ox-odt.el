@@ -8287,7 +8287,8 @@ contextual information."
 	       (style (or (plist-get attributes :style)
 			  "OrgTextBoxFrame"))
 	       (extra (plist-get attributes :extra))
-	       (anchor (plist-get attributes :anchor)))
+	       (anchor (plist-get attributes :anchor))
+               (rel-width (plist-get attributes :rel-width)))
     (when path
       ;; A textbox can specify a fill image using the `:image'
       ;; attribute.
@@ -8326,7 +8327,8 @@ contextual information."
 				   parent-style
 				   draw-name)))))
     (org-odt--textbox text :width width :height height
-                      :style style :extra extra :anchor anchor)))
+                      :style style :extra extra :anchor anchor
+                      :rel-width rel-width)))
 
 (defun org-odt--compose-image-and-text-into-a-draw:custom-shape (file-path text attributes info)
   (pcase-let* ((`(,path ,widths ,heights)
